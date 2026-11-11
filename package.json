@@ -1,0 +1,32 @@
+{
+  "name": "ubc-commerce-hub",
+  "private": true,
+  "version": "0.1.0",
+  "description": "UBC Commerce Hub — TwoIT Solutions LLC",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/api"
+  ],
+  "scripts": {
+    "build": "tsc -b packages/shared packages/business-rules packages/demo-data packages/integrations packages/database apps/api && node scripts/build-admin.mjs",
+    "typecheck": "tsc -b packages/shared packages/business-rules packages/demo-data packages/integrations packages/database apps/api",
+    "db:migrate": "node packages/database/dist/migrate.js",
+    "db:seed": "node packages/database/dist/seed.js",
+    "dev": "node --env-file-if-exists=.env apps/api/dist/server.js",
+    "worker": "node --env-file-if-exists=.env apps/api/dist/worker.js",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e/run.mjs",
+    "lint:admin": "eslint apps/admin/js",
+    "build:static-demo": "npm run build && node scripts/build-static-demo.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "typescript": "5.9",
+    "vitest": "^3.2.7"
+  }
+}

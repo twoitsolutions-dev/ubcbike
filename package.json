@@ -2,7 +2,7 @@
   "name": "ubc-commerce-hub",
   "private": true,
   "version": "0.1.0",
-  "description": "UBC Commerce Hub — TwoIT Solutions LLC",
+  "description": "UBC Commerce Hub \u2014 TwoIT Solutions LLC",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -19,9 +19,12 @@
     "dev": "node --env-file-if-exists=.env apps/api/dist/server.js",
     "worker": "node --env-file-if-exists=.env apps/api/dist/worker.js",
     "test": "vitest run",
-    "test:e2e": "node tests/e2e/run.mjs",
+    "test:e2e": "npm run build:static-demo && node tests/e2e/run.mjs",
     "lint:admin": "eslint apps/admin/js",
-    "build:static-demo": "npm run build && node scripts/build-static-demo.mjs"
+    "build:static-demo": "npm run build && node scripts/build-static-demo.mjs",
+    "test:e2e:api": "npm run build && node tests/e2e/api-smoke.mjs",
+    "lint": "eslint apps/admin/js apps/shopify-theme/assets",
+    "db:reset-demo": "node scripts/reset-demo-db.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

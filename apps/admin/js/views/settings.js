@@ -1,0 +1,63 @@
+import { h, mount } from '../ui/dom.js';
+import { card, confirmDialog, pageHead, toast } from '../ui/components.js';
+
+export async function renderSettings(ctx) {
+  const s = await ctx.api.settings();
+  const canEdit = ctx.can('settings.manage');
+  const num = (v, opts) => h('input', Object.assign({ type: 'number', value: String(v), disabled: !canEdit }, opts || {}));
+  const minM = num(Math.round(s.campaignRules.minMarginPct * 1000) / 10, { min: '0', max: '95', step: '0.5' });
+  const warnM = num(Math.round(s.campaignRules.warnMarginPct * 1000) / 10, { min: '0', max: '95', step: '0.5' });
+  const clamp = h('input', { type: 'checkbox', checked: !!s.campaignRules.clampToMinMargin, disabled: !canEdit });
+  const physSafety = num(s.availability.physicalSafetyQty, { min: '0', max: '100' });
+  const supSafety = num(s.availability.supplierSafetyQty, { min: '0', max: '100' });
+  const maxAge = num(s.availability.maxOfferAgeHours, { min: '1', max: '720' });
+  const handling = num(s.availability.handlingDays, { min: '0', max: '60' });
+  const err = h('div');
+
+  const save = h('button.btn.primary', {
+    disabled: !canEdit,
+    onclick: async () => {
+      mount(err);
+      const body = {
+        campaignRules: { minMarginPct: Number(minM.value) / 100, warnMarginPct: Number(warnM.value) / 100, clampToMinMargin: clamp.checked },
+        availability: { physicalSafetyQty: Number(physSafety.value), supplierSafetyQty: Number(supSafety.value), maxOfferAgeHours: Number(maxAge.value), handlingDays: Number(handling.value) },
+      };
+      if (body.campaignRules.warnMarginPct < body.campaignRules.minMarginPct) { mount(err, h('div.notice.bad', 'The warning threshold must be at or above the minimum margin.')); return; }
+      try { await ctx.api.saveSettings(body); toast('Settings saved', 'ok'); } catch (e) { mount(err, h('div.notice.bad', e.message)); }
+    },
+  }, 'Save settings');
+
+  const demoTools = ctx.api.kind === 'demo' ? card('Demo tools', h('div.stack',
+    h('label.check', h('input', { type: 'checkbox', checked: ctx.api.outageOn(), onchange: (e) => { ctx.api.simulateOutage(e.target.checked); toast(e.target.checked ? 'Supplier outage simulated: approvals and PO submissions will fail and retry' : 'Supplier outage cleared'); } }),
+      'Simulate a supplier connection outage (to see retries, errors and exceptions)'),
+    h('div', h('button.btn.danger', {
+      onclick: async () => {
+        if (!(await confirmDialog({ title: 'Reset demo data?', message: 'All demo changes (prices, promotions, orders, history) in this browser are discarded and the original demo dataset is restored.', confirmLabel: 'Reset demo data', danger: true }))) return;
+        ctx.api.resetDemo();
+        location.hash = '#/dashboard';
+        location.reload();
+      },
+    }, 'Reset demo data')),
+    h('p.small.muted', 'Demo data lives only in this browser. Nothing here touches Shopify, Lightspeed or any supplier.'))) : card('Demo data', h('p.small.muted', 'Server DEMO database: reset with `npm run db:reset-demo` (see docs/DEPLOYMENT.md).'));
+
+  return h('div.stack',
+    pageHead('Settings', canEdit ? 'Company-wide commercial rules' : 'Read-only — changing rules requires an owner/admin'),
+    card('Promotion & pricing rules', h('div.stack',
+      h('div.form-grid',
+        h('label.field', 'Minimum margin (%)', minM, h('span.help', 'Default floor for every campaign and manual price change')),
+        h('label.field', 'Warning threshold (%)', warnM)),
+      h('label.check', clamp, 'Default: raise prices to the minimum margin instead of blocking'),
+      h('div.notice.info', 'MAP cannot be disabled here. Below-MAP prices require an authorised MAP exception per item.'))),
+    card('Availability rules (catalog virtual offers)', h('div.form-grid',
+      h('label.field', 'Physical safety stock (units)', physSafety, h('span.help', 'Kept back from online sale')),
+      h('label.field', 'Supplier safety quantity', supSafety, h('span.help', 'Supplier must report more than this')),
+      h('label.field', 'Max age of supplier data (hours)', maxAge, h('span.help', 'Older data is ignored')),
+      h('label.field', 'Handling days at UBC', handling, h('span.help', 'Added to supplier lead time')))),
+    err,
+    h('div.row', save),
+    demoTools,
+    card('Account', h('dl.props',
+      h('dt', 'Signed in as'), h('dd', ctx.me.user.name + ' (' + ctx.me.user.email + ')'),
+      h('dt', 'Role'), h('dd', ctx.me.user.role),
+      h('dt', 'Permissions'), h('dd', h('div.chips', ctx.me.permissions.map((p) => h('span.badge', p)))))));
+}

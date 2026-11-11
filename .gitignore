@@ -7,3 +7,4 @@ dist/
 build/
 test-results/
 *.log
+apps/admin/js/vendor/

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "UBC Commerce",
+    "theme_version": "0.1.0",
+    "theme_author": "TwoIT Solutions LLC",
+    "theme_documentation_url": "https://twoitsolutions.com",
+    "theme_support_url": "https://twoitsolutions.com"
+  },
+  {
+    "name": "Colors",
+    "settings": [
+      { "type": "color", "id": "color_accent", "label": "Accent", "default": "#0369a1" },
+      { "type": "color", "id": "color_text", "label": "Text", "default": "#0f172a" },
+      { "type": "color", "id": "color_background", "label": "Background", "default": "#ffffff" },
+      { "type": "color", "id": "color_special_order", "label": "Special-order badge", "default": "#6d28d9" }
+    ]
+  },
+  {
+    "name": "Store",
+    "settings": [
+      { "type": "image_picker", "id": "favicon", "label": "Favicon" },
+      { "type": "checkbox", "id": "demo_mode", "label": "Demo mode (noindex + demo notice)", "default": true, "info": "Turn off only when launching with real, authorised content" }
+    ]
+  }
+]

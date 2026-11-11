@@ -1,0 +1,19 @@
+{%- if settings.demo_mode or section.settings.text != blank -%}
+<div class="announcement" role="region" aria-label="{{ 'general.announcement' | t }}">
+  {%- if settings.demo_mode -%}
+    <strong>{{ 'general.demo_notice' | t }}</strong>
+  {%- endif -%}
+  {%- if section.settings.text != blank -%}
+    <span>{{ section.settings.text }}</span>
+  {%- endif -%}
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Announcement bar",
+  "settings": [
+    { "type": "text", "id": "text", "label": "Text", "default": "Free in-store pickup at UBC · Expert assembly on every bike" }
+  ]
+}
+{% endschema %}

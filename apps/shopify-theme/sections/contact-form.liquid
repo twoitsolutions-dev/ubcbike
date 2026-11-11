@@ -1,0 +1,19 @@
+<section class="container page">
+  <h1>{{ section.settings.heading | escape }}</h1>
+  {%- form 'contact', class: 'contact-form' -%}
+    {%- if form.posted_successfully? -%}<p class="notice">{{ 'contact.success' | t }}</p>{%- endif -%}
+    {{ form.errors | default_errors }}
+    <label class="field"><span>{{ 'contact.name' | t }}</span><input type="text" name="contact[name]" autocomplete="name" required></label>
+    <label class="field"><span>{{ 'contact.email' | t }}</span><input type="email" name="contact[email]" autocomplete="email" required></label>
+    <label class="field"><span>{{ 'contact.message' | t }}</span><textarea name="contact[body]" rows="5" required></textarea></label>
+    <button type="submit" class="button">{{ 'contact.send' | t }}</button>
+  {%- endform -%}
+</section>
+
+{% schema %}
+{
+  "name": "Contact form",
+  "settings": [{ "type": "text", "id": "heading", "label": "Heading", "default": "Contact UBC" }],
+  "presets": [{ "name": "Contact form" }]
+}
+{% endschema %}

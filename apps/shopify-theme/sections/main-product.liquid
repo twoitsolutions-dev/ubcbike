@@ -1,0 +1,99 @@
+{%- assign variant = product.selected_or_first_available_variant -%}
+<section class="container product" data-product>
+  <div class="product-media">
+    {%- for media in product.media limit: 8 -%}
+      {%- if media.media_type == 'image' -%}
+        {{ media | image_url: width: 1200 | image_tag: loading: forloop.first | default: 'lazy', widths: '400, 700, 1000, 1200', sizes: '(min-width: 990px) 55vw, 100vw', alt: media.alt | escape }}
+      {%- endif -%}
+    {%- else -%}
+      <div class="placeholder placeholder--large">{{ 'products.no_image' | t }}</div>
+    {%- endfor -%}
+  </div>
+  <div class="product-info">
+    {%- if product.vendor != blank -%}<p class="card-vendor">{{ product.vendor | escape }}</p>{%- endif -%}
+    <h1>{{ product.title | escape }}</h1>
+    <div data-price>{% render 'price', product: product, variant: variant %}</div>
+    <div data-availability-wrap>{% render 'availability', variant: variant %}</div>
+
+    {%- form 'product', product, class: 'product-form', data-product-form: '' -%}
+      {%- unless product.has_only_default_variant -%}
+        {%- for option in product.options_with_values -%}
+          <label class="field">
+            <span>{{ option.name | escape }}</span>
+            <select name="options[{{ option.name | escape }}]" data-option-index="{{ forloop.index0 }}">
+              {%- for value in option.values -%}
+                <option value="{{ value | escape }}"{% if option.selected_value == value %} selected{% endif %}>{{ value | escape }}</option>
+              {%- endfor -%}
+            </select>
+          </label>
+        {%- endfor -%}
+      {%- endunless -%}
+      <input type="hidden" name="id" value="{{ variant.id }}" data-variant-id>
+      <label class="field field--qty">
+        <span>{{ 'products.quantity' | t }}</span>
+        <input type="number" name="quantity" value="1" min="1" inputmode="numeric">
+      </label>
+      <button type="submit" class="button button--full" data-add-button {% unless variant.available %}disabled{% endunless %}>
+        {%- if variant.available -%}{{ 'products.add_to_cart' | t }}{%- else -%}{{ 'products.sold_out' | t }}{%- endif -%}
+      </button>
+      <p class="form-message" data-form-message role="status"></p>
+    {%- endform -%}
+
+    {%- if variant.store_availabilities.size > 0 -%}
+      <div class="pickup">
+        {%- for sa in variant.store_availabilities -%}
+          <p>
+            {%- if sa.pick_up_enabled and sa.available -%}
+              {{ 'products.pickup_available' | t: location: sa.location.name, time: sa.pick_up_time }}
+            {%- elsif sa.pick_up_enabled -%}
+              {{ 'products.pickup_unavailable' | t: location: sa.location.name }}
+            {%- endif -%}
+          </p>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    <div class="special-order-note">{{ 'products.special_order_explainer' | t }}</div>
+    <div class="rte product-description">{{ product.description }}</div>
+  </div>
+
+  <script type="application/json" data-product-json>
+    {
+      "variants": [
+        {%- for v in product.variants -%}
+          {
+            "id": {{ v.id }},
+            "options": {{ v.options | json }},
+            "available": {{ v.available | json }},
+            "price": {{ v.price | money | json }},
+            "compare": {% if v.compare_at_price > v.price %}{{ v.compare_at_price | money | json }}{% else %}null{% endif %},
+            "availability": {{ v.metafields.ubc.availability.value | default: '' | json }},
+            "lead": {{ v.metafields.ubc.lead_time_days.value | default: '' | json }},
+            "qty": {{ v.inventory_quantity | json }}
+          }{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ],
+      "labels": {
+        "in_stock": {{ 'products.availability.in_stock' | t | json }},
+        "special_order": {{ 'products.availability.special_order' | t | json }},
+        "special_order_days": {{ 'products.availability.special_order_days' | t: days: '__DAYS__' | json }},
+        "unavailable": {{ 'products.availability.unavailable' | t | json }},
+        "add": {{ 'products.add_to_cart' | t | json }},
+        "sold_out": {{ 'products.sold_out' | t | json }}
+      }
+    }
+  </script>
+</section>
+
+{%- if section.settings.show_related -%}
+  <section class="section container" data-recommendations data-url="{{ routes.product_recommendations_url }}?section_id=related-products&product_id={{ product.id }}&limit=4&intent=related"></section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Product",
+  "settings": [
+    { "type": "checkbox", "id": "show_related", "label": "Show related products", "default": true }
+  ]
+}
+{% endschema %}

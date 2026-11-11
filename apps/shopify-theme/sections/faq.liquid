@@ -1,0 +1,27 @@
+<section class="section container faq">
+  <h2 class="section-title">{{ section.settings.heading | escape }}</h2>
+  {%- for block in section.blocks -%}
+    <details class="faq-item" {{ block.shopify_attributes }}>
+      <summary>{{ block.settings.question | escape }}</summary>
+      <div>{{ block.settings.answer }}</div>
+    </details>
+  {%- endfor -%}
+</section>
+
+{% schema %}
+{
+  "name": "FAQ",
+  "settings": [{ "type": "text", "id": "heading", "label": "Heading", "default": "Frequently asked questions" }],
+  "blocks": [
+    {
+      "type": "question",
+      "name": "Question",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Question", "default": "What is a special order?" },
+        { "type": "richtext", "id": "answer", "label": "Answer", "default": "<p>Items we order from our distributor for you. The product page shows the estimated days before you buy.</p>" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "FAQ", "blocks": [{ "type": "question" }] }]
+}
+{% endschema %}

@@ -1,0 +1,35 @@
+{%- comment -%}
+  Renders availability for a variant. Written by the UBC Integration Engine:
+    variant.metafields.ubc.availability   -> in_stock | special_order | unavailable
+    variant.metafields.ubc.lead_time_days -> number (special orders only)
+  Supplier quantities are never published as stock: special-order variants use
+  inventory policy "continue" with 0 units. Falls back to Shopify inventory.
+  Usage: {% render 'availability', variant: product.selected_or_first_available_variant %}
+{%- endcomment -%}
+{%- liquid
+  assign status = variant.metafields.ubc.availability.value
+  if status == blank
+    if variant.available and variant.inventory_quantity > 0
+      assign status = 'in_stock'
+    elsif variant.available
+      assign status = 'special_order'
+    else
+      assign status = 'unavailable'
+    endif
+  endif
+  assign lead = variant.metafields.ubc.lead_time_days.value
+-%}
+<span class="availability availability--{{ status }}" data-availability>
+  {%- case status -%}
+    {%- when 'in_stock' -%}
+      {{ 'products.availability.in_stock' | t }}
+    {%- when 'special_order' -%}
+      {%- if lead -%}
+        {{ 'products.availability.special_order_days' | t: days: lead }}
+      {%- else -%}
+        {{ 'products.availability.special_order' | t }}
+      {%- endif -%}
+    {%- else -%}
+      {{ 'products.availability.unavailable' | t }}
+  {%- endcase -%}
+</span>

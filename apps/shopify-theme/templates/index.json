@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "hero": { "type": "hero", "settings": {} },
+    "categories": { "type": "collection-list", "blocks": { "b1": { "type": "collection", "settings": { "label": "Bikes" } }, "b2": { "type": "collection", "settings": { "label": "Electric Bikes" } }, "b3": { "type": "collection", "settings": { "label": "Parts" } }, "b4": { "type": "collection", "settings": { "label": "Accessories" } } }, "block_order": ["b1", "b2", "b3", "b4"], "settings": {} },
+    "deals": { "type": "featured-collection", "settings": { "heading": "Deals" } },
+    "services": { "type": "services", "blocks": { "s1": { "type": "service", "settings": { "title": "Bike service & repairs" } }, "s2": { "type": "service", "settings": { "title": "Rentals", "text": "<p>Rent a bike by the day or week.</p>" } }, "s3": { "type": "service", "settings": { "title": "Pickup or delivery", "text": "<p>Free pickup at UBC. Special-order items show their estimated arrival before you buy.</p>" } } }, "block_order": ["s1", "s2", "s3"], "settings": {} }
+  },
+  "order": ["hero", "categories", "deals", "services"]
+}

@@ -1,0 +1,23 @@
+<section class="container search">
+  <h1>{{ 'general.search' | t }}</h1>
+  <form action="{{ routes.search_url }}" method="get" role="search" class="search-form">
+    <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'general.search_placeholder' | t }}" aria-label="{{ 'general.search' | t }}">
+    <input type="hidden" name="type" value="product">
+    <button class="button" type="submit">{{ 'general.search' | t }}</button>
+  </form>
+  {%- if search.performed -%}
+    {%- paginate search.results by 24 -%}
+      <p class="muted">{{ 'general.results_count' | t: count: search.results_count, terms: search.terms }}</p>
+      <ul class="grid">
+        {%- for item in search.results -%}
+          {%- if item.object_type == 'product' -%}<li>{% render 'product-card', product: item %}</li>{%- endif -%}
+        {%- endfor -%}
+      </ul>
+      {%- if paginate.pages > 1 -%}<nav class="pagination">{{ paginate | default_pagination }}</nav>{%- endif -%}
+    {%- endpaginate -%}
+  {%- endif -%}
+</section>
+
+{% schema %}
+{ "name": "Search" }
+{% endschema %}

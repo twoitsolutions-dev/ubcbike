@@ -134,8 +134,12 @@ export function evaluateLine(item: CatalogItem, adj: PriceAdjustment, opts: Eval
     mapCents: item.mapPolicy === 'none' ? null : item.mapCents,
   };
 
+  // MAP is checked before anything else can exclude the line, so no path skips it.
+  const mapExc = base.mapCents !== null && newPrice < base.mapCents ? activeException(item.id, opts.mapExceptions, now) : undefined;
+  const violatesMap = base.mapCents !== null && newPrice < base.mapCents && !mapExc;
+
   if (cost === null && opts.rules.excludeWithoutCost) {
-    return { ...base, newPriceCents: oldPrice, newMarginPct: base.oldMarginPct, status: 'excluded', reasons: ['NO_COST'] };
+    return { ...base, newPriceCents: oldPrice, newMarginPct: base.oldMarginPct, status: 'excluded', reasons: violatesMap ? ['NO_COST', 'MAP_VIOLATION'] : ['NO_COST'] };
   }
 
   if (newPrice <= 0) {

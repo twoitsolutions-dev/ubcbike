@@ -87,6 +87,16 @@ describe('pricing', () => {
     expect(r.reasons).toEqual(expect.arrayContaining(['CLAMPED_TO_MIN_MARGIN', 'MAP_VIOLATION']));
   });
 
+  it('never lets a missing cost bypass MAP (manual price path)', () => {
+    const noCost = item({ costCents: null, mapPolicy: 'map', mapCents: 9500 });
+    const manual = evaluateLine(noCost, { type: 'set_price', value: 9000, rounding: 'none' }, { rules: { ...DEFAULT_CAMPAIGN_RULES, excludeWithoutCost: false } });
+    expect(manual.status).toBe('blocked');
+    expect(manual.reasons).toContain('MAP_VIOLATION');
+    const campaign = evaluateLine(noCost, off20, { rules: DEFAULT_CAMPAIGN_RULES });
+    expect(campaign.status).toBe('excluded');
+    expect(campaign.newPriceCents).toBe(noCost.priceCents);
+  });
+
   it('excludes items with no cost and flags low margins', () => {
     expect(evaluateLine(item({ costCents: null }), off20, { rules: DEFAULT_CAMPAIGN_RULES }).status).toBe('excluded');
     const low = evaluateLine(item({ costCents: 6500 }), off20, { rules: DEFAULT_CAMPAIGN_RULES });

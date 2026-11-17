@@ -11,6 +11,7 @@ import { renderStore } from './views/store.js?v=40';
 import { renderIntegrations } from './views/integrations.js?v=40';
 import { renderActivity } from './views/activity.js?v=40';
 import { renderSettings } from './views/settings.js?v=40';
+import { renderUpcReview } from './views/upc-review.js?v=40';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },
@@ -26,6 +27,7 @@ export const routes = [
   { path: '/orders', title: 'Special Orders', render: renderOrders },
   { path: '/orders/:id', title: 'Special Order Details', render: renderOrderDetail },
   { path: '/purchasing', title: 'Purchase Orders (B2B)', render: renderPurchasing },
+  { path: '/upc-matches', title: 'UPC Matches (Lightspeed ↔ Shopify)', render: renderUpcReview },
   { path: '/store', title: 'Settings & Sync · Store Simulator', render: renderStore },
   { path: '/integrations', title: 'Settings & Sync · Connections', render: renderIntegrations },
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },

@@ -4,19 +4,20 @@ import type { AppContext } from './context.js';
 import { enqueue } from './jobs.js';
 
 /**
- * Nightly (update_only): match Lightspeed items to the variants that exist in the Workstand-owned
- * Shopify store, by UPC (normalized GTIN-14: Workstand "00" prefixes, Excel-dropped zeros and EAN-only
- * items all match). Incremental and safe:
- *  - adds links for new matches (new Lightspeed items, or new Workstand catalog products),
- *  - re-points links whose UPC now belongs to another item, removes links whose UPC no longer matches,
- *  - never deletes in bulk: if more than 20% of the links would disappear, removals are skipped and alerted,
- *  - queues new/changed links so the next flush pushes the Lightspeed price, sale price and stock.
- * Repeated UPCs in Lightspeed are resolved only without doubt (the only one in stock, else the only single
- * unit vs. packs); otherwise left out for review.
+ * Nightly (update_only): compare Lightspeed items with the variants of the Workstand-owned Shopify
+ * store by UPC (normalized GTIN-14: Workstand "00" prefixes, Excel-dropped zeros and EAN-only items all
+ * match) and PROPOSE changes in `upc_link_proposals`. Nothing changes in the links or in Shopify until
+ * someone approves the proposal in the Hub ("UPC Matches" section).
+ *  - add:     new Lightspeed item ↔ Shopify variant with the same UPC
+ *  - repoint: an existing link whose UPC now belongs to another Lightspeed item
+ *  - remove:  an existing link whose UPC no longer matches / Shopify variant gone
+ *             (not proposed at all when more than 20% of the links would go: alert instead)
+ * Pairs Carlos already rejected are not proposed again. Repeated UPCs in Lightspeed are only matched
+ * without doubt (the only one in stock, else the only single unit vs. packs).
  */
 export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') return { skipped: 'not update_only' };
-  const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+  const shop = shopOf(ctx);
 
   const hub = await ctx.pool.query<{ id: string; upc: string | null; title: string; on_hand: number }>(
     `SELECT v.id, v.upc, v.title,
@@ -48,79 +49,169 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     [companyId, shop],
   );
   const bySvid = new Map(existing.rows.map((l) => [l.shopify_variant_id, l]));
+  const rejected = await ctx.pool.query<{ kind: string; shopify_variant_id: string; variant_id: string | null }>(
+    `SELECT kind, shopify_variant_id, variant_id FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'rejected'`,
+    [companyId, shop],
+  );
+  const rejectedKey = new Set(rejected.rows.map((r) => `${r.kind}|${r.shopify_variant_id}|${r.variant_id ?? ''}`));
   const stillInStore = new Set<string>();
 
-  type NewLink = { vid: string; pid: string; svid: string; inv: string | null; p: number; c: number | null };
-  const added: NewLink[] = [];
-  const repointed: (NewLink & { id: number })[] = [];
-  const unmatched: number[] = [];
+  type P = {
+    kind: 'add' | 'repoint' | 'remove'; vid: string | null; old: string | null; link: number | null;
+    svid: string; pid: string | null; inv: string | null; title: string | null; barcode: string | null; p: number | null; c: number | null;
+  };
+  const proposals: P[] = [];
+  const unmatched = new Map<number, P>();
 
   const total = await ctx.connectors.shopify.bulkReadVariants((row) => {
     const g = normalizeGtin(row.barcode);
     const vid = g ? hubByGtin.get(g) : undefined;
     const ex = bySvid.get(row.variantId);
     if (ex) stillInStore.add(row.variantId);
-    if (!vid) { if (ex) unmatched.push(ex.id); return; }
-    const link = { vid, pid: row.productId, svid: row.variantId, inv: row.inventoryItemId, p: row.priceCents, c: row.compareAtCents };
-    if (!ex) added.push(link);
-    else if (ex.variant_id !== vid || ex.shopify_product_id !== row.productId || ex.shopify_inventory_item_id !== row.inventoryItemId) repointed.push({ ...link, id: ex.id });
+    const base = { svid: row.variantId, pid: row.productId, inv: row.inventoryItemId, title: row.title, barcode: row.barcode, p: row.priceCents, c: row.compareAtCents };
+    if (!vid) {
+      if (ex) unmatched.set(ex.id, { ...base, kind: 'remove', vid: ex.variant_id, old: null, link: ex.id });
+      return;
+    }
+    if (!ex) proposals.push({ ...base, kind: 'add', vid, old: null, link: null });
+    else if (ex.variant_id !== vid) proposals.push({ ...base, kind: 'repoint', vid, old: ex.variant_id, link: ex.id });
+    else if (ex.shopify_product_id !== row.productId || ex.shopify_inventory_item_id !== row.inventoryItemId) {
+      // Same item, Shopify moved the variant to another product / inventory item: safe bookkeeping, no decision needed.
+      void ctx.pool.query(`UPDATE shopify_variant_links SET shopify_product_id = $2, shopify_inventory_item_id = $3, updated_at = now() WHERE id = $1`, [ex.id, row.productId, row.inventoryItemId]);
+    }
   });
 
   if (total === 0) {
-    await logError(ctx.pool, { companyId, source: 'job:shopify.link_store', message: 'Shopify bulk read returned 0 variants — nothing changed' }).catch(() => {});
+    await logError(ctx.pool, { companyId, source: 'job:shopify.link_store', message: 'Shopify bulk read returned 0 variants — nothing proposed' }).catch(() => {});
     return { shop, storeVariants: 0, skipped: 'empty store read' };
   }
 
-  const gone = existing.rows.filter((l) => !stillInStore.has(l.shopify_variant_id)).map((l) => l.id);
-  const toRemove = [...unmatched, ...gone];
-  let removalsSkipped = false;
-  if (existing.rows.length > 0 && toRemove.length > existing.rows.length * 0.2) {
-    removalsSkipped = true;
+  const removals: P[] = [...unmatched.values()];
+  for (const l of existing.rows) {
+    if (!stillInStore.has(l.shopify_variant_id)) {
+      removals.push({ kind: 'remove', vid: l.variant_id, old: null, link: l.id, svid: l.shopify_variant_id, pid: l.shopify_product_id, inv: l.shopify_inventory_item_id, title: '(variant no longer in Shopify)', barcode: null, p: null, c: null });
+    }
+  }
+  let removalsSuppressed = false;
+  if (existing.rows.length > 0 && removals.length > existing.rows.length * 0.2) {
+    removalsSuppressed = true;
     await logError(ctx.pool, {
       companyId, source: 'job:shopify.link_store',
-      message: `Would remove ${toRemove.length} of ${existing.rows.length} UPC links (>20%) — removals skipped, please review`,
+      message: `${removals.length} of ${existing.rows.length} UPC links no longer match (>20%) — not proposed for removal, please check Shopify/Workstand`,
     }).catch(() => {});
+  } else {
+    proposals.push(...removals);
   }
 
-  for (let i = 0; i < added.length; i += 2000) {
+  const fresh = proposals.filter((p) => !rejectedKey.has(`${p.kind}|${p.svid}|${p.vid ?? ''}`));
+  // Replace the open list with tonight's proposals (anything not proposed again is no longer valid).
+  await ctx.pool.query(`DELETE FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending'`, [companyId, shop]);
+  for (let i = 0; i < fresh.length; i += 1000) {
     await ctx.pool.query(
-      `INSERT INTO shopify_variant_links (company_id, shop_domain, variant_id, shopify_product_id, shopify_variant_id, shopify_inventory_item_id,
-                                          match_method, last_price_cents, last_compare_at_cents)
-       SELECT $1, $2, r.vid, r.pid, r.svid, r.inv, 'barcode', r.p, r.c
-       FROM jsonb_to_recordset($3::jsonb) AS r(vid uuid, pid text, svid text, inv text, p int, c int)
-       ON CONFLICT (company_id, shop_domain, shopify_variant_id) DO NOTHING`,
-      [companyId, shop, JSON.stringify(added.slice(i, i + 2000))],
+      `INSERT INTO upc_link_proposals (company_id, shop_domain, kind, variant_id, old_variant_id, link_id, shopify_variant_id, shopify_product_id,
+                                       shopify_inventory_item_id, shopify_title, shopify_barcode, shopify_price_cents, shopify_compare_at_cents)
+       SELECT $1, $2, r.kind, r.vid, r.old, r.link, r.svid, r.pid, r.inv, r.title, r.barcode, r.p, r.c
+       FROM jsonb_to_recordset($3::jsonb) AS r(kind text, vid uuid, old uuid, link bigint, svid text, pid text, inv text, title text, barcode text, p int, c int)
+       ON CONFLICT DO NOTHING`,
+      [companyId, shop, JSON.stringify(fresh.slice(i, i + 1000))],
     );
-  }
-  if (repointed.length) {
-    await ctx.pool.query(
-      `UPDATE shopify_variant_links l
-       SET variant_id = r.vid, shopify_product_id = r.pid, shopify_inventory_item_id = r.inv,
-           last_price_cents = r.p, last_compare_at_cents = r.c, last_qty_by_location = '{}'::jsonb, updated_at = now()
-       FROM jsonb_to_recordset($1::jsonb) AS r(id bigint, vid uuid, pid text, inv text, p int, c int) WHERE l.id = r.id`,
-      [JSON.stringify(repointed)],
-    );
-  }
-  if (!removalsSkipped && toRemove.length) {
-    await ctx.pool.query(`DELETE FROM shopify_variant_links WHERE company_id = $1 AND id = ANY($2::bigint[])`, [companyId, toRemove]);
   }
 
-  const toPush = [...new Set([...added, ...repointed].map((l) => l.vid))];
-  if (toPush.length) {
-    await ctx.pool.query(
-      `INSERT INTO outbound_sync_staging (company_id, variant_id, stream, decision, hold_reasons, shopify_payload, status, updated_at)
-       SELECT $1, vid, 'availability', 'ready_for_shopify', '[]'::jsonb, '{"trigger":"upc_link"}'::jsonb, 'pending', now()
-       FROM unnest($2::uuid[]) AS vid
-       ON CONFLICT (company_id, variant_id, stream) DO UPDATE SET decision = 'ready_for_shopify', hold_reasons = '[]'::jsonb, status = 'pending', last_error = NULL, updated_at = now()`,
-      [companyId, toPush],
-    );
-    await enqueue(ctx.pool, { companyId, type: 'pipeline.flush_shopify', payload: { trigger: 'upc_link' } });
-  }
-
+  const count = (k: string) => fresh.filter((p) => p.kind === k).length;
   const summary = {
-    shop, storeVariants: total, linksBefore: existing.rows.length, added: added.length, repointed: repointed.length,
-    removed: removalsSkipped ? 0 : toRemove.length, removalsSkipped, duplicateUpcsSkipped: dupSkipped,
+    shop, storeVariants: total, links: existing.rows.length, proposedAdd: count('add'), proposedRepoint: count('repoint'),
+    proposedRemove: count('remove'), removalsSuppressed, previouslyRejected: proposals.length - fresh.length, duplicateUpcsSkipped: dupSkipped,
   };
-  await audit(ctx.pool, { companyId, action: 'shopify.upc_links_refreshed', detail: summary });
+  await audit(ctx.pool, { companyId, action: 'shopify.upc_links_proposed', detail: summary });
   return summary;
+}
+
+function shopOf(ctx: AppContext) {
+  return String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+}
+
+/** Proposals (with the Lightspeed item side) for the review screen. */
+export async function listUpcProposals(ctx: AppContext, companyId: string, status: string, kind?: string) {
+  const r = await ctx.pool.query(
+    `SELECT p.id, p.kind, p.status, p.created_at, p.decided_at, p.note, u.name AS decided_by,
+            p.shopify_variant_id, p.shopify_title, p.shopify_barcode, p.shopify_price_cents, p.shopify_compare_at_cents,
+            v.id AS variant_id, v.title AS ls_title, v.upc AS ls_upc, v.sku AS ls_sku, v.price_cents AS ls_price_cents, v.compare_at_cents AS ls_compare_at_cents,
+            COALESCE((SELECT sum(il.on_hand)::int FROM inventory_levels il WHERE il.variant_id = v.id), 0) AS ls_qty,
+            (SELECT e.external_id FROM external_ids e WHERE e.entity_type = 'variant' AND e.entity_id = v.id AND e.system = 'lightspeed_r') AS ls_item_id,
+            ov.title AS old_ls_title, ov.upc AS old_ls_upc
+     FROM upc_link_proposals p
+     LEFT JOIN variants v ON v.id = p.variant_id
+     LEFT JOIN variants ov ON ov.id = p.old_variant_id
+     LEFT JOIN users u ON u.id = p.decided_by
+     WHERE p.company_id = $1 AND p.shop_domain = $2 AND p.status = $3 AND ($4::text IS NULL OR p.kind = $4)
+     ORDER BY CASE p.kind WHEN 'repoint' THEN 0 WHEN 'remove' THEN 1 ELSE 2 END, ls_qty DESC NULLS LAST, p.id
+     LIMIT 1000`,
+    [companyId, shopOf(ctx), status, kind ?? null],
+  );
+  const counts = await ctx.pool.query<{ status: string; kind: string; n: number }>(
+    `SELECT status, kind, count(*)::int n FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 GROUP BY 1, 2`,
+    [companyId, shopOf(ctx)],
+  );
+  return { proposals: r.rows, counts: counts.rows, shop: shopOf(ctx), mode: ctx.config.env.SHOPIFY_SYNC_MODE };
+}
+
+/**
+ * Carlos's decision. approve → the link is created / re-pointed / removed and the item is queued so
+ * Shopify gets the Lightspeed price, sale price and stock within seconds. reject → never proposed again.
+ * unlink (on an approved add) → removes the link; Shopify keeps its current price until Workstand changes it.
+ */
+export async function decideUpcProposals(ctx: AppContext, companyId: string, userId: string, ids: number[], decision: 'approve' | 'reject' | 'unlink') {
+  const shop = shopOf(ctx);
+  const wanted = decision === 'unlink' ? 'approved' : 'pending';
+  const rows = await ctx.pool.query<{
+    id: number; kind: string; variant_id: string | null; link_id: number | null; shopify_variant_id: string; shopify_product_id: string | null;
+    shopify_inventory_item_id: string | null; shopify_price_cents: number | null; shopify_compare_at_cents: number | null;
+  }>(
+    `SELECT id, kind, variant_id, link_id, shopify_variant_id, shopify_product_id, shopify_inventory_item_id, shopify_price_cents, shopify_compare_at_cents
+     FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = $3 AND id = ANY($4::bigint[])`,
+    [companyId, shop, wanted, ids],
+  );
+  if (!rows.rows.length) return { updated: 0 };
+
+  if (decision === 'reject') {
+    await ctx.pool.query(`UPDATE upc_link_proposals SET status = 'rejected', decided_by = $2, decided_at = now(), updated_at = now() WHERE id = ANY($1::bigint[])`, [rows.rows.map((r) => r.id), userId]);
+  } else if (decision === 'unlink') {
+    const adds = rows.rows.filter((r) => r.kind === 'add' || r.kind === 'repoint');
+    await ctx.pool.query(`DELETE FROM shopify_variant_links WHERE company_id = $1 AND shop_domain = $2 AND shopify_variant_id = ANY($3::text[])`, [companyId, shop, adds.map((r) => r.shopify_variant_id)]);
+    await ctx.pool.query(`UPDATE upc_link_proposals SET status = 'unlinked', decided_by = $2, decided_at = now(), updated_at = now() WHERE id = ANY($1::bigint[])`, [adds.map((r) => r.id), userId]);
+  } else {
+    const push = new Set<string>();
+    for (const r of rows.rows) {
+      if (r.kind === 'add' && r.variant_id && r.shopify_product_id) {
+        await ctx.pool.query(
+          `INSERT INTO shopify_variant_links (company_id, shop_domain, variant_id, shopify_product_id, shopify_variant_id, shopify_inventory_item_id, match_method, last_price_cents, last_compare_at_cents)
+           VALUES ($1, $2, $3, $4, $5, $6, 'barcode', $7, $8) ON CONFLICT (company_id, shop_domain, shopify_variant_id) DO NOTHING`,
+          [companyId, shop, r.variant_id, r.shopify_product_id, r.shopify_variant_id, r.shopify_inventory_item_id, r.shopify_price_cents, r.shopify_compare_at_cents],
+        );
+        push.add(r.variant_id);
+      } else if (r.kind === 'repoint' && r.variant_id) {
+        await ctx.pool.query(
+          `UPDATE shopify_variant_links SET variant_id = $3, last_price_cents = $4, last_compare_at_cents = $5, last_qty_by_location = '{}'::jsonb, updated_at = now()
+           WHERE company_id = $1 AND shop_domain = $2 AND shopify_variant_id = $6`,
+          [companyId, shop, r.variant_id, r.shopify_price_cents, r.shopify_compare_at_cents, r.shopify_variant_id],
+        );
+        push.add(r.variant_id);
+      } else if (r.kind === 'remove') {
+        await ctx.pool.query(`DELETE FROM shopify_variant_links WHERE company_id = $1 AND shop_domain = $2 AND shopify_variant_id = $3`, [companyId, shop, r.shopify_variant_id]);
+      }
+    }
+    await ctx.pool.query(`UPDATE upc_link_proposals SET status = 'approved', decided_by = $2, decided_at = now(), updated_at = now() WHERE id = ANY($1::bigint[])`, [rows.rows.map((r) => r.id), userId]);
+    if (push.size) {
+      await ctx.pool.query(
+        `INSERT INTO outbound_sync_staging (company_id, variant_id, stream, decision, hold_reasons, shopify_payload, status, updated_at)
+         SELECT $1, vid, 'availability', 'ready_for_shopify', '[]'::jsonb, '{"trigger":"upc_link_approved"}'::jsonb, 'pending', now()
+         FROM unnest($2::uuid[]) AS vid
+         ON CONFLICT (company_id, variant_id, stream) DO UPDATE SET decision = 'ready_for_shopify', hold_reasons = '[]'::jsonb, status = 'pending', last_error = NULL, updated_at = now()`,
+        [companyId, [...push]],
+      );
+      await enqueue(ctx.pool, { companyId, type: 'pipeline.flush_shopify', payload: { trigger: 'upc_link_approved' } });
+    }
+  }
+  await audit(ctx.pool, { companyId, userId, action: `shopify.upc_links_${decision}`, detail: { count: rows.rows.length, ids: rows.rows.map((r) => r.id).slice(0, 200) } });
+  return { updated: rows.rows.length };
 }

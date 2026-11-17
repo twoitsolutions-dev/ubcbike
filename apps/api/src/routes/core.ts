@@ -68,7 +68,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       else counts.unavailable++;
     }
     const q = (sql: string) => ctx.pool.query<{ n: number }>(sql, [c]).then((r) => r.rows[0]!.n);
-    const [orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, reviews] = await Promise.all([
+    const [orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, reviews, upcReview] = await Promise.all([
       q(`SELECT count(*)::int n FROM orders WHERE company_id = $1`),
       q(`SELECT count(*)::int n FROM orders WHERE company_id = $1 AND is_special_order AND internal_status NOT IN ('completed','cancelled')`),
       q(`SELECT count(*)::int n FROM orders WHERE company_id = $1 AND internal_status = 'awaiting_approval'`),
@@ -76,10 +76,11 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       q(`SELECT count(*)::int n FROM error_log WHERE company_id = $1 AND resolved_at IS NULL`),
       q(`SELECT count(*)::int n FROM jobs WHERE company_id = $1 AND status = 'dead'`),
       q(`SELECT count(*)::int n FROM match_reviews WHERE company_id = $1 AND status = 'pending'`),
+      q(`SELECT count(*)::int n FROM upc_link_proposals WHERE company_id = $1 AND status = 'pending'`).catch(() => 0),
     ]);
     const syncs = await ctx.pool.query(`SELECT type, status, finished_at, created_at FROM jobs WHERE company_id = $1 ORDER BY created_at DESC LIMIT 8`, [c]);
     return {
-      counts: { ...counts, orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, pendingMatchReviews: reviews },
+      counts: { ...counts, orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, pendingMatchReviews: reviews, upcReview },
       recentJobs: syncs.rows,
       shopifySales: ctx.config.mode === 'demo' ? { available: false, reason: 'Shopify not connected (DEMO)' } : { available: false, reason: 'Requires authorised Shopify connection' },
     };

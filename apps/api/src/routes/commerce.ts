@@ -12,6 +12,7 @@ import { HttpError, notFound, type AppContext } from '../services/context.js';
 import { enqueue } from '../services/jobs.js';
 import { transitionOrder, transitionSchema } from '../services/orders.js';
 import { getPipelineStatus, runPipelineWatchdogAndSchedules } from '../services/pipeline.js';
+import { decideUpcProposals, listUpcProposals } from '../services/shopify-links.js';
 import {
   importChunkSchema,
   importSchema,
@@ -476,6 +477,29 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     const safeCode = String(q.code || '').replace(/[^A-Za-z0-9._~+/-]/g, '');
     const safeShop = String(q.shop || '').replace(/[^A-Za-z0-9.-]/g, '');
     return `<!doctype html><html><head><meta charset="utf-8"><title>UBC Hub · Shopify Authorized</title></head><body style="font-family:system-ui,sans-serif;background:#14202D;color:#FEFDF3;display:grid;place-items:center;min-height:100vh;margin:0"><div style="max-width:560px;padding:32px;border-radius:18px;background:#1B3B2B;border:1px solid rgba(253,230,138,.35);text-align:center"><h2 style="margin:0 0 10px;color:#FDE68A">✓ UBC Hub Connected to ${safeShop || 'Shopify'}</h2><p style="opacity:.9;line-height:1.5">Copy the authorization code below (or copy the full browser URL) and paste it into your terminal prompt:</p><input readonly value="${safeCode}" onclick="this.select()" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:0;font-family:monospace;font-size:15px;text-align:center;margin:12px 0;background:#FEFDF3;color:#14202D"><p style="font-size:13px;opacity:.75;margin:8px 0 0">Safe Read-Only Mode Active until writes are explicitly enabled</p></div></body></html>`;
+  });
+
+  // ---------- UPC matches (Lightspeed ↔ Shopify) — proposed nightly, decided by Carlos ----------
+  app.get('/api/upc-review', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const q = z.object({
+      status: z.enum(['pending', 'approved', 'rejected', 'unlinked']).default('pending'),
+      kind: z.enum(['add', 'repoint', 'remove']).optional(),
+    }).parse(req.query);
+    return listUpcProposals(ctx, req.session!.companyId, q.status, q.kind);
+  });
+
+  app.post('/api/upc-review/decide', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = z.object({ ids: z.array(z.number().int().positive()).min(1).max(5000), decision: z.enum(['approve', 'reject', 'unlink']) }).parse(req.body);
+    if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') throw new HttpError(409, 'NOT_AVAILABLE', 'UPC review is only used with the Workstand-owned store (update_only mode)');
+    return decideUpcProposals(ctx, req.session!.companyId, req.session!.userId, body.ids, body.decision);
+  });
+
+  app.post('/api/upc-review/run', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req, reply) => {
+    if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') throw new HttpError(409, 'NOT_AVAILABLE', 'UPC review is only used with the Workstand-owned store (update_only mode)');
+    const s = req.session!;
+    const job = await enqueue(ctx.pool, { companyId: s.companyId, type: 'shopify.link_store', payload: { trigger: 'manual' }, createdBy: s.userId });
+    reply.code(202);
+    return { jobId: job.id };
   });
 
   // ---------- Integrations ----------

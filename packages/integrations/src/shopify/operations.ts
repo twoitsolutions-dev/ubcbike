@@ -101,6 +101,8 @@ export interface StoreVariantRow {
   productId: string;
   inventoryItemId: string | null;
   barcode: string | null;
+  /** Shopify variant display name, e.g. "Jupiter Defiant E-Bike - Black". */
+  title: string;
   priceCents: number;
   compareAtCents: number | null;
 }
@@ -496,7 +498,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     type Run = { bulkOperationRunQuery: { userErrors: { field: string[]; message: string }[] } };
     const run = await this.client.mutate<Run>(
       `mutation { bulkOperationRunQuery(query: """
-        { productVariants { edges { node { id barcode price compareAtPrice inventoryQuantity inventoryItem { id } product { id } } } } }
+        { productVariants { edges { node { id barcode displayName price compareAtPrice inventoryQuantity inventoryItem { id } product { id } } } } }
       """) { bulkOperation { id } userErrors { field message } } }`,
       {},
     );
@@ -517,11 +519,11 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     let n = 0;
     const emit = (line: string) => {
       if (!line.trim()) return;
-      const o = JSON.parse(line) as { id?: string; barcode?: string | null; price?: string; compareAtPrice?: string | null; inventoryQuantity?: number; inventoryItem?: { id: string }; product?: { id: string } };
+      const o = JSON.parse(line) as { id?: string; displayName?: string; barcode?: string | null; price?: string; compareAtPrice?: string | null; inventoryQuantity?: number; inventoryItem?: { id: string }; product?: { id: string } };
       if (!o.id?.includes('ProductVariant') || !o.product?.id) return;
       const p = strToCents(o.price ?? '0');
       const c = o.compareAtPrice ? strToCents(o.compareAtPrice) : null;
-      onRow({ variantId: o.id, productId: o.product.id, inventoryItemId: o.inventoryItem?.id ?? null, barcode: o.barcode ?? null, priceCents: p, compareAtCents: c && c > p ? c : null });
+      onRow({ variantId: o.id, productId: o.product.id, inventoryItemId: o.inventoryItem?.id ?? null, barcode: o.barcode ?? null, title: o.displayName ?? '', priceCents: p, compareAtCents: c && c > p ? c : null });
       n++;
     };
     for (;;) {

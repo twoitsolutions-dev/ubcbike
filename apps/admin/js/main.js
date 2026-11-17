@@ -16,6 +16,7 @@ const NAV = [
       ['#/orders', 'Special Orders', 'cart', 'awaitingApproval'],
       ['#/purchasing', 'Purchase Orders', 'clipboard'],
       ['#/suppliers', 'Vendor Catalogs', 'truck'],
+      ['#/upc-matches', 'UPC Matches', 'box', 'upcReview'],
     ],
   },
   {
@@ -35,6 +36,7 @@ function navParentFor(hash) {
   if (path.indexOf('#/promotions') === 0) return '#/promotions';
   if (path.indexOf('#/orders') === 0) return '#/orders';
   if (path.indexOf('#/purchasing') === 0) return '#/purchasing';
+  if (path.indexOf('#/upc-matches') === 0) return '#/upc-matches';
   return '#/dashboard';
 }
 

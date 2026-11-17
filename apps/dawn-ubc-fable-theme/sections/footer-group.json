@@ -1,0 +1,15 @@
+{
+  "name": "t:sections.footer.name",
+  "type": "footer",
+  "sections": {
+    "fable_footer": {
+      "type": "fable-footer",
+      "settings": {
+        "giant_word": "SINCE 1972"
+      }
+    }
+  },
+  "order": [
+    "fable_footer"
+  ]
+}

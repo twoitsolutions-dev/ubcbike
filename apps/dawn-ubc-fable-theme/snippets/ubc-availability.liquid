@@ -1,0 +1,80 @@
+{%- comment -%}
+  Renders omnichannel availability & Click-and-Collect rules published by UBC Commerce Hub:
+    variant.metafields.ubc.availability           -> in_stock | special_order | unavailable
+    variant.metafields.ubc.lead_time_days         -> integer business days (special orders)
+    variant.metafields.ubc.click_and_collect_only -> boolean (e.g. Specialized complete bikes)
+  Supplier quantities are never published as stock: special-order variants use
+  inventory policy "continue" with 0 units. Falls back to Shopify inventory.
+  Usage:
+    Compact (cards / showcase): {% render 'ubc-availability', variant: v %}
+    Detailed (PDP):             {% render 'ubc-availability', variant: v, detailed: true %}
+{%- endcomment -%}
+{%- liquid
+  assign status = variant.metafields.ubc.availability.value
+  if status == blank
+    if variant.available and variant.inventory_quantity > 0
+      assign status = 'in_stock'
+    elsif variant.available
+      assign status = 'special_order'
+    else
+      assign status = 'unavailable'
+    endif
+  endif
+  assign lead = variant.metafields.ubc.lead_time_days.value
+  assign pickup_only = variant.metafields.ubc.click_and_collect_only.value
+
+  assign prod_obj = product | default: variant.product
+  assign tampa_qty = prod_obj.metafields.ubc.tampa_qty.value | default: variant.metafields.ubc.tampa_qty.value | plus: 0
+  assign alafia_qty = prod_obj.metafields.ubc.alafia_qty.value | default: variant.metafields.ubc.alafia_qty.value | plus: 0
+  assign has_tampa = false
+  assign has_alafia = false
+  if tampa_qty > 0 or prod_obj.tags contains 'ubc-tampa-stock'
+    assign has_tampa = true
+  endif
+  if alafia_qty > 0 or prod_obj.tags contains 'ubc-alafia-stock'
+    assign has_alafia = true
+  endif
+-%}
+<div class="ubc-availability-group" data-ubc-availability-wrap>
+  <div class="ubc-availability-pills" style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:0.5rem;">
+    {%- if has_tampa or has_alafia -%}
+      {%- if has_tampa -%}
+        <span class="availability availability--in_stock" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#14202D;color:#FEFDF3;">
+          UBC Tampa{% if tampa_qty > 0 %} ({{ tampa_qty }}){% endif %}
+        </span>
+      {%- endif -%}
+      {%- if has_alafia -%}
+        <span class="availability availability--in_stock" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#1B4332;color:#FEFDF3;">
+          Alafia Park{% if alafia_qty > 0 %} ({{ alafia_qty }}){% endif %}
+        </span>
+      {%- endif -%}
+    {%- else -%}
+      <span class="availability availability--{{ status }}" data-availability style="{% if status == 'in_stock' or status == 'special_order' %}display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#F3E8D2;color:#5C3D0E;{% endif %}">
+        {%- case status -%}
+          {%- when 'in_stock' -%}
+            At Warehouse &middot; Available to Order
+          {%- when 'special_order' -%}
+            {%- if lead != blank -%}
+              At Warehouse &middot; Ready in {{ lead }} days
+            {%- else -%}
+              At Warehouse &middot; Available to Order
+            {%- endif -%}
+          {%- else -%}
+            {{ 'ubc.products.availability.unavailable' | t }}
+        {%- endcase -%}
+      </span>
+    {%- endif -%}
+    {%- if pickup_only -%}
+      <span class="availability availability--pickup" data-pickup-badge>
+        In-store pickup only &middot; Tampa
+      </span>
+    {%- endif -%}
+  </div>
+  {%- if detailed and pickup_only -%}
+    <p class="ubc-pickup-callout" data-pickup-callout>
+      <strong>In-Store Pickup Only (Tampa Showroom):</strong> Complete bicycles include certified UBC mechanic assembly &amp; safety inspection and must be picked up in store.
+    </p>
+  {%- elsif detailed and status == 'special_order' -%}
+    <p class="ubc-special-note">{{ 'ubc.products.special_order_explainer' | t }}</p>
+  {%- endif -%}
+</div>

@@ -1,0 +1,11 @@
+{%- comment -%}
+  [UBC-MOD] Bundled UBC lockup fallback when `settings.logo` is not uploaded in Dawn's native `sections/header.liquid`.
+{%- endcomment -%}
+{%- liquid
+  assign ubc_logo_h = settings.logo_width | times: 123 | divided_by: 600
+  assign ubc_logo_file = 'ubc-logo-navy.png'
+  if color_scheme == 'scheme-3' or color_scheme == 'scheme-4'
+    assign ubc_logo_file = 'ubc-logo-offwhite.png'
+  endif
+-%}
+<img src="{{ ubc_logo_file | asset_url }}" class="ubc-logo-img" width="{{ settings.logo_width }}" height="{{ ubc_logo_h }}" alt="{{ shop.name | escape }}">

@@ -1,8 +1,8 @@
 import { h, mount } from '../ui/dom.js';
 import { modal, pageHead, toast } from '../ui/components.js';
 import { availabilityBadge, margin, money, pct, REASON_LABELS } from '../ui/format.js';
-import { catalogTable, sessionStorageSafeSet } from './products.js';
-import { dollarsToCents } from './common.js';
+import { catalogTable, itemSearchTabs, renderItemPriceCell, sessionStorageSafeSet } from './products.js?v=40';
+import { dollarsToCents } from './common.js?v=40';
 
 /** Single-item price editor. Shows margin/MAP impact live; the server enforces the rules. */
 export function openPriceEditor(ctx, item, onSaved) {
@@ -50,23 +50,24 @@ export async function renderPricing(ctx) {
     memoryKey: 'pricing',
     sort: { key: 'margin', dir: 'asc' },
     columns: (c, reload) => [
-      { key: 'title', label: 'Product', sortable: true, cls: 'title-cell', render: (r) => h('div', h('a', { href: '#/products/' + r.id }, r.title), h('div.sku', r.sku)) },
-      { key: 'price', label: 'Price', num: true, sortable: true, render: (r) => money(r.priceCents) },
+      { key: 'title', label: 'Item', sortable: true, cls: 'title-cell', render: (r) => h('div', h('a', { href: '#/products/' + r.id }, r.title), h('div.sku', r.sku)) },
+      { key: 'price', label: 'Price / Sale', num: true, sortable: true, render: renderItemPriceCell },
       { key: 'cost', label: 'Cost', num: true, opt: true, render: (r) => (r.costCents === null ? h('span.badge.warn', 'none') : money(r.costCents)) },
       { key: 'margin', label: 'Margin', num: true, sortable: true, render: (r) => {
         const m = margin(r.priceCents, r.costCents);
         return h('span', { class: m !== null && m < 0.15 ? 'badge bad' : m !== null && m < 0.25 ? 'badge warn' : '' }, pct(m));
       } },
-      { key: 'map', label: 'MAP', num: true, opt: true, render: (r) => (r.mapPolicy === 'none' ? h('span.muted', '—') : money(r.mapCents)) },
-      { key: 'avail', label: 'Availability', opt: true, render: (r) => availabilityBadge(r.availability) },
+      { key: 'map', label: 'MAP Floor', num: true, opt: true, render: (r) => (r.mapPolicy === 'none' ? h('span.muted', '—') : money(r.mapCents)) },
+      { key: 'avail', label: 'Stock / Vendor', opt: true, render: (r) => availabilityBadge(r.availability) },
       { key: 'edit', label: '', render: (r) => (c.can('pricing.write') ? h('button.btn.sm', { onclick: () => openPriceEditor(c, r, reload) }, 'Edit') : null) },
     ],
     bulkActions: ctx.can('pricing.write') ? ({ filter }) => [
-      h('button.btn.sm.primary', { onclick: () => { sessionStorageSafeSet('ubc-promo-selection', JSON.stringify(filter)); ctx.navigate('#/promotions/new?from=selection'); } }, 'Bulk price change…'),
+      h('button.btn.sm.primary', { onclick: () => { sessionStorageSafeSet('ubc-promo-selection', JSON.stringify(filter)); ctx.navigate('#/promotions/new?from=selection'); } }, 'Bulk price rule…'),
     ] : null,
   });
   return h('div.stack',
-    pageHead('Prices & margins', 'Sorted by lowest margin first. Bulk changes go through the promotion engine so MAP and margin rules always apply.',
-      ctx.can('pricing.write') ? [h('a.btn.primary', { href: '#/promotions/new' }, 'Bulk price change')] : []),
+    pageHead('Item Search · Margins & MAP', 'Sorted by lowest margin first. Bulk price adjustments run through Promotions / Price Rules so MAP and margin floors always apply.',
+      ctx.can('pricing.write') ? [h('a.btn.primary', { href: '#/promotions/new' }, 'New Price Rule / Promo')] : []),
+    itemSearchTabs('margins'),
     table.el);
 }

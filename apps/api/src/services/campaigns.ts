@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   applicableLines, chooseExecutionStrategy, evaluateCampaign, planRestore, type CampaignLine, type CampaignSummary,
 } from '@ubc/business-rules';
-import type { CampaignRules, ItemFilter, MapException, PriceAdjustment } from '@ubc/shared';
+import type { CampaignRules, ItemFilter, MapException, PosSyncEventType, PriceAdjustment } from '@ubc/shared';
 import { withTransaction, type Pool, type PoolClient } from '@ubc/database';
 import { getSettings, itemFilterSchema, loadAllMatching } from './catalog.js';
 import { audit } from './audit.js';
@@ -27,9 +27,19 @@ export const rulesSchema = z.object({
   excludeWithoutCost: z.literal(true).default(true),
 }).partial();
 
+export const posSyncEventSchema = z.enum([
+  'black_friday',
+  'christmas',
+  'holiday_sale',
+  'annual_clearance',
+  'special_event',
+]);
+
 export const campaignInputSchema = z.object({
   name: z.string().min(3).max(120),
+  /** Default is 'online'; 'online_and_pos' is used only for major events (Black Friday, Navidad, etc.). */
   channel: z.enum(['online', 'online_and_pos']).default('online'),
+  posEventType: posSyncEventSchema.optional(),
   selection: itemFilterSchema,
   adjustment: adjustmentSchema,
   rules: rulesSchema.optional(),
@@ -73,25 +83,35 @@ async function storeLines(c: PoolClient, campaignId: string, lines: CampaignLine
   }
 }
 
+function inferPosEventType(name: string, explicit?: PosSyncEventType): PosSyncEventType {
+  if (explicit) return explicit;
+  const n = name.toLowerCase();
+  if (n.includes('black friday') || n.includes('cyber')) return 'black_friday';
+  if (n.includes('navidad') || n.includes('christmas') || n.includes('xmas')) return 'christmas';
+  if (n.includes('liquidaci') || n.includes('clearance')) return 'annual_clearance';
+  return 'special_event';
+}
+
 export async function createCampaign(ctx: AppContext, companyId: string, userId: string, input: CampaignInput) {
   const ev = await evaluate(ctx.pool, companyId, input.selection, input.adjustment, input.rules, input.channel);
+  const posEventType = input.channel === 'online_and_pos' ? inferPosEventType(input.name, input.posEventType) : null;
   return withTransaction(ctx.pool, async (c) => {
     const id = (await c.query<{ id: string }>(
       `INSERT INTO campaigns (company_id, name, channel, selection, adjustment, rules, strategy, starts_at, ends_at, summary, created_by)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
       [companyId, input.name, input.channel, JSON.stringify(input.selection), JSON.stringify(input.adjustment), JSON.stringify(ev.rules),
-        ev.strategy, input.startsAt ?? null, input.endsAt ?? null, JSON.stringify({ ...ev.summary, previewToken: ev.token }), userId],
+        ev.strategy, input.startsAt ?? null, input.endsAt ?? null, JSON.stringify({ ...ev.summary, previewToken: ev.token, posEventType }), userId],
     )).rows[0]!.id;
     await storeLines(c, id, ev.lines);
-    await audit(c, { companyId, userId, action: 'campaign.created', entityType: 'campaign', entityId: id, detail: { summary: ev.summary, strategy: ev.strategy } });
-    return { id, summary: ev.summary, strategy: ev.strategy, previewToken: ev.token };
+    await audit(c, { companyId, userId, action: 'campaign.created', entityType: 'campaign', entityId: id, detail: { summary: ev.summary, strategy: ev.strategy, channel: input.channel, posEventType } });
+    return { id, summary: ev.summary, strategy: ev.strategy, previewToken: ev.token, posEventType };
   });
 }
 
 interface CampaignRow {
   id: string; company_id: string; name: string; status: string; channel: 'online' | 'online_and_pos';
   selection: ItemFilter; adjustment: PriceAdjustment; rules: CampaignRules; strategy: string;
-  starts_at: Date | null; ends_at: Date | null; summary: (CampaignSummary & { previewToken: string }) | null;
+  starts_at: Date | null; ends_at: Date | null; summary: (CampaignSummary & { previewToken: string; posEventType?: PosSyncEventType | null }) | null;
   shopify_discount_id: string | null; updated_at: Date;
 }
 
@@ -106,9 +126,10 @@ export async function refreshPreview(ctx: AppContext, companyId: string, userId:
   const camp = await getCampaign(ctx.pool, companyId, id);
   if (camp.status !== 'draft') throw conflict('CAMPAIGN_NOT_DRAFT', 'Only draft campaigns can be re-previewed');
   const ev = await evaluate(ctx.pool, companyId, camp.selection, camp.adjustment, camp.rules, camp.channel);
+  const posEventType = camp.summary?.posEventType ?? (camp.channel === 'online_and_pos' ? inferPosEventType(camp.name) : null);
   await withTransaction(ctx.pool, async (c) => {
     await storeLines(c, id, ev.lines);
-    await c.query(`UPDATE campaigns SET summary = $2, strategy = $3, updated_at = now() WHERE id = $1`, [id, JSON.stringify({ ...ev.summary, previewToken: ev.token }), ev.strategy]);
+    await c.query(`UPDATE campaigns SET summary = $2, strategy = $3, updated_at = now() WHERE id = $1`, [id, JSON.stringify({ ...ev.summary, previewToken: ev.token, posEventType }), ev.strategy]);
     await audit(c, { companyId, userId, action: 'campaign.previewed', entityType: 'campaign', entityId: id });
   });
   return { summary: ev.summary, strategy: ev.strategy, previewToken: ev.token };
@@ -132,7 +153,7 @@ export async function approveCampaign(ctx: AppContext, companyId: string, userId
   if (camp.ends_at && new Date(camp.ends_at).getTime() <= now) throw new HttpError(422, 'ENDS_IN_PAST', 'Campaign end date is in the past');
   return withTransaction(ctx.pool, async (c) => {
     await c.query(`UPDATE campaigns SET status = 'scheduled', approved_by = $2, approved_at = now(), updated_at = now() WHERE id = $1`, [id, userId]);
-    await audit(c, { companyId, userId, action: 'campaign.approved', entityType: 'campaign', entityId: id, detail: { summary: ev.summary, startNow } });
+    await audit(c, { companyId, userId, action: 'campaign.approved', entityType: 'campaign', entityId: id, detail: { summary: ev.summary, startNow, channel: camp.channel, posEventType: camp.summary?.posEventType ?? null } });
     let jobId: number | null = null;
     if (startNow) jobId = (await enqueue(c, { companyId, type: 'campaign.apply', payload: { campaignId: id }, idempotencyKey: `campaign:apply:${id}`, createdBy: userId })).id;
     return { status: 'scheduled', jobId, startNow };
@@ -172,15 +193,31 @@ export async function applyCampaignJob(ctx: AppContext, companyId: string, campa
 
   if (strategy === 'shopify_automatic_discount') {
     // Prices in our catalog stay untouched; Shopify computes the discount at checkout.
-    const products = await ctx.pool.query<{ external_id: string }>(
-      `SELECT DISTINCT e.external_id FROM campaign_lines cl JOIN variants v ON v.id = cl.variant_id
-       JOIN external_ids e ON e.entity_type = 'product' AND e.entity_id = v.product_id AND e.system = 'shopify'
-       WHERE cl.campaign_id = $1 AND cl.status IN ('ok','warning')`, [campaignId]);
+    const updateOnly = ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only';
+    const products = updateOnly
+      ? { rows: [] as { external_id: string }[] }
+      : await ctx.pool.query<{ external_id: string }>(
+        `SELECT DISTINCT e.external_id FROM campaign_lines cl JOIN variants v ON v.id = cl.variant_id
+         JOIN external_ids e ON e.entity_type = 'product' AND e.entity_id = v.product_id AND e.system = 'shopify'
+         WHERE cl.campaign_id = $1 AND cl.status IN ('ok','warning')`, [campaignId]);
+    // Workstand-owned store: one Shopify product groups several sizes/colors, so target the exact
+    // variants matched by UPC (never the whole product: other variants may be excluded or under MAP).
+    const variants = updateOnly
+      ? await ctx.pool.query<{ shopify_variant_id: string }>(
+        `SELECT DISTINCT l.shopify_variant_id FROM campaign_lines cl
+         JOIN shopify_variant_links l ON l.variant_id = cl.variant_id AND l.company_id = $2 AND l.shop_domain = $3
+         WHERE cl.campaign_id = $1 AND cl.status IN ('ok','warning')`,
+        [campaignId, companyId, String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase()])
+      : { rows: [] as { shopify_variant_id: string }[] };
+    if (updateOnly && !variants.rows.length) {
+      throw Object.assign(new Error('None of the campaign items exist in the Shopify store (no UPC match)'), { code: 'NO_SHOPIFY_TARGETS' });
+    }
     const discountId = await ctx.connectors.shopify.createAutomaticDiscount({
       title: camp.name,
       percentOff: camp.adjustment.type === 'percent_off' ? camp.adjustment.value : undefined,
       amountOffCents: camp.adjustment.type === 'amount_off' ? camp.adjustment.value : undefined,
       productIds: products.rows.map((r) => r.external_id),
+      variantIds: updateOnly ? variants.rows.map((r) => r.shopify_variant_id) : undefined,
       startsAt: new Date().toISOString(),
       endsAt: camp.ends_at ? new Date(camp.ends_at).toISOString() : null,
     });
@@ -214,19 +251,40 @@ export async function applyCampaignJob(ctx: AppContext, companyId: string, campa
       applied += chunk.length - changed;
       await setProgress(ctx.pool, jobId, { done: Math.min(i + 250, todo.length), total: todo.length, applied, skippedChanged });
     }
-    await pushPrices(ctx, campaignId, camp.channel, 'new');
+    await pushPrices(ctx, campaignId, camp.channel, 'new', jobId);
   }
 
+  const posEventType = camp.summary?.posEventType ?? null;
   await withTransaction(ctx.pool, async (c) => {
     await c.query(`UPDATE campaigns SET status = 'active', summary = $2, updated_at = now() WHERE id = $1`,
-      [campaignId, JSON.stringify({ ...ev.summary, previewToken: ev.token, applied, skippedChanged })]);
-    await audit(c, { companyId, action: 'campaign.applied', entityType: 'campaign', entityId: campaignId, detail: { applied, skippedChanged, strategy } });
+      [campaignId, JSON.stringify({ ...ev.summary, previewToken: ev.token, posEventType, applied, skippedChanged })]);
+    await audit(c, { companyId, action: 'campaign.applied', entityType: 'campaign', entityId: campaignId, detail: { applied, skippedChanged, strategy, channel: camp.channel, posEventType } });
   });
   return { applied, skippedChanged, strategy };
 }
 
-/** Push applied (or restored) prices to Shopify, and to the POS only for online_and_pos campaigns. */
-async function pushPrices(ctx: AppContext, campaignId: string, channel: string, which: 'new' | 'old') {
+/**
+ * Push applied (or restored) prices to Shopify Plus, and to Lightspeed POS
+ * ONLY for authorised omnichannel event campaigns (`channel === 'online_and_pos'`,
+ * e.g. Black Friday, Navidad).
+ */
+async function pushPrices(ctx: AppContext, campaignId: string, channel: string, which: 'new' | 'old', jobId?: number) {
+  if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only') {
+    await pushPricesUpdateOnly(ctx, campaignId, which, jobId);
+    if (channel === 'online_and_pos') {
+      const pl = await ctx.pool.query<{ lightspeed_item_id: string | null; old_price_cents: number; new_price_cents: number }>(
+        `SELECT cl.old_price_cents, cl.new_price_cents,
+                (SELECT external_id FROM external_ids e WHERE e.entity_type='variant' AND e.entity_id=cl.variant_id AND e.system='lightspeed_r') AS lightspeed_item_id
+         FROM campaign_lines cl
+         WHERE cl.campaign_id = $1 AND cl.applied_at IS NOT NULL AND ${which === 'old' ? `cl.restore_result = 'restored'` : 'cl.restored_at IS NULL'}`,
+        [campaignId]);
+      const pos = pl.rows
+        .filter((l) => l.lightspeed_item_id)
+        .map((l) => ({ lightspeedItemId: l.lightspeed_item_id!, priceCents: which === 'new' ? l.new_price_cents : l.old_price_cents }));
+      if (pos.length) await ctx.connectors.pos.updatePrices(pos);
+    }
+    return;
+  }
   const lines = await ctx.pool.query<LineRow>(
     `SELECT cl.variant_id, cl.old_price_cents, cl.new_price_cents, cl.status, cl.applied_at, v.product_id,
             (SELECT external_id FROM external_ids e WHERE e.entity_type='variant' AND e.entity_id=v.id AND e.system='shopify') AS shopify_variant_id,
@@ -242,10 +300,84 @@ async function pushPrices(ctx: AppContext, campaignId: string, channel: string, 
     arr.push({ variantId: l.shopify_variant_id, priceCents: which === 'new' ? l.new_price_cents : l.old_price_cents, compareAtCents: which === 'new' ? l.old_price_cents : null });
     byProduct.set(l.shopify_product_id, arr);
   }
-  for (const [pid, updates] of byProduct) await ctx.connectors.shopify.updateVariantPrices(pid, updates);
+
+  // Bounded 4-way concurrency across products; ShopifyAdminClient enforces leaky-bucket cost pacing automatically.
+  const entries = [...byProduct.entries()];
+  const CONCURRENCY = 4;
+  for (let i = 0; i < entries.length; i += CONCURRENCY) {
+    const wave = entries.slice(i, i + CONCURRENCY);
+    await Promise.all(wave.map(([pid, updates]) => ctx.connectors.shopify.updateVariantPrices(pid, updates)));
+    if (jobId && (i + CONCURRENCY) % 40 === 0) {
+      await setProgress(ctx.pool, jobId, {
+        phase: 'shopify_price_push',
+        pushedProducts: Math.min(i + CONCURRENCY, entries.length),
+        totalProducts: entries.length,
+      });
+    }
+  }
+
   if (channel === 'online_and_pos') {
-    const pos = lines.rows.filter((l) => l.lightspeed_item_id).map((l) => ({ lightspeedItemId: l.lightspeed_item_id!, priceCents: which === 'new' ? l.new_price_cents : l.old_price_cents }));
+    const pos = lines.rows
+      .filter((l) => l.lightspeed_item_id)
+      .map((l) => ({ lightspeedItemId: l.lightspeed_item_id!, priceCents: which === 'new' ? l.new_price_cents : l.old_price_cents }));
     if (pos.length) await ctx.connectors.pos.updatePrices(pos);
+  }
+}
+
+/**
+ * Workstand-owned store (SHOPIFY_SYNC_MODE=update_only): push to the variants matched by UPC in
+ * `shopify_variant_links`. Promo price with the regular price crossed out (the higher of the
+ * pre-promo price and Lightspeed's Default when the item already had a SALE PRICE); on restore,
+ * back to the current Lightspeed price. Every write is logged in `shopify_price_log`.
+ */
+async function pushPricesUpdateOnly(ctx: AppContext, campaignId: string, which: 'new' | 'old', jobId?: number) {
+  const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+  type Row = {
+    link_id: number; variant_id: string; company_id: string; shopify_product_id: string; shopify_variant_id: string;
+    last_price_cents: number | null; last_compare_at_cents: number | null;
+    old_price_cents: number; new_price_cents: number; compare_at_cents: number | null; price_cents: number;
+  };
+  const rows = await ctx.pool.query<Row>(
+    `SELECT l.id AS link_id, l.variant_id, l.company_id, l.shopify_product_id, l.shopify_variant_id, l.last_price_cents, l.last_compare_at_cents,
+            cl.old_price_cents, cl.new_price_cents, v.compare_at_cents, v.price_cents
+     FROM campaign_lines cl
+     JOIN variants v ON v.id = cl.variant_id
+     JOIN shopify_variant_links l ON l.variant_id = cl.variant_id AND l.shop_domain = $2 AND l.company_id = v.company_id
+     WHERE cl.campaign_id = $1 AND cl.applied_at IS NOT NULL AND ${which === 'old' ? `cl.restore_result = 'restored'` : 'cl.restored_at IS NULL'}`,
+    [campaignId, shop]);
+  const byProduct = new Map<string, Row[]>();
+  for (const r of rows.rows) byProduct.set(r.shopify_product_id, [...(byProduct.get(r.shopify_product_id) ?? []), r]);
+  const target = (r: Row) => {
+    if (which === 'new') {
+      const regular = Math.max(r.old_price_cents, r.compare_at_cents ?? 0);
+      return { p: r.new_price_cents, c: regular > r.new_price_cents ? regular : null };
+    }
+    const p = r.price_cents;
+    return { p, c: r.compare_at_cents && r.compare_at_cents > p ? r.compare_at_cents : null };
+  };
+  const entries = [...byProduct.entries()];
+  let done = 0;
+  for (let i = 0; i < entries.length; i += 4) {
+    const wave = entries.slice(i, i + 4);
+    await Promise.all(wave.map(async ([pid, rs]) => {
+      const ups = rs.map((r) => ({ r, ...target(r) }));
+      await ctx.connectors.shopify.updateVariantPrices(pid, ups.map((u) => ({ variantId: u.r.shopify_variant_id, priceCents: u.p, compareAtCents: u.c })));
+      await ctx.pool.query(
+        `INSERT INTO shopify_price_log (company_id, shop_domain, variant_id, shopify_variant_id, old_price_cents, old_compare_at_cents, new_price_cents, new_compare_at_cents, source)
+         SELECT r.co, $1, r.vid, r.svid, r.op, r.oc, r.np, r.nc, $2
+         FROM jsonb_to_recordset($3::jsonb) AS r(co uuid, vid uuid, svid text, op int, oc int, np int, nc int)`,
+        [shop, which === 'new' ? `campaign:${campaignId}` : `campaign_restore:${campaignId}`, JSON.stringify(ups.map((u) => ({
+          co: u.r.company_id, vid: u.r.variant_id, svid: u.r.shopify_variant_id, op: u.r.last_price_cents, oc: u.r.last_compare_at_cents, np: u.p, nc: u.c,
+        })))],
+      );
+      await ctx.pool.query(
+        `UPDATE shopify_variant_links l SET last_price_cents = r.p, last_compare_at_cents = r.c, last_pushed_at = now(), updated_at = now()
+         FROM jsonb_to_recordset($1::jsonb) AS r(id bigint, p int, c int) WHERE l.id = r.id`,
+        [JSON.stringify(ups.map((u) => ({ id: u.r.link_id, p: u.p, c: u.c })))],
+      );
+    }));
+    done += wave.length;
+    if (jobId && done % 40 < 4) await setProgress(ctx.pool, jobId, { phase: 'shopify_price_push', pushedProducts: done, totalProducts: entries.length });
   }
 }
 

@@ -1,0 +1,631 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v21 — Unified Storefront Showcase + Promos, Discounts & Activities Hub (#new-arrivals)
+  Consolidates Promos/Activities + New Arrivals + Helmets/Gear + Hydration + OEM Parts + Featured Bikes into ONE compact, zero-bloat section.
+  Preserves Luminous Classic (#FEFDF3 / #F3F1E7) aesthetic across Classic, Black Friday, Christmas & July 4th editions · 100% Transparent PNGs.
+{%- endcomment -%}
+{%- liquid
+  assign edition = settings.ubc_edition | default: 'classic'
+  assign p_helmet = all_products['bell-z20-mips-road-helmet-medium'] | default: all_products['propero-4']
+  assign p_tire = all_products['continental-grand-prix-5000-700x28c-tire'] | default: all_products['ground-control-control-2bliss-ready-t5-29-inch']
+  assign p_tarmac = all_products['specialized-tarmac-sl7-sport-56cm'] | default: all_products['aethos-2-expert-di2']
+
+  assign helmet_vid = ''
+  assign helmet_url = routes.collections_url | append: '/all'
+  assign helmet_price = 172.49
+  if p_helmet != blank
+    assign helmet_vid = p_helmet.selected_or_first_available_variant.id
+    assign helmet_url = p_helmet.url
+    assign helmet_price = p_helmet.price | divided_by: 100.0
+  endif
+
+  assign tire_vid = helmet_vid
+  if collections['bicycle-tires'] != blank
+    assign tire_url = collections['bicycle-tires'].url
+  else
+    assign tire_url = routes.collections_url | append: '/all'
+  endif
+  assign tire_price = 89.95
+  if p_tire != blank
+    assign tire_vid = p_tire.selected_or_first_available_variant.id
+    assign tire_url = p_tire.url
+    assign tire_price = p_tire.price | divided_by: 100.0
+  endif
+
+  if collections['bikes'] != blank
+    assign tarmac_url = collections['bikes'].url
+  else
+    assign tarmac_url = routes.search_url | append: '?type=product&q=Specialized+Allez'
+  endif
+  if p_tarmac != blank
+    assign tarmac_url = p_tarmac.url
+  endif
+
+  assign catalog_col = section.settings.catalog_collection
+  assign catalog_url = catalog_col.url | default: routes.all_products_collection_url
+  assign browse_label = section.settings.browse_label | default: 'Browse All 20,000+ Items'
+-%}
+
+<div class="fb-scope">
+  <section class="fb-sec new-arrivals-sec" id="new-arrivals">
+    <span id="shop" class="fb-anchor-alias" aria-hidden="true"></span>
+    <span id="gear" class="fb-anchor-alias" aria-hidden="true"></span>
+    <span id="instock" class="fb-anchor-alias" aria-hidden="true"></span>
+
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div>
+          {%- if edition == 'black_friday' -%}
+            <span class="eyebrow reveal" data-es="Black Friday UBC &middot; Promos, Descuentos y Destacados">Black Friday Event &middot; Promos, Discounts &amp; Storewide Picks</span>
+            <h2 class="h2 reveal" data-es="Ofertas Black Friday. <em>Toda la tienda activa.</em>">Black Friday deals. <em>Every department live.</em></h2>
+          {%- elsif edition == 'christmas' -%}
+            <span class="eyebrow reveal" data-es="Navidad en UBC &middot; Regalos, Apartados y Promos">Holiday Gift Hub &middot; Promos, Free Bike Hold &amp; Rider Gifts</span>
+            <h2 class="h2 reveal" data-es="Regalos ciclistas y <em>promos de Navidad.</em>">Holiday gift picks &amp; <em>festive promos.</em></h2>
+          {%- elsif edition == 'july_4' -%}
+            <span class="eyebrow reveal" data-es="Especial 4 de Julio &middot; Descuentos de Verano y Rodadas">July 4th Event &middot; Summer Markdowns, Hydration &amp; Trail Rides</span>
+            <h2 class="h2 reveal" data-es="Promos de verano. <em>Listos para rodar.</em>">Summer promos &amp; <em>trail-ready gear.</em></h2>
+          {%- else -%}
+            <span class="eyebrow reveal" data-es="Promos, Actividades y Tienda &middot; 20,000+ Productos">Promos, Activities &amp; Pro-Shop &middot; 20,000+ Items</span>
+            <h2 class="h2 reveal" data-es="Mucho más que bicis. <em>Promos y equipo hoy.</em>">More than bikes. <em>Active promos &amp; fresh gear.</em></h2>
+          {%- endif -%}
+        </div>
+
+        <a class="link-arrow reveal" href="{{ catalog_url }}">
+          <span data-es="Explorar los 20,000+ productos">{{ browse_label | escape }}</span>
+          <svg><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+
+      {%- comment -%} Compact 3-Card Promos, Discounts & Activities Strip (Classic Luminous Pattern) {%- endcomment -%}
+      <div class="promo-strip reveal" aria-label="Store promotions, discounts and activities">
+        {%- if section.blocks.size > 0 -%}
+          {%- for block in section.blocks -%}
+            <a class="promo-card promo-card--{{ block.settings.tone | default: 'paper' }}" href="{{ block.settings.link | default: '#new-arrivals' }}" {{ block.shopify_attributes }}>
+              <div class="promo-card-top">
+                <span class="promo-pill">{{ block.settings.badge | escape }}</span>
+                <span class="promo-kicker">{{ block.settings.kicker | escape }}</span>
+              </div>
+              <h3>{{ block.settings.heading | escape }}</h3>
+              <p>{{ block.settings.text | escape }}</p>
+              <span class="promo-cta"><span>{{ block.settings.cta | escape }}</span> <svg><use href="#i-arrow"/></svg></span>
+            </a>
+          {%- endfor -%}
+        {%- elsif edition == 'black_friday' -%}
+          <a class="promo-card promo-card--navy" href="#finder">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--coral" data-es="Hasta $500 Off">Up to $500 OFF</span>
+              <span class="promo-kicker" data-es="Bicis y E-Bikes">Bikes &amp; E-Bikes</span>
+            </div>
+            <h3 data-es="Doorbusters en Ruta, Trail y Turbo">In-Stock Turbo, Carbon &amp; MTB Deals</h3>
+            <p data-es="Descuentos directos en piso + 0% APR y respaldo 110% precio garantizado.">Direct showroom markdowns + 0% APR financing &amp; 110% Price Guarantee.</p>
+            <span class="promo-cta"><span data-es="Ver bicis en oferta">See Bike Deals</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--paper" href="#new-arrivals" data-na-jump="deals">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--gold" data-es="20% – 30% Off">20% – 30% OFF</span>
+              <span class="promo-kicker" data-es="Cascos, Llantas y Piezas">Gear, Tires &amp; Parts</span>
+            </div>
+            <h3 data-es="Cascos MIPS, GP5000 y Accesorios">MIPS Helmets, GP5000 &amp; Pro Saddles</h3>
+            <p data-es="Precios Black Friday en cascos 5 estrellas, luces nocturnas, nutrición y componentes.">Black Friday pricing on 5-star helmets, Exposure lights, fuel &amp; OEM parts.</p>
+            <span class="promo-cta"><span data-es="Filtrar ofertas">Filter BF Deals</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--gold" href="#service">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--ink" data-es="Bono de Taller">$25 Workshop Bonus</span>
+              <span class="promo-kicker" data-es="Sin Cita &middot; Tampa">Walk-In Service</span>
+            </div>
+            <h3 data-es="Lavado Pro Gratis o $25 Off Overhaul">Free Drivetrain Wash or $25 Off Overhaul</h3>
+            <p data-es="Trae tu bici, scooter o e-bike sin cita esta semana al taller de Manny y Ashton.">Drop off any bike, scooter or e-bike this week — no appointment required.</p>
+            <span class="promo-cta"><span data-es="Ir al taller">Visit Workshop</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+        {%- elsif edition == 'christmas' -%}
+          <a class="promo-card promo-card--navy" href="#finder">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--gold" data-es="Apartado Gratis">Free Layaway</span>
+              <span class="promo-kicker" data-es="Hasta Dic 24">Hold Until Dec 24</span>
+            </div>
+            <h3 data-es="Apartado Navideño y Armado Pro">Free Holiday Bike Hold &amp; Assembly</h3>
+            <p data-es="Elige la bici hoy; el equipo de Manny y Ashton la arma, ajusta y guarda hasta Nochebuena.">Pick their dream bike today; Manny &amp; Ashton's crew builds and stores it until Christmas Eve.</p>
+            <span class="promo-cta"><span data-es="Elegir bici regalo">Find Gift Bikes</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--paper" href="#new-arrivals" data-na-jump="deals">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--coral" data-es="Combo -15%">Save 15% Bundle</span>
+              <span class="promo-kicker" data-es="Regalos desde $18">Gifts From $18</span>
+            </div>
+            <h3 data-es="Cascos, Luces y Detalles Ciclistas">Stocking Stuffers, Lights &amp; Helmets</h3>
+            <p data-es="Combina casco, luces o hidratación Skratch/GU con cambio extendido hasta enero.">Mix &amp; match helmets, lights &amp; Skratch/GU fuel with extended January exchanges.</p>
+            <span class="promo-cta"><span data-es="Ver ideas de regalo">Shop Gift Picks</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--gold" href="#rentals">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--ink" data-es="Actividad Familiar">Holiday Trail Days</span>
+              <span class="promo-kicker" data-es="Alafia + Gift Cards">Alafia &amp; Gift Cards</span>
+            </div>
+            <h3 data-es="Rodadas en Familia + Bono de $15">Family Trail Rentals + $15 Bonus Card</h3>
+            <p data-es="Alquila MTB en Alafia River con la familia o lleva Gift Cards con bono para taller.">Ride Alafia trails with visiting family or grab a $100+ Gift Card with a $15 shop bonus.</p>
+            <span class="promo-cta"><span data-es="Reservar en Alafia">Explore Alafia</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+        {%- elsif edition == 'july_4' -%}
+          <a class="promo-card promo-card--navy" href="#finder">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--coral" data-es="Especial 4 de Julio">July 4th Markdowns</span>
+              <span class="promo-kicker" data-es="Hasta $350 Off">Up to $350 OFF</span>
+            </div>
+            <h3 data-es="Ofertas de Verano en E-Bikes y MTB">Summer Ride Sale: E-Bikes &amp; Cruisers</h3>
+            <p data-es="Modelos listos para llevar el mismo día en Tampa con 0% APR disponible.">Same-day road-ready builds on the Tampa showroom floor with 0% APR options.</p>
+            <span class="promo-cta"><span data-es="Ver modelos">Browse Summer Deals</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--paper" href="#stores">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--gold" data-es="Veteranos y Policías">Veterans &amp; Police</span>
+              <span class="promo-kicker" data-es="Fundada por Manny &middot; 1972">Founded by Manny</span>
+            </div>
+            <h3 data-es="Descuento en Tienda a Veteranos y Policías">In-Store Discounts for Veterans &amp; Police</h3>
+            <p data-es="Fundada por un veterano &mdash; presenta tu identificación militar o policial en Tampa para tu descuento.">Veteran-founded since 1972 &mdash; show military, veteran or police ID in Tampa for honored savings.</p>
+            <span class="promo-cta"><span data-es="Visitar tienda">Visit Showroom</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--gold" href="#rentals">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--ink" data-es="Actividad 8:00 AM">Morning Trail Ride</span>
+              <span class="promo-kicker" data-es="Alafia River Park">Trailhead Event</span>
+            </div>
+            <h3 data-es="Rodada Matutina del 4 de Julio">July 4th Weekend Alafia Trail Sessions</h3>
+            <p data-es="Salidas tempranas desde las 8 AM en nuestra tienda dentro de Alafia River State Park.">Beat the midday sun — rentals, cold hydration &amp; trail prep open at 8 AM inside the park.</p>
+            <span class="promo-cta"><span data-es="Ver tienda Alafia">Alafia Details</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+        {%- else -%}
+          <a class="promo-card promo-card--navy" href="#new-arrivals" data-na-jump="deals">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--coral" data-es="Combo -15%">15% OFF Bundle</span>
+              <span class="promo-kicker" data-es="Promo de Tienda">In-Store &amp; Online</span>
+            </div>
+            <h3 data-es="Combo Casco, Llantas e Hidratación">Helmet, Tire &amp; Hydration Rider Pack</h3>
+            <p data-es="15% Off en accesorios, cámaras o Skratch al llevar cualquier casco MIPS o par de llantas.">Save 15% on hydration, tubes or lights when paired with any MIPS helmet or tire set.</p>
+            <span class="promo-cta"><span data-es="Ver artículos en promo">Shop Promo Picks</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--paper" href="#service">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--gold" data-es="Promo de Taller">Workshop Perk</span>
+              <span class="promo-kicker" data-es="Lun – Mié Sin Cita">Mon – Wed Walk-In</span>
+            </div>
+            <h3 data-es="Revisión Gratis + Bono en Tune-Up">Free Safety Check &amp; Tune-Up Bonus</h3>
+            <p data-es="Diagnóstico sin costo todo el día + limpieza profunda incluida en Tune-Up Nivel 2 ($160).">Free walk-in estimate on bikes, e-bikes &amp; scooters + drivetrain wash in Level 2 Tune-Ups.</p>
+            <span class="promo-cta"><span data-es="Conocer el taller">See Tune-Up Menu</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+          <a class="promo-card promo-card--gold" href="#rentals">
+            <div class="promo-card-top">
+              <span class="promo-pill promo-pill--ink" data-es="Fines de Semana">Weekend Activity</span>
+              <span class="promo-kicker" data-es="Tampa y Alafia">Rides &amp; Sizing</span>
+            </div>
+            <h3 data-es="Alafia desde 8 AM + Asesoría 1 a 1">Alafia Trail Mornings &amp; Free Bike Sizing</h3>
+            <p data-es="Alquiler en el sendero sábados y domingos + asesoría honesta de primera bici en Tampa.">Weekend trail rentals at 8 AM in Lithia + free first-bike &amp; saddle sizing in Tampa.</p>
+            <span class="promo-cta"><span data-es="Ver actividades">Explore Alafia</span> <svg><use href="#i-arrow"/></svg></span>
+          </a>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%} Unified Storewide Department Tabs + Quick Search {%- endcomment -%}
+      <div class="na-toolbar reveal">
+        <div class="chips scroll-chips" id="newArrivalsTabs" role="group" aria-label="Filter store catalog by department">
+          <button class="chip chip--sm" type="button" data-na-cat="all" aria-pressed="true" data-es="Destacados">All Featured</button>
+          <button class="chip chip--sm" type="button" data-na-cat="deals" aria-pressed="false" data-es="Promos y Combos">Deals &amp; Bundles</button>
+          <button class="chip chip--sm" type="button" data-na-cat="helmets" aria-pressed="false" data-es="Cascos y Luces">Helmets &amp; Lights</button>
+          <button class="chip chip--sm" type="button" data-na-cat="nutrition" aria-pressed="false" data-es="Hidratación y Energía">Hydration &amp; Fuel</button>
+          <button class="chip chip--sm" type="button" data-na-cat="parts" aria-pressed="false" data-es="Llantas y Piezas OEM">Tires &amp; OEM Parts</button>
+          <button class="chip chip--sm" type="button" data-na-cat="bikes" aria-pressed="false" data-es="Bicis y E-Bikes">Bikes &amp; E-Bikes</button>
+        </div>
+
+        <div class="na-search-mini">
+          <svg aria-hidden="true"><use href="#i-search"/></svg>
+          <label class="sr-only" for="naSearchInput">Filter featured gear and bikes</label>
+          <input
+            id="naSearchInput"
+            type="search"
+            placeholder="Filter helmets, GP5000, Skratch…"
+            data-es-placeholder="Filtrar cascos, GP5000, Skratch…"
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <div class="grid-products na-grid" id="newArrivalsGrid" aria-live="polite"></div>
+
+      <div class="na-more-row" id="naMoreWrap" hidden>
+        <button type="button" class="fb-btn outline sm" id="naMoreBtn" aria-expanded="false">
+          <span id="naMoreTxt" data-es="Mostrar 4 artículos más">Show 4 More Items</span>
+          <svg aria-hidden="true"><use href="#i-chev"/></svg>
+        </button>
+        <a class="link-arrow" href="{{ routes.collections_url }}/all">
+          <span data-es="Ir al catálogo completo (20,000+ SKUs)">Full Online Catalog (20,000+ SKUs)</span>
+          <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <script type="application/json" id="FableNewArrivalsData">
+      {%- if collections['helmets'] != blank and collections['helmets'].products_count > 5 -%}
+        [
+          {%- assign na_emitted = 0 -%}
+          {%- assign na_sources = 'helmets:helmets:4,hydration-nutrition:nutrition:4,tires-tubes:parts:4,bikes:bikes:4' | split: ',' -%}
+          {%- for src in na_sources -%}
+            {%- assign sp = src | split: ':' -%}
+            {%- assign sh = sp[0] -%}
+            {%- assign scat = sp[1] -%}
+            {%- assign sc = collections[sh] -%}
+            {%- if sc != blank and sc.products_count > 0 -%}
+              {%- assign group_count = 0 -%}
+              {%- for p in sc.products limit: 16 -%}
+                {%- if group_count >= 4 -%}{%- break -%}{%- endif -%}
+                {%- if p.featured_image == blank or p.available == false -%}{%- continue -%}{%- endif -%}
+                {%- liquid
+                  assign v = p.selected_or_first_available_variant
+                  assign price_num = v.price | divided_by: 100.0
+                  assign bf_num = v.price | times: 88 | divided_by: 10000.0
+                  assign xmas_num = v.price | times: 90 | divided_by: 10000.0
+                  assign july_num = v.price | times: 90 | divided_by: 10000.0
+                  assign is_pickup = false
+                  assign vd = p.vendor | downcase
+                  if scat == 'bikes' and vd == 'specialized'
+                    assign is_pickup = true
+                  endif
+                  assign is_deal = false
+                  if v.compare_at_price > v.price or group_count == 0
+                    assign is_deal = true
+                  endif
+                  assign store_lbl_en = 'In Stock Today'
+                  assign store_lbl_es = 'En Stock Hoy'
+                  if p.tags contains 'ubc-tampa-stock' and p.tags contains 'ubc-alafia-stock'
+                    assign store_lbl_en = 'Tampa & Alafia'
+                    assign store_lbl_es = 'Tampa y Alafia'
+                  elsif p.tags contains 'ubc-alafia-stock'
+                    assign store_lbl_en = 'Alafia Park'
+                    assign store_lbl_es = 'En Alafia'
+                  elsif p.tags contains 'ubc-tampa-stock'
+                    assign store_lbl_en = 'UBC Tampa'
+                    assign store_lbl_es = 'En Tampa'
+                  endif
+                -%}
+                {%- if na_emitted > 0 -%},{%- endif -%}
+                {
+                  "id": {{ p.handle | prepend: 'na-' | json }},
+                  "cat": {{ scat | json }},
+                  "promo": {{ is_deal | json }},
+                  "b": {{ p.vendor | default: 'UBC' | json }},
+                  "n": {{ p.title | json }},
+                  "p": {{ price_num }},
+                  "bfPrice": {{ bf_num }},
+                  "xmasPrice": {{ xmas_num }},
+                  "julyPrice": {{ july_num }},
+                  "u": {{ p.url | json }},
+                  "variantId": {{ v.id | json }},
+                  "img": {{ p.featured_image | image_url: width: 800 | json }},
+                  "pickupOnly": {{ is_pickup | json }},
+                  "tagClassic": [{{ store_lbl_en | json }}, {{ store_lbl_es | json }}],
+                  "tagBf": ["Black Friday Pick", "Selección BF"],
+                  "tagXmas": ["Holiday Rider Gift", "Regalo Ciclista"],
+                  "tagJuly": ["Summer Ride Pick", "Favorito Verano"]
+                }
+                {%- assign na_emitted = na_emitted | plus: 1 -%}
+                {%- assign group_count = group_count | plus: 1 -%}
+              {%- endfor -%}
+            {%- endif -%}
+          {%- endfor -%}
+        ]
+      {%- else -%}
+      [
+        {
+          "id": "na-propero4",
+          "cat": "helmets",
+          "promo": true,
+          "b": "Specialized",
+          "n": "Propero 4 MIPS Helmet",
+          "p": 199.99,
+          "promoPrice": 179.99,
+          "bfPrice": 159.99,
+          "xmasPrice": 169.99,
+          "julyPrice": 169.99,
+          "u": {{ helmet_url | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'spz-propero-4.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["10% Off · 5-Star VT", "10% Off · MIPS"],
+          "tagBf": ["Save 20% · BF", "20% Off · BF"],
+          "tagXmas": ["Top Rider Gift", "Regalo Estrella"],
+          "tagJuly": ["Summer Aero Pick", "Oferta Verano"]
+        },
+        {
+          "id": "na-skratch",
+          "cat": "nutrition",
+          "promo": true,
+          "b": "Skratch Labs",
+          "n": "Sport Hydration Drink Mix",
+          "p": 24.95,
+          "promoPrice": 21.95,
+          "bfPrice": 19.95,
+          "xmasPrice": 20.95,
+          "julyPrice": 19.95,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'supp-skratch-hydration.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["Bundle Save 15%", "Combo -15%"],
+          "tagBf": ["BF Fuel Deal", "Oferta BF"],
+          "tagXmas": ["Stocking Stuffer", "Detalle Ciclista"],
+          "tagJuly": ["3-for-2 Summer Fuel", "Promo Hidratación"]
+        },
+        {
+          "id": "na-gp5000",
+          "cat": "parts",
+          "promo": true,
+          "b": "Continental",
+          "n": "Grand Prix 5000 700x28c Tire",
+          "p": {{ tire_price | json }},
+          "promoPrice": 79.95,
+          "bfPrice": 69.95,
+          "xmasPrice": 74.95,
+          "julyPrice": 74.95,
+          "u": {{ tire_url | json }},
+          "variantId": {{ tire_vid | json }},
+          "img": {{ 'spz-cannibal-tire.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["Pair Promo", "Promo Par"],
+          "tagBf": ["Save $20 · BF", "Ahorra $20"],
+          "tagXmas": ["Road Upgrade", "Regalo Ruta"],
+          "tagJuly": ["Summer Miles Deal", "Oferta Ruta"]
+        },
+        {
+          "id": "na-allez-2026",
+          "cat": "bikes",
+          "promo": false,
+          "b": "Specialized",
+          "n": "Allez 2026 Road Build",
+          "p": 1599.99,
+          "bfPrice": 1399.99,
+          "xmasPrice": 1499.99,
+          "julyPrice": 1449.99,
+          "u": {{ tarmac_url | json }},
+          "img": {{ 'spz-allez-2026.png' | asset_url | json }},
+          "pickupOnly": true,
+          "tagClassic": ["New 2026 Arrival", "Nuevo Modelo 2026"],
+          "tagBf": ["Save $200 · BF", "Ahorra $200"],
+          "tagXmas": ["Free Hold to Dec 24", "Apartado Gratis"],
+          "tagJuly": ["Save $150 · July 4", "Ahorra $150"]
+        },
+        {
+          "id": "na-power-saddle",
+          "cat": "parts",
+          "promo": true,
+          "b": "Specialized",
+          "n": "S-Works Power Carbon Saddle",
+          "p": 324.99,
+          "promoPrice": 299.99,
+          "bfPrice": 274.99,
+          "xmasPrice": 289.99,
+          "julyPrice": 289.99,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "variantId": {{ tire_vid | json }},
+          "img": {{ 'spz-power-saddle.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["Free Fit Check", "Fit Incluido"],
+          "tagBf": ["Save $50 · BF", "Ahorra $50"],
+          "tagXmas": ["Pro Carbon Gift", "Regalo Carbono"],
+          "tagJuly": ["Save $35 · Summer", "Ahorra $35"]
+        },
+        {
+          "id": "na-bell-z20",
+          "cat": "helmets",
+          "promo": true,
+          "b": "Bell",
+          "n": "Z20 MIPS Road Helmet",
+          "p": {{ helmet_price | json }},
+          "promoPrice": 149.99,
+          "bfPrice": 134.99,
+          "xmasPrice": 144.99,
+          "julyPrice": 139.99,
+          "u": {{ helmet_url | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'fable-gear-agilis.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["Save $22 · In Stock", "En Oferta"],
+          "tagBf": ["Save 22% · BF", "22% Off · BF"],
+          "tagXmas": ["Holiday Value Pick", "Regalo Seguro"],
+          "tagJuly": ["Vented Florida Fit", "Fresco en Verano"]
+        },
+        {
+          "id": "na-mk15-light",
+          "cat": "helmets",
+          "promo": false,
+          "b": "Exposure Lights",
+          "n": "Six Pack MK15 Trail Headlight",
+          "p": 545.00,
+          "bfPrice": 469.00,
+          "xmasPrice": 489.00,
+          "julyPrice": 495.00,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'spz-stix-light.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["Night Singletrack", "Ruta Nocturna"],
+          "tagBf": ["Save $76 · BF", "Ahorra $76"],
+          "tagXmas": ["Ultimate Trail Gift", "Regalo Trail"],
+          "tagJuly": ["Dawn Patrol Pick", "Rodada Temprana"]
+        },
+        {
+          "id": "na-vado4",
+          "cat": "bikes",
+          "promo": true,
+          "b": "Specialized",
+          "n": "Turbo Vado 4.0 E-Bike",
+          "p": 3249.99,
+          "promoPrice": 2999.99,
+          "bfPrice": 2799.99,
+          "xmasPrice": 2949.99,
+          "julyPrice": 2899.99,
+          "u": "#finder",
+          "img": {{ 'spz-turbo-vado-4.png' | asset_url | json }},
+          "pickupOnly": true,
+          "tagClassic": ["Showroom Special", "Promo en Piso"],
+          "tagBf": ["Save $450 · BF", "Ahorra $450"],
+          "tagXmas": ["Holiday Dream E-Bike", "E-Bike Regalo"],
+          "tagJuly": ["Save $350 · July 4", "Ahorra $350"]
+        },
+        {
+          "id": "na-roctane",
+          "cat": "nutrition",
+          "promo": true,
+          "b": "GU Energy",
+          "n": "Roctane Electrolyte Capsules",
+          "p": 22.00,
+          "promoPrice": 19.50,
+          "bfPrice": 17.95,
+          "xmasPrice": 18.50,
+          "julyPrice": 17.95,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'supp-gu-capsules.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["Humidity Essential", "Clima Húmedo"],
+          "tagBf": ["BF Fuel Saver", "Oferta BF"],
+          "tagXmas": ["Under $20 Gift", "Menos de $20"],
+          "tagJuly": ["July Heat Must-Have", "Esencial Calor"]
+        },
+        {
+          "id": "na-sram-s200",
+          "cat": "parts",
+          "promo": false,
+          "b": "SRAM",
+          "n": "Eagle S200 Rear Derailleur",
+          "p": 139.99,
+          "bfPrice": 114.99,
+          "xmasPrice": 124.99,
+          "julyPrice": 124.99,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "variantId": {{ tire_vid | json }},
+          "img": {{ 'cat-sram-s200.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["OEM Workshop Stock", "Stock de Taller"],
+          "tagBf": ["Save 18% · BF", "18% Off · BF"],
+          "tagXmas": ["MTB Drivetrain Gift", "Mejora MTB"],
+          "tagJuly": ["Alafia Trail Ready", "Listo para Trail"]
+        },
+        {
+          "id": "na-gu-gels",
+          "cat": "nutrition",
+          "promo": false,
+          "b": "GU Energy",
+          "n": "24-Pack Energy Gel Assortment",
+          "p": 38.95,
+          "bfPrice": 31.95,
+          "xmasPrice": 33.95,
+          "julyPrice": 32.95,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'cat-gu-gel.png' | asset_url | json }},
+          "pickupOnly": false,
+          "tagClassic": ["24-Pack Box", "Caja 24 Sobres"],
+          "tagBf": ["Save 18% · BF", "18% Off · BF"],
+          "tagXmas": ["Endurance Gift Box", "Caja Regalo"],
+          "tagJuly": ["Century Ride Fuel", "Energía Verano"]
+        },
+        {
+          "id": "na-epic9",
+          "cat": "bikes",
+          "promo": false,
+          "b": "Specialized",
+          "n": "Epic 9 Sport Carbon MTB",
+          "p": 4699.99,
+          "bfPrice": 4199.99,
+          "xmasPrice": 4349.99,
+          "julyPrice": 4299.99,
+          "u": {{ routes.collections_url | append: '/bikes' | json }},
+          "img": {{ 'ubc-bike-epic-9.png' | asset_url | json }},
+          "pickupOnly": true,
+          "tagClassic": ["Alafia Spec Carbon", "Carbono Trail"],
+          "tagBf": ["Save $500 · BF", "Ahorra $500"],
+          "tagXmas": ["0% APR Available", "0% APR Navidad"],
+          "tagJuly": ["Save $400 · July 4", "Ahorra $400"]
+        }
+      ]
+      {%- endif -%}
+    </script>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Promos & Storefront",
+  "max_blocks": 3,
+  "settings": [
+    {
+      "type": "collection",
+      "id": "catalog_collection",
+      "label": "Full catalog link collection"
+    },
+    {
+      "type": "text",
+      "id": "browse_label",
+      "label": "Browse all link label",
+      "default": "Browse All 20,000+ Items"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "promo_card",
+      "name": "Promo or Activity Card",
+      "settings": [
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Card color style",
+          "default": "paper",
+          "options": [
+            { "value": "navy", "label": "UBC Navy (#213549)" },
+            { "value": "paper", "label": "UBC Dawn Cream (#FEFDF3)" },
+            { "value": "gold", "label": "UBC Heritage Gold (#CCBB8D)" }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Offer badge",
+          "default": "15% OFF"
+        },
+        {
+          "type": "text",
+          "id": "kicker",
+          "label": "Department or date",
+          "default": "In-Store & Online"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Card title",
+          "default": "Helmet, Tire & Hydration Pack"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Short description",
+          "default": "Save 15% on hydration, tubes or lights when paired with any MIPS helmet or tire set."
+        },
+        {
+          "type": "text",
+          "id": "cta",
+          "label": "Link text",
+          "default": "Shop Promo"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Target URL"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Promos & Storefront"
+    }
+  ]
+}
+{% endschema %}

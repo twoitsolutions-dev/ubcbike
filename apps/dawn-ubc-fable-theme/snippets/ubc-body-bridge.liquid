@@ -1,0 +1,8 @@
+{%- comment -%}
+  [UBC-MOD] Isolated closing <body> bridge for University Bicycle Center on Shopify Dawn 16.1.1.
+  Loads the Ikeono SMS widget, on-demand Instagram Reel modal, and UBC storefront controller.
+{%- endcomment -%}
+{%- render 'ubc-edition-switcher' -%}
+{%- render 'ubc-ikeono-widget' -%}
+{%- render 'ubc-reel-modal' -%}
+<script src="{{ 'ubc-fable.js' | asset_url }}" defer="defer"></script>

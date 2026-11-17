@@ -1,0 +1,252 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v23 — Alafia Trailhead Rentals (#rentals) + Structured 4-Card Financing & Trade-In Section (#financing)
+  - Strict rental trail policy: Alafia River State Park + neighboring Balm-Boyette Scrub Preserve (in approved cases only).
+  - Prominent, balanced 4-column Financing & Trade-In grid (Synchrony 0% APR, Acima, Snap Finance, Bicycle Blue Book Trade-In).
+  - Clean editorial headers with zero floating Instagram badges · Dynamic tel: href · Zero Emojis.
+{%- endcomment -%}
+{%- liquid
+  assign alafia_phone = section.settings.alafia_phone | default: '(813) 459-8293'
+  assign alafia_digits = alafia_phone | remove: ' ' | remove: '(' | remove: ')' | remove: '-' | remove: '.' | remove: '+'
+  if alafia_digits.size == 10
+    assign alafia_tel = '+1' | append: alafia_digits
+  elsif alafia_digits != blank
+    assign alafia_tel = '+' | append: alafia_digits
+  else
+    assign alafia_tel = '+18134598293'
+  endif
+
+  assign home_anchor = ''
+  if template.name != 'index'
+    assign home_anchor = routes.root_url
+    unless home_anchor == '/'
+      assign home_anchor = home_anchor | append: '/'
+    endunless
+  endif
+
+  assign acima_href = section.settings.acima_url | default: 'https://ams.acimacredit.com/discover/new?lang=en.leases&location_guid=loca-703aa24e-31e6-4aec-8f39-c1d5c6147cf6&merchant_guid=merc-4949370c-a29b-41d5-b86a-894e8bd532aa'
+  assign snap_href = section.settings.snap_url | default: 'https://bk.snapfinance.com/origination?paramId=3w%2FEWVFzVGcQioSdKn1vuqdr2hNr3A1xiMt4CtG%2BqOW6%2FoVDUYR%2B662lEkK1hZ0tog9ZSjNG2GyQln5HQrzShOzYiaK%2FnFnEZXfXtyBXVEw%3D'
+-%}
+<div class="fb-scope">
+  {%- comment -%} 1. Alafia River State Park Rentals — Hero-Style Ghost Stage + Authorized Trail Policy {%- endcomment -%}
+  <section class="fb-sec rent-sec" id="rentals">
+    <div class="rent-ghost" aria-hidden="true">ALAFIA</div>
+    <div class="fb-wrap rent-grid">
+      <div class="rent-stage reveal">
+        <div class="rent-blob" aria-hidden="true"></div>
+        <div class="rent-ring" aria-hidden="true"></div>
+        {%- if section.settings.rental_bike_image != blank -%}
+          {{
+            section.settings.rental_bike_image
+            | image_url: width: 1080
+            | image_tag:
+              width: 960,
+              height: 540,
+              loading: 'lazy',
+              alt: 'Specialized Trail Mountain Bike Rental at Alafia River State Park'
+          }}
+        {%- else -%}
+          <img
+            src="{{ 'ubc-bike-epic-9.png' | asset_url }}"
+            width="960"
+            height="540"
+            alt="Specialized Trail Mountain Bike Rental at Alafia River State Park"
+            loading="lazy"
+          >
+        {%- endif -%}
+      </div>
+
+      <div class="rent-copy">
+        <span class="eyebrow reveal" data-es="Alquiler y Tienda &middot; Dentro de Alafia River State Park">Rentals &amp; Trailhead Shop &middot; Inside Alafia River State Park</span>
+
+        <h2 class="h2 reveal" data-es="Alquila en el parque. <em>Rueda directo al sendero.</em>">Rent inside the park. <em>Roll straight onto the trail.</em></h2>
+        <p class="lead reveal" data-es="Nuestra sede dentro de Alafia River State Park cuenta con alquiler de bicicletas MTB calibradas, cascos, hidratación, repuestos y asistencia mecánica justo donde inicia el sendero.">
+          Our shop right inside Alafia River State Park offers tuned MTB rentals, helmets, hydration, spare parts and walk-in trailside service — steps from the trailhead.
+        </p>
+
+        <div class="rent-actions reveal">
+          <a class="fb-btn coral" href="tel:{{ alafia_tel }}">
+            <svg aria-hidden="true"><use href="#i-phone"/></svg>
+            <span data-es="Reservar en Alafia: {{ alafia_phone | escape }}">Call Trailhead: {{ alafia_phone | escape }}</span>
+          </a>
+          <a class="fb-btn outline" href="{{ home_anchor }}#stores">
+            <svg aria-hidden="true"><use href="#i-pin"/></svg>
+            <span data-es="Horarios y Cómo Llegar">Park Hours &amp; Directions</span>
+          </a>
+        </div>
+
+        <div class="rent-policy reveal" role="region" aria-label="Authorized Rental Trail Policy">
+          <div class="rent-policy-head">
+            <strong class="trail-label" data-es="Senderos Autorizados para Bicis de Renta UBC">Authorized Trails for UBC Rental Bikes</strong>
+          </div>
+          <div class="rent-policy-grid">
+            <div class="rent-park-card rent-park-card--primary">
+              <div class="rent-park-top">
+                <svg aria-hidden="true"><use href="#i-check"/></svg>
+                <span class="rent-park-badge" data-es="Uso Principal Autorizado">Primary Authorized Park</span>
+              </div>
+              <strong>Alafia River State Park</strong>
+              <p data-es="Salida directa rodando desde nuestra tienda dentro del parque hacia más de 20 millas de senderos.">
+                Roll straight out from our shop inside the park onto 20+ miles of singletrack — no rack needed.
+              </p>
+            </div>
+
+            <div class="rent-park-card">
+              <div class="rent-park-top">
+                <svg aria-hidden="true"><use href="#i-pin"/></svg>
+                <span class="rent-park-badge rent-park-badge--muted" data-es="Casos Autorizados">Select Approved Cases</span>
+              </div>
+              <strong>Balm-Boyette Scrub Preserve</strong>
+              <p data-es="Permitido únicamente en casos autorizados para el parque vecino Balm-Boyette, previa coordinación en tienda.">
+                Permitted in select approved cases for neighboring Balm-Boyette next door — coordinate with our Alafia crew.
+              </p>
+            </div>
+          </div>
+          <p class="rent-policy-note" data-es="Política UBC: nuestras bicicletas de alquiler solo están autorizadas para rodar en Alafia River State Park y, en casos aprobados, en el parque vecino Balm-Boyette.">
+            UBC Policy: Rental bikes are exclusively authorized for riding in Alafia River State Park and, in approved cases, adjacent Balm-Boyette Scrub Preserve.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} 2. Protagonist 4-Column Financing & Bicycle Trade-In Section (#financing) {%- endcomment -%}
+  <section class="fb-sec fin-sec" id="financing" aria-label="Financing and Bicycle Trade-In Options">
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div>
+          <span class="eyebrow reveal" data-es="Opciones de Pago &middot; En Línea o en Tienda">Flexible Ways to Ride &middot; Online or In-Store</span>
+          <h2 class="h2 reveal" data-es="Estrena hoy. <em>Financiamiento 0% APR y Trade-In.</em>">
+            Ride today. <em>0% APR financing &amp; bike trade-in.</em>
+          </h2>
+          <p class="lead reveal" data-es="Precalifica en minutos o combínalo con el valor de tu bici actual en nuestro showroom de Tampa.">
+            Pre-qualify in minutes or combine instant trade-in credit with promotional financing on bikes, e-bikes, scooters and gear.
+          </p>
+        </div>
+
+        <div class="fin-head-cta reveal">
+          <a class="link-arrow" href="{{ home_anchor }}#stores">
+            <span data-es="Asesoría en Tampa Showroom">Ask Our Tampa Team</span>
+            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="fin-grid">
+        <article class="fin-card fin-card--featured reveal">
+          <div class="fin-card-top">
+            <span class="fin-step">01</span>
+            <span class="fin-pill fin-pill--gold" data-es="Promoción 0% APR">0% APR Promo</span>
+          </div>
+          <div class="fin-card-body">
+            <span class="fin-partner">Synchrony &middot; Freedom to Ride</span>
+            <h3 data-es="6 a 12 Meses sin Intereses">0% APR Promotional Financing</h3>
+            <p data-es="Divide la compra de tu bicicleta, E-Bike o equipamiento en pagos mensuales iguales a 0% APR en compras elegibles.">
+              Split qualifying bikes, e-bikes and gear into convenient 6 or 12-month promotional payments with 0% APR.
+            </p>
+          </div>
+          <a class="fin-cta" href="{{ home_anchor }}#stores">
+            <span data-es="Solicitar en Tienda o Llamar">Apply In-Store or Call</span>
+            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+        </article>
+
+        <article class="fin-card reveal">
+          <div class="fin-card-top">
+            <span class="fin-step">02</span>
+            <span class="fin-pill" data-es="Sin Crédito Tradicional">No Credit Needed</span>
+          </div>
+          <div class="fin-card-body">
+            <span class="fin-partner">Acima Leasing</span>
+            <h3 data-es="Lease-to-Own Flexible">Flexible Lease-to-Own</h3>
+            <p data-es="Aprobación rápida hasta por $5,000 con pagos adaptados a tu quincena y opción de compra anticipada con descuento.">
+              Fast approvals up to $5,000 with flexible payment schedules and early purchase savings options.
+            </p>
+          </div>
+          <a class="fin-cta" href="{{ acima_href | escape }}" target="_blank" rel="noopener">
+            <span data-es="Aplicar en Línea con Acima">Apply Online at Acima</span>
+            <svg aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
+          </a>
+        </article>
+
+        <article class="fin-card reveal">
+          <div class="fin-card-top">
+            <span class="fin-step">03</span>
+            <span class="fin-pill" data-es="Respuesta en Minutos">Instant Decision</span>
+          </div>
+          <div class="fin-card-body">
+            <span class="fin-partner">Snap Finance</span>
+            <h3 data-es="Compra Hoy, Paga Después">Buy Now, Pay Later</h3>
+            <p data-es="Ideal para bicicletas, scooters eléctricos, accesorios o reparaciones mayores. Todo historial crediticio es bienvenido.">
+              Ideal for bikes, electric scooters, accessories or major workshop builds — all credit backgrounds welcome.
+            </p>
+          </div>
+          <a class="fin-cta" href="{{ snap_href | escape }}" target="_blank" rel="noopener">
+            <span data-es="Aplicar en Línea con Snap">Apply Online at Snap</span>
+            <svg aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
+          </a>
+        </article>
+
+        <article class="fin-card reveal">
+          <div class="fin-card-top">
+            <span class="fin-step">04</span>
+            <span class="fin-pill fin-pill--coral" data-es="Crédito Inmediato">Instant Store Credit</span>
+          </div>
+          <div class="fin-card-body">
+            <span class="fin-partner">Bicycle Blue Book Partner</span>
+            <h3 data-es="Programa Oficial Trade-In">Official Bike Trade-In</h3>
+            <p data-es="Trae tu bici actual a nuestro showroom de Tampa para una tasación transparente y úsala como parte de pago al instante.">
+              Bring your current bike to our Tampa showroom for a transparent valuation and apply instant credit toward your new ride.
+            </p>
+          </div>
+          <a class="fin-cta" href="{{ home_anchor }}#stores">
+            <span data-es="Cotizar mi Bici en Tampa">Value Your Trade-In</span>
+            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+        </article>
+      </div>
+
+      <div class="fin-community-bar reveal" role="note" aria-label="Community In-Store Discounts">
+        <span class="fin-comm-badge" data-es="Beneficio Permanente UBC">Everyday In-Store Discounts</span>
+        <p data-es="En nuestro showroom de Tampa (1220 E Fletcher Ave) honramos todos los días con descuento especial a <strong>Estudiantes, Veteranos y Policías</strong> presentando identificación vigente.">
+          At our Tampa showroom (1220 E Fletcher Ave), we proudly honor <strong>Students, U.S. Veterans &amp; Police</strong> every day with special in-store discounts — just show valid ID at checkout.
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Rentals & Financing",
+  "settings": [
+    {
+      "type": "text",
+      "id": "alafia_phone",
+      "label": "Alafia trailhead shop phone",
+      "default": "(813) 459-8293"
+    },
+    {
+      "type": "image_picker",
+      "id": "rental_bike_image",
+      "label": "Optional rental bike cutout image"
+    },
+    {
+      "type": "text",
+      "id": "acima_url",
+      "label": "Acima Leasing application URL",
+      "default": "https://ams.acimacredit.com/discover/new?lang=en.leases&location_guid=loca-703aa24e-31e6-4aec-8f39-c1d5c6147cf6&merchant_guid=merc-4949370c-a29b-41d5-b86a-894e8bd532aa"
+    },
+    {
+      "type": "text",
+      "id": "snap_url",
+      "label": "Snap Finance application URL",
+      "default": "https://bk.snapfinance.com/origination?paramId=3w%2FEWVFzVGcQioSdKn1vuqdr2hNr3A1xiMt4CtG%2BqOW6%2FoVDUYR%2B662lEkK1hZ0tog9ZSjNG2GyQln5HQrzShOzYiaK%2FnFnEZXfXtyBXVEw%3D"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Rentals & Financing"
+    }
+  ]
+}
+{% endschema %}

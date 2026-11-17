@@ -1,65 +1,77 @@
-# Manual de uso — Carlos Mirabal
+# UBC Commerce Hub — Quick Operating Guide (Carlos Mirabal)
 
-UBC Commerce Hub es el panel para administrar productos, precios, promociones, proveedores y pedidos especiales.
-En la demo **todos los datos son ficticios** y nada se envía a Shopify, Lightspeed ni a los proveedores.
+**UBC Commerce Hub** (`https://ubc-hub.twoitsolutions.com`) is your daily control panel for **University Bicycle Center (UBC)**. It connects your **Shopify Online Store**, **Lightspeed Retail R-Series POS**, and **B2B Vendor Catalogs** (QBP, JBI, Specialized) using the same familiar section layout as Lightspeed — while keeping **In-Store Stock** strictly separate from **Vendor Stock**, protecting **MAP & minimum margins**, and never placing vendor orders without your manual approval.
 
-## Entrar
-1. Abra https://ubc-demo.twoitsolutions.com e introduzca el usuario y la contraseña del sitio.
-2. En la demo, elija **Carlos Mirabal**. (En producción será su correo y contraseña personal.)
-3. En el iPhone, el menú está en el botón ☰ arriba a la izquierda.
+---
 
-## Dashboard
-Resumen: productos publicados, con stock en UBC, solo de proveedor (pedido especial), sin disponibilidad, pedidos,
-pedidos especiales abiertos, promociones activas y errores. "Needs attention" lleva directo a lo que requiere acción
-(por ejemplo, compras pendientes de su aprobación).
+## 1. Main Navigation (Lightspeed R-Series Layout)
 
-## Productos, inventario y precios
-- **Products**: buscar por nombre, marca, SKU, UPC o número de pieza; filtrar por disponibilidad, estado, categorías,
-  proveedores, marcas, rango de precio y de margen (**More filters**).
-- Seleccionar filas (o "Select all N matching") → **Publish**, **Hide** o **Create promotion…**. Siempre pide confirmación.
-- **Inventory**: el stock físico de UBC se muestra aparte de lo que reportan los proveedores. Nunca se suman.
-- **Prices & margins**: ordenado por menor margen; **Edit** muestra el margen nuevo y avisa si queda bajo MAP o bajo costo.
+- **Dashboard:** Daily snapshot of online catalog health, open Special Orders, active promotions, and items needing your attention.
+- **Inventory:**
+  - **Item Search:** Unified catalog workspace with 4 tabs:
+    - *All Items* — Search by name, brand, SKU, UPC, MPN, or Lightspeed Item ID.
+    - *In-Store Stock* — Physical floor inventory at UBC (never summed with distributor inventory).
+    - *Vendor Catalog Only* — `0` on the UBC floor, available online via *Special Order* from QBP, JBI, or Specialized.
+    - *Margins & MAP* — Sorted from lowest to highest margin so low-margin or MAP-sensitive items stand out immediately.
+  - **Special Orders:** Customer orders from Shopify, clearly distinguishing *In-Store Stock* pickups/shipments from distributor *Special Orders*.
+  - **Purchase Orders:** B2B buying worksheets ready for you to copy Vendor Part #s and place orders directly on QBP, JBI, or Specialized B2B.
+  - **Vendor Catalogs:** Distributor feeds & matching workspace (*Vendor Catalogs & Matching* + *Feed Sync & MAP Quarantine*).
+- **Pricing & System:**
+  - **Promotions / Price Rules:** 3-step promotion builder with 1-click presets and automatic MAP + minimum-margin guardrails.
+  - **Settings & Sync:** Default margin/lead-time rules, *Connections*, *Activity & Logs*, and *Store Simulator*.
 
-## Crear una promoción (ej. Black Friday)
-1. **Promotions → New promotion**.
-2. Paso 1: elija categoría (ej. Accessories), marcas, proveedores, rangos… Se muestra cuántos productos coinciden.
-3. Paso 2: tipo de cambio (% de descuento, importe fijo, subir %, subir importe o precio fijo), redondeo y canal:
-   - *Online only*: solo la tienda Shopify.
-   - *Online + POS*: también el precio en tienda (Lightspeed). Hoy está bloqueado para sistemas reales.
-4. Paso 3: margen mínimo (las líneas por debajo se bloquean o, si marca la opción, se suben al precio mínimo).
-5. Paso 4 (opcional): fecha y hora de inicio y fin.
-6. **Preview impact**: verá cada producto con precio anterior y nuevo, costo, márgenes, MAP y el resultado:
-   - *Will apply* · *Warning* (margen bajo, precio ajustado) · *Blocked* (bajo MAP o bajo margen mínimo) · *Excluded* (sin costo o sin cambio).
-7. **Approve & schedule**. Solo se cambian las líneas permitidas. Si los precios cambiaron desde la vista previa, el
-   sistema le muestra la vista actualizada antes de aprobar.
-8. **Restore original prices** devuelve cada producto a su precio anterior, excepto los que alguien cambió después
-   (quedan con el precio nuevo y se reportan como "skipped changed").
-9. **Export CSV** descarga el detalle.
+---
 
-> MAP no se puede saltar con un clic. Si un proveedor autoriza por escrito vender bajo MAP, un administrador registra
-> la excepción (quién aprobó, referencia y vigencia).
+## 2. Special Orders & Purchase Orders (Your Real B2B Workflow)
 
-## Pedidos especiales
-1. Un cliente compra algo que UBC no tiene físicamente → el pedido llega como **Special order**.
-2. El sistema vuelve a consultar disponibilidad y costo con el proveedor y crea una **solicitud de compra**.
-3. Estado **Awaiting Approval**: abra el pedido → **Approve purchase**. Si el costo subió o ya no hay stock, el pedido
-   pasa a **Exception** y no se compra nada.
-4. **Send PO to supplier**: envía la orden de compra (en la demo es simulada).
-5. Actualice: *Supplier confirmed* → *In transit* (número de seguimiento) → *Received at UBC* → *Ready for pickup* o
-   *Shipped to customer* → *Completed*.
-6. **Report exception** (agotado, cambio de costo, dañado, devolución, reembolso…) exige motivo y nota.
-   **Cancel order** también exige nota.
-- **Supplier purchasing** lista todas las órdenes de compra.
-- **Store (simulated)** permite hacer una compra de prueba para ver el flujo completo.
+The Hub **never submits automated orders to distributors behind your back**. Instead, it prepares clean B2B worksheets so you can combine customer Special Orders with regular shop restock on QBP, JBI, or Specialized to hit free-freight thresholds:
 
-## Proveedores
-- Tarjetas de QBP, JBI y Specialized con ofertas, no vinculadas y estado de conexión.
-- **Import feed (CSV)**: suba el archivo autorizado del proveedor y mapee columnas. Coincidencias seguras (mismo UPC
-  válido) se vinculan solas; las dudosas van a la **cola de revisión**: *Same product* o *Different*.
+1. **Automatic Special Order intake from Shopify:**
+   When a customer buys an item online that has `0` physical units at UBC (available via distributor), the order lands in **Special Orders** (`Awaiting Approval`) and creates a worksheet in **Purchase Orders → To Order in B2B**.
+2. **Copy Vendor Part # & open B2B portal:**
+   - Open **Purchase Orders** (`#/purchasing`).
+   - Click **Copy SKU** (copies the exact `Vendor Part #`, e.g., `SPEC-94424-56`) or **Copy SKU + Qty** for B2B Quick Order forms.
+   - Click **Open QBP.com**, **Open JBI.bike**, or **Open Specialized B2B** to jump straight to the vendor portal.
+3. **Approve & record your B2B confirmation:**
+   - Click **Approve B2B purchase** in the Hub (re-verifies live vendor cost and stock before you buy).
+   - After placing the order on the vendor's B2B site, click **Mark ordered in B2B** and save the **Vendor Order / Confirmation #** and tracking/ETA.
+4. **Shared SKU protection (`Shared SKU` badge):**
+   - If two open customer Special Orders include the exact same SKU, the Hub highlights **`Shared SKU: also in #XXXX`** so incoming units are allocated cleanly order-by-order (FIFO).
+5. **Receiving & customer pickup:**
+   - When the shipment arrives at UBC, click **Mark received at UBC** in *Purchase Orders* and update the customer order to **Ready for pickup** (or **Completed**) in *Special Orders*.
 
-## Historial y errores
-Trabajos en segundo plano (con reintentos), errores abiertos (**Mark resolved**) y auditoría de quién cambió qué.
+---
 
-## Ajustes
-Margen mínimo y de aviso, stock de seguridad, antigüedad máxima de datos de proveedor, días de preparación.
-Solo administradores pueden cambiarlos. En la demo: simular caída de proveedor y **Reset demo data**.
+## 3. Promotions / Price Rules (Safe 3-Step Wizard)
+
+1. Go to **Promotions / Price Rules → + New Price Rule**.
+2. **1-Click Presets (optional):** Pick *Online Promo (-15%)*, *Black Friday (-20%)*, *Holiday Sale*, or *Clearance (-30%)*.
+3. **Step 1 — Which items are included?** Choose the whole store or click visual **Category** / **Brand** chips (e.g., *Helmets*, *Tires & Tubes*, *Hydration*, *Bell*).
+4. **Step 2 — Discount & Channel:** Set `% off` or `$ off`, `.99` retail rounding, and channel (*Online Only — Shopify* for everyday web promos, or *Storewide — Online + Lightspeed POS* for major events). A live `$100` example previews the exact math as you type.
+5. **Step 3 — Margin & MAP Guardrails:** Set your minimum margin floor (e.g., `20%`). Contractual **MAP** is enforced automatically — Specialized and other MAP-protected items will never drop below MAP unless an Owner explicitly logs a written brand exception.
+6. **Preview Prices → Approve & Publish:** Inspect every item in **Will apply** vs. **Blocked by MAP / margin** before anything touches Shopify. When the sale ends, click **End & Restore Original Prices** to roll prices back cleanly.
+
+---
+
+## 4. Vendor Catalogs, Matching & MAP Quarantine
+
+- **Vendor Catalogs & Matching (`#/suppliers`):** Upload distributor CSV feeds (QBP, JBI, Specialized) and review fuzzy product matches without a barcode by clicking **Same item** or **Different**.
+- **Feed Sync & MAP Quarantine (`#/pipeline`):** Monitors vendor feed freshness (48h watchdog), logs supplier cost changes, and **quarantines** any item whose updated vendor MAP rises above your current online price — holding it safely until you review and approve a compliant retail price.
+
+---
+
+## 5. Sandbox Demo Examples Ready to Test Right Now
+
+We pre-loaded **1 clean, realistic bike-shop example of every workflow** in your Sandbox so you can inspect them immediately or run your own tests:
+
+| Feature / Scenario | Live Example Ready in Hub & Shopify |
+| :--- | :--- |
+| **10 Authentic Cycling Products** | Specialized Tarmac SL7 (`$2,799.99`), Turbo Vado 4.0 (`$3,249.99`), Power Expert Saddle (`$159.99` — `16.9%` low-margin warning), Bell Z20 MIPS Helmet, Skratch Labs Hydration, Continental GP5000 Tire, Surly Midnight Special Frame, Shimano Ultegra Di2 Groupset, Park Tool PCS-10.3 Stand, Garmin Rally RS200 Pedals. |
+| **Special Order Waiting for B2B PO** | Order **`#UBC-1044`** (`PO-UBC-1044` — Shimano Ultegra R8170 Di2 Groupset via QBP `QBP-DR8170`) in **Purchase Orders → To Order in B2B**. |
+| **Special Order In Transit from Vendor** | Order **`#UBC-1043`** (`PO-UBC-1043` — Park Tool PCS-10.3 Stand via JBI `JBI-TL4103`, Ref `JBI-WEB-774920`, UPS `1Z999AA10123456784`). |
+| **In-Store Stock Pickup & Completed Orders** | Order **`#UBC-1042`** (*Ready for pickup* — 2× Continental GP5000 from UBC floor stock) and **`#UBC-1041`** (*Completed*). |
+| **Live Online Promotion (15% Off + MAP Guardrail)** | **Helmet, Tire & Hydration Promo — 15% Off Online** (`#/promotions`): Bell Z20 MIPS (`$149.99` → **`$126.99`**) and Skratch Labs (`$24.99` → **`$20.99`**) are discounted live on Shopify, while **Continental GP5000** stayed protected at **`$79.99`** by its **`$74.99` MAP floor**! |
+| **Draft Storewide Event Preview** | **Black Friday Storewide Preview — 10% Off (.99)** ready to preview or edit in **Promotions / Price Rules**. |
+| **Vendor Match Review (2 items)** | `SPEC-UNVERIFIED-56` and `QBP-HE8821-ALT` waiting for **Same item / Different** in **Vendor Catalogs**. |
+| **MAP Quarantine Alert (1 item)** | `UBC-CON-GP5K-28` held in **Vendor Catalogs → Feed Sync & MAP Quarantine** (JBI reported a new `$84.99` MAP above the `$79.99` retail price), plus `UBC-SHM-R8170-GRP` staged & ready. |
+| **7 Storefront Seasonal Themes (1-Click Switcher)** | Open `https://ubcbike-hub.myshopify.com/` and use the **Themes** bar at the bottom-left (or the quick-launch buttons on your Hub Dashboard) to switch instantly across UBC's full retail year: **Classic UBC**, **Spring & Bike Month**, **July 4th Summer**, **USF Back to Campus** (with USF Bulls crest & student perks), **Veterans & Heroes** (honoring Manny's military service + everyday Veteran, Police & Student discounts), **Black Friday (Full Dark Mode)**, and **Christmas**. |

@@ -1,0 +1,494 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v23 — Storewide Header, Edition Topbar, Shopify `link_list` Navigation & Mobile Drawer
+  - Dynamic `tel:` href synced to `section.settings.phone` (topbar + mobile drawer).
+  - Native Shopify Navigation (`section.settings.menu` / `mobile_menu`) support with curated zero-404 UBC fallback.
+  - Native Shopify Markets SEO language links (`localization.available_languages` / `/es`) with JS fallback when single-locale.
+{%- endcomment -%}
+{%- liquid
+  assign edition = settings.ubc_edition | default: 'classic'
+
+  assign raw_phone = section.settings.phone | default: '(813) 971-2277'
+  assign phone_digits = raw_phone | remove: ' ' | remove: '(' | remove: ')' | remove: '-' | remove: '.' | remove: '+'
+  if phone_digits.size == 10
+    assign phone_tel = '+1' | append: phone_digits
+  elsif phone_digits != blank
+    assign phone_tel = '+' | append: phone_digits
+  else
+    assign phone_tel = '+18139712277'
+  endif
+
+  assign home_anchor = ''
+  if template.name != 'index'
+    assign home_anchor = routes.root_url
+    unless home_anchor == '/'
+      assign home_anchor = home_anchor | append: '/'
+    endunless
+  endif
+
+  assign story_href = home_anchor | append: '#family'
+  if pages['our-story'] != blank
+    assign story_href = pages['our-story'].url
+  endif
+
+  assign locations_href = home_anchor | append: '#stores'
+  if pages['locations'] != blank
+    assign locations_href = pages['locations'].url
+  endif
+
+  assign ebike_href = home_anchor | append: '#ebikes'
+  if collections['electric-bikes'] != blank
+    assign ebike_href = collections['electric-bikes'].url
+  endif
+
+  assign road_href = home_anchor | append: '#finder'
+  if collections['road-bikes'] != blank
+    assign road_href = collections['road-bikes'].url
+  endif
+
+  assign mtb_href = home_anchor | append: '#finder'
+  if collections['mountain-bikes'] != blank
+    assign mtb_href = collections['mountain-bikes'].url
+  endif
+
+  assign hybrid_href = home_anchor | append: '#finder'
+  if collections['hybrid-bikes'] != blank
+    assign hybrid_href = collections['hybrid-bikes'].url
+  endif
+
+  assign all_bikes_href = routes.all_products_collection_url
+  if collections['bikes'] != blank
+    assign all_bikes_href = collections['bikes'].url
+  endif
+
+  assign drawer_menu = section.settings.mobile_menu | default: section.settings.menu
+-%}
+<div class="fb-scope">
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+      <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="m20 20-3.8-3.8"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5h12l1 12.5H5L6 7.5Z"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5"/></symbol>
+      <symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5h12l1 12.5H5L6 7.5Z"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h16"/><path d="M4 12h16"/><path d="M4 16.5h16"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5.5-8 12-8 12s-8-6.5-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5h6.5L10 22l9.5-11.5H13L13 2Z"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 9.5 17 19 7.5"/></symbol>
+      <symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+      <symbol id="i-crosshair" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4"/></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5L8 5.5z"/></symbol>
+      <symbol id="i-ig" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.85" fill="currentColor"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M16 2.8v3.4"/><path d="M8 2.8v3.4"/><path d="M3 10h18"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="fb-progress" id="fbProgress"></div>
+
+  <div class="fb-topbar">
+    <div class="fb-wrap">
+      <div class="fb-topbar-msgs" id="fbTopMsgs" aria-live="off">
+        {%- if edition == 'black_friday' -%}
+          <span class="on" data-es="<b>BLACK FRIDAY UBC</b> &middot; Hasta $500 Off en bicis + 20% Off equipo">
+            <b>BLACK FRIDAY EVENT</b> &middot; Up to $500 Off bikes + 20% Off helmets &amp; gear
+          </span>
+          <span data-es="<b>Taller Sin Cita</b> &middot; Bono en Tune-Up Nivel 2 y 3 esta semana">
+            <b>Walk-In Workshop</b> &middot; Free drivetrain detail wash with Level 2 Tune-Up
+          </span>
+          <span data-es="<b>Descuentos en Tienda</b> &middot; Beneficios todos los días para Estudiantes, Veteranos y Policías">
+            <b>In-Store Discounts</b> &middot; Everyday savings for Students, Veterans &amp; Police with valid ID
+          </span>
+        {%- elsif edition == 'christmas' -%}
+          <span class="on" data-es="<b>ESPECIAL DE NAVIDAD</b> &middot; Bicis armadas y regalos listos para Dic 25">
+            <b>HOLIDAY GIFT EVENT</b> &middot; Assembled bikes, helmets &amp; gifts ready for Dec 25
+          </span>
+          <span data-es="<b>Apartado Navideño Gratis</b> &middot; Guardamos la bici hasta Nochebuena">
+            <b>Free Holiday Bike Hold</b> &middot; Assembled by Manny &amp; Ashton's crew
+          </span>
+          <span data-es="<b>Descuentos en Tienda</b> &middot; Beneficios todos los días para Estudiantes, Veteranos y Policías">
+            <b>In-Store Discounts</b> &middot; Everyday savings for Students, Veterans &amp; Police with valid ID
+          </span>
+        {%- elsif edition == 'july_4' -%}
+          <span class="on" data-es="<b>ESPECIAL 4 DE JULIO</b> &middot; Ofertas de Verano + Descuentos para Veteranos y Policías">
+            <b>JULY 4TH SUMMER EVENT</b> &middot; Storewide Markdowns + Special Discounts for Veterans &amp; Police
+          </span>
+          <span data-es="<b>Honor a Veteranos y Policías</b> &middot; Fundada por Manny (Veterano) en Tampa desde 1972">
+            <b>Honoring Veterans &amp; Police</b> &middot; Veteran-founded by Manny in Tampa since 1972
+          </span>
+          <span data-es="<b>Descuentos en Tienda</b> &middot; Beneficios todos los días para Estudiantes, Veteranos y Policías">
+            <b>In-Store Discounts</b> &middot; Everyday savings for Students, Veterans &amp; Police with valid ID
+          </span>
+        {%- else -%}
+          <span class="on" data-es="<b>Envío gratis desde $50+</b> &middot; Taller sin cita todo el día en Tampa">
+            <b>Free shipping $50+</b> &middot; Walk-in repair workshop open all day in Tampa
+          </span>
+          <span data-es="<b>Descuentos en Tienda</b> &middot; Beneficios todos los días para Estudiantes, Veteranos y Policías">
+            <b>In-Store Discounts</b> &middot; Everyday savings for Students, Veterans &amp; Police with valid ID
+          </span>
+          <span data-es="<b>Familia UBC desde 1972</b> &middot; 3 generaciones en Tampa y Alafia River">
+            <b>3-Gen Family Shop Since 1972</b> &middot; Tampa Showroom &amp; Alafia River Park
+          </span>
+        {%- endif -%}
+      </div>
+      <div class="fb-topbar-right">
+        <a class="fb-topbar-phone" href="tel:{{ phone_tel }}">{{ raw_phone | escape }}</a>
+        {%- if section.settings.enable_bilingual_toggle -%}
+          {%- if localization.available_languages.size > 1 -%}
+            <nav class="fb-lang fb-lang--native" aria-label="{{ 'localization.language_label' | t }}">
+              {%- for lang_opt in localization.available_languages -%}
+                {%- assign code_short = lang_opt.iso_code | slice: 0, 2 | upcase -%}
+                <a
+                  href="{{ lang_opt.root_url }}"
+                  lang="{{ lang_opt.iso_code }}"
+                  hreflang="{{ lang_opt.iso_code }}"
+                  {% if lang_opt.iso_code == localization.language.iso_code %}aria-current="true"{% endif %}
+                >{{ code_short }}</a>
+              {%- endfor -%}
+            </nav>
+          {%- else -%}
+            <div class="fb-lang" role="group" aria-label="Language">
+              <button type="button" data-lang="en" aria-pressed="{% if request.locale.iso_code == 'es' %}false{% else %}true{% endif %}">EN</button>
+              <button type="button" data-lang="es" aria-pressed="{% if request.locale.iso_code == 'es' %}true{% else %}false{% endif %}">ES</button>
+            </div>
+          {%- endif -%}
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+
+  <header class="fb-header" id="fbHeader">
+    <div class="fb-wrap">
+      <div class="fb-logo-group">
+        <a class="fb-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }} — home">
+          {%- if settings.logo != blank -%}
+            {{
+              settings.logo
+              | image_url: width: 520
+              | image_tag: width: 172, height: 35, alt: shop.name
+            }}
+          {%- else -%}
+            <img
+              class="fb-logo-dark"
+              src="{{ 'fable-logo-navy.png' | asset_url }}"
+              width="172"
+              height="35"
+              alt="{{ shop.name | escape }}"
+            >
+            <img
+              class="fb-logo-light"
+              src="{{ 'fable-logo-white.png' | asset_url }}"
+              width="172"
+              height="35"
+              alt="{{ shop.name | escape }}"
+            >
+          {%- endif -%}
+        </a>
+        <span class="fb-partner-pill fb-partner-pill--campus" aria-hidden="true">
+          <img src="{{ 'usf-bulls-logo.png' | asset_url }}" width="28" height="22" alt="">
+          <span>USF CAMPUS</span>
+        </span>
+        <span class="fb-partner-pill fb-partner-pill--vet" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><polygon points="12,2 14.9,8.3 21.8,9.1 16.7,13.8 18.1,20.6 12,17.2 5.9,20.6 7.3,13.8 2.2,9.1 9.1,8.3"/></svg>
+          <span>VETERAN FOUNDED</span>
+        </span>
+      </div>
+
+      <ul class="fb-nav" id="fbNav">
+        {%- if section.settings.menu != blank and section.settings.menu.links.size > 3 -%}
+          {%- for link in section.settings.menu.links -%}
+            {%- if link.links != blank -%}
+              <li class="has-mega">
+                <button type="button" aria-expanded="false" aria-controls="megaNav-{{ forloop.index }}">
+                  <span>{{ link.title | escape }}</span>
+                  <svg aria-hidden="true"><use href="#i-chev"/></svg>
+                </button>
+                <div class="mega" id="megaNav-{{ forloop.index }}">
+                  <div class="fb-wrap">
+                    {%- for childlink in link.links -%}
+                      <div>
+                        <h4><a href="{{ childlink.url }}">{{ childlink.title | escape }}</a></h4>
+                        {%- if childlink.links != blank -%}
+                          <ul>
+                            {%- for grandchildlink in childlink.links -%}
+                              <li>
+                                <a href="{{ grandchildlink.url }}"{% if grandchildlink.current %} aria-current="page"{% endif %}>
+                                  {{ grandchildlink.title | escape }}
+                                </a>
+                              </li>
+                            {%- endfor -%}
+                          </ul>
+                        {%- endif -%}
+                      </div>
+                    {%- endfor -%}
+                  </div>
+                </div>
+              </li>
+            {%- else -%}
+              <li>
+                <a
+                  {% if forloop.first %}class="nav-accent"{% endif %}
+                  href="{{ link.url }}"
+                  {% if link.current %}aria-current="page"{% endif %}
+                >
+                  {%- if forloop.first -%}<i aria-hidden="true"></i>{%- endif -%}
+                  <span>{{ link.title | escape }}</span>
+                </a>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- else -%}
+          <li>
+            <a class="nav-accent" href="{{ home_anchor }}#new-arrivals">
+              <i aria-hidden="true"></i>
+              {%- if edition == 'black_friday' -%}
+                <span data-es="Black Friday">Black Friday</span>
+              {%- elsif edition == 'christmas' -%}
+                <span data-es="Navidad">Holiday Deals</span>
+              {%- elsif edition == 'july_4' -%}
+                <span data-es="4 de Julio">July 4th Deals</span>
+              {%- else -%}
+                <span data-es="Promos y Nuevo">Deals &amp; New</span>
+              {%- endif -%}
+            </a>
+          </li>
+          <li class="has-mega">
+            <button type="button" aria-expanded="false" aria-controls="megaBikes">
+              <span data-es="Tienda">Shop All</span>
+              <svg aria-hidden="true"><use href="#i-chev"/></svg>
+            </button>
+            <div class="mega" id="megaBikes">
+              <div class="fb-wrap">
+                <div>
+                  <h4 data-es="Bicis y E-Bikes">Bikes &amp; E-Bikes</h4>
+                  <ul>
+                    <li><a href="{{ ebike_href }}" data-ride-jump="electric" data-es="Bicicletas Eléctricas">Electric Bikes</a></li>
+                    <li><a href="{{ road_href }}" data-ride-jump="road" data-es="Ruta y Gravel">Road &amp; Gravel</a></li>
+                    <li><a href="{{ mtb_href }}" data-ride-jump="mtb" data-es="Montaña y Trail">Mountain &amp; Trail</a></li>
+                    <li><a href="{{ hybrid_href }}" data-ride-jump="fitness" data-es="Híbridas y Paseo">Hybrid, Fitness &amp; Cruisers</a></li>
+                    <li><a href="{{ all_bikes_href }}" data-es="Catálogo Completo de Bicis">All Bikes Collection</a></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 data-es="Departamentos en Stock">In-Stock Departments</h4>
+                  <ul>
+                    <li><a href="{% if collections['helmets'] != blank %}{{ collections['helmets'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Cascos y Seguridad">Helmets &amp; Safety</a></li>
+                    <li><a href="{% if collections['clothing'] != blank %}{{ collections['clothing'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Ropa y Jerseys">Apparel &amp; Jerseys</a></li>
+                    <li><a href="{% if collections['cycling-shoes'] != blank %}{{ collections['cycling-shoes'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Zapatillas de Ciclismo">Cycling Shoes</a></li>
+                    <li><a href="{% if collections['tires-tubes'] != blank %}{{ collections['tires-tubes'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Llantas y Tubos">Tires &amp; Tubes</a></li>
+                    <li><a href="{% if collections['parts-components'] != blank %}{{ collections['parts-components'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Piezas y Transmisión">Parts &amp; Drivetrain</a></li>
+                    <li><a href="{% if collections['hydration-nutrition'] != blank %}{{ collections['hydration-nutrition'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Nutrición e Hidratación">Hydration &amp; Nutrition</a></li>
+                    <li><a href="{{ routes.collections_url }}/all" data-es="Todo el Inventario en Tienda">All In-Stock Items (Tampa &amp; Alafia)</a></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 data-es="Taller, Familia y Parque">Workshop, Family &amp; Park</h4>
+                  <ul>
+                    <li><a href="{{ home_anchor }}#service" data-es="Taller Sin Cita (Bicis y Scooters)">Walk-In Repair Workshop</a></li>
+                    <li><a href="{{ home_anchor }}#family" data-es="Conoce a Manny, Carlos y Equipo">Meet Manny, Carlos &amp; Crew</a></li>
+                    <li><a href="{{ story_href }}" data-es="Historia y Videos UBC">Our 1972 Story &amp; Videos</a></li>
+                    <li><a href="{{ home_anchor }}#rentals" data-es="Alquiler en Alafia River">Alafia River Rentals</a></li>
+                    <li><a href="{{ home_anchor }}#financing" data-es="Financiamiento 0% APR y Trade-In">0% APR Financing &amp; Trade-In</a></li>
+                    <li><a href="{{ locations_href }}" data-es="Tiendas y Mapa">Two Shops &amp; Directions</a></li>
+                  </ul>
+                </div>
+                <a class="mega-card" href="{{ home_anchor }}#service">
+                  <div class="mega-card-media">
+                    <img src="{{ 'spz-propero-4.png' | asset_url }}" width="180" height="140" alt="UBC Walk-In Workshop &amp; 20,000+ Gear Catalog" loading="lazy">
+                  </div>
+                  <div class="mega-card-body">
+                    <span class="mega-kicker" data-es="Taller Sin Cita + 20,000+ Productos">Walk-In Workshop + 20k+ SKUs</span>
+                    <strong data-es="Reparamos bicis, scooters, e-bikes y carbono — liderado por Manny desde 1972.">We fix everyday bikes, scooters, e-bikes &amp; pro carbon — led by Manny since 1972.</strong>
+                    <span class="mega-cta"><span data-es="Ver el taller">Explore Workshop</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </li>
+          <li><a href="{{ home_anchor }}#service" data-es="Taller">Workshop</a></li>
+          <li><a href="{{ home_anchor }}#finder" data-es="Buscador">Bike Finder</a></li>
+          <li><a href="{{ home_anchor }}#family" data-es="Familia UBC">Our Family</a></li>
+          <li><a href="{{ home_anchor }}#rentals" data-es="Alafia">Alafia</a></li>
+          <li><a href="{{ home_anchor }}#financing" data-es="Financiamiento">Financing</a></li>
+          <li><a href="{{ home_anchor }}#stores" data-es="Tiendas">Stores</a></li>
+        {%- endif -%}
+      </ul>
+
+      <div class="fb-header-tools">
+        <button class="fb-icon-btn" id="fbSearchBtn" type="button" aria-label="{{ 'general.search.search' | t }}" aria-expanded="false">
+          <svg aria-hidden="true"><use href="#i-search"/></svg>
+        </button>
+        <a class="fb-icon-btn hide-m" href="{{ routes.account_url | default: routes.root_url }}" aria-label="{{ 'customer.account.title' | t }}">
+          <svg aria-hidden="true"><use href="#i-user"/></svg>
+        </a>
+        <a
+          class="fb-icon-btn fb-cart-btn"
+          id="fable-cart-icon-trigger"
+          href="{{ routes.cart_url }}"
+          data-fable-cart-trigger
+          role="button"
+          aria-haspopup="dialog"
+          aria-label="{{ 'templates.cart.cart' | t }}"
+        >
+          <svg aria-hidden="true"><use href="#i-bag"/></svg>
+          <span class="fb-cart-badge" id="fable-cart-count" {% if cart == empty %}hidden{% endif %}>{{ cart.item_count }}</span>
+        </a>
+        <button class="fb-icon-btn fb-burger" id="fbBurger" type="button" aria-label="{{ 'sections.header.menu' | t }}" aria-expanded="false">
+          <svg aria-hidden="true"><use href="#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="fb-search-pop" id="fbSearchPop">
+      <div class="fb-wrap">
+        <form action="{{ routes.search_url }}" method="get" role="search">
+          <label class="sr-only" for="fbQ">{{ 'general.search.search' | t }}</label>
+          <input
+            id="fbQ"
+            name="q"
+            type="search"
+            enterkeyhint="search"
+            maxlength="150"
+            placeholder="Search 20,000+ items (MIPS helmets, GP5000 tires, Skratch, Turbo e-bikes…)"
+            data-es-placeholder="Buscar en 20,000+ productos (cascos MIPS, llantas GP5000, Skratch, E-Bikes…)"
+            autocomplete="off"
+          >
+          <button class="fb-btn coral" type="submit"><span data-es="Buscar">{{ 'general.search.search' | t }}</span></button>
+        </form>
+        <div class="fb-search-tags">
+          <span data-es="Populares:">Popular:</span>
+          <a href="{{ home_anchor }}#new-arrivals" data-na-jump="deals" data-es="Promociones">Active Promos</a>
+          <a href="{{ routes.search_url }}?q=Helmet" data-es="Cascos MIPS">MIPS Helmets</a>
+          <a href="{{ home_anchor }}#new-arrivals" data-na-jump="nutrition" data-es="Hidratación Skratch">Skratch Hydration</a>
+          <a href="{{ home_anchor }}#service" data-es="Taller y Tune-Up">Walk-In Tune-Ups</a>
+          <a href="{{ routes.search_url }}?q=Turbo">Specialized Turbo</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="fb-drawer on-dark" id="fbDrawer" aria-hidden="true">
+    <div class="fb-drawer-top">
+      <img src="{{ 'fable-logo-white.png' | asset_url }}" width="144" height="30" alt="{{ shop.name | escape }}">
+      <div class="fb-drawer-top-actions">
+        {%- if section.settings.enable_bilingual_toggle -%}
+          {%- if localization.available_languages.size > 1 -%}
+            <nav class="fb-lang fb-lang--drawer fb-lang--native" aria-label="{{ 'localization.language_label' | t }}">
+              {%- for lang_opt in localization.available_languages -%}
+                {%- assign code_short = lang_opt.iso_code | slice: 0, 2 | upcase -%}
+                <a
+                  href="{{ lang_opt.root_url }}"
+                  lang="{{ lang_opt.iso_code }}"
+                  hreflang="{{ lang_opt.iso_code }}"
+                  {% if lang_opt.iso_code == localization.language.iso_code %}aria-current="true"{% endif %}
+                >{{ code_short }}</a>
+              {%- endfor -%}
+            </nav>
+          {%- else -%}
+            <div class="fb-lang fb-lang--drawer" role="group" aria-label="Language">
+              <button type="button" data-lang="en" aria-pressed="{% if request.locale.iso_code == 'es' %}false{% else %}true{% endif %}">EN</button>
+              <button type="button" data-lang="es" aria-pressed="{% if request.locale.iso_code == 'es' %}true{% else %}false{% endif %}">ES</button>
+            </div>
+          {%- endif -%}
+        {%- endif -%}
+        <button class="fb-icon-btn fb-drawer-close" id="fbDrawerClose" type="button" aria-label="{{ 'accessibility.close' | t }}">
+          <svg aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <nav aria-label="Mobile navigation">
+      {%- if drawer_menu != blank and drawer_menu.links.size > 3 -%}
+        {%- for link in drawer_menu.links -%}
+          <a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>
+            <span>{{ link.title | escape }}</span>
+            <svg aria-hidden="true" width="16" height="16"><use href="#i-arrow"/></svg>
+          </a>
+          {%- if link.links != blank -%}
+            {%- for childlink in link.links -%}
+              <a class="fb-drawer-sublink" href="{{ childlink.url }}"{% if childlink.current %} aria-current="page"{% endif %}>
+                <span>&mdash; {{ childlink.title | escape }}</span>
+              </a>
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- else -%}
+        <a href="{{ home_anchor }}#new-arrivals">
+          {%- if edition == 'black_friday' -%}
+            <span data-es="Ofertas Black Friday">Black Friday Promos</span><span>Deals</span>
+          {%- elsif edition == 'christmas' -%}
+            <span data-es="Regalos y Promos Navidad">Holiday Gifts &amp; Promos</span><span>Dec 25</span>
+          {%- elsif edition == 'july_4' -%}
+            <span data-es="Ofertas 4 de Julio">July 4th Promos</span><span>Summer</span>
+          {%- else -%}
+            <span data-es="Promos, Eventos y Novedades">Deals, Events &amp; New</span><span data-es="Nuevo">20k+</span>
+          {%- endif -%}
+        </a>
+        <a href="{{ home_anchor }}#service"><span data-es="Taller Sin Cita (Bicis y Scooters)">Walk-In Repair Workshop</span><span data-es="Manny y Ashton">All Day</span></a>
+        <a href="{{ home_anchor }}#finder"><span data-es="Buscador de Bicis y E-Bikes">Bike &amp; E-Bike Finder</span><span>20s</span></a>
+        <a href="{{ home_anchor }}#family"><span data-es="Conoce a la Familia y Equipo UBC">Meet Manny, Carlos &amp; Crew</span><span>Since 1972</span></a>
+        <a href="{{ story_href }}"><span data-es="Historia Completa y Videos">Full Story &amp; Shop Videos</span><span>8 Videos</span></a>
+        <a href="{{ home_anchor }}#rentals"><span data-es="Alquiler en Alafia River">Alafia Trailhead Rentals</span><span>Park</span></a>
+        <a href="{{ home_anchor }}#financing"><span data-es="Financiamiento 0% APR y Trade-In">0% APR Financing &amp; Trade-In</span><span>0% APR</span></a>
+        <a href="{{ home_anchor }}#stores"><span data-es="Tiendas y Cómo Llegar">Two Shops &amp; Map</span><span>Tampa + Lithia</span></a>
+      {%- endif -%}
+    </nav>
+
+    <div class="fb-drawer-foot">
+      <a class="fb-btn coral" href="tel:{{ phone_tel }}">
+        <svg aria-hidden="true"><use href="#i-phone"/></svg>
+        <span>{{ raw_phone | escape }}</span>
+      </a>
+      <a class="fb-btn ghost-light" href="{{ routes.all_products_collection_url }}">
+        <span data-es="Ver todo el catálogo">Browse Full Catalog</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Ecommerce Header",
+  "class": "shopify-section-fable-header",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Primary navigation menu (Shopify Navigation)"
+    },
+    {
+      "type": "link_list",
+      "id": "mobile_menu",
+      "label": "Mobile drawer menu (optional override)"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Showroom phone number",
+      "default": "(813) 971-2277"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_bilingual_toggle",
+      "label": "Enable EN / ES language switcher",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Ecommerce Header"
+    }
+  ]
+}
+{% endschema %}

@@ -51,7 +51,7 @@ export async function login(ctx: AppContext, req: FastifyRequest, reply: Fastify
   if (!u || !ok) {
     recordFailure(key);
     await audit(ctx.pool, { companyId: u?.company_id ?? (null as unknown as string), action: 'auth.login_failed', detail: { email }, ip: req.ip }).catch(() => {});
-    throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+    throw new HttpError(401, 'INVALID_CREDENTIALS', 'Username or password is incorrect');
   }
   attempts.delete(key);
   const token = randomBytes(32).toString('base64url');

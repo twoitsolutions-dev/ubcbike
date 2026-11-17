@@ -1,0 +1,147 @@
+{%- comment -%}
+  UBC Boutique Catalog & Promotions Cards (Pin 4 "PROMOTIONS")
+  - Centered tab header with coral underline
+  - 4-column rounded studio cards (`border-radius: 20px`)
+  - Automatic yellow `-XX%` top-right discount pill when `compare_at_price > price`
+  - Circular coral shopping-bag AJAX quick-add button wired to Dawn's Cart Drawer
+  - Live `ubc.*` omnichannel availability & Click-and-Collect pills
+{%- endcomment -%}
+{%- liquid
+  assign promo_coll = section.settings.collection
+  if promo_coll == blank
+    assign promo_coll = collections['bikes'] | default: collections['all']
+  endif
+-%}
+<section class="ub-promos" aria-label="{{ section.settings.tab_title | escape }}">
+  <div class="ub-shell">
+    <div class="ub-tab-head">
+      <h2 class="ub-tab-head__title">{{ section.settings.tab_title | escape }}</h2>
+    </div>
+
+    <div class="ub-promos__grid">
+      {%- if promo_coll != blank and promo_coll.products_count > 0 -%}
+        {%- for product in promo_coll.products limit: section.settings.products_to_show -%}
+          {%- liquid
+            assign v = product.selected_or_first_available_variant
+            assign h = product.handle | downcase
+            assign card_fallback = 'ubc-bike-tarmac-sl9.webp'
+            if h contains 'surly' or h contains 'diverge' or h contains 'frame'
+              assign card_fallback = 'ubc-bike-diverge.webp'
+            elsif h contains 'tire' or h contains 'continental' or h contains 'gp5'
+              assign card_fallback = 'ubc-part-tires.webp'
+            elsif h contains 'helmet' or h contains 'bell'
+              assign card_fallback = 'ubc-part-cockpit.webp'
+            elsif h contains 'epic'
+              assign card_fallback = 'ubc-bike-epic-9.webp'
+            endif
+
+            assign pct_off = 0
+            if v.compare_at_price != blank and v.compare_at_price > v.price
+              assign diff = v.compare_at_price | minus: v.price
+              assign pct_off = diff | times: 100 | divided_by: v.compare_at_price
+            endif
+          -%}
+          <article class="ub-pcard">
+            {%- if pct_off > 0 -%}
+              <span class="ub-pcard__discount">-{{ pct_off }}%</span>
+            {%- endif -%}
+
+            <div>
+              <a href="{{ product.url }}" class="ub-pcard__media">
+                {%- if product.featured_image != blank -%}
+                  {{
+                    product.featured_image
+                    | image_url: width: 520
+                    | image_tag: width: 520, height: 340, loading: 'lazy', alt: product.title
+                  }}
+                {%- else -%}
+                  <img
+                    src="{{ card_fallback | asset_url }}"
+                    width="520"
+                    height="340"
+                    loading="lazy"
+                    alt="{{ product.title | escape }}"
+                  >
+                {%- endif -%}
+              </a>
+
+              <div class="ub-pcard__mid">
+                <div>
+                  <h3 class="ub-pcard__title">
+                    <a href="{{ product.url }}">{{ product.title | escape }}</a>
+                  </h3>
+                  <p class="ub-pcard__vendor">
+                    {{ product.vendor | escape }}
+                    {%- if v.sku != blank %} &middot; {{ v.sku | escape }}{% endif -%}
+                  </p>
+                </div>
+
+                <form method="post" action="{{ routes.cart_add_url }}" data-ub-bag-form>
+                  <input type="hidden" name="id" value="{{ v.id }}">
+                  <button
+                    type="submit"
+                    class="ub-circle-bag"
+                    {% unless v.available %}disabled{% endunless %}
+                    aria-label="Add {{ product.title | escape }} to bag"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="ub-pcard__foot">
+              <div class="ub-pcard__price-row">
+                <span class="ub-pcard__price">{{ v.price | money }}</span>
+                {%- if pct_off > 0 -%}
+                  <s class="ub-pcard__compare">{{ v.compare_at_price | money }}</s>
+                {%- endif -%}
+              </div>
+
+              {%- render 'ubc-availability', variant: v -%}
+            </div>
+          </article>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "UBC Boutique Promo Cards",
+  "tag": "section",
+  "class": "section-ubc-promo-cards",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tab_title",
+      "label": "Section tab heading",
+      "default": "PROMOTIONS & IN-STORE LINEUP"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "label": "Products to display",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Boutique Promo Cards"
+    }
+  ]
+}
+{% endschema %}

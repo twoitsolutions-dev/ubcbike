@@ -37,7 +37,10 @@ export async function buildApp(opts: { pool: Pool; config: AppConfig; connectors
     reply.header('Referrer-Policy', 'same-origin');
     reply.header('X-Robots-Tag', 'noindex, nofollow');
     if (req.url.startsWith('/api/')) reply.header('Cache-Control', 'no-store');
-    else reply.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    else {
+      reply.header('Cache-Control', 'no-cache');
+      reply.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    }
     return payload;
   });
 

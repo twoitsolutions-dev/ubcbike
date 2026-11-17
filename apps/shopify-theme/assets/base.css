@@ -7,6 +7,7 @@ a{color:var(--color-accent)}
 h1,h2,h3{line-height:1.2;margin:0 0 .5em}
 .container{max-width:1280px;margin:0 auto;padding:0 16px}
 .visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
 .skip-link{position:absolute;left:-999px}.skip-link:focus{left:16px;top:16px;z-index:100;background:#fff;padding:8px}
 .muted{color:#64748b}
 .announcement{background:#0f172a;color:#e2e8f0;text-align:center;font-size:14px;padding:8px 16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
@@ -57,6 +58,7 @@ h1,h2,h3{line-height:1.2;margin:0 0 .5em}
 .availability{font-size:13px;font-weight:600;display:inline-block;padding:2px 8px;border-radius:999px;width:fit-content}
 .availability--in_stock{background:#dcfce7;color:#15803d}
 .availability--special_order{background:#ede9fe;color:var(--color-special)}
+.availability--pickup{background:#fef3c7;color:#b45309}
 .availability--unavailable{background:#fee2e2;color:#b91c1c}
 .services-grid{display:grid;gap:16px}
 .service{border:1px solid #e2e8f0;border-radius:10px;padding:20px}

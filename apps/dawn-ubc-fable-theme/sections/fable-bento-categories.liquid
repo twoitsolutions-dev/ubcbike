@@ -1,0 +1,156 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v20 — Asymmetric Bento Categories + Balanced Storewide `On the Floor Today` Grid
+  Official UBC Brand Colors (#213549 Navy, #CCBB8D Gold, #FEFDF3 / #F3F1E7 Cream) + Option A Coral (#E04F33)
+{%- endcomment -%}
+{%- liquid
+  assign edition = settings.ubc_edition | default: 'classic'
+  assign target_bikes_col = section.settings.collection | default: collections['bikes']
+  assign bikes_col_url = target_bikes_col.url | default: routes.all_products_collection_url
+-%}
+<div class="fb-scope">
+  <section class="fb-sec" id="shop">
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div>
+          <span class="eyebrow reveal" data-es="Comprar por Departamento">Shop by Department</span>
+          <h2 class="h2 reveal" data-es="Todo para rodar, <em>bajo un mismo techo.</em>">Everything you ride with, <em>under one roof.</em></h2>
+        </div>
+        <a class="link-arrow reveal" href="{{ routes.all_products_collection_url }}">
+          <span data-es="Explorar todo el catálogo">Explore Full Catalog</span> <svg><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+
+      <div class="bento">
+        <a class="tile t-bikes reveal" href="{{ bikes_col_url }}">
+          <div class="tile-copy">
+            <h3 data-es="Bicicletas">Bikes</h3>
+            <p data-es="Ruta, montaña, híbridas, urbanas, BMX y para niños. Armadas, ajustadas y listas para rodar.">
+              Road, mountain, hybrid, commuter, BMX and kids'. Sold assembled, adjusted and road-ready.
+            </p>
+          </div>
+          <img class="cut" src="{{ 'fable-bike-tarmac.png' | asset_url }}" width="640" height="400" alt="Specialized Tarmac Road Bike" loading="lazy">
+          <span class="go"><svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+        <a class="tile t-ebike reveal" style="--d:1" href="#ebikes">
+          <div class="tile-copy">
+            <span class="tile-pill" data-es="Más Vendidas">Top Seller</span>
+            <h3 data-es="Eléctricas">Electric Bikes</h3>
+            <p data-es="Specialized Turbo, Santa Cruz Vala, Electra Go! y soporte integral en tienda.">
+              Specialized Turbo, Santa Cruz Vala, Electra Go! &amp; full in-store support.
+            </p>
+          </div>
+          <span class="go go--coral"><svg><use href="#i-bolt"/></svg></span>
+        </a>
+
+        <a class="tile t-s reveal" style="--d:2" href="#gear" data-gear-jump="parts">
+          <div class="tile-copy">
+            <h3 data-es="Componentes y Llantas">Components &amp; Tires</h3>
+            <p data-es="Transmisión SRAM y Shimano, frenos, sillines y llantas.">
+              SRAM &amp; Shimano drivetrain, brakes, saddles and tires.
+            </p>
+          </div>
+          <img class="cut cut--sm" src="{{ 'cat-sram-s200.png' | asset_url }}" width="260" height="220" alt="SRAM Eagle Rear Derailleur" loading="lazy">
+          <span class="go"><svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+        <a class="tile t-third reveal" href="#gear" data-gear-jump="accessories">
+          <div class="tile-copy">
+            <h3 data-es="Cascos y Accesorios">Helmets &amp; Gear</h3>
+            <p data-es="Cascos MIPS, luces potentes, ánforas y portaequipajes.">
+              MIPS helmets, lights, Purist bottles and racks.
+            </p>
+          </div>
+          <img class="cut cut--md" src="{{ 'spz-propero-4.png' | asset_url }}" width="260" height="200" alt="Specialized Propero 4 MIPS Helmet" loading="lazy">
+          <span class="go"><svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+        <a class="tile t-third reveal" style="--d:1" href="#gear" data-gear-jump="supplements">
+          <div class="tile-copy">
+            <h3 data-es="Nutrición e Hidratación">Hydration &amp; Fuel</h3>
+            <p data-es="Electrolitos Skratch Labs, geles GU, gomitas y recuperación.">
+              Skratch Labs electrolytes, GU gels, chews and recovery.
+            </p>
+          </div>
+          <img class="cut cut--md" src="{{ 'supp-skratch-hydration.png' | asset_url }}" width="240" height="200" alt="Skratch Labs Hydration Mix" loading="lazy">
+          <span class="go"><svg><use href="#i-arrow"/></svg></span>
+        </a>
+
+        <a class="tile t-third t-sale reveal" style="--d:2" href="{{ routes.collections_url }}/all">
+          <div class="tile-copy">
+            {%- if edition == 'black_friday' -%}
+              <h3 data-es="Especiales Black Friday">Black Friday Specials</h3>
+              <p data-es="Descuentos directos en bicicletas, cascos MIPS, luces y componentes.">
+                Event pricing across bikes, MIPS helmets, lights and components.
+              </p>
+            {%- elsif edition == 'christmas' -%}
+              <h3 data-es="Ideas de Regalo">Holiday Gift Specials</h3>
+              <p data-es="Selección navideña en equipo, accesorios, hidratación y bicicletas.">
+                Seasonal values on rider gear, accessories, hydration and bikes.
+              </p>
+            {%- else -%}
+              <h3 data-es="Ofertas y Liquidación">Sales &amp; Closeouts</h3>
+              <p data-es="Los mejores precios en bicicletas, cascos, llantas y equipo seleccionado.">
+                Our best prices on select bikes, helmets, tires and gear while they last.
+              </p>
+            {%- endif -%}
+          </div>
+          <span class="go go--coral"><svg><use href="#i-arrow"/></svg></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} Balanced 4-Column Storewide `On the Floor Today` Grid (Bikes, E-Bikes, Helmets, Parts & Hydration) {%- endcomment -%}
+  <section class="fb-sec stock-sec" id="instock">
+    <div id="ebikes" class="anchor-offset" aria-hidden="true"></div>
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div>
+          <span class="eyebrow reveal" data-es="En Tienda Hoy &middot; Showroom Tampa">On the Floor Today</span>
+          <h2 class="h2 reveal" data-es="En stock en Tampa. <em>Llévatelo hoy mismo.</em>">In stock in Tampa. <em>Take it home today.</em></h2>
+        </div>
+        <div class="chips chips--wrap reveal" id="stockTabs" role="group" aria-label="Filter Tampa showroom inventory">
+          <button class="chip chip--sm" type="button" data-t="all" aria-pressed="true" data-es="Todo en Tienda">All Ready Today</button>
+          <button class="chip chip--sm" type="button" data-t="electric" aria-pressed="false"><svg><use href="#i-bolt"/></svg> <span data-es="E-Bikes">E-Bikes</span></button>
+          <button class="chip chip--sm" type="button" data-t="bikes" aria-pressed="false" data-es="Ruta y MTB">Road &amp; MTB</button>
+          <button class="chip chip--sm" type="button" data-t="accessories" aria-pressed="false" data-es="Cascos y Luces">Helmets &amp; Gear</button>
+          <button class="chip chip--sm" type="button" data-t="parts" aria-pressed="false" data-es="Llantas y Piezas">Tires &amp; Parts</button>
+        </div>
+      </div>
+
+      <div class="grid-products stock-grid" id="stockGrid" aria-live="polite"></div>
+
+      <div class="pickup-bar reveal">
+        <div class="pickup-bar-copy">
+          <svg><use href="#i-bag"/></svg>
+          <div>
+            <strong data-es="Compra bicis, cascos, repuestos o nutrición en línea y retira gratis en Tampa.">Order bikes, helmets, parts or hydration online — pick up free at our Tampa shop.</strong>
+            <span data-es="Bicicletas entregadas 100% armadas con ajustes gratuitos para el dueño original; envío gratis en equipo desde $50+.">Bikes leave 100% assembled with free adjustments for the original owner; gear &amp; parts ship free over $50.</span>
+          </div>
+        </div>
+        <a class="fb-btn coral sm" href="{{ routes.collections_url }}/all">
+          <span data-es="Ver todo en stock">Shop All In-Stock</span> <svg><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Categories & Stock",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Bikes collection"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Categories & Stock"
+    }
+  ]
+}
+{% endschema %}

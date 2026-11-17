@@ -1,0 +1,251 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v15 — Interactive Pro-Shop (Accessories, Hydration/Supplements & OEM Parts)
+  Official UBC Brand Colors + Option A Coral (#E04F33) · 100% Real Studio Photos · Wired to Dawn Cart Drawer AJAX
+{%- endcomment -%}
+{%- liquid
+  assign p_tire = all_products['continental-grand-prix-5000-700x28c-tire']
+  assign p_helmet = all_products['bell-z20-mips-road-helmet-medium']
+
+  assign tire_vid = ''
+  assign tire_price = 79.99
+  assign tire_url = routes.collections_url | append: '/all'
+  if p_tire != blank
+    assign tire_vid = p_tire.selected_or_first_available_variant.id
+    assign tire_price = p_tire.price | divided_by: 100.0
+    assign tire_url = p_tire.url
+  endif
+
+  assign helmet_vid = ''
+  assign helmet_price = 189.99
+  assign helmet_url = routes.collections_url | append: '/all'
+  if p_helmet != blank
+    assign helmet_vid = p_helmet.selected_or_first_available_variant.id
+    assign helmet_price = p_helmet.price | divided_by: 100.0
+    assign helmet_url = p_helmet.url
+  endif
+-%}
+
+<div class="fb-scope">
+  <section class="fb-sec gear-explorer" id="gear">
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div>
+          <span class="eyebrow reveal" data-es="Equipo, Suplementos y Repuestos">Gear, Supplements &amp; Parts</span>
+          <h2 class="h2 reveal" data-es="Lo esencial <em>que cambia cada rodada.</em>">Small stuff. <em>Big difference.</em></h2>
+        </div>
+        <a class="link-arrow reveal" href="{{ routes.search_url }}?q=Specialized">
+          <span data-es="Explorar más de 20,000 productos">Browse 20,000+ Catalog Items</span> <svg><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+
+      <div class="gear-shell reveal">
+        <div class="gear-toolbar">
+          <div class="gear-cat-tabs chips--wrap" id="gearCatTabs" role="tablist" aria-label="Equipment categories">
+            <button type="button" class="gear-tab" role="tab" aria-selected="true" data-gcat="all">
+              <span data-es="Todo el Equipo">All Gear</span> <small>12</small>
+            </button>
+            <button type="button" class="gear-tab" role="tab" aria-selected="false" data-gcat="accessories">
+              <span data-es="Cascos y Luces">Helmets &amp; Lights</span> <small>4</small>
+            </button>
+            <button type="button" class="gear-tab" role="tab" aria-selected="false" data-gcat="supplements">
+              <span data-es="Nutrición e Hidratación">Hydration &amp; Fuel</span> <small>4</small>
+            </button>
+            <button type="button" class="gear-tab" role="tab" aria-selected="false" data-gcat="parts">
+              <span data-es="Partes y Llantas">Parts &amp; Tires</span> <small>4</small>
+            </button>
+          </div>
+
+          <div class="gear-subbar">
+            <div class="chips chips--wrap" id="gearTagPills" role="group" aria-label="Quick filters">
+              <button type="button" class="chip chip--sm" data-gtag="all" aria-pressed="true" data-es="Todos">All</button>
+              <button type="button" class="chip chip--sm" data-gtag="ebike" aria-pressed="false" data-es="Para E-Bike">E-Bike Ready</button>
+              <button type="button" class="chip chip--sm" data-gtag="heat" aria-pressed="false" data-es="Clima de Florida">Florida Heat</button>
+              <button type="button" class="chip chip--sm" data-gtag="tampa" aria-pressed="false" data-es="En Stock Tampa">In Stock Tampa</button>
+            </div>
+
+            <div class="gear-search">
+              <svg><use href="#i-search"/></svg>
+              <input
+                type="search"
+                id="gearSearchInput"
+                enterkeyhint="search"
+                placeholder="Filter gear (MIPS, Skratch, Power, GP5000…)"
+                data-es-placeholder="Filtrar equipo (MIPS, Skratch, Power, GP5000…)"
+                aria-label="Filter equipment items"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="gear-grid" id="gearInteractiveGrid" aria-live="polite"></div>
+        <div class="gear-more-wrap" id="gearMoreWrap" hidden>
+          <button type="button" class="fb-btn outline sm" id="gearShowMoreBtn" aria-expanded="false">
+            <span id="gearShowMoreTxt">Show All 12 Pro-Shop Items (+8)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="application/json" id="FableGearData">
+      [
+        {
+          "id": "spz-propero4",
+          "cat": "accessories",
+          "tags": ["ebike", "heat", "tampa"],
+          "b": "Specialized",
+          "n": "Propero 4 MIPS Helmet",
+          "p": 199.99,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'spz-propero-4.png' | asset_url | json }},
+          "badge": ["MIPS Evolve", "MIPS Evolve"],
+          "spec": ["Virginia Tech 5-Star safety rating · Micro-channeled ventilation for high-humidity Florida rides · FS3 fit system", "Calificación 5 estrellas Virginia Tech · Ventilación interna para humedad alta en Florida · Ajuste FS3"]
+        },
+        {
+          "id": "bell-z20",
+          "cat": "accessories",
+          "tags": ["ebike", "heat", "tampa"],
+          "b": {% if p_helmet != blank %}{{ p_helmet.vendor | json }}{% else %}"Giro"{% endif %},
+          "n": {% if p_helmet != blank %}{{ p_helmet.title | json }}{% else %}"Agilis MIPS Road Helmet"{% endif %},
+          "p": {{ helmet_price | json }},
+          "u": {{ helmet_url | json }},
+          "variantId": {{ helmet_vid | json }},
+          "img": {{ 'fable-gear-agilis.png' | asset_url | json }},
+          "badge": ["In Stock · Tampa", "En Stock · Tampa"],
+          "spec": ["Integrated MIPS rotational protection · Wind-tunnel ventilation · Roc Loc 5.5 micro-dial retention", "Protección rotacional MIPS integrada · Ventilación de túnel de viento · Ajuste milimétrico"]
+        },
+        {
+          "id": "exposure-mk15",
+          "cat": "accessories",
+          "tags": ["ebike", "tampa"],
+          "b": "Exposure Lights",
+          "n": "Six Pack MK15 Front Headlight",
+          "p": 545.00,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'spz-stix-light.png' | asset_url | json }},
+          "badge": ["CNC Alloy Light", "Aluminio CNC"],
+          "spec": ["Anodized CNC aluminum body · Reflex++ output control · Built for night trail riding and fast e-bike commuting", "Cuerpo de aluminio anodizado CNC · Control inteligente Reflex++ · Ideal para sendero nocturno y E-Bike"]
+        },
+        {
+          "id": "spz-purist",
+          "cat": "accessories",
+          "tags": ["ebike", "heat", "tampa"],
+          "b": "Specialized",
+          "n": "Purist WaterGate S-Logo 22oz Bottle",
+          "p": 16.00,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'spz-purist-bottle.png' | asset_url | json }},
+          "badge": ["Purist Lining", "Interior Purist"],
+          "spec": ["Amorphous silicon dioxide inner coating prevents plastic aftertaste · Leak-proof Heart Valve nozzle", "Recubrimiento interior Purist sin sabor a plástico · Válvula antifugas de alto flujo"]
+        },
+        {
+          "id": "skratch-hydration",
+          "cat": "supplements",
+          "tags": ["heat", "ebike", "tampa"],
+          "b": "Skratch Labs",
+          "n": "Sport Hydration Drink Mix",
+          "p": 24.95,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'supp-skratch-hydration.png' | asset_url | json }},
+          "badge": ["Electrolytes", "Electrolitos"],
+          "spec": ["Real fruit flavor with sodium, potassium and magnesium matched to sweat loss in warm Florida weather", "Fruta real con el balance exacto de sodio, potasio y magnesio para el calor de Florida"]
+        },
+        {
+          "id": "gu-gel-box",
+          "cat": "supplements",
+          "tags": ["heat", "tampa"],
+          "b": "GU Energy",
+          "n": "Energy Gel — 24-Count Box",
+          "p": 38.40,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'cat-gu-gel.png' | asset_url | json }},
+          "badge": ["Dual-Source Carbs", "Carbohidratos"],
+          "spec": ["100 calories per packet · Maltodextrin + fructose dual-pathway energy with branched-chain amino acids", "100 calorías por sobre · Energía de doble vía maltodextrina + fructosa con aminoácidos BCAA"]
+        },
+        {
+          "id": "gu-roctane-caps",
+          "cat": "supplements",
+          "tags": ["heat", "ebike", "tampa"],
+          "b": "GU Energy",
+          "n": "Roctane Electrolyte Capsules (50ct)",
+          "p": 22.00,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'supp-gu-capsules.png' | asset_url | json }},
+          "badge": ["Florida Heat", "Clima Húmedo"],
+          "spec": ["140mg sodium + magnesium & vitamin B6 capsules engineered to prevent cramping on humid Florida rides", "Cápsulas con sodio, magnesio y vitamina B6 para evitar calambres en el calor húmedo de Florida"]
+        },
+        {
+          "id": "skratch-recovery",
+          "cat": "supplements",
+          "tags": ["tampa"],
+          "b": "Skratch Labs",
+          "n": "Sport Recovery Drink Mix",
+          "p": 38.95,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'supp-skratch-recovery.png' | asset_url | json }},
+          "badge": ["Post-Ride 4:1", "Recuperación 4:1"],
+          "spec": ["4:1 carbohydrate-to-protein ratio with electrolytes and probiotics to refuel glycogen after long rides", "Proporción 4:1 de carbohidratos y proteína con electrolitos para reponer glucógeno tras rodar"]
+        },
+        {
+          "id": "spz-power-saddle",
+          "cat": "parts",
+          "tags": ["ebike", "tampa"],
+          "b": "Specialized",
+          "n": "S-Works Power Carbon Saddle",
+          "p": 324.99,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'spz-power-saddle.png' | asset_url | json }},
+          "badge": ["Body Geometry", "Body Geometry"],
+          "spec": ["FACT carbon shell & rails · Lab-tested Body Geometry cutout supports aggressive and upright riding positions", "Base y rieles de carbono FACT · Canal anatómico Body Geometry probado para flujo sanguíneo óptimo"]
+        },
+        {
+          "id": "conti-gp5000",
+          "cat": "parts",
+          "tags": ["tampa"],
+          "b": "Continental",
+          "n": {% if p_tire != blank %}{{ p_tire.title | json }}{% else %}"Grand Prix 5000 — 700x28c Tire"{% endif %},
+          "p": {{ tire_price | json }},
+          "u": {{ tire_url | json }},
+          "variantId": {{ tire_vid | json }},
+          "img": {{ 'spz-cannibal-tire.png' | asset_url | json }},
+          "badge": ["BlackChili", "BlackChili"],
+          "spec": ["VectranBreaker puncture protection + Lazer Grip cornering shoulder · Available in Tampa showroom", "Protección antipinchazos VectranBreaker + hombro Lazer Grip · Disponible en nuestro showroom de Tampa"]
+        },
+        {
+          "id": "spz-cannibal-tire",
+          "cat": "parts",
+          "tags": ["ebike", "tampa"],
+          "b": "Specialized",
+          "n": "Cannibal GRID Gravity T9 Tire",
+          "p": 75.00,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'spz-cannibal-tire.png' | asset_url | json }},
+          "badge": ["E-MTB & Trail", "E-MTB y Trail"],
+          "spec": ["GRIPTON T9 high-damping rubber + 2-ply GRID Gravity casing built for trail bikes and full-power E-MTBs", "Compuesto GRIPTON T9 de máximo agarre + carcasa doble GRID Gravity ideal para trail y E-MTB"]
+        },
+        {
+          "id": "sram-s200",
+          "cat": "parts",
+          "tags": ["ebike", "tampa"],
+          "b": "SRAM",
+          "n": "Eagle S200 Rear Derailleur",
+          "p": 139.99,
+          "u": {{ routes.collections_url | append: '/all' | json }},
+          "img": {{ 'cat-sram-s200.png' | asset_url | json }},
+          "badge": ["Eagle Drivetrain", "Transmisión Eagle"],
+          "spec": ["Crisp wide-range shifting with Roller Bearing Clutch chain retention for rough Florida roots and limestone", "Cambios precisos de rango amplio con embrague Roller Bearing para raíces y terreno técnico"]
+        }
+      ]
+    </script>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Pro-Shop Equipment",
+  "presets": [
+    {
+      "name": "UBC Pro-Shop Equipment"
+    }
+  ]
+}
+{% endschema %}

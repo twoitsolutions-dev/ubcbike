@@ -1,0 +1,25 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "disabled": true,
+      "settings": {
+        "padding_top": 28,
+        "padding_bottom": 28
+      }
+    },
+    "store_locator": {
+      "type": "fable-store-locator",
+      "settings": {
+        "eyebrow": "Store Locator · Tampa & Alafia River",
+        "enable_near_me": true,
+        "show_page_link": false,
+        "is_standalone_page": true
+      }
+    }
+  },
+  "order": [
+    "main",
+    "store_locator"
+  ]
+}

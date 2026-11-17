@@ -54,6 +54,16 @@ export async function seedDemo(pool: pg.Pool, opts: { carlosPassword?: string; a
         `INSERT INTO suppliers (company_id, code, name, connector, methods, notes) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
         [companyId, s.code, s.name, s.connector, s.methods, s.notes],
       )).rows[0]!.id;
+      await client.query(
+        `INSERT INTO supplier_sync_schedules (company_id, supplier_id, stream, interval_minutes, max_silence_hours, last_success_at, last_status)
+         VALUES
+           ($1, $2, 'availability', 20,   2,  now(), 'succeeded'),
+           ($1, $2, 'costs',        540,  24, now(), 'succeeded'),
+           ($1, $2, 'content',      1440, 48, now(), 'succeeded'),
+           ($1, $2, 'full_catalog', NULL, 48, now(), 'succeeded')
+         ON CONFLICT (company_id, supplier_id, stream) DO NOTHING`,
+        [companyId, supplierIds[s.code]],
+      );
     }
 
     // Products (one row per productId) then variants, via jsonb_to_recordset for bulk speed.
@@ -181,14 +191,15 @@ export async function seedDemo(pool: pg.Pool, opts: { carlosPassword?: string; a
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const { createPool } = await import('./pool.js');
-  const pool = createPool();
-  seedDemo(pool)
-    .then((r) => {
-      console.log(`Seeded DEMO company ${r.companyId} with ${r.variants} variants.`);
-      for (const u of r.users) console.log(`  ${u.role.padEnd(10)} ${u.email}${u.password ? `  password: ${u.password}` : ''}`);
-      console.log('Store generated passwords in a password manager; they are not shown again.');
-    })
-    .catch((e) => { console.error(e.message); process.exitCode = 1; })
-    .finally(() => pool.end());
+  void import('./pool.js').then(({ createPool }) => {
+    const pool = createPool();
+    return seedDemo(pool)
+      .then((r) => {
+        console.log(`Seeded DEMO company ${r.companyId} with ${r.variants} variants.`);
+        for (const u of r.users) console.log(`  ${u.role.padEnd(10)} ${u.email}${u.password ? `  password: ${u.password}` : ''}`);
+        console.log('Store generated passwords in a password manager; they are not shown again.');
+      })
+      .catch((e) => { console.error(e.message); process.exitCode = 1; })
+      .finally(() => pool.end());
+  });
 }

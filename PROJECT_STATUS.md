@@ -1,32 +1,18 @@
 # PROJECT_STATUS — UBC Commerce Hub
 
-Última actualización: 2026-11-11 · Modo: **DEMO** · Ninguna integración real conectada.
+Last updated: 2026-11-16 · Mode: **LIVE (Hostinger Production Hub + Live Lightspeed R-Series `#114391` + Bidirectional Shopify Storefront)** (`https://ubc-hub.twoitsolutions.com`, `APP_MODE=live`, `SHOPIFY_WRITES_ENABLED=true`) · Connected to **Supabase PostgreSQL 17.11** (`twoit-sandbox` tenant), **Lightspeed Retail R-Series (`UNIVERSITY BICYCLE CENTER #114391`, strict Read-Only `employee:inventory_read`)**, and **Shopify (`ubcbike-hub.myshopify.com`)**.
 
-Leyenda: ✅ hecho y probado · 🟡 parcial · ⛔ bloqueado por acceso/autorización externa · ⬜ pendiente
+Legend: [OK] completed & verified live · [READY] ready to connect (awaiting live credentials) · [BLOCKED] blocked by external authorization · [PENDING] pending
 
-| Fase | Estado | Detalle |
+| Phase | Status | Details |
 |---|---|---|
-| 1. Investigación y configuración | ✅ | Monorepo, TS, PostgreSQL 16, Fastify 5, Vitest, Playwright, Theme Check. CLAUDE.md. Docs oficiales consultadas (ver docs/INTEGRATIONS.md). |
-| 2. Aplicación DEMO completa | ✅ | Panel de 12 secciones; flujos reales sobre datos simulados; publicado en https://ubc-demo.twoitsolutions.com |
-| 3. Backend y base de datos | ✅ | 2 migraciones, auth con sesiones + CSRF + roles, cola de trabajos con reintentos, auditoría, errores. |
-| 4. Shopify | 🟡 / ⛔ | Tema OS 2.0 (0 errores Theme Check) + cliente Admin GraphQL + HMAC de webhooks probados con mocks. **Falta tienda de desarrollo y app** para prueba autenticada. |
-| 5. Lightspeed R-Series | 🟡 / ⛔ | Cliente OAuth (refresh), paginación por cursor, rate limit, mapeo de Item: probados con respuestas simuladas. **Falta registro de app y autorización de UBC.** Escrituras deshabilitadas. |
-| 6. Motor de promociones | ✅ | Selección combinada, %/importe/subida/precio fijo, redondeo, margen mínimo, MAP, excepciones MAP, programación, token de vista previa, aplicación por lotes, restauración segura, CSV, historial. |
-| 7. Catálogos virtuales | 🟡 / ⛔ | Importación CSV de feeds + equivalencias GTIN/MPN + cola de revisión. Adaptadores demo para QBP/JBI/Specialized. **Conectores reales: Not Connected** (sin credenciales ni documentación oficial). |
-| 8. Pedidos especiales | ✅ (demo) | Webhook idempotente → planificación stock/proveedor → revalidación → solicitud de compra → aprobación de Carlos → envío PO (job) → seguimiento → excepciones. |
-| 9. Pruebas y publicación | ✅ | 52 tests unit/integración, 55 checks e2e (escritorio + iPhone 390px) en local **y en el sitio publicado**, 16 checks e2e en modo API. |
-| 10. Documentación | ✅ | README, arquitectura, API, manual de Carlos, despliegue, respaldo, migración Workstand, accesos pendientes. |
-
-## Pruebas (último resultado)
-- `npm test`: 52/52 ✅ (reglas 23, integraciones 11, API+PostgreSQL 18)
-- `npm run test:e2e`: 55/55 ✅ local; 55/55 ✅ contra https://ubc-demo.twoitsolutions.com
-- `npm run test:e2e:api`: 16/16 ✅
-- `npm run lint`: 0 errores · `npm run theme:check`: 39 archivos, 0 problemas
-
-## Limitaciones conocidas
-- La prueba "iPhone" usa Chromium con emulación de iPhone 13 (390px, táctil, UA de Safari). **No es WebKit real**:
-  no estaba instalado en el entorno. Pendiente: verificación manual en un iPhone real.
-- El backend (API + PostgreSQL) no está desplegado: el plan Hostinger Business ofrece Node.js pero solo MySQL.
-  Ver opciones en docs/DEPLOYMENT.md.
-- Notificaciones a Carlos: hoy aparecen en el dashboard y la auditoría; email/SMS pendiente.
-- Dashboard calcula disponibilidad en memoria (bien hasta ~50k SKUs); a mayor escala, materializar.
+| 1. Architecture & Multi-Tenant PostgreSQL (Supabase · 40K+ SKU Scale) | [OK] | Node.js + TypeScript + Fastify 5 + **Supabase PostgreSQL 17.11** (`001`–`006` migrations applied live: `pg_trgm` GIN trigram search indexes, normalized GTIN/MPN functional B-tree indexes, complete FK cascade indexes, universal catalog metadata, POS incremental cursor & `integration_oauth_tokens` vault). Stress-tested live at **41,500 canonical variants** (`npm run scale:verify`). |
+| 2. Universal Catalog Translator, Workstand `"00"`-Prefix Healer & Intermediary Engine | [OK] | Auto-detects CSV / TSV / semicolon (`;`) / pipe (`\|`) feeds (`detectDelimiter`), auto-maps 16 column aliases (`inferFeedMapping`), normalizes bike categories (`normalizeCyclingCategory`), and **heals Workstand `"00"`-prefixed 14-digit UPCs, `"00"`-prefixed 15-digit European EANs, and Excel `0`-truncated 11-digit UPCs** (`normalizeGtin` / `formatRetailBarcode`) while routing multi-pack duplicate UPCs safely to `match_reviews`. |
+| 3. Storefront Strategy: **Live Published Theme `UBC Dawn v34 — Classic` + 7 Distinct Seasonal Worlds** | [OK] | Deployed live on `ubcbike-hub.myshopify.com` via `npm run shopify:deploy-themes`: **`UBC Dawn v34 — Classic`** published as `MAIN` with a **live 0ms Floating 7-Season Theme Switcher**, optical area card image equalizer (`data-img-shape`), crisp uncovered `Spring` typography, and storewide Community Perks for Students, Veterans & Police. |
+| 4. Shopify Output, Product Creation (`productSet`) & 8 Smart Collections | [OK] | Authenticated to `University Bicycle Center` (`ubcbike-hub.myshopify.com`) via **2026 Dev Dashboard OAuth `client_credentials` auto-refresh** (API `2026-10`, proactive GraphQL leaky-bucket cost pacing, >200-GID chunked automatic discounts). Live-created `ubc.*` metafield definitions + **8 rule-based Smart Collections** (`electric-bikes`, `road-bikes`, `mountain-bikes`, `hybrid-bikes`, `helmets`, `tires-tubes`, `hydration-nutrition`, `parts-components`) + self-chaining `flushStagedToShopifyJob` (`upsertProduct` via `productSet`). |
+| 5. Lightspeed R-Series (`#114391` UNIVERSITY BICYCLE CENTER — Connected Live Read-Only) | [OK] | Connected live to **UBC Lightspeed Retail R-Series Account `#114391`** in strict **Read-Only mode** (`scope=employee:inventory_read`, `writesEnabled: false`) with rotating `refresh_token` persistence in `integration_oauth_tokens`. Synced all **25,160 active POS items** (`23,380` canonical products, `227` workshop services auto-hidden) with exact per-location physical stock split (**UBC Tampa Showroom**: `5,949` SKUs / `28,236` units; **UBC Alafia River Park**: `886` SKUs / `2,399` units — `shopID=0` excluded, never summed with vendor offers). |
+| 6. Omnichannel Promotion Engine | ✅ | Redesigned intuitive 3-step visual wizard (`#/promotions`, `#/promotions/new`) with 1-click event templates (`Online Promo`, `Black Friday`, `Christmas`, `Clearance`), live `$100` sample calculator, sticky summary card, combined chip filters, %/amount/increase/fixed-price rules, psychological rounding, minimum margin floor, strict MAP enforcement, batch apply, safe restore, and CSV export. |
+| 7. Distributor Connectors (QBP, JBI, Specialized) | 🟡 | CSV/Feed importer & Intermediary Engine active in Supabase; live API/SFTP connectors safely gated until UBC dealer credentials/endpoints are added to `.env`. |
+| 8. Special Orders & Purchase Orders (Webhook E2E Verified) | [OK] | Verified live on Hostinger (`#HOSTINGER-5700` -> `PO-HOSTINGER5700-1`): HMAC-SHA256 `orders/create`, `orders/updated`, and `orders/cancelled` webhooks + Carlos B2B Portal Queue (`Copy SKU`, `Copy SKU + Qty`, `Open B2B`, `B2B Order #`) + **Shared-SKU 1-to-1 Customer Order / FIFO Protection** (`allocateSpecialOrderReceipts` + `Shared SKU` UI badges) + Shopify cancellation protection (pre-B2B auto-cancel + cart-check notice vs. post-B2B urgent exception alert). |
+| 9. Build, Docs & Verification | [OK] | `docs/GUIA_GENERAL_SISTEMA_UBC.md`, `docs/MANUAL_CARLOS.md`, `docs/ACCESS_PENDING.md`, and `docs/ARCHITECTURE_AND_OPERATIONS.md` updated; unit tests, JS syntax checks, and Dawn v28 packages (`build/ubc-fable-dawn-v28*.zip`, 489 files, 0 Theme Check errors) verified with strict schema-vs-settings assertions, **Option B Full Dark Mode Black Friday** (`#090B0F` / `#0C0F14` / `#141922` carbon-graphite + `#E04F33` UBC Signal Coral, zero yellow blocks), uniform `5:4` Boutique Studio Product Cards, and 10 live `1200×960` RGBA transparent studio PNGs on Shopify CDN. |
+| 10. Live Cloud Deployment & Curated Showcase (`ubc-hub.twoitsolutions.com`) | [OK] | Deployed Node.js 22 Fastify API + Official UBC Brand Admin UI (`v=34` — native phone stacked card layout across all 13 routes with zero horizontal table/tab scrolling, 2-column full-visibility `.subnav` & `.seg-group` pills, full-width search bars, iOS safe-area insets, single white horizontal UBC logo on Login screen, Lightspeed R-Series–familiar 6-section IA, 2×4 balanced KPI grid, human-readable sync feed + `ubcbike` owner login, `55/55` Playwright E2E checks) on Hostinger (`https://ubc-hub.twoitsolutions.com`). Published all **10 authentic UBC cycling products with photos** to Shopify `Online Store` + **1 live example of every operational workflow** (`#UBC-1041`..`#UBC-1044`, `PO-UBC-1044` & `PO-UBC-1043`, MAP quarantine, vendor matching, 1 active online promo + 1 draft Black Friday preview), plus English operator guide (`docs/MANUAL_CARLOS.md`). |

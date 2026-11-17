@@ -1,0 +1,26 @@
+{%- comment -%}
+  One piece row in the build carousel panel, with a native add-to-cart form (AJAX via motion.js).
+  Usage: {% render 'ubc-ring-row', product: product, variant: variant, n: 1, added_label: added_label %}
+{%- endcomment -%}
+<li class="ring-row">
+  <span class="ring-row-n" aria-hidden="true">{{ n }}</span>
+  <a class="ring-row-media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+    {%- if product.featured_media -%}
+      {{ product.featured_media | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}
+    {%- endif -%}
+  </a>
+  <div class="ring-row-info">
+    {%- if product.vendor != blank -%}<p class="ring-row-vendor">{{ product.vendor | escape }}</p>{%- endif -%}
+    <a class="ring-row-title" href="{{ product.url }}">{{ product.title | escape }}</a>
+    <p class="ring-row-price">{{ variant.price | money }}</p>
+  </div>
+  {%- form 'product', product, class: 'ring-row-form', data-quick-add: '', data-added-label: added_label -%}
+    <input type="hidden" name="id" value="{{ variant.id }}">
+    <input type="hidden" name="quantity" value="1">
+    <button class="ring-add" type="submit"{% unless variant.available %} disabled{% endunless %}>
+      <span class="visually-hidden">{{ 'ubc.products.add_to_cart' | t }}: {{ product.title | escape }}</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <p class="form-message visually-hidden" data-form-message role="status"></p>
+  {%- endform -%}
+</li>

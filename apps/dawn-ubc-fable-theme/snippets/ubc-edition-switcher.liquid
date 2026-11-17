@@ -1,0 +1,57 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v32 — Live Interactive 7-Season Storefront Switcher
+  Covers the full UBC Tampa retail calendar in chronological order:
+  Classic · Spring · July 4th · USF Campus · Veterans (Manny Tribute + Police/Student Discounts) · Black Friday · Christmas
+{%- endcomment -%}
+{%- if settings.ubc_show_edition_switcher != false -%}
+  <div class="ubc-ed-root" id="ubcEditionSwitcher" role="region" aria-label="Storefront Theme Preview">
+    <button
+      type="button"
+      class="ubc-ed-launcher"
+      id="ubcEdLauncher"
+      aria-expanded="true"
+      aria-controls="ubcEdPanel"
+      title="Switch Storefront Theme Edition"
+    >
+      <span class="ubc-ed-dot" id="ubcEdActiveDot" aria-hidden="true"></span>
+      <span class="ubc-ed-launcher-txt">Theme: <strong id="ubcEdActiveName">Classic</strong></span>
+    </button>
+
+    <div class="ubc-ed-bar" id="ubcEdPanel">
+      <span class="ubc-ed-kicker">Themes</span>
+      <div class="ubc-ed-pills" role="group" aria-label="Select theme edition">
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="classic" aria-pressed="true">
+          <i class="ubc-ed-swatch ubc-ed-swatch--classic" aria-hidden="true"></i>
+          <span>Classic</span>
+        </button>
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="spring" aria-pressed="false">
+          <i class="ubc-ed-swatch ubc-ed-swatch--spring" aria-hidden="true"></i>
+          <span>Spring</span>
+        </button>
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="july_4" aria-pressed="false">
+          <i class="ubc-ed-swatch ubc-ed-swatch--july" aria-hidden="true"></i>
+          <span>July 4th</span>
+        </button>
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="campus" aria-pressed="false">
+          <i class="ubc-ed-swatch ubc-ed-swatch--campus" aria-hidden="true"></i>
+          <span>USF Campus</span>
+        </button>
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="veterans" aria-pressed="false">
+          <i class="ubc-ed-swatch ubc-ed-swatch--vet" aria-hidden="true"></i>
+          <span>Veterans</span>
+        </button>
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="black_friday" aria-pressed="false">
+          <i class="ubc-ed-swatch ubc-ed-swatch--bf" aria-hidden="true"></i>
+          <span>Black Friday</span>
+        </button>
+        <button type="button" class="ubc-ed-btn" data-ubc-ed="christmas" aria-pressed="false">
+          <i class="ubc-ed-swatch ubc-ed-swatch--xmas" aria-hidden="true"></i>
+          <span>Christmas</span>
+        </button>
+      </div>
+      <button type="button" class="ubc-ed-min" id="ubcEdMinimize" aria-label="Minimize theme switcher" title="Minimize">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg>
+      </button>
+    </div>
+  </div>
+{%- endif -%}

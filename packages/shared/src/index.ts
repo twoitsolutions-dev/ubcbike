@@ -142,6 +142,27 @@ export interface MapException {
 
 export type CampaignChannel = 'online' | 'online_and_pos';
 
+/**
+ * POS price parity (`online_and_pos`) is reserved exclusively for major
+ * omnichannel events (Black Friday, Christmas, etc.). Daily promos stay `online`.
+ */
+export type PosSyncEventType =
+  | 'black_friday'
+  | 'christmas'
+  | 'holiday_sale'
+  | 'annual_clearance'
+  | 'special_event';
+
+export const POS_SYNC_EVENT_LABELS: Record<PosSyncEventType, string> = {
+  black_friday: 'Black Friday / Cyber Weekend',
+  christmas: 'Christmas / Holiday Sale',
+  holiday_sale: 'Seasonal / Holiday Event',
+  annual_clearance: 'Annual Storewide Clearance',
+  special_event: 'Special In-Store & Online Event',
+};
+
+export type ShopifyPlan = 'trial' | 'basic' | 'grow' | 'standard' | 'advanced' | 'plus';
+
 export type CampaignStatus =
   | 'draft'
   | 'scheduled'
@@ -217,6 +238,46 @@ export type IntegrationSystem =
   | 'specialized';
 
 export type IntegrationStatus = 'not_connected' | 'configured' | 'connected' | 'error' | 'demo_adapter';
+
+/**
+ * Intermediary Engine sync streams with differentiated cadences:
+ *  - availability: every 15–30 minutes
+ *  - costs: every 6–12 hours
+ *  - content: daily (descriptions & images, subject to supplier license)
+ *  - full_catalog: on supplier change / manual import
+ */
+export type SyncStream = 'availability' | 'costs' | 'content' | 'full_catalog';
+
+export interface SyncCadencePolicy {
+  stream: SyncStream;
+  /** Target polling interval in minutes (`null` = event/manual driven). */
+  intervalMinutes: number | null;
+  /** Design range [min, max] in minutes for operator reference. */
+  windowMinutes: [number, number] | null;
+  /** Alert threshold in hours if no successful feed/pull arrives. */
+  maxSilenceHours: number;
+}
+
+export const DEFAULT_SYNC_CADENCES: Record<SyncStream, SyncCadencePolicy> = {
+  availability: { stream: 'availability', intervalMinutes: 20, windowMinutes: [15, 30], maxSilenceHours: 2 },
+  costs: { stream: 'costs', intervalMinutes: 540, windowMinutes: [360, 720], maxSilenceHours: 24 },
+  content: { stream: 'content', intervalMinutes: 1440, windowMinutes: [1440, 1440], maxSilenceHours: 48 },
+  full_catalog: { stream: 'full_catalog', intervalMinutes: null, windowMinutes: null, maxSilenceHours: 48 },
+};
+
+export type SupplierChangeType =
+  | 'cost_changed'
+  | 'map_changed'
+  | 'msrp_changed'
+  | 'availability_changed';
+
+export type StagingDecision = 'ready_for_shopify' | 'held_for_review' | 'unchanged';
+
+export type StagingHoldReason =
+  | 'map_above_published_price'
+  | 'margin_below_minimum'
+  | 'unlicensed_content'
+  | 'unmatched_identity';
 
 export function formatCents(cents: number): string {
   const sign = cents < 0 ? '-' : '';

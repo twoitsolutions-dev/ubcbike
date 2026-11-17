@@ -1,0 +1,133 @@
+{%- comment -%}
+  "Build your ride": bikes on a turning 3D ring (depth scale + blur), autoplay with numbered progress,
+  arrows, pause, drag/swipe. A side panel lists the pieces of the active build (bike + accessories)
+  with quick add and "Add the full build". Without JS: the first build and its panel are shown, forms post natively.
+{%- endcomment -%}
+{%- assign looks = section.blocks -%}
+{%- assign added_label = 'ubc.products.added' | t -%}
+<section class="ring" data-ring data-speed="{{ section.settings.speed | times: 1000 }}" style="--ring-speed: {{ section.settings.speed }}s;" aria-roledescription="carousel" aria-labelledby="Ring-{{ section.id }}">
+  <div class="container ring-layout">
+    <div class="ring-main">
+      <div class="ring-head">
+        <h2 class="ring-title" id="Ring-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p class="ring-sub">{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+      <div class="ring-stage" data-ring-stage>
+        {%- if looks.size > 0 -%}
+          {%- for block in looks -%}
+            {%- assign p = block.settings.product -%}
+            <div class="ring-body" data-ring-body="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+              {%- if p.featured_media -%}
+                {{ p.featured_media | image_url: width: 900 | image_tag: loading: 'lazy', widths: '450, 700, 900', sizes: '(min-width: 990px) 34vw, 70vw', draggable: 'false', alt: p.title | escape }}
+              {%- elsif block.settings.fallback_image != blank -%}
+                <img src="{{ block.settings.fallback_image | asset_url }}" class="" width="1400" height="850" loading="lazy" draggable="false" alt="{{ block.settings.title | escape }}">
+              {%- else -%}
+                {% render 'ubc-bike-illustration' %}
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        {%- else -%}
+          {%- for i in (1..6) -%}
+            <div class="ring-body" data-ring-body="{{ forloop.index0 }}">{% render 'ubc-bike-illustration' %}</div>
+          {%- endfor -%}
+        {%- endif -%}
+        <div class="ring-sweep" aria-hidden="true"></div>
+      </div>
+      <div class="ring-controls">
+        <button class="ring-arrow" type="button" data-ring-prev aria-label="{{ 'ubc.showcase.previous' | t }}">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ol class="ring-ticks">
+          {%- if looks.size > 0 -%}
+            {%- for block in looks -%}
+              <li><button type="button" class="ring-tick" data-ring-go="{{ forloop.index0 }}"{% if forloop.first %} aria-current="true"{% endif %}><span class="ring-tick-num">{% if forloop.index < 10 %}0{% endif %}{{ forloop.index }}</span><span class="ring-tick-name">{{ block.settings.title | escape }}</span><span class="ring-tick-bar" aria-hidden="true"><span></span></span></button></li>
+            {%- endfor -%}
+          {%- else -%}
+            {%- for i in (1..6) -%}
+              <li><button type="button" class="ring-tick" data-ring-go="{{ forloop.index0 }}"{% if forloop.first %} aria-current="true"{% endif %}><span class="ring-tick-num">0{{ i }}</span><span class="ring-tick-bar" aria-hidden="true"><span></span></span></button></li>
+            {%- endfor -%}
+          {%- endif -%}
+        </ol>
+        <button class="ring-arrow ring-play" type="button" data-ring-play aria-pressed="true" aria-label="{{ 'ubc.motion.autoplay' | t }}">
+          <svg class="ring-icon-pause" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          <svg class="ring-icon-play" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5l11 7-11 7Z" fill="currentColor"/></svg>
+        </button>
+        <button class="ring-arrow" type="button" data-ring-next aria-label="{{ 'ubc.showcase.next' | t }}">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <p class="visually-hidden" aria-live="polite" data-ring-live></p>
+    </div>
+
+    <aside class="ring-panel" aria-label="{{ 'ubc.motion.in_this_build' | t }}">
+      <h3 class="ring-panel-title">{{ 'ubc.motion.in_this_build' | t }}</h3>
+      {%- if looks.size == 0 -%}
+        <p class="ring-empty">{{ 'ubc.motion.ring_empty' | t }}</p>
+      {%- endif -%}
+      {%- for block in looks -%}
+        {%- assign p = block.settings.product -%}
+        {%- assign total = 0 -%}
+        {%- assign ids = '' -%}
+        <div class="ring-look{% if forloop.first %} is-in{% endif %}" data-ring-look="{{ forloop.index0 }}"{% unless forloop.first %} hidden{% endunless %}>
+          <ol class="ring-rows">
+            {%- if p != blank -%}
+              {%- assign v = p.selected_or_first_available_variant -%}
+              {%- if v.available -%}{%- assign total = total | plus: v.price -%}{%- assign ids = ids | append: v.id | append: ',' -%}{%- endif -%}
+              {% render 'ubc-ring-row', product: p, variant: v, n: 1, added_label: added_label %}
+            {%- endif -%}
+            {%- for piece in block.settings.pieces -%}
+              {%- assign pv = piece.selected_or_first_available_variant -%}
+              {%- if pv.available -%}{%- assign total = total | plus: pv.price -%}{%- assign ids = ids | append: pv.id | append: ',' -%}{%- endif -%}
+              {%- assign row_n = forloop.index | plus: 1 -%}
+              {% render 'ubc-ring-row', product: piece, variant: pv, n: row_n, added_label: added_label %}
+            {%- endfor -%}
+          </ol>
+          {%- if ids != '' -%}
+            <div class="ring-bundle">
+              <p class="ring-bundle-label">{{ 'ubc.motion.complete_build' | t }}<strong>{{ total | money }}</strong></p>
+              <button class="ubc-btn ubc-btn--full" type="button" data-ring-bundle="{{ ids }}" data-added-label="{{ added_label | escape }}">{{ 'ubc.motion.add_build' | t }}</button>
+              <p class="form-message" data-form-message role="status"></p>
+            </div>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </aside>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Build carousel",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Build your ride." },
+    { "type": "text", "id": "text", "label": "Text", "default": "Bikes with the gear our mechanics would pair with them." },
+    { "type": "range", "id": "speed", "min": 3, "max": 10, "step": 1, "unit": "s", "label": "Seconds per build", "default": 5 }
+  ],
+  "blocks": [
+    {
+      "type": "look",
+      "name": "Build",
+      "limit": 8,
+      "settings": [
+        { "type": "text", "id": "title", "label": "Name", "default": "The Commuter" },
+        { "type": "product", "id": "product", "label": "Bike", "info": "Its photo should have a transparent background" },
+        { "type": "product_list", "id": "pieces", "label": "Accessories", "limit": 4 },
+        { "type": "text", "id": "fallback_image", "label": "Bundled bike (theme asset, used without a product)" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Build carousel",
+      "blocks": [
+        { "type": "look", "settings": { "title": "The Commuter" } },
+        { "type": "look", "settings": { "title": "Gravel Weekend" } },
+        { "type": "look", "settings": { "title": "E-bike Errands" } },
+        { "type": "look", "settings": { "title": "Road Day" } },
+        { "type": "look", "settings": { "title": "Campus" } },
+        { "type": "look", "settings": { "title": "Family Ride" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

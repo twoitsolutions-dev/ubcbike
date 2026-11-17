@@ -1,19 +1,42 @@
 import { CONFIG } from './config.js';
 import { createHttpDriver } from './drivers/http.js';
 import { h, icon, mount, clear } from './ui/dom.js';
-import { toast, errorBox } from './ui/components.js';
-import { routes, matchRoute } from './router.js';
+import { errorBox } from './ui/components.js';
+import { matchRoute } from './router.js?v=40';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
 
 const NAV = [
   { group: 'Overview', items: [['#/dashboard', 'Dashboard', 'dashboard']] },
-  { group: 'Catalog', items: [['#/products', 'Products', 'box'], ['#/inventory', 'Inventory', 'layers'], ['#/suppliers', 'Suppliers', 'truck']] },
-  { group: 'Pricing', items: [['#/pricing', 'Prices & margins', 'dollar'], ['#/promotions', 'Promotions', 'tag']] },
-  { group: 'Operations', items: [['#/orders', 'Orders', 'cart', 'awaitingApproval'], ['#/purchasing', 'Supplier purchasing', 'clipboard'], ['#/store', 'Store (simulated)', 'store']] },
-  { group: 'System', items: [['#/integrations', 'Integrations', 'plug'], ['#/activity', 'History & errors', 'history', 'openErrors'], ['#/settings', 'Settings', 'settings']] },
+  {
+    group: 'Inventory',
+    items: [
+      ['#/products', 'Item Search', 'box'],
+      ['#/orders', 'Special Orders', 'cart', 'awaitingApproval'],
+      ['#/purchasing', 'Purchase Orders', 'clipboard'],
+      ['#/suppliers', 'Vendor Catalogs', 'truck'],
+    ],
+  },
+  {
+    group: 'Pricing & System',
+    items: [
+      ['#/promotions', 'Promotions / Price Rules', 'tag'],
+      ['#/settings', 'Settings & Sync', 'settings', 'openErrors'],
+    ],
+  },
 ];
+
+function navParentFor(hash) {
+  const path = (hash || '#/dashboard').split('?')[0];
+  if (path.indexOf('#/inventory') === 0 || path.indexOf('#/pricing') === 0 || path.indexOf('#/products') === 0) return '#/products';
+  if (path.indexOf('#/pipeline') === 0 || path.indexOf('#/suppliers') === 0) return '#/suppliers';
+  if (path.indexOf('#/integrations') === 0 || path.indexOf('#/activity') === 0 || path.indexOf('#/store') === 0 || path.indexOf('#/settings') === 0) return '#/settings';
+  if (path.indexOf('#/promotions') === 0) return '#/promotions';
+  if (path.indexOf('#/orders') === 0) return '#/orders';
+  if (path.indexOf('#/purchasing') === 0) return '#/purchasing';
+  return '#/dashboard';
+}
 
 async function loadDriver() {
   if (CONFIG.driver === 'demo') {
@@ -51,7 +74,9 @@ async function refreshBadges() {
 function renderShell() {
   const isDemo = state.system && state.system.mode === 'demo';
   const nav = h('nav.nav', { 'aria-label': 'Main' },
-    h('div.nav-brand', h('div.boot-mark', 'UBC'), h('div', h('strong', 'UBC Commerce Hub'), h('small', 'University Bicycle Center'))),
+    h('div.nav-brand',
+      h('img.nav-logo', { src: 'assets/ubc-logo-white.png', alt: 'University Bicycle Center' }),
+      h('div.nav-brand-meta', 'Commerce Hub · Since 1972')),
     NAV.map((g) => h('div.nav-group', h('div.nav-group-label', g.group),
       g.items.map(([href, label, ic, countKey]) => h('a', { href, dataset: { nav: href }, onclick: closeNav }, icon(ic), h('span', label),
         countKey ? h('span.count', { dataset: { count: countKey }, hidden: true }) : null)))),
@@ -64,7 +89,7 @@ function renderShell() {
   const topbar = h('header.topbar',
     h('button.btn.ghost.menu-btn', { 'aria-label': 'Open menu', onclick: () => { state.navOpen = true; nav.classList.add('open'); scrim.classList.add('open'); } }, icon('menu')),
     crumbs, h('div.spacer'),
-    h('span.mode-pill', { class: isDemo ? '' : 'live', title: isDemo ? 'Fictitious data; no real system connected' : 'Connected to real systems' }, isDemo ? 'DEMO' : 'LIVE'));
+    h('span.mode-pill', { class: isDemo ? '' : 'live', title: isDemo ? 'Fictitious data; no real system connected' : 'Connected to live UBC systems' }, isDemo ? 'DEMO' : 'LIVE'));
   const banner = isDemo ? h('div.demo-banner', state.system.demoNotice || 'DEMO data') : null;
   const content = h('main.content#view', { tabindex: '-1' });
   mount(app, h('div.shell', nav, scrim, h('div.main', topbar, banner, content)));
@@ -81,7 +106,8 @@ async function route() {
   const hash = location.hash || '#/dashboard';
   const m = matchRoute(hash);
   if (!m) { location.hash = '#/dashboard'; return; }
-  document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', hash.indexOf(a.dataset.nav) === 0));
+  const activeNav = navParentFor(hash);
+  document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === activeNav));
   const crumbs = document.getElementById('crumbs');
   if (crumbs) crumbs.textContent = m.route.title;
   document.title = m.route.title + ' · UBC Commerce Hub';
@@ -124,9 +150,9 @@ function renderLogin(message) {
       }, h('span', h('strong', u.name), h('br'), h('span.muted.small', roleLabel(u.role)))))),
       err);
   } else {
-    const email = h('input', { type: 'email', autocomplete: 'username', required: true, id: 'login-email' });
+    const email = h('input', { type: 'text', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', placeholder: 'ubcbike', required: true, id: 'login-email' });
     const pw = h('input', { type: 'password', autocomplete: 'current-password', required: true, id: 'login-pw' });
-    const btn = h('button.btn.primary', { type: 'submit' }, 'Sign in');
+    const btn = h('button.btn.primary.lg.full', { type: 'submit' }, 'Sign in to UBC Hub');
     body = h('form.stack', {
       onsubmit: async (e) => {
         e.preventDefault();
@@ -134,11 +160,15 @@ function renderLogin(message) {
         clear(err);
         try { await state.api.login(email.value.trim(), pw.value); await afterLogin(); } catch (ex) { err.appendChild(h('div.notice.bad', ex.message)); btn.disabled = false; }
       },
-    }, h('label.field', 'Email', email), h('label.field', 'Password', pw), err, btn);
+    }, h('label.field', 'User', email), h('label.field', 'Password', pw), err, btn);
   }
-  mount(app, h('div.login', h('div.card', h('div.card-body',
-    h('div.brand', h('div.boot-mark', 'UBC'), h('div', h('h1', 'UBC Commerce Hub'), h('div.muted.small', 'Private admin · TwoIT Solutions LLC'))),
-    body))));
+  mount(app, h('div.login', h('div.login-shell',
+    h('img.login-top-logo', { src: 'assets/ubc-logo-white.png', alt: 'UBC University Bicycle Center' }),
+    h('div.card', h('div.card-body',
+      h('div.brand',
+        h('div.login-title', 'Commerce Hub'),
+        h('div.muted.small', 'Online Store, Store POS & B2B Control')),
+      body)))));
 }
 
 async function afterLogin() {
@@ -159,17 +189,10 @@ async function boot() {
     renderShell();
     await route();
   } catch (e) {
-    if (e && e.status === 401) renderLogin();
-    else throw e;
-  }
-  if (state.api.kind === 'demo' && state.api.storageOk && !state.api.storageOk()) {
-    toast('Browser storage is unavailable (private mode?). The demo works, but changes reset on reload.', '');
+    renderLogin();
   }
 }
 
 boot().catch((e) => {
-  if (window.__ubcBootFail) window.__ubcBootFail('The app could not start', e && e.message ? e.message : String(e));
-  else mount(app, errorBox(e));
+  mount(app, h('div.boot.boot-error', h('h1', 'Could not start UBC Commerce Hub'), h('p', e.message || String(e))));
 });
-
-export { routes };

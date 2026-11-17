@@ -58,6 +58,10 @@ export interface SupplierCatalogRecord {
   leadDays: number;
   /** Whether the supplier licence lets us republish this record's images/descriptions. */
   contentLicensed: boolean;
+  description?: string | null;
+  images?: string[];
+  optionValues?: Record<string, string>;
+  matrixRef?: string | null;
 }
 
 export interface AvailabilityQuote {

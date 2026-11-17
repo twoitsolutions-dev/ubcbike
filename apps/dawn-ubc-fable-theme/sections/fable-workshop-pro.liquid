@@ -1,0 +1,208 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v21 — Protagonist Walk-In Repair Workshop (#service)
+  Led by Founder Manny Mirabal (47.5+ yrs) & Grandson Ashton (Lead MTB & Road Mechanic) + Veteran Crew (13–28+ yrs).
+  All-day walk-in energy: Everyday/Kids Bikes, Electric Scooters & E-Bikes, Pro Carbon MTB/Road & Tough Mechanical Challenges.
+  Includes Zero-Bloat Instagram Reel Story Pills (`DadS0QdvEyv` & `Dew1Zk6vFfg`) + Ikeono SMS Photo Trigger + Compact Tune-Up Strip.
+{%- endcomment -%}
+{%- liquid
+  assign edition = settings.ubc_edition | default: 'classic'
+  assign ws_phone = section.settings.phone | default: '(813) 971-2277'
+  assign ws_digits = ws_phone | remove: ' ' | remove: '(' | remove: ')' | remove: '-' | remove: '.' | remove: '+'
+  if ws_digits.size == 10
+    assign ws_tel = '+1' | append: ws_digits
+  elsif ws_digits != blank
+    assign ws_tel = '+' | append: ws_digits
+  else
+    assign ws_tel = '+18139712277'
+  endif
+  assign p_lvl1 = section.settings.level1_price | default: '$100'
+  assign p_lvl2 = section.settings.level2_price | default: '$160'
+  assign p_lvl3 = section.settings.level3_price | default: '$250'
+-%}
+<div class="fb-scope">
+  <section class="fb-sec ws-sec" id="service">
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div class="ws-copy">
+          <div class="ws-live-row reveal">
+            <span class="ws-live-pill">
+              <i aria-hidden="true"></i>
+              <span data-es="Taller Sin Cita Todo el Día &middot; Entrega Estándar ~24h">{{ section.settings.live_status | escape }}</span>
+            </span>
+            {%- if edition == 'black_friday' -%}
+              <span class="ws-promo-tag" data-es="Promo BF: Lavado Pro Gratis en Nivel 2">BF Bonus: Free Detail Wash w/ Level 2</span>
+            {%- elsif edition == 'christmas' -%}
+              <span class="ws-promo-tag" data-es="Armado Navideño y Revisión Gratis">Holiday Bike Assembly &amp; Free Safety Check</span>
+            {%- elsif edition == 'july_4' -%}
+              <span class="ws-promo-tag" data-es="Revisión de Verano Sin Cita">Summer Heat &amp; Trail Prep Check</span>
+            {%- endif -%}
+          </div>
+
+          <h2 class="h2 reveal" data-es="De una bici diaria o scooter a carbono pro: <em>reparamos lo que sea.</em>">
+            From a flat or scooter to pro carbon: <em>we fix anything.</em>
+          </h2>
+          <p class="lead reveal" data-es="Liderado personalmente por nuestro fundador Manny (47 &frac12;+ años de oficio) junto a su nieto Ashton (mecánico principal MTB y Ruta) y técnicos con hasta 28 años de experiencia. Nos encantan los retos mecánicos.">
+            Personally led by founder <strong>Manny</strong> (47 &frac12;+ years at the bench) alongside grandson <strong>Ashton</strong> (Lead MTB &amp; Road Mechanic) and veteran techs with 13–28+ years of experience. Bring us your toughest mechanical challenge.
+          </p>
+        </div>
+
+        <div class="ws-head-cta reveal">
+          <a class="link-arrow" href="#family">
+            <span data-es="Conoce a Manny y Ashton">Meet Manny &amp; Ashton</span>
+            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+        </div>
+      </div>
+
+      {%- comment -%} 4-Column Capability Grid: Everything That Rolls Through UBC All Day {%- endcomment -%}
+      <div class="ws-grid">
+        <article class="ws-card reveal">
+          <div class="ws-card-head">
+            <span class="ws-num">01</span>
+            <span class="ws-tag" data-es="Al Instante / 24h">Quick Turnaround</span>
+          </div>
+          <h3 data-es="Bicis Diarias, Campus y Niños">Everyday, Campus &amp; Kids' Bikes</h3>
+          <p data-es="Ponchaduras, frenos, cadenas, llantas y ajustes de seguridad para Cruisers, BMX y bicis estudiantiles USF.">
+            Flat tires, brake pads, chains, training wheels &amp; safety checks for cruisers, commuters and USF campus rides.
+          </p>
+        </article>
+
+        <article class="ws-card reveal">
+          <div class="ws-card-head">
+            <span class="ws-num">02</span>
+            <span class="ws-tag ws-tag--coral" data-es="Todas las Marcas">Multi-Brand Bay</span>
+          </div>
+          <h3 data-es="Scooters Eléctricos y E-Bikes">Electric Scooters &amp; E-Bikes</h3>
+          <p data-es="Cambio de llantas sólidas o neumáticas en scooters, frenos hidráulicos y diagnóstico eléctrico en E-Bikes de múltiples marcas.">
+            Scooter tire &amp; brake replacements, hub/mid-drive e-bike diagnostics, firmware updates and hydraulic bleed service.
+          </p>
+        </article>
+
+        <article class="ws-card reveal">
+          <div class="ws-card-head">
+            <span class="ws-num">03</span>
+            <span class="ws-tag ws-tag--gold" data-es="Esp. Ashton">Ashton · MTB &amp; Road</span>
+          </div>
+          <h3 data-es="Carbono Pro: Ruta, Gravel y MTB">Pro Carbon Road &amp; Full MTB</h3>
+          <p data-es="Transmisiones electrónicas SRAM AXS y Shimano Di2, centrado lateral/vertical, suspensión, tubeless y torque exacto en carbono.">
+            SRAM AXS &amp; Shimano Di2 setup, lateral/vertical wheel truing, suspension service, tubeless builds &amp; carbon torque spec.
+          </p>
+        </article>
+
+        <article class="ws-card ws-card--dark reveal">
+          <div class="ws-card-head">
+            <span class="ws-num">04</span>
+            <span class="ws-tag ws-tag--gold" data-es="Esp. Manny &middot; 47.5 Años">Manny · 47 &frac12;+ Yrs</span>
+          </div>
+          <h3 data-es="Retos Mecánicos y Restauración">Tough Challenges &amp; Custom Work</h3>
+          <p data-es="¿Otra tienda te dijo que no tiene arreglo? Roscas, piezas difíciles, armado de ruedas a mano y bicis clásicas. Nos gustan los retos.">
+            Told elsewhere it can't be fixed? Seized components, vintage restorations, custom hand-built wheels &amp; tricky repairs welcome.
+          </p>
+        </article>
+      </div>
+
+      {%- comment -%} Compact Tune-Up Pricing + Collapsible Checklist + Direct Ikeono SMS Workshop Action {%- endcomment -%}
+      <div class="ws-bar reveal">
+        <div class="ws-tiers">
+          <div class="ws-tier">
+            <span class="ws-tier-kicker" data-es="Nivel 1">Level 1</span>
+            <strong>{{ p_lvl1 | escape }}</strong>
+            <span class="ws-tier-name" data-es="Ajuste Básico y Seguridad">Basic Safety Tune</span>
+          </div>
+          <div class="ws-tier ws-tier--hot">
+            <span class="ws-tier-kicker" data-es="Nivel 2 &middot; Más Pedido">Level 2 &middot; Most Popular</span>
+            <strong>{{ p_lvl2 | escape }}</strong>
+            <span class="ws-tier-name" data-es="Tune-Up Completo + Lavado">Complete Tune + Drivetrain Wash</span>
+          </div>
+          <div class="ws-tier">
+            <span class="ws-tier-kicker" data-es="Nivel 3">Level 3</span>
+            <strong>{{ p_lvl3 | escape }}</strong>
+            <span class="ws-tier-name" data-es="Overhaul Total a Cuadro">Full Strip-to-Frame Overhaul</span>
+          </div>
+          <div class="ws-tier ws-tier--free">
+            <span class="ws-tier-kicker" data-es="Comprada en UBC">Bought at UBC</span>
+            <strong data-es="Gratis">Free</strong>
+            <span class="ws-tier-name" data-es="Ajustes de por vida (dueño orig.)">Lifetime Adjustments (Orig. Owner)</span>
+          </div>
+        </div>
+
+        <div class="ws-bar-foot">
+          <details class="ws-checklist">
+            <summary>
+              <svg aria-hidden="true"><use href="#i-wrench"/></svg>
+              <span data-es="Ver los puntos que cubren Ashton y el equipo en un Tune-Up">See what Ashton &amp; our mechanics cover in a UBC Tune-Up</span>
+              <svg class="ws-chev" aria-hidden="true"><use href="#i-chev"/></svg>
+            </summary>
+            <ul class="ws-check-grid">
+              <li><svg aria-hidden="true"><use href="#i-check"/></svg> <span data-es="Centrado de ruedas lateral y vertical">Wheel truing — lateral &amp; vertical</span></li>
+              <li><svg aria-hidden="true"><use href="#i-check"/></svg> <span data-es="Ajuste fino de mazas (hubs)">Front &amp; rear hub adjustments</span></li>
+              <li><svg aria-hidden="true"><use href="#i-check"/></svg> <span data-es="Calibración de desviador delantero y trasero">Front &amp; rear derailleur calibration</span></li>
+              <li><svg aria-hidden="true"><use href="#i-check"/></svg> <span data-es="Ajuste y torque de dirección (headset)">Headset bearing &amp; stem torque check</span></li>
+              <li><svg aria-hidden="true"><use href="#i-check"/></svg> <span data-es="Limpieza profunda y lubricación de transmisión">Deep ultrasonic drivetrain cleaning &amp; lube</span></li>
+              <li><svg aria-hidden="true"><use href="#i-check"/></svg> <span data-es="Cinta de manubrio, frenos, presión y prueba de ruta">Fresh bar tape, brake bleed/align &amp; test ride</span></li>
+            </ul>
+          </details>
+
+          <div class="ws-actions">
+            <button
+              type="button"
+              class="fb-btn coral sm"
+              data-ws-ikeono="Hi UBC Workshop! I have a repair / tune-up question (bike / scooter / e-bike):"
+              data-ws-ikeono-es="Hola Taller UBC, tengo una consulta de reparación o tune-up (bici / scooter / e-bike):"
+            >
+              <svg aria-hidden="true"><use href="#i-chat"/></svg>
+              <span data-es="Enviar Texto / Foto al Taller">Text the Workshop (Ikeono)</span>
+            </button>
+            <a class="fb-btn outline sm" href="tel:{{ ws_tel }}">
+              <svg aria-hidden="true"><use href="#i-phone"/></svg>
+              <span>{{ ws_phone | escape }}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Walk-In Workshop",
+  "settings": [
+    {
+      "type": "text",
+      "id": "live_status",
+      "label": "Workshop status badge",
+      "default": "Walk-In All Day · No Appointment · ~24h Standard Turnaround"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Workshop phone number",
+      "default": "(813) 971-2277"
+    },
+    {
+      "type": "text",
+      "id": "level1_price",
+      "label": "Level 1 Tune-Up price",
+      "default": "$100"
+    },
+    {
+      "type": "text",
+      "id": "level2_price",
+      "label": "Level 2 Tune-Up price",
+      "default": "$160"
+    },
+    {
+      "type": "text",
+      "id": "level3_price",
+      "label": "Level 3 Overhaul price",
+      "default": "$250"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Walk-In Workshop"
+    }
+  ]
+}
+{% endschema %}

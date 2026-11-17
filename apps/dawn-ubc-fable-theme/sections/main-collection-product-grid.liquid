@@ -1,0 +1,746 @@
+{{ 'template-collection.css' | asset_url | stylesheet_tag }}
+{{ 'component-card.css' | asset_url | stylesheet_tag }}
+{{ 'component-price.css' | asset_url | stylesheet_tag }}
+
+{% if section.settings.image_shape == 'blob' %}
+  {{ 'mask-blobs.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+
+{%- unless section.settings.quick_add == 'none' -%}
+  {{ 'quick-add.css' | asset_url | stylesheet_tag }}
+{%- endunless -%}
+
+{%- if section.settings.quick_add == 'standard' -%}
+  <script src="{{ 'quick-add.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+{%- if section.settings.quick_add == 'bulk' -%}
+  <script src="{{ 'quick-add-bulk.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'quantity-popover.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'price-per-item.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'quick-order-list.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+  .ubc-dept-wrap {
+    margin-bottom: 2.2rem;
+    padding-bottom: 1.4rem;
+    border-bottom: 1px solid rgba(20, 32, 45, 0.1);
+  }
+  .ubc-dept-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem 1.6rem;
+    margin-bottom: 1rem;
+  }
+  .ubc-dept-kicker {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #E04F33;
+  }
+  .ubc-dept-special-link {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #14202D;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    opacity: 0.82;
+  }
+  .ubc-dept-special-link:hover { opacity: 1; color: #E04F33; }
+  .ubc-dept-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+  }
+  .ubc-dept-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 32, 45, 0.16);
+    background: #FFFFFF;
+    color: #14202D;
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-decoration: none;
+    line-height: 1.2;
+    transition: all 0.16s ease;
+  }
+  .ubc-dept-pill:hover {
+    border-color: #14202D;
+    transform: translateY(-1px);
+  }
+  .ubc-dept-pill.is-active {
+    background: #14202D;
+    border-color: #14202D;
+    color: #FEFDF3;
+  }
+  .ubc-dept-pill span.ubc-cnt {
+    font-size: 1.1rem;
+    opacity: 0.72;
+    font-weight: 500;
+  }
+  .ubc-store-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1.2rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1.2rem;
+    background: rgba(20, 32, 45, 0.045);
+  }
+  .ubc-store-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #14202D;
+    margin-right: 0.4rem;
+  }
+  .ubc-store-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 32, 45, 0.18);
+    background: #FFFFFF;
+    color: #14202D;
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .ubc-store-btn:hover { border-color: #14202D; }
+  .ubc-store-btn.is-active {
+    background: #E04F33;
+    border-color: #E04F33;
+    color: #FFFFFF;
+  }
+  .ubc-store-btn--alafia.is-active {
+    background: #1B4332;
+    border-color: #1B4332;
+    color: #FFFFFF;
+  }
+  .ubc-facets-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.4rem;
+    margin-top: 1.3rem;
+    padding-top: 1.2rem;
+    border-top: 1px dashed rgba(20, 32, 45, 0.12);
+  }
+  .ubc-facet-ctl {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .ubc-facet-ctl label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #14202D;
+    white-space: nowrap;
+  }
+  .ubc-facet-select {
+    appearance: auto;
+    padding: 0.55rem 1rem;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(20, 32, 45, 0.22);
+    background: #FFFFFF;
+    color: #14202D;
+    font-size: 1.3rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 15rem;
+  }
+  .ubc-facet-clear {
+    margin-left: auto;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #E04F33;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+{%- endstyle -%}
+
+<collection-component
+  view-event-payload="{{ collection | standard_event_data: 'view' | escape }}"
+  data-collection-id="{{ collection.id }}"
+>
+  <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
+    {%- liquid
+      assign ubc_dept_handles = 'all:All In-Stock,bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes,helmets:Helmets,clothing:Apparel,cycling-shoes:Shoes,eyewear:Sunglasses,tires-tubes:Tires,tubes:Tubes,parts-components:Parts,saddles:Saddles,pedals:Pedals,hydration-nutrition:Nutrition,bottles-cages:Bottles & Cages,accessories-gear:Accessories,tools-workshop:Tools & Care' | split: ','
+      assign active_store_tag = ''
+      assign active_brand_tag = ''
+      assign active_price_tag = ''
+      if collection.handle == 'in-stock-tampa'
+        assign active_store_tag = 'ubc-tampa-stock'
+      elsif collection.handle == 'in-stock-alafia'
+        assign active_store_tag = 'ubc-alafia-stock'
+      endif
+      for t in current_tags
+        assign td = t | downcase
+        if td == 'ubc-tampa-stock' or td == 'ubc-alafia-stock'
+          assign active_store_tag = td
+        elsif td contains 'brand-'
+          assign active_brand_tag = td
+        elsif td contains 'price-'
+          assign active_price_tag = td
+        endif
+      endfor
+      assign base_col_url = collection.url
+      if collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia'
+        assign base_col_url = routes.collections_url | append: '/all'
+      endif
+      assign tampa_total = collections['in-stock-tampa'].products_count | default: 0
+      assign alafia_total = collections['in-stock-alafia'].products_count | default: 0
+      assign cur_sort = collection.sort_by | default: ''
+    -%}
+    <div class="page-width ubc-dept-wrap" data-ubc-base-col="{{ base_col_url }}">
+      <div class="ubc-dept-head">
+        <span class="ubc-dept-kicker">
+          {%- if active_store_tag == 'ubc-tampa-stock' -%}
+            In Store Today &middot; UBC Tampa Showroom (2502 E Fletcher Ave)
+          {%- elsif active_store_tag == 'ubc-alafia-stock' -%}
+            In Store Today &middot; UBC Alafia River State Park (Lithia Trailhead)
+          {%- else -%}
+            Live Inventory &middot; UBC In-Store (Tampa &amp; Alafia) + Available at Supplier Warehouse
+          {%- endif -%}
+        </span>
+      </div>
+
+      {%- if collection.handle != 'special-order-catalog' -%}
+        {%- liquid
+          assign non_store_suffix = ''
+          if active_brand_tag != ''
+            assign non_store_suffix = active_brand_tag
+          endif
+          if active_price_tag != ''
+            if non_store_suffix != ''
+              assign non_store_suffix = non_store_suffix | append: '+' | append: active_price_tag
+            else
+              assign non_store_suffix = active_price_tag
+            endif
+          endif
+          assign both_href = base_col_url
+          if non_store_suffix != ''
+            assign both_href = base_col_url | append: '/' | append: non_store_suffix
+          endif
+          assign tampa_href = base_col_url | append: '/ubc-tampa-stock'
+          if non_store_suffix != ''
+            assign tampa_href = tampa_href | append: '+' | append: non_store_suffix
+          endif
+          assign alafia_href = base_col_url | append: '/ubc-alafia-stock'
+          if non_store_suffix != ''
+            assign alafia_href = alafia_href | append: '+' | append: non_store_suffix
+          endif
+        -%}
+        <div class="ubc-store-bar" role="region" aria-label="Filter by store location">
+          <span class="ubc-store-label">Shop Location:</span>
+          <a
+            class="ubc-store-btn{% if active_store_tag == '' %} is-active{% endif %}"
+            href="{{ both_href }}"
+          >
+            Both Stores
+          </a>
+          <a
+            class="ubc-store-btn{% if active_store_tag == 'ubc-tampa-stock' %} is-active{% endif %}"
+            href="{{ tampa_href }}"
+          >
+            UBC Tampa Showroom{% if tampa_total > 0 and collection.handle == 'all' or collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia' %} ({{ tampa_total }}){% endif %}
+          </a>
+          <a
+            class="ubc-store-btn ubc-store-btn--alafia{% if active_store_tag == 'ubc-alafia-stock' %} is-active{% endif %}"
+            href="{{ alafia_href }}"
+          >
+            UBC Alafia River Park{% if alafia_total > 0 and collection.handle == 'all' or collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia' %} ({{ alafia_total }}){% endif %}
+          </a>
+        </div>
+      {%- endif -%}
+
+      <nav class="ubc-dept-pills" aria-label="Store departments">
+        {%- for pair in ubc_dept_handles -%}
+          {%- assign parts = pair | split: ':' -%}
+          {%- assign dh = parts[0] -%}
+          {%- assign dl = parts[1] -%}
+          {%- assign dc = collections[dh] -%}
+          {%- if dc != blank and dc.products_count > 0 -%}
+            {%- assign pill_href = dc.url -%}
+            {%- if active_store_tag != '' -%}
+              {%- assign pill_href = dc.url | append: '/' | append: active_store_tag -%}
+            {%- endif -%}
+            <a
+              class="ubc-dept-pill{% if collection.handle == dh %} is-active{% endif %}{% if dh == 'all' and collection.handle == 'in-stock-tampa' or dh == 'all' and collection.handle == 'in-stock-alafia' %} is-active{% endif %}"
+              href="{{ pill_href }}"
+              {% if collection.handle == dh %}aria-current="page"{% endif %}
+            >
+              <span>{{ dl }}</span>
+              <span class="ubc-cnt">({{ dc.products_count }})</span>
+            </a>
+          {%- endif -%}
+        {%- endfor -%}
+      </nav>
+
+      <div class="ubc-facets-row" id="ubcFacetsRow">
+        <div class="ubc-facet-ctl">
+          <label for="ubcBrandSelect">Brand:</label>
+          <select id="ubcBrandSelect" class="ubc-facet-select" data-ubc-filter-role="brand">
+            <option value="">All Brands ({{ collection.all_vendors.size }})</option>
+            {%- for v in collection.all_vendors -%}
+              {%- assign v_slug = v | handleize -%}
+              {%- assign v_tag = 'brand-' | append: v_slug -%}
+              <option value="{{ v_tag }}" {% if active_brand_tag == v_tag %}selected{% endif %}>{{ v | escape }}</option>
+            {%- endfor -%}
+          </select>
+        </div>
+
+        <div class="ubc-facet-ctl">
+          <label for="ubcPriceSelect">Price:</label>
+          <select id="ubcPriceSelect" class="ubc-facet-select" data-ubc-filter-role="price">
+            <option value="">Any Price</option>
+            <option value="price-under-50" {% if active_price_tag == 'price-under-50' %}selected{% endif %}>Under $50</option>
+            <option value="price-50-200" {% if active_price_tag == 'price-50-200' %}selected{% endif %}>$50 &ndash; $200</option>
+            <option value="price-200-1000" {% if active_price_tag == 'price-200-1000' %}selected{% endif %}>$200 &ndash; $1,000</option>
+            <option value="price-1000-plus" {% if active_price_tag == 'price-1000-plus' %}selected{% endif %}>$1,000+</option>
+          </select>
+        </div>
+
+        <div class="ubc-facet-ctl">
+          <label for="ubcSortSelect">Sort:</label>
+          <select id="ubcSortSelect" class="ubc-facet-select" data-ubc-filter-role="sort">
+            <option value="" {% if cur_sort == '' %}selected{% endif %}>Featured</option>
+            <option value="price-descending" {% if cur_sort == 'price-descending' %}selected{% endif %}>Price: High to Low</option>
+            <option value="price-ascending" {% if cur_sort == 'price-ascending' %}selected{% endif %}>Price: Low to High</option>
+            <option value="title-ascending" {% if cur_sort == 'title-ascending' %}selected{% endif %}>Alphabetical: A &ndash; Z</option>
+            <option value="created-descending" {% if cur_sort == 'created-descending' %}selected{% endif %}>Newest Arrivals</option>
+          </select>
+        </div>
+
+        {%- if active_store_tag != '' or active_brand_tag != '' or active_price_tag != '' -%}
+          <a class="ubc-facet-clear" href="{{ base_col_url }}">Clear all filters &times;</a>
+        {%- endif -%}
+      </div>
+      <script>
+        (function() {
+          var row = document.getElementById('ubcFacetsRow');
+          if (!row) return;
+          var wrap = row.closest('[data-ubc-base-col]');
+          var baseCol = wrap ? wrap.getAttribute('data-ubc-base-col') : window.location.pathname.split('/').slice(0, 3).join('/');
+          var storeTag = {{ active_store_tag | json }};
+          function applyUbcFilters() {
+            var bSel = document.getElementById('ubcBrandSelect');
+            var pSel = document.getElementById('ubcPriceSelect');
+            var sSel = document.getElementById('ubcSortSelect');
+            var tags = [];
+            if (storeTag) tags.push(storeTag);
+            if (bSel && bSel.value) tags.push(bSel.value);
+            if (pSel && pSel.value) tags.push(pSel.value);
+            var url = baseCol + (tags.length ? '/' + tags.join('+') : '');
+            var params = new URLSearchParams(window.location.search);
+            if (sSel && sSel.value) params.set('sort_by', sSel.value);
+            else params.delete('sort_by');
+            params.delete('page');
+            var qs = params.toString();
+            window.location.href = url + (qs ? '?' + qs : '');
+          }
+          row.addEventListener('change', function(e) {
+            if (e.target && e.target.tagName === 'SELECT') applyUbcFilters();
+          });
+        })();
+      </script>
+    </div>
+    {%- paginate collection.products by section.settings.products_per_page -%}
+      {% comment %} Sort is the first tabbable element when filter type is vertical {% endcomment %}
+      {%- if section.settings.enable_sorting and section.settings.filter_type == 'vertical' -%}
+        <facet-filters-form class="facets facets-vertical-sort page-width small-hide">
+          <form class="facets-vertical-form" id="FacetSortForm">
+            <div class="facet-filters sorting caption">
+              <div class="facet-filters__field">
+                <h2 class="facet-filters__label caption-large text-body">
+                  <label for="SortBy">{{ 'products.facets.sort_by_label' | t }}</label>
+                </h2>
+                <div class="select">
+                  {%- assign sort_by = collection.sort_by | default: collection.default_sort_by -%}
+                  <select
+                    name="sort_by"
+                    class="facet-filters__sort select__select caption-large"
+                    id="SortBy"
+                    aria-describedby="a11y-refresh-page-message"
+                  >
+                    {%- for option in collection.sort_options -%}
+                      <option
+                        value="{{ option.value | escape }}"
+                        {% if option.value == sort_by %}
+                          selected="selected"
+                        {% endif %}
+                      >
+                        {{ option.name | escape }}
+                      </option>
+                    {%- endfor -%}
+                  </select>
+                  <span class="svg-wrapper">
+                    {{- 'icon-caret.svg' | inline_asset_content -}}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-count-vertical light" role="status">
+              <h2 class="product-count__text text-body">
+                <span id="ProductCountDesktop">
+                  {%- if collection.results_count -%}
+                    {{
+                      'templates.search.results_with_count'
+                      | t: terms: collection.terms, count: collection.results_count
+                    }}
+                  {%- elsif collection.products_count == collection.all_products_count -%}
+                    {{ 'products.facets.product_count_simple' | t: count: collection.products_count }}
+                  {%- else -%}
+                    {{
+                      'products.facets.product_count'
+                      | t: product_count: collection.products_count, count: collection.all_products_count
+                    }}
+                  {%- endif -%}
+                </span>
+              </h2>
+              {%- render 'loading-spinner' -%}
+            </div>
+          </form>
+        </facet-filters-form>
+      {%- endif -%}
+
+      <div class="{% if section.settings.filter_type == 'vertical' %} facets-vertical page-width{% endif %}">
+        {{ 'component-facets.css' | asset_url | stylesheet_tag }}
+        <script src="{{ 'facets.js' | asset_url }}" defer="defer"></script>
+        {%- if section.settings.enable_filtering or section.settings.enable_sorting -%}
+          <aside
+            aria-labelledby="verticalTitle"
+            class="facets-wrapper{% unless section.settings.enable_filtering %} facets-wrapper--no-filters{% endunless %}{% if section.settings.filter_type != 'vertical' %} page-width{% endif %}"
+            id="main-collection-filters"
+            data-id="{{ section.id }}"
+          >
+            {% render 'facets',
+              results: collection,
+              enable_filtering: section.settings.enable_filtering,
+              enable_sorting: section.settings.enable_sorting,
+              filter_type: section.settings.filter_type
+            %}
+          </aside>
+        {%- endif -%}
+
+        <div
+          class="product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+          id="ProductGridContainer"
+          {% if settings.animations_reveal_on_scroll %}
+            data-cascade
+          {% endif %}
+        >
+          {%- if collection.products.size == 0 -%}
+            <div class="collection collection--empty page-width" id="product-grid" data-id="{{ section.id }}">
+              <div class="loading-overlay gradient"></div>
+              <div class="title-wrapper center">
+                <h2 class="title title--primary">
+                  {{ 'sections.collection_template.empty' | t -}}
+                  <br>
+                  {{
+                    'sections.collection_template.use_fewer_filters_html'
+                    | t: link: collection.url, class: 'underlined-link link'
+                  }}
+                </h2>
+              </div>
+            </div>
+          {%- else -%}
+            <div
+              class="collection{% if section.settings.filter_type != 'vertical' %} page-width{% endif %}"
+            >
+              <div class="loading-overlay gradient"></div>
+              <ul
+                id="product-grid"
+                data-id="{{ section.id }}"
+                class="
+                  grid product-grid grid--{{ section.settings.columns_mobile }}-col-tablet-down
+                  grid--{{ section.settings.columns_desktop }}-col-desktop
+                  {% if section.settings.quick_add == 'bulk' %} collection-quick-add-bulk{% endif %}
+                "
+              >
+                {% assign skip_card_product_styles = false %}
+                {%- for product in collection.products -%}
+                  {%- if collection.handle != 'special-order-catalog' and product.available == false -%}
+                    {%- continue -%}
+                  {%- endif -%}
+                  {%- if product.featured_image == blank -%}
+                    {%- continue -%}
+                  {%- endif -%}
+                  {% assign lazy_load = false %}
+                  {%- if forloop.index > 2 -%}
+                    {%- assign lazy_load = true -%}
+                  {%- endif -%}
+                  <li
+                    class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                    {% if settings.animations_reveal_on_scroll %}
+                      data-cascade
+                      style="--animation-order: {{ forloop.index }};"
+                    {% endif %}
+                  >
+                    {% render 'card-product',
+                      card_product: product,
+                      media_aspect_ratio: section.settings.image_ratio,
+                      image_shape: section.settings.image_shape,
+                      show_secondary_image: section.settings.show_secondary_image,
+                      show_vendor: section.settings.show_vendor,
+                      show_rating: section.settings.show_rating,
+                      lazy_load: lazy_load,
+                      skip_styles: skip_card_product_styles,
+                      quick_add: section.settings.quick_add,
+                      section_id: section.id,
+                      product_view_context: 'collection'
+                    %}
+                  </li>
+                  {%- assign skip_card_product_styles = true -%}
+                {%- endfor -%}
+              </ul>
+
+              {%- if paginate.pages > 1 -%}
+                {% render 'pagination', paginate: paginate, anchor: '' %}
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endpaginate -%}
+    {% if section.settings.image_shape == 'arch' %}
+      {{ 'mask-arch.svg' | inline_asset_content }}
+    {%- endif -%}
+  </div>
+</collection-component>
+
+{% schema %}
+{
+  "name": "t:sections.main-collection-product-grid.name",
+  "class": "section",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 8,
+      "max": 36,
+      "step": 4,
+      "default": 16,
+      "label": "t:sections.main-collection-product-grid.settings.products_per_page.label"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 4,
+      "label": "t:sections.main-collection-product-grid.settings.columns_desktop.label"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "default": "2",
+      "label": "t:sections.main-collection-product-grid.settings.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:sections.main-collection-product-grid.settings.columns_mobile.options__1.label"
+        },
+        {
+          "value": "2",
+          "label": "t:sections.main-collection-product-grid.settings.columns_mobile.options__2.label"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "info": "t:sections.all.colors.has_cards_info",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main-collection-product-grid.settings.header__3.content"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "t:sections.main-collection-product-grid.settings.image_ratio.options__1.label"
+        },
+        {
+          "value": "portrait",
+          "label": "t:sections.main-collection-product-grid.settings.image_ratio.options__2.label"
+        },
+        {
+          "value": "square",
+          "label": "t:sections.main-collection-product-grid.settings.image_ratio.options__3.label"
+        }
+      ],
+      "default": "adapt",
+      "label": "t:sections.main-collection-product-grid.settings.image_ratio.label"
+    },
+    {
+      "type": "select",
+      "id": "image_shape",
+      "options": [
+        {
+          "value": "default",
+          "label": "t:sections.all.image_shape.options__1.label"
+        },
+        {
+          "value": "arch",
+          "label": "t:sections.all.image_shape.options__2.label"
+        },
+        {
+          "value": "blob",
+          "label": "t:sections.all.image_shape.options__3.label"
+        },
+        {
+          "value": "chevronleft",
+          "label": "t:sections.all.image_shape.options__4.label"
+        },
+        {
+          "value": "chevronright",
+          "label": "t:sections.all.image_shape.options__5.label"
+        },
+        {
+          "value": "diamond",
+          "label": "t:sections.all.image_shape.options__6.label"
+        },
+        {
+          "value": "parallelogram",
+          "label": "t:sections.all.image_shape.options__7.label"
+        },
+        {
+          "value": "round",
+          "label": "t:sections.all.image_shape.options__8.label"
+        }
+      ],
+      "default": "default",
+      "label": "t:sections.all.image_shape.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_secondary_image",
+      "default": false,
+      "label": "t:sections.main-collection-product-grid.settings.show_secondary_image.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "default": false,
+      "label": "t:sections.main-collection-product-grid.settings.show_vendor.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "default": false,
+      "label": "t:sections.main-collection-product-grid.settings.show_rating.label",
+      "info": "t:sections.main-collection-product-grid.settings.show_rating.info"
+    },
+    {
+      "type": "select",
+      "id": "quick_add",
+      "default": "none",
+      "label": "t:sections.main-collection-product-grid.settings.quick_add.label",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:sections.main-collection-product-grid.settings.quick_add.options.option_1"
+        },
+        {
+          "value": "standard",
+          "label": "t:sections.main-collection-product-grid.settings.quick_add.options.option_2"
+        },
+        {
+          "value": "bulk",
+          "label": "t:sections.main-collection-product-grid.settings.quick_add.options.option_3"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main-collection-product-grid.settings.header__1.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "default": true,
+      "label": "t:sections.main-collection-product-grid.settings.enable_filtering.label",
+      "info": "t:sections.main-collection-product-grid.settings.enable_filtering.info"
+    },
+    {
+      "type": "select",
+      "id": "filter_type",
+      "options": [
+        {
+          "value": "horizontal",
+          "label": "t:sections.main-collection-product-grid.settings.filter_type.options__1.label"
+        },
+        {
+          "value": "vertical",
+          "label": "t:sections.main-collection-product-grid.settings.filter_type.options__2.label"
+        },
+        {
+          "value": "drawer",
+          "label": "t:sections.main-collection-product-grid.settings.filter_type.options__3.label"
+        }
+      ],
+      "default": "horizontal",
+      "label": "t:sections.main-collection-product-grid.settings.filter_type.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "default": true,
+      "label": "t:sections.main-collection-product-grid.settings.enable_sorting.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 36
+    }
+  ]
+}
+{% endschema %}

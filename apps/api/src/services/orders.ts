@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { assertTransition, nextSteps, planFulfillment, revalidateCost, TransitionError } from '@ubc/business-rules';
 import { ROLE_PERMISSIONS, type ExceptionReason, type Role, type SpecialOrderStatus } from '@ubc/shared';
-import { priceToCents, type ShopifyOrderWebhook } from '@ubc/integrations';
+import { NotConfiguredError, PendingVerificationError, priceToCents, type ShopifyOrderWebhook } from '@ubc/integrations';
 import { withTransaction, type PoolClient } from '@ubc/database';
 import { audit } from './audit.js';
 import { getItem, getSettings } from './catalog.js';
@@ -13,6 +13,7 @@ export const transitionSchema = z.object({
     'ready_for_pickup', 'shipped_to_customer', 'completed', 'exception', 'cancelled']),
   note: z.string().max(1000).optional(),
   tracking: z.string().max(100).optional(),
+  externalRef: z.string().max(120).optional(),
   reason: z.enum(['out_of_stock_after_purchase', 'cost_changed', 'discontinued', 'partially_available', 'po_rejected', 'connection_error',
     'damaged', 'return_requested', 'refund_requested', 'other']).optional(),
 });
@@ -32,6 +33,46 @@ async function setStatus(c: PoolClient, o: OrderRow, to: SpecialOrderStatus, act
        tracking = COALESCE($4, tracking), updated_at = now() WHERE id = $1`,
     [o.id, to, extra.reason ?? null, extra.tracking ?? null]);
   await addEvent(c, o.id, o.internal_status, to, actor, note);
+}
+
+/**
+ * Resolves the latest supplier quote for an item:
+ *  - Queries the live supplier B2B API when configured and connected.
+ *  - For CSV/SFTP feed-driven suppliers (e.g. JBI or pre-API feed imports where
+ *    the live API throws `NotConfiguredError` / `PendingVerificationError`),
+ *    consults the Intermediary Engine's normalized `supplier_offers` table
+ *    (enforcing `maxOfferAgeHours` freshness).
+ */
+async function checkSupplierQuote(ctx: AppContext, companyId: string, supplierCode: string, supplierSku: string) {
+  const conn = ctx.connectors.suppliers.get(supplierCode);
+  if (conn) {
+    try {
+      const [q] = await conn.checkAvailability([supplierSku]);
+      return q ?? { supplierSku, qtyAvailable: 0, costCents: null, reportedAt: new Date().toISOString() };
+    } catch (err) {
+      if (!(err instanceof NotConfiguredError) && !(err instanceof PendingVerificationError)) {
+        throw err;
+      }
+    }
+  }
+  const settings = await getSettings(ctx.pool, companyId);
+  const maxAgeHours = settings.availability.maxOfferAgeHours || 48;
+  const r = await ctx.pool.query<{ qty_available: number; cost_cents: number | null; reported_at: Date }>(
+    `SELECT so.qty_available, so.cost_cents, so.reported_at
+     FROM supplier_offers so
+     JOIN suppliers s ON s.id = so.supplier_id
+     WHERE so.company_id = $1 AND s.code = $2 AND so.supplier_sku = $3
+       AND so.reported_at >= now() - ($4 || ' hours')::interval
+     LIMIT 1`,
+    [companyId, supplierCode, supplierSku, String(maxAgeHours)],
+  );
+  const row = r.rows[0];
+  return {
+    supplierSku,
+    qtyAvailable: row?.qty_available ?? 0,
+    costCents: row?.cost_cents ?? null,
+    reportedAt: row?.reported_at ? new Date(row.reported_at).toISOString() : new Date().toISOString(),
+  };
 }
 
 /**
@@ -58,9 +99,16 @@ export async function ingestShopifyOrder(ctx: AppContext, companyId: string, sto
     let special = false;
     let unfulfillable = false;
     for (const li of payload.line_items) {
+      const rawVarId = String(li.variant_id ?? '');
       const v = await c.query<{ id: string }>(
         `SELECT v.id FROM variants v LEFT JOIN external_ids e ON e.entity_id = v.id AND e.system = 'shopify' AND e.entity_type = 'variant'
-         WHERE v.company_id = $1 AND (e.external_id = $2 OR v.sku = $3) LIMIT 1`, [companyId, String(li.variant_id ?? ''), li.sku ?? '']);
+         WHERE v.company_id = $1
+           AND (
+             e.external_id = $2
+             OR ($2 <> '' AND e.external_id = ('gid://shopify/ProductVariant/' || $2))
+             OR ($3 <> '' AND v.sku = $3)
+           )
+         LIMIT 1`, [companyId, rawVarId, li.sku ?? '']);
       const item = v.rows[0] ? await getItem(c, companyId, v.rows[0].id) : null;
       const price = priceToCents(li.price);
       if (!item) {
@@ -120,9 +168,8 @@ export async function reviewOrderJob(ctx: AppContext, companyId: string, orderId
   const problems: string[] = [];
   let reason: ExceptionReason | null = null;
   for (const l of lines.rows) {
-    const conn = ctx.connectors.suppliers.get(l.supplier_code);
-    if (!conn || !l.supplier_sku) { problems.push(`${l.supplier_code}: no connector or SKU mapping`); reason = 'other'; continue; }
-    const [q] = await conn.checkAvailability([l.supplier_sku]); // throws -> job retry -> eventually exception
+    if (!l.supplier_sku) { problems.push(`${l.supplier_code}: no SKU mapping`); reason = 'other'; continue; }
+    const q = await checkSupplierQuote(ctx, companyId, l.supplier_code, l.supplier_sku);
     const check = revalidateCost(l.quoted_cost_cents, q?.costCents ?? null, q?.qtyAvailable ?? 0, l.qty);
     if (!check.ok) { problems.push(`${l.supplier_code} ${l.supplier_sku}: ${check.reason}`); reason = check.reason; }
   }
@@ -151,7 +198,6 @@ export async function reviewOrderJob(ctx: AppContext, companyId: string, orderId
       }
     }
     await setStatus(c, o, 'awaiting_approval', 'system', 'Availability and cost confirmed; purchase request awaiting approval');
-    // Notification for Carlos: surfaced on the dashboard and in the audit trail (email/SMS delivery is a later phase).
     await audit(c, { companyId, action: 'notification.purchase_approval_needed', entityType: 'order', entityId: orderId, detail: { number: o.number } });
     return { purchaseOrders: n };
   });
@@ -175,14 +221,13 @@ export async function transitionOrder(
   if (input.to === 'exception' && !input.reason) throw new HttpError(422, 'REASON_REQUIRED', 'Choose an exception reason');
 
   if (input.to === 'approved') {
-    // Explicit human approval of the purchase. Re-validate supplier data first.
     const lines = await pool.query<{ supplier_code: string; supplier_sku: string; qty: number; expected_cost_cents: number }>(
       `SELECT s.code AS supplier_code, pol.supplier_sku, pol.qty, pol.expected_cost_cents FROM purchase_orders po
        JOIN suppliers s ON s.id = po.supplier_id JOIN purchase_order_lines pol ON pol.purchase_order_id = po.id
        WHERE po.order_id = $1 AND po.status = 'awaiting_approval'`, [orderId]);
     if (!lines.rowCount) throw conflict('NO_PURCHASE_REQUEST', 'There is no purchase request awaiting approval for this order');
     for (const l of lines.rows) {
-      const [q] = await ctx.connectors.suppliers.get(l.supplier_code)!.checkAvailability([l.supplier_sku]);
+      const q = await checkSupplierQuote(ctx, s.companyId, l.supplier_code, l.supplier_sku);
       const check = revalidateCost(l.expected_cost_cents, q?.costCents ?? null, q?.qtyAvailable ?? 0, l.qty);
       if (!check.ok) {
         await withTransaction(pool, (c) => setStatus(c, o, 'exception', s.name, `Approval blocked: ${l.supplier_code} ${l.supplier_sku} ${check.reason}`, { reason: check.reason }));
@@ -192,14 +237,32 @@ export async function transitionOrder(
   }
 
   if (input.to === 'po_submitted') {
-    const pos = await pool.query<{ id: string }>(`SELECT id FROM purchase_orders WHERE order_id = $1 AND status = 'approved'`, [orderId]);
+    const pos = await pool.query<{ id: string; code: string }>(
+      `SELECT po.id, s.code FROM purchase_orders po JOIN suppliers s ON s.id = po.supplier_id WHERE po.order_id = $1 AND po.status = 'approved'`,
+      [orderId],
+    );
     if (!pos.rowCount) throw conflict('NO_APPROVED_PO', 'Approve the purchase request first');
-    const jobs = [];
-    for (const p of pos.rows) {
-      jobs.push((await enqueue(pool, { companyId: s.companyId, type: 'po.submit', payload: { purchaseOrderId: p.id }, idempotencyKey: `po:submit:${p.id}`, createdBy: s.userId })).id);
+    const manualRef = input.externalRef?.trim();
+    const allAutoCapable = !manualRef && pos.rows.every((p) => ctx.connectors.suppliers.get(p.code)?.capabilities.purchaseOrders === true);
+    if (allAutoCapable) {
+      const jobs = [];
+      for (const p of pos.rows) {
+        jobs.push((await enqueue(pool, { companyId: s.companyId, type: 'po.submit', payload: { purchaseOrderId: p.id }, idempotencyKey: `po:submit:${p.id}`, createdBy: s.userId })).id);
+      }
+      await audit(pool, { companyId: s.companyId, userId: s.userId, action: 'po.submit_requested', entityType: 'order', entityId: orderId, detail: { jobs } });
+      return { queued: true, jobs };
     }
-    await audit(pool, { companyId: s.companyId, userId: s.userId, action: 'po.submit_requested', entityType: 'order', entityId: orderId, detail: { jobs } });
-    return { queued: true, jobs };
+    const b2bRef = manualRef || 'Ordered in B2B portal';
+    await withTransaction(pool, async (c) => {
+      await c.query(
+        `UPDATE purchase_orders SET status = 'submitted', external_ref = $2, submitted_at = now(), updated_at = now() WHERE order_id = $1 AND status = 'approved'`,
+        [orderId, b2bRef],
+      );
+      const summaryNote = [manualRef ? `B2B Order #: ${manualRef}` : 'Ordered manually in brand B2B portal', input.note?.trim()].filter(Boolean).join(' · ');
+      await setStatus(c, o, 'po_submitted', s.name, summaryNote);
+      await audit(c, { companyId: s.companyId, userId: s.userId, action: 'po.recorded_b2b_manual', entityType: 'order', entityId: orderId, detail: { externalRef: b2bRef, note: input.note } });
+    });
+    return { status: 'po_submitted' as const };
   }
 
   await withTransaction(pool, async (c) => {
@@ -212,7 +275,6 @@ export async function transitionOrder(
       await c.query(`UPDATE purchase_orders SET status = $2, tracking = COALESCE($3, tracking), updated_at = now() WHERE order_id = $1 AND status NOT IN ('cancelled')`, [orderId, poStatus[input.to], input.tracking ?? null]);
     }
     if (input.to === 'completed' || input.to === 'cancelled') {
-      // Consume (completed) or release (cancelled) the physical reservation for stock lines.
       const stock = await c.query<{ variant_id: string; qty: number }>(`SELECT variant_id, qty FROM order_lines WHERE order_id = $1 AND source = 'ubc_stock' AND variant_id IS NOT NULL`, [orderId]);
       if (o.internal_status !== 'completed') {
         for (const l of stock.rows) {
@@ -273,5 +335,131 @@ export async function onPoSubmitDead(ctx: AppContext, companyId: string, poId: s
     if (!r.rows[0]) return;
     const o = await loadOrder(c, companyId, r.rows[0].order_id);
     if (o.internal_status !== 'exception') await setStatus(c, o, 'exception', 'system', `PO submission failed: ${message}`, { reason: 'connection_error' });
+  });
+}
+
+/**
+ * Handles `orders/cancelled` (or `orders/updated` with `cancelled_at != null`) from Shopify:
+ *  - Releases any local UBC stock reservation.
+ *  - Checks whether OTHER active customer orders still require the same SKU (1-to-1 protection).
+ *  - If not yet marked ordered in B2B: cancels the B2B worksheet and logs a B2B-cart verification notice
+ *    (in case Carlos already added it to his JBI/QBP cart without clicking Mark Ordered yet).
+ *  - If already marked ordered in B2B: flags the order as `exception` (`refund_requested`) and raises
+ *    an urgent Dashboard alert so Carlos can stop it in the brand B2B portal or divert to shop stock.
+ */
+export async function cancelShopifyOrderFromWebhook(
+  ctx: AppContext,
+  companyId: string,
+  storeId: string,
+  payload: ShopifyOrderWebhook,
+) {
+  return withTransaction(ctx.pool, async (c) => {
+    const r = await c.query<OrderRow>(
+      `SELECT id, company_id, store_id, number, internal_status, fulfillment_method, is_special_order
+       FROM orders WHERE store_id = $1 AND shopify_order_id = $2 FOR UPDATE`,
+      [storeId, String(payload.id)],
+    );
+    const o = r.rows[0];
+    if (!o) return { skipped: 'order_not_found' as const };
+    if (o.internal_status === 'cancelled') return { skipped: 'already_cancelled' as const, orderId: o.id };
+
+    if (payload.financial_status) {
+      await c.query(`UPDATE orders SET financial_status = $2, updated_at = now() WHERE id = $1`, [o.id, payload.financial_status]);
+    }
+
+    // Release reserved physical UBC stock if order wasn't already completed
+    if (o.internal_status !== 'completed') {
+      const stockLines = await c.query<{ variant_id: string; qty: number }>(
+        `SELECT variant_id, qty FROM order_lines WHERE order_id = $1 AND source = 'ubc_stock' AND variant_id IS NOT NULL`,
+        [o.id],
+      );
+      for (const sl of stockLines.rows) {
+        await c.query(
+          `UPDATE inventory_levels SET reserved = GREATEST(0, reserved - $2), updated_at = now() WHERE variant_id = $1`,
+          [sl.variant_id, sl.qty],
+        );
+      }
+    }
+
+    // Inspect supplier lines and detect any OTHER active customer orders sharing the same SKU
+    const supLines = await c.query<{ sku: string; qty: number; variant_id: string | null }>(
+      `SELECT sku, qty, variant_id FROM order_lines WHERE order_id = $1 AND source = 'supplier'`,
+      [o.id],
+    );
+    const skuSummary = supLines.rows.map((l) => `${l.sku} x${l.qty}`).join(', ');
+
+    const siblings = await c.query<{ number: string; sku: string; qty: number }>(
+      `SELECT o2.number, ol2.sku, ol2.qty
+       FROM order_lines ol1
+       JOIN order_lines ol2 ON ol2.source = 'supplier'
+         AND ((ol1.variant_id IS NOT NULL AND ol2.variant_id = ol1.variant_id) OR ol2.sku = ol1.sku)
+       JOIN orders o2 ON o2.id = ol2.order_id
+       WHERE ol1.order_id = $1
+         AND ol1.source = 'supplier'
+         AND o2.company_id = $2
+         AND o2.id <> $1
+         AND o2.internal_status NOT IN ('completed', 'cancelled')
+       ORDER BY o2.created_at ASC`,
+      [o.id, companyId],
+    );
+    const siblingSuffix = siblings.rows.length
+      ? ` [SHARED SKU PROTECTION: keep active units for ${siblings.rows.map((s) => `${s.number} (${s.sku} x${s.qty})`).join(', ')}]`
+      : '';
+
+    const pos = await c.query<{ id: string; po_number: string; status: string; external_ref: string | null; supplier_code: string }>(
+      `SELECT po.id, po.po_number, po.status, po.external_ref, s.code AS supplier_code
+       FROM purchase_orders po
+       JOIN suppliers s ON s.id = po.supplier_id
+       WHERE po.order_id = $1`,
+      [o.id],
+    );
+
+    await c.query(
+      `UPDATE purchase_orders SET status = 'cancelled', updated_at = now()
+       WHERE order_id = $1 AND status IN ('awaiting_approval', 'approved')`,
+      [o.id],
+    );
+
+    const committedPos = pos.rows.filter((p) => ['submitted', 'confirmed', 'in_transit', 'received'].includes(p.status));
+    const postSubmitStates: SpecialOrderStatus[] = ['po_submitted', 'supplier_confirmed', 'in_transit', 'received_at_ubc', 'ready_for_pickup', 'shipped_to_customer', 'completed'];
+    const alreadyOrderedInB2b = committedPos.length > 0 || postSubmitStates.includes(o.internal_status);
+
+    const reasonLabel = payload.cancel_reason ? `reason: ${payload.cancel_reason}` : 'cancelled in Shopify';
+
+    if (alreadyOrderedInB2b) {
+      const refDesc = committedPos.map((p) => `${p.supplier_code} ${p.po_number}${p.external_ref ? ` (${p.external_ref})` : ''}`).join(', ') || o.number;
+      const urgentNote = `URGENT: Customer cancelled in Shopify (${reasonLabel}) AFTER B2B order [${refDesc}]. Cancel in brand B2B portal if not shipped, or receive into shop stock.${siblingSuffix}`;
+      await setStatus(c, o, 'exception', 'shopify', urgentNote, { reason: 'refund_requested' });
+      await c.query(
+        `INSERT INTO error_log (company_id, source, message, context)
+         VALUES ($1, 'shopify-cancel', $2, $3)`,
+        [
+          companyId,
+          `URGENT B2B CANCEL — Order ${o.number} cancelled in Shopify AFTER ordering in B2B [${refDesc}].${siblingSuffix}`,
+          JSON.stringify({ orderId: o.id, orderNumber: o.number, skus: skuSummary, committedPos, activeSiblings: siblings.rows }),
+        ],
+      );
+      await audit(c, { companyId, action: 'order.cancelled_after_b2b', entityType: 'order', entityId: o.id, detail: { number: o.number, committedPos, activeSiblings: siblings.rows } });
+      return { orderId: o.id, action: 'flagged_exception_after_b2b' as const };
+    }
+
+    const cancelNote = `Cancelled automatically from Shopify (${reasonLabel}).${siblingSuffix}`;
+    await setStatus(c, o, 'cancelled', 'shopify', cancelNote);
+
+    if (o.is_special_order && supLines.rows.length > 0) {
+      const supCodes = [...new Set(pos.rows.map((p) => p.supplier_code))].join('/') || 'supplier B2B';
+      await c.query(
+        `INSERT INTO error_log (company_id, source, message, context)
+         VALUES ($1, 'shopify-cancel', $2, $3)`,
+        [
+          companyId,
+          `Order ${o.number} cancelled in Shopify — worksheet closed; verify [${skuSummary}] is not sitting in your ${supCodes} B2B cart.${siblingSuffix}`,
+          JSON.stringify({ orderId: o.id, orderNumber: o.number, skus: skuSummary, activeSiblings: siblings.rows }),
+        ],
+      );
+    }
+
+    await audit(c, { companyId, action: 'order.cancelled_from_shopify', entityType: 'order', entityId: o.id, detail: { number: o.number, activeSiblings: siblings.rows } });
+    return { orderId: o.id, action: 'cancelled_cleanly' as const };
   });
 }

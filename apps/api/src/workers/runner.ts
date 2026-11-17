@@ -2,6 +2,7 @@ import { hostname } from 'node:os';
 import type { AppContext } from '../services/context.js';
 import { runScheduler } from '../services/campaigns.js';
 import { claimJob, completeJob, failJob, recoverStaleJobs } from '../services/jobs.js';
+import { runPipelineWatchdogAndSchedules } from '../services/pipeline.js';
 import { handlers, onDead } from './handlers.js';
 
 const workerId = `${hostname()}:${process.pid}`;
@@ -29,13 +30,20 @@ export function startWorkerLoop(ctx: AppContext, opts: { intervalMs?: number; lo
   const interval = opts.intervalMs ?? 2000;
   let stopped = false;
   let lastSchedule = 0;
+  let lastWatchdog = 0;
   const tick = async () => {
     if (stopped) return;
     try {
-      if (Date.now() - lastSchedule > 30_000) {
-        lastSchedule = Date.now();
+      const nowMs = Date.now();
+      if (nowMs - lastSchedule > 30_000) {
+        lastSchedule = nowMs;
         await recoverStaleJobs(ctx.pool);
         await runScheduler(ctx);
+      }
+      // Every 5 minutes: check feed silence SLAs (e.g. JBI 48h) and tiered sync cadences (15-30m / 6-12h / 24h).
+      if (nowMs - lastWatchdog > 300_000) {
+        lastWatchdog = nowMs;
+        await runPipelineWatchdogAndSchedules(ctx);
       }
       const n = await drain(ctx, 50);
       if (n) opts.log?.(`processed ${n} job(s)`);

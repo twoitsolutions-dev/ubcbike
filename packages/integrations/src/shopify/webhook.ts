@@ -28,6 +28,8 @@ export interface ShopifyOrderWebhook {
   admin_graphql_api_id?: string;
   name: string;
   created_at: string;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
   financial_status?: string;
   fulfillment_status?: string | null;
   total_price?: string;

@@ -84,3 +84,121 @@ export function revalidateCost(
   }
   return { ok: true };
 }
+
+export interface WaitingSpecialOrderLine {
+  orderId: string;
+  orderNumber: string;
+  createdAt: string;
+  sku: string;
+  qtyNeeded: number;
+}
+
+export interface InboundSpecialOrderReceipt {
+  specialOrderId: string;
+  sku: string;
+  qtyReady: number;
+  /** Optional explicit Shopify order reference stored on the Lightspeed SpecialOrder note (e.g. "#1051"). */
+  referenceOrderNumber?: string | null;
+}
+
+export interface SpecialOrderAllocation {
+  orderId: string;
+  orderNumber: string;
+  specialOrderId: string;
+  sku: string;
+  qtyAllocated: number;
+  qtyStillWaiting: number;
+  matchedBy: 'explicit_order_ref' | 'fifo_oldest';
+  /** True when multiple open customer orders share this SKU and no explicit #Order tag was present. */
+  sharedSkuNeedsConfirmation: boolean;
+}
+
+function normOrderNum(s: string | null | undefined): string {
+  return (s || '').trim().replace(/^#+/, '').toUpperCase();
+}
+
+/**
+ * Allocates arrived Lightspeed `SpecialOrder` units strictly 1-to-1 per customer order,
+ * NEVER broadcasting a single scanned unit across two different customers who ordered the same SKU.
+ *  1. Exact match by Shopify Order # (`referenceOrderNumber`) first.
+ *  2. Strict unit-by-unit FIFO (`createdAt` oldest first) for remaining untagged units,
+ *     flagging `sharedSkuNeedsConfirmation: true` when sibling orders share the SKU.
+ */
+export function allocateSpecialOrderReceipts(
+  waiting: readonly WaitingSpecialOrderLine[],
+  receipts: readonly InboundSpecialOrderReceipt[],
+): SpecialOrderAllocation[] {
+  const remainingNeed = new Map<string, number>();
+  const skuOpenOrderCount = new Map<string, number>();
+  for (const w of waiting) {
+    if (w.qtyNeeded <= 0) continue;
+    remainingNeed.set(w.orderId + ':' + w.sku, (remainingNeed.get(w.orderId + ':' + w.sku) ?? 0) + w.qtyNeeded);
+    skuOpenOrderCount.set(w.sku, (skuOpenOrderCount.get(w.sku) ?? 0) + 1);
+  }
+
+  const sortedWaiting = [...waiting].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.orderNumber.localeCompare(b.orderNumber));
+  const allocations: SpecialOrderAllocation[] = [];
+  const leftoverReceipts: { specialOrderId: string; sku: string; qtyLeft: number }[] = [];
+
+  // Pass 1: Explicit Shopify #Order reference match
+  for (const r of receipts) {
+    let qtyLeft = Math.max(0, r.qtyReady);
+    if (!qtyLeft) continue;
+    const refNorm = normOrderNum(r.referenceOrderNumber);
+    if (refNorm) {
+      const target = sortedWaiting.find((w) => w.sku === r.sku && normOrderNum(w.orderNumber) === refNorm);
+      if (target) {
+        const key = target.orderId + ':' + target.sku;
+        const need = remainingNeed.get(key) ?? 0;
+        const take = Math.min(need, qtyLeft);
+        if (take > 0) {
+          const after = need - take;
+          remainingNeed.set(key, after);
+          qtyLeft -= take;
+          allocations.push({
+            orderId: target.orderId,
+            orderNumber: target.orderNumber,
+            specialOrderId: r.specialOrderId,
+            sku: r.sku,
+            qtyAllocated: take,
+            qtyStillWaiting: after,
+            matchedBy: 'explicit_order_ref',
+            sharedSkuNeedsConfirmation: false,
+          });
+        }
+      }
+    }
+    if (qtyLeft > 0) {
+      leftoverReceipts.push({ specialOrderId: r.specialOrderId, sku: r.sku, qtyLeft });
+    }
+  }
+
+  // Pass 2: Strict 1-to-1 FIFO (oldest customer order first)
+  for (const r of leftoverReceipts) {
+    let qtyLeft = r.qtyLeft;
+    const shared = (skuOpenOrderCount.get(r.sku) ?? 0) > 1;
+    for (const w of sortedWaiting) {
+      if (qtyLeft <= 0) break;
+      if (w.sku !== r.sku) continue;
+      const key = w.orderId + ':' + w.sku;
+      const need = remainingNeed.get(key) ?? 0;
+      if (need <= 0) continue;
+      const take = Math.min(need, qtyLeft);
+      const after = need - take;
+      remainingNeed.set(key, after);
+      qtyLeft -= take;
+      allocations.push({
+        orderId: w.orderId,
+        orderNumber: w.orderNumber,
+        specialOrderId: r.specialOrderId,
+        sku: r.sku,
+        qtyAllocated: take,
+        qtyStillWaiting: after,
+        matchedBy: 'fifo_oldest',
+        sharedSkuNeedsConfirmation: shared,
+      });
+    }
+  }
+
+  return allocations;
+}

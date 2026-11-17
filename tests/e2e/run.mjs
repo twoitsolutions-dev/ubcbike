@@ -14,7 +14,7 @@ const { chromium, devices } = require('playwright');
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const SHOTS = process.env.E2E_SHOTS || join(root, 'test-results');
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.txt': 'text/plain' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.txt': 'text/plain' };
 async function serveStatic(dir) {
   const server = createServer(async (req, res) => {
     try {
@@ -41,15 +41,30 @@ async function noHorizontalOverflow(page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 }
 
+const SUBNAV_PARENT = {
+  '#/inventory': '#/products',
+  '#/pricing': '#/products',
+  '#/pipeline': '#/suppliers',
+  '#/integrations': '#/settings',
+  '#/activity': '#/settings',
+  '#/store': '#/settings',
+};
+
 async function nav(page, hash, mobile) {
+  const parent = SUBNAV_PARENT[hash];
+  const targetSidebar = parent || hash;
   if (mobile) {
     await page.click('.menu-btn');
     await page.waitForSelector('.nav.open');
-    await page.click(`.nav a[href="${hash}"]`);
+    await page.click(`.nav a[href="${targetSidebar}"]`);
   } else {
-    await page.click(`.nav a[href="${hash}"]`);
+    await page.click(`.nav a[href="${targetSidebar}"]`);
   }
-  await page.waitForSelector(`#view[data-route="${hash}"] .page-head`, { timeout: 15000 });
+  await page.waitForSelector(`#view[data-route="${targetSidebar}"] .page-head`, { timeout: 15000 });
+  if (parent) {
+    await page.click(`.subnav a[href="${hash}"]`);
+    await page.waitForSelector(`#view[data-route="${hash}"] .page-head`, { timeout: 15000 });
+  }
 }
 
 async function runSuite(browser, label, contextOpts, baseUrl) {
@@ -79,17 +94,18 @@ async function runSuite(browser, label, contextOpts, baseUrl) {
   check(`${label}: no horizontal overflow (dashboard)`, await noHorizontalOverflow(page));
   await page.screenshot({ path: join(SHOTS, `${label}-dashboard.png`), fullPage: false });
 
-  // Navigation across every section
-  const sections = ['#/products', '#/inventory', '#/suppliers', '#/pricing', '#/promotions', '#/orders', '#/purchasing', '#/store', '#/integrations', '#/activity', '#/settings', '#/dashboard'];
+  // Navigation across every sidebar section + unified workspace tabs
+  const sections = ['#/products', '#/inventory', '#/pricing', '#/orders', '#/purchasing', '#/suppliers', '#/pipeline', '#/promotions', '#/settings', '#/integrations', '#/activity', '#/store', '#/dashboard'];
   let navOk = true;
   for (const s of sections) {
     try { await nav(page, s, mobile); if (!(await noHorizontalOverflow(page))) { navOk = false; console.log('    overflow on', s); } } catch (e) { navOk = false; console.log('    nav failed', s, e.message); }
   }
-  check(`${label}: all 12 sections navigate without overflow`, navOk);
+  check(`${label}: all 13 routes (6 sidebar + sub-tabs) navigate without overflow`, navOk);
 
   // Catalog: filters, search, selection, publish/hide
   await nav(page, '#/products', mobile);
   await page.waitForSelector('table.t tbody tr');
+  await page.screenshot({ path: join(SHOTS, `${label}-item-search.png`), fullPage: false });
   const totalText = async () => page.textContent('.pager span');
   const before = await totalText();
   await page.fill('input[type=search]', 'helmet');
@@ -119,9 +135,11 @@ async function runSuite(browser, label, contextOpts, baseUrl) {
 
   // Promotions: category, %, preview with MAP/margin, apply, restore
   await nav(page, '#/promotions', mobile);
+  await page.screenshot({ path: join(SHOTS, `${label}-promotions-hub.png`), fullPage: false });
   await page.click('a:has-text("New promotion")');
   await page.waitForSelector('form');
-  await page.fill('form input[type=number] >> nth=4', '25'); // discount field (after 4 price/margin filters)
+  await page.fill('#promo-value', '25');
+  await page.screenshot({ path: join(SHOTS, `${label}-promotions-wizard.png`), fullPage: false });
   await page.click('button:has-text("Preview impact")');
   await page.waitForSelector('.summary-strip', { timeout: 20000 });
   const strip = await page.textContent('.summary-strip');
@@ -152,14 +170,14 @@ async function runSuite(browser, label, contextOpts, baseUrl) {
   await page.waitForTimeout(1500);
   await page.reload();
   await page.waitForSelector('.stepper');
-  await page.waitForFunction(() => document.body.textContent.includes('Approve purchase'), null, { timeout: 10000 });
+  await page.waitForFunction(() => document.body.textContent.includes('Approve B2B purchase'), null, { timeout: 10000 });
   check(`${label}: special order awaits Carlos's approval`, (await page.textContent('.stepper .current')).includes('Awaiting Approval'));
-  await page.click('button:has-text("Approve purchase")');
-  await page.click('.modal-foot button:has-text("Approve purchase")');
-  await page.waitForFunction(() => document.body.textContent.includes('Send PO to supplier'), null, { timeout: 10000 });
+  await page.click('button:has-text("Approve B2B purchase")');
+  await page.click('.modal-foot button:has-text("Approve B2B purchase")');
+  await page.waitForFunction(() => document.body.textContent.includes('Mark ordered in B2B'), null, { timeout: 10000 });
   check(`${label}: Carlos approves (simulated)`, (await page.textContent('.stepper .current')).includes('Approved'));
-  await page.click('button:has-text("Send PO to supplier")');
-  await page.click('.modal-foot button:has-text("Send PO to supplier")');
+  await page.click('button:has-text("Mark ordered in B2B")');
+  await page.click('.modal-foot button:has-text("Mark ordered in B2B")');
   await page.waitForFunction(() => document.body.textContent.includes('Supplier confirmed'), null, { timeout: 15000 });
   await page.click('button:has-text("Supplier confirmed")');
   await page.waitForFunction(() => document.querySelector('.stepper .current') && document.querySelector('.stepper .current').textContent.includes('Supplier Confirmed'), null, { timeout: 10000 });
@@ -167,6 +185,7 @@ async function runSuite(browser, label, contextOpts, baseUrl) {
 
   // Orders list: select an existing order
   await nav(page, '#/orders', mobile);
+  await page.screenshot({ path: join(SHOTS, `${label}-special-orders.png`), fullPage: false });
   await page.locator('table.t tbody tr').first().click();
   await page.waitForSelector('.timeline');
   check(`${label}: orders list → order detail`, (await page.locator('.timeline li').count()) > 0);

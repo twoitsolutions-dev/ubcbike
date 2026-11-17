@@ -1,5 +1,14 @@
 import { h, mount } from '../ui/dom.js';
-import { card, confirmDialog, pageHead, toast } from '../ui/components.js';
+import { card, confirmDialog, pageHead, sectionTabs, toast } from '../ui/components.js';
+
+export function settingsWorkspaceTabs(activeKey) {
+  return sectionTabs([
+    ['rules', 'Pricing & Stock Rules', '#/settings'],
+    ['connections', 'Connections', '#/integrations'],
+    ['activity', 'Activity & Logs', '#/activity'],
+    ['store', 'Store Simulator', '#/store'],
+  ], activeKey);
+}
 
 export async function renderSettings(ctx) {
   const s = await ctx.api.settings();
@@ -41,8 +50,9 @@ export async function renderSettings(ctx) {
     h('p.small.muted', 'Demo data lives only in this browser. Nothing here touches Shopify, Lightspeed or any supplier.'))) : card('Demo data', h('p.small.muted', 'Server DEMO database: reset with `npm run db:reset-demo` (see docs/DEPLOYMENT.md).'));
 
   return h('div.stack',
-    pageHead('Settings', canEdit ? 'Company-wide commercial rules' : 'Read-only — changing rules requires an owner/admin'),
-    card('Promotion & pricing rules', h('div.stack',
+    pageHead('Settings & Sync', canEdit ? 'Commercial guardrails, system connections, logs & storefront simulator' : 'Read-only — changing rules requires an owner/admin'),
+    settingsWorkspaceTabs('rules'),
+    card('Promotion & Price Rules Guardrails', h('div.stack',
       h('div.form-grid',
         h('label.field', 'Minimum margin (%)', minM, h('span.help', 'Default floor for every campaign and manual price change')),
         h('label.field', 'Warning threshold (%)', warnM)),

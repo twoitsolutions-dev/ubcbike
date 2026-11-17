@@ -22,7 +22,8 @@
       "in_stock": "In stock at UBC",
       "special_order": "Special order — ships from our distributor",
       "special_order_days": "Special order — ready in about {{ days }} days",
-      "unavailable": "Currently unavailable"
+      "unavailable": "Currently unavailable",
+      "click_and_collect_only": "In-store pickup only at UBC (assembled & tuned)"
     },
     "regular_price": "Regular price",
     "quantity": "Quantity",
@@ -34,7 +35,7 @@
     "related": "You may also like",
     "pickup_available": "Pickup available at {{ location }} · {{ time }}",
     "pickup_unavailable": "Pickup currently unavailable at {{ location }}",
-    "special_order_explainer": "Special-order items are bought from our distributor after your order; we confirm availability and contact you if anything changes."
+    "special_order_explainer": "In-stock items are ready for store pickup at UBC or direct shipping. Special-order items are sourced from our authorized distributor after your order and verified by our team."
   },
   "collections": {
     "filters": "Filters",
@@ -52,7 +53,7 @@
     "remove": "Remove",
     "subtotal": "Subtotal",
     "taxes_shipping": "Taxes and shipping are calculated at checkout.",
-    "special_order_note": "Special-order items ship or become ready for pickup once our distributor delivers them.",
+    "special_order_note": "Special-order items ship or become ready for UBC store pickup once our distributor delivers them.",
     "update": "Update",
     "checkout": "Check out",
     "empty": "Your cart is empty.",

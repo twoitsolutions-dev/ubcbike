@@ -62,6 +62,14 @@ export function pageHead(title, sub, actions) {
   return h('div.page-head', h('div.titles', h('h1', title), sub ? h('div.sub', sub) : null), actions && actions.length ? h('div.actions', actions) : null);
 }
 
+/** Shared section tab bar for unified Lightspeed-style workspaces. */
+export function sectionTabs(items, activeKey) {
+  return h('nav.subnav', { 'aria-label': 'Section views' }, items.map(([key, label, href]) => h('a', {
+    href,
+    class: key === activeKey ? 'on' : '',
+  }, label)));
+}
+
 export function card(title, body, opts) {
   const o = opts || {};
   return h('section.card', { class: o.class || '' },
@@ -78,24 +86,42 @@ export function dataTable(opts) {
   const key = rowKey || ((r) => r.id);
   const allOn = selectable && rows.length > 0 && rows.every((r) => selected.has(key(r)));
   const someOn = selectable && rows.some((r) => selected.has(key(r)));
+  let primaryIdx = -1;
+  for (let i = 0; i < columns.length; i++) {
+    if (!columns[i].opt && columns[i].cls && columns[i].cls.indexOf('title-cell') >= 0) { primaryIdx = i; break; }
+  }
+  if (primaryIdx < 0) {
+    for (let i = 0; i < columns.length; i++) {
+      if (!columns[i].opt) { primaryIdx = i; break; }
+    }
+  }
   const head = h('tr',
     selectable ? h('th.check', h('input', { type: 'checkbox', 'aria-label': 'Select page', checked: allOn, indeterminate: !allOn && someOn, onchange: (e) => onToggleAll(rows.map(key), e.target.checked) })) : null,
     columns.map((c) => {
       const active = sort && sort.key === c.key;
       return h('th', {
-        class: [c.num ? 'num' : '', c.opt ? 'col-opt' : '', c.sortable ? 'sortable' : ''].join(' '),
+        class: [c.num ? 'num' : '', c.opt ? 'col-opt' : '', c.sortable ? 'sortable' : ''].filter(Boolean).join(' '),
         onclick: c.sortable && onSort ? () => onSort(c.key) : null,
         'aria-sort': active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : null,
       }, c.label, active ? h('span.arrow', sort.dir === 'asc' ? '▲' : '▼') : null);
     }));
   const body = rows.length
     ? rows.map((r) => h('tr', {
-      class: [selectable && selected.has(key(r)) ? 'selected' : '', onRowClick ? 'clickable' : ''].join(' '),
+      class: [selectable && selected.has(key(r)) ? 'selected' : '', onRowClick ? 'clickable' : ''].filter(Boolean).join(' '),
       onclick: onRowClick ? (e) => { if (!e.target.closest('input,button,a,select')) onRowClick(r); } : null,
     },
     selectable ? h('td.check', h('input', { type: 'checkbox', 'aria-label': 'Select row', checked: selected.has(key(r)), onchange: (e) => onToggle(key(r), e.target.checked) })) : null,
-    columns.map((c) => h('td', { class: [c.num ? 'num' : '', c.opt ? 'col-opt' : '', c.cls || ''].join(' ') }, c.render ? c.render(r) : r[c.key]))))
-    : [h('tr', h('td', { colspan: String(columns.length + (selectable ? 1 : 0)) }, h('div.empty', empty || 'Nothing here yet.')))];
+    columns.map((c, idx) => h('td', {
+      dataset: c.label ? { label: c.label } : undefined,
+      class: [
+        c.num ? 'num' : '',
+        c.opt ? 'col-opt' : '',
+        idx === primaryIdx ? 'td-primary' : '',
+        !c.label ? 'td-empty-label' : '',
+        c.cls || '',
+      ].filter(Boolean).join(' '),
+    }, c.render ? c.render(r) : r[c.key]))))
+    : [h('tr.tr-empty', h('td.td-colspan', { colspan: String(columns.length + (selectable ? 1 : 0)) }, h('div.empty', empty || 'Nothing here yet.')))];
   return h('div.table-wrap', h('table.t', h('thead', head), h('tbody', body)));
 }
 

@@ -1,0 +1,28 @@
+{
+  "sections": {
+    "family_story_page": {
+      "type": "fable-family-story",
+      "settings": {
+        "is_standalone_page": true
+      }
+    },
+    "workshop_pro_page": {
+      "type": "fable-workshop-pro",
+      "settings": {}
+    },
+    "store_locator_page": {
+      "type": "fable-store-locator",
+      "settings": {
+        "eyebrow": "Visit Our Two Shops · Tampa & Lithia",
+        "enable_near_me": true,
+        "show_page_link": false,
+        "is_standalone_page": false
+      }
+    }
+  },
+  "order": [
+    "family_story_page",
+    "workshop_pro_page",
+    "store_locator_page"
+  ]
+}

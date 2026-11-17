@@ -1,0 +1,300 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v21 — Storewide Showcase Hero + UBC Heritage Statband + Full-Width UBC Gold Brand Band
+  Luminous Classic (#FEFDF3) Base across ALL Editions (Classic, Black Friday, Christmas & July 4th)
+{%- endcomment -%}
+{%- liquid
+  assign edition = settings.ubc_edition | default: 'classic'
+  assign p_tarmac = all_products['specialized-tarmac-sl7-sport-56cm']
+
+  assign tarmac_price = 2799.99
+  assign tarmac_url = routes.collections_url | append: '/bikes'
+  if p_tarmac != blank
+    assign tarmac_price = p_tarmac.price | divided_by: 100.0
+    assign tarmac_url = p_tarmac.url
+  endif
+-%}
+
+<div class="fb-scope">
+  <section class="show" id="show" tabindex="0" aria-roledescription="carousel" aria-label="Featured Bikes, Helmets, Parts and Gear">
+    <div class="show-festive" aria-hidden="true"></div>
+    <div class="show-ghost" id="showGhost" aria-hidden="true">TURBO</div>
+    <span class="show-side" aria-hidden="true">3 Generations &middot; Tampa, FL &mdash; Since 1972</span>
+
+    <div class="fb-wrap show-grid">
+      <div class="show-copy" id="showCopy">
+        <div class="show-emblem show-emblem--campus" aria-hidden="true">
+          <img src="{{ 'usf-bulls-logo.png' | asset_url }}" width="46" height="37" alt="" loading="lazy">
+          <div class="show-emblem-txt">
+            <strong data-es="JUNTO A USF TAMPA &middot; 1220 E FLETCHER AVE">USF BULLS NEIGHBOR &middot; 1220 E FLETCHER AVE</strong>
+            <span data-es="Descuento exclusivo en tienda con tu carnet de Estudiante">Exclusive In-Store Student Discount With Valid Student ID</span>
+          </div>
+        </div>
+        <div class="show-emblem show-emblem--veterans" aria-hidden="true">
+          <div class="show-vet-shield">
+            <svg viewBox="0 0 32 32" width="30" height="30" fill="none">
+              <path d="M16 2.5L28 7v8.6c0 7.1-5.1 12.6-12 14.4C9.1 28.2 4 22.7 4 15.6V7l12-4.5Z" fill="#182016" stroke="#D8AE56" stroke-width="1.6"/>
+              <polygon points="16,6.8 18.1,11.3 23,11.9 19.4,15.3 20.3,20.1 16,17.7 11.7,20.1 12.6,15.3 9,11.9 13.9,11.3" fill="#D8AE56"/>
+              <path d="M10.5 22.2L16 19.6l5.5 2.6" stroke="#D8AE56" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="show-emblem-txt">
+            <strong data-es="FUNDADA POR MANNY &middot; ORGULLOSO VETERANO EE.UU.">VETERAN-FOUNDED BY MANNY SINCE 1972</strong>
+            <span data-es="Descuentos permanentes en tienda para Veteranos y Policías">Honoring U.S. Veterans &amp; Police With In-Store Discounts</span>
+          </div>
+        </div>
+        <div class="show-emblem show-emblem--july" aria-hidden="true">
+          <div class="show-vet-shield">
+            <svg viewBox="0 0 32 32" width="30" height="30" fill="none">
+              <circle cx="16" cy="16" r="13" fill="#0B1F3F" stroke="#E6C875" stroke-width="1.6"/>
+              <polygon points="16,6.8 18.4,12.1 24.2,12.7 19.8,16.5 21,22.2 16,19.2 11,22.2 12.2,16.5 7.8,12.7 13.6,12.1" fill="#E6C875"/>
+            </svg>
+          </div>
+          <div class="show-emblem-txt">
+            <strong data-es="HONOR A VETERANOS Y POLICÍAS &middot; DESDE 1972">HONORING VETERANS &amp; LAW ENFORCEMENT</strong>
+            <span data-es="Descuentos especiales en tienda para Veteranos y Policías">Special In-Store Discounts for U.S. Veterans &amp; Police</span>
+          </div>
+        </div>
+        {%- if edition == 'black_friday' -%}
+          <span class="eyebrow" data-es="Black Friday UBC &middot; Hasta $500 Off + 110% Precio Garantizado">Black Friday Event &middot; Storewide Deals + 110% Price Guarantee</span>
+        {%- elsif edition == 'christmas' -%}
+          <span class="eyebrow" data-es="Especial de Navidad &middot; Apartado Gratis y Regalos Ciclistas">Holiday Gift Edition &middot; Free Bike Hold &amp; Rider Gifts Since 1972</span>
+        {%- elsif edition == 'july_4' -%}
+          <span class="eyebrow" data-es="Especial 4 de Julio &middot; Promos de Verano, Taller y Alafia">July 4th Summer Event &middot; Storewide Promos, Fuel &amp; Trail Rentals</span>
+        {%- else -%}
+          <span class="eyebrow" data-es="3 Generaciones en Familia &middot; Bicis, Equipo, Piezas y Taller desde 1972">{{ section.settings.eyebrow | escape }}</span>
+        {%- endif -%}
+
+        <div class="show-meta-row">
+          <span class="show-cat" id="showCat">Electric Commuter &middot; Specialized</span>
+          <span class="stock-pill" id="showStock"><i aria-hidden="true"></i> <span data-es="En Stock &middot; Tampa">In Stock &middot; Tampa</span></span>
+        </div>
+
+        <h1 class="show-name" id="showName">Turbo Vado 4.0</h1>
+
+        <p class="show-desc" id="showDesc" data-es="Asistencia suave al pedaleo, luces y parrilla integradas, armada y ajustada lista para rodar en Tampa.">
+          Smooth pedal-assist power, integrated lighting and rear rack, assembled and adjusted road-ready in Tampa.
+        </p>
+
+        <div class="show-price-row">
+          <div class="show-price">
+            <span id="showFrom"></span><b id="showPrice">$3,249.99</b><del id="showCompare" hidden></del>
+          </div>
+          {%- if edition == 'black_friday' -%}
+            <span class="apr-note" data-es="Precio Black Friday &middot; 0% APR">Black Friday Price &middot; 0% APR</span>
+          {%- elsif edition == 'christmas' -%}
+            <span class="apr-note" data-es="Lista para Dic 25 &middot; 0% APR">Ready for Dec 25 &middot; 0% APR</span>
+          {%- elsif edition == 'july_4' -%}
+            <span class="apr-note" data-es="Especial 4 de Julio &middot; 0% APR">July 4th Special &middot; 0% APR</span>
+          {%- else -%}
+            <span class="apr-note" data-es="Envío gratis $50+ &middot; 0% APR">Free Pickup &middot; 0% APR Available</span>
+          {%- endif -%}
+        </div>
+
+        <div class="hero-cta">
+          <a class="fb-btn coral magnetic" id="showLink" href="#finder">
+            <span id="showPrimaryTxt" data-es="Ver E-Bikes">Shop E-Bikes</span>
+            <svg><use href="#i-arrow"/></svg>
+          </a>
+          <a class="fb-btn outline magnetic" id="showSecondaryLink" href="#new-arrivals">
+            {%- if edition == 'black_friday' -%}
+              <span data-es="Ver promos Black Friday">See Black Friday Promos</span>
+            {%- elsif edition == 'christmas' -%}
+              <span data-es="Ver regalos y promos">Explore Holiday Promos</span>
+            {%- elsif edition == 'july_4' -%}
+              <span data-es="Ver ofertas 4 de Julio">See July 4th Promos</span>
+            {%- else -%}
+              <span data-es="Promos, equipo y novedades">Shop Deals &amp; Gear</span>
+            {%- endif -%}
+          </a>
+        </div>
+      </div>
+
+      <div class="show-stage" id="showStage">
+        <div class="show-blob" id="showBlob" aria-hidden="true"></div>
+        <div class="show-ring" aria-hidden="true"></div>
+        <img
+          class="show-usf-stage-logo"
+          src="{{ 'usf-bulls-logo.png' | asset_url }}"
+          width="220"
+          height="176"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          draggable="false"
+        >
+        <img
+          id="showImg"
+          src="{{ 'spz-turbo-vado-4.png' | asset_url }}"
+          width="920"
+          height="600"
+          alt="Specialized Turbo Vado 4.0"
+          fetchpriority="high"
+          draggable="false"
+        >
+      </div>
+    </div>
+
+    <div class="fb-wrap show-bar">
+      <div class="show-count"><b id="showIdx">01</b><span>/ 05</span></div>
+      <div class="show-thumbs" id="showThumbs"></div>
+      <div class="rail-nav">
+        <button type="button" id="showPrev" aria-label="Previous featured item"><svg style="transform:rotate(180deg)"><use href="#i-arrow"/></svg></button>
+        <button type="button" id="showNext" aria-label="Next featured item"><svg><use href="#i-arrow"/></svg></button>
+      </div>
+    </div>
+
+    <script type="application/json" id="FableHeroData">
+      [
+        {
+          "b": "Specialized",
+          "g": "TURBO",
+          "c": "#ccbb8d",
+          "n": "Turbo Vado 4.0",
+          "p": 3249.99,
+          "bfPrice": 2799.99,
+          "xmasPrice": 2949.99,
+          "julyPrice": 2899.99,
+          "u": "#finder",
+          "img": {{ 'spz-turbo-vado-4.png' | asset_url | json }},
+          "availability": "in_stock",
+          "cta": ["Shop E-Bikes", "Ver E-Bikes"],
+          "cat": ["Electric Bikes · Specialized", "Bicicletas Eléctricas · Specialized"],
+          "d": ["Smooth pedal-assist power, integrated lighting and rear rack, assembled road-ready in Tampa.", "Asistencia suave al pedaleo, luces y parrilla integradas, armada lista para rodar en Tampa."]
+        },
+        {
+          "b": "Specialized",
+          "g": "HELMETS",
+          "c": "#e6d8b4",
+          "n": "Propero 4 MIPS Helmet",
+          "p": 199.99,
+          "bfPrice": 159.99,
+          "xmasPrice": 169.99,
+          "julyPrice": 169.99,
+          "u": "#new-arrivals",
+          "img": {{ 'spz-propero-4.png' | asset_url | json }},
+          "availability": "in_stock",
+          "cta": ["Shop Helmets & Gear", "Ver Cascos y Equipo"],
+          "cat": ["Helmets & Rider Safety · 5-Star VT", "Cascos y Seguridad · 5 Estrellas VT"],
+          "d": ["Aero ventilation engineered for humid Florida miles with MIPS Evolve protection — in stock in Tampa & online.", "Ventilación aerodinámica diseñada para el clima de Florida con protección MIPS Evolve en tienda y en línea."]
+        },
+        {
+          "b": "Specialized",
+          "g": "TARMAC",
+          "c": "#ccbb8d",
+          "n": {% if p_tarmac != blank %}{{ p_tarmac.title | json }}{% else %}"Tarmac SL7 Sport — 56cm"{% endif %},
+          "p": {{ tarmac_price | json }},
+          "bfPrice": 2499.99,
+          "xmasPrice": 2599.99,
+          "julyPrice": 2599.99,
+          "u": {{ tarmac_url | json }},
+          "img": {{ 'fable-bike-tarmac.png' | asset_url | json }},
+          "availability": "in_stock",
+          "cta": ["Shop Road Bikes", "Ver Bicis de Ruta"],
+          "cat": ["Road & Gravel · Specialized", "Ruta y Gravel · Specialized"],
+          "d": ["Light, aerodynamic FACT carbon frameset, built, fitted and torque-checked by UBC mechanics in Tampa.", "Cuadro ligero y aerodinámico de carbono FACT, armado y ajustado a tu medida en nuestro taller de Tampa."]
+        },
+        {
+          "b": "Specialized",
+          "g": "PARTS",
+          "c": "#f2bfb3",
+          "n": "S-Works Power Carbon Saddle",
+          "p": 324.99,
+          "bfPrice": 274.99,
+          "xmasPrice": 289.99,
+          "julyPrice": 289.99,
+          "u": "#new-arrivals",
+          "img": {{ 'spz-power-saddle.png' | asset_url | json }},
+          "availability": "in_stock",
+          "cta": ["Shop Parts & Saddles", "Ver Componentes"],
+          "cat": ["Components, Tires & Fit · Pro-Shop", "Componentes, Llantas y Fit · Pro-Shop"],
+          "d": ["Ultra-light FACT carbon shell & rails with Body Geometry pressure relief — part of 20,000+ parts & accessories.", "Base y rieles ultraligeros de carbono FACT con diseño Body Geometry — parte de más de 20,000 repuestos y accesorios."]
+        },
+        {
+          "b": "Specialized",
+          "g": "EPIC 9",
+          "c": "#d9cfb2",
+          "n": "Epic 9 Sport",
+          "p": 4699.99,
+          "bfPrice": 4199.99,
+          "xmasPrice": 4349.99,
+          "julyPrice": 4299.99,
+          "u": {{ routes.collections_url | append: '/bikes' | json }},
+          "img": {{ 'ubc-bike-epic-9.png' | asset_url | json }},
+          "availability": "in_stock",
+          "cta": ["Shop Trail & MTB", "Ver Montaña y Trail"],
+          "cat": ["Mountain & Alafia Trail · Specialized", "Montaña y Alafia · Specialized"],
+          "d": ["Progressive carbon full-suspension speed built for Alafia River, Balm-Boyette and Santos singletrack.", "Doble suspensión progresiva en carbono lista para los senderos de Alafia River, Balm-Boyette y Santos."]
+        }
+      ]
+    </script>
+  </section>
+
+  {%- comment -%} UBC Heritage Statband (v12 rhythm, 100% factual UBC numbers + 3-Generation Family Heritage) {%- endcomment -%}
+  <section class="statband on-dark" aria-label="University Bicycle Center highlights">
+    <div class="fb-wrap">
+      <div class="hero-stats">
+        <div>
+          <b>1972</b>
+          <span data-es="Negocio familiar &middot; 3 generaciones">3-generation family shop since</span>
+        </div>
+        <div>
+          <b><span data-count="20000">20,000</span>+</b>
+          <span data-es="Bicis, cascos, piezas y nutrición">Bikes, gear, parts &amp; nutrition</span>
+        </div>
+        <div>
+          <b><span data-count="110">110</span>%</b>
+          <span data-es="De la diferencia de precio, de vuelta">Of the price difference, back</span>
+        </div>
+        <div>
+          <b data-es="Sin Cita">Walk-In</b>
+          <span data-es="Taller experto todo el día &middot; Ajustes gratis">All-day repair bay &middot; Free adjustments</span>
+        </div>
+      </div>
+      <div class="statband-community">
+        <span class="statband-comm-pill" data-es="Descuentos Permanentes">Community Perks</span>
+        <p data-es="Fundada por Manny (Veterano EE.UU.) en 1972 &mdash; ofrecemos descuentos todos los días en tienda para <strong>Estudiantes, Veteranos y Policías</strong> presentando tu identificación.">
+          Veteran-founded by Manny since 1972 &mdash; proud to offer everyday in-store discounts for <strong>Students, U.S. Veterans &amp; Police</strong> with valid ID.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} Full-Width Edge-to-Edge Zero-Radius Brand Band in Official UBC Gold (#CCBB8D) {%- endcomment -%}
+  <div class="marquee-shell marquee-shell--full">
+    <div class="marquee" aria-label="Official cycling brands carried at University Bicycle Center">
+      <div class="marquee-track" id="fbMarquee">
+        <span class="brand-logo"><img src="{{ 'brand-specialized.svg' | asset_url }}" width="132" height="20" alt="Specialized" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-giant.svg' | asset_url }}" width="96" height="18" alt="Giant" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-cannondale.svg' | asset_url }}" width="126" height="18" alt="Cannondale" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-santacruz.svg' | asset_url }}" width="98" height="26" alt="Santa Cruz Bicycles" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-trek.svg' | asset_url }}" width="86" height="22" alt="Trek" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-liv.svg' | asset_url }}" width="62" height="20" alt="Liv" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-sram.svg' | asset_url }}" width="92" height="20" alt="SRAM" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-shimano.svg' | asset_url }}" width="106" height="20" alt="Shimano" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-continental.svg' | asset_url }}" width="116" height="20" alt="Continental" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-giro.svg' | asset_url }}" width="84" height="18" alt="Giro" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-fox.svg' | asset_url }}" width="68" height="24" alt="Fox" loading="lazy"></span>
+        <span class="brand-logo"><img src="{{ 'brand-garmin.svg' | asset_url }}" width="96" height="20" alt="Garmin" loading="lazy"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Ecommerce Hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Hero eyebrow text",
+      "default": "3-Generation Family Cycling Shop · Tampa Since 1972"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Ecommerce Hero"
+    }
+  ]
+}
+{% endschema %}

@@ -41,7 +41,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   }));
 
   app.post('/api/auth/login', { config: { rawBody: false } }, async (req, reply) => {
-    const body = z.object({ email: z.string().email().max(200), password: z.string().min(1).max(200) }).parse(req.body);
+    const body = z.object({ email: z.string().trim().min(2).max(200), password: z.string().min(1).max(200) }).parse(req.body);
     return login(ctx, req, reply, body.email, body.password);
   });
 
@@ -111,9 +111,19 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const item = await getItem(ctx.pool, c, id);
     if (!item) throw notFound('Item');
     const { availability } = await getSettings(ctx.pool, c);
-    const history = await ctx.pool.query(`SELECT old_price_cents, new_price_cents, source, campaign_id, created_at FROM price_history WHERE variant_id = $1 ORDER BY created_at DESC LIMIT 50`, [id]);
-    const ext = await ctx.pool.query(`SELECT system, external_id FROM external_ids WHERE entity_id = $1`, [id]);
-    return { item, availability: computeAvailability(item, availability), priceHistory: history.rows, externalIds: ext.rows };
+    const [history, ext, locs] = await Promise.all([
+      ctx.pool.query(`SELECT old_price_cents, new_price_cents, source, campaign_id, created_at FROM price_history WHERE variant_id = $1 ORDER BY created_at DESC LIMIT 50`, [id]),
+      ctx.pool.query(`SELECT system, external_id FROM external_ids WHERE entity_id = $1`, [id]),
+      ctx.pool.query(
+        `SELECT l.name, coalesce(il.on_hand, 0)::int AS on_hand, coalesce(il.reserved, 0)::int AS reserved
+         FROM locations l
+         LEFT JOIN inventory_levels il ON il.location_id = l.id AND il.variant_id = $1
+         WHERE l.company_id = $2 AND l.kind = 'physical'
+         ORDER BY (l.shopify_location_id IS NULL), l.name`,
+        [id, c],
+      ),
+    ]);
+    return { item, availability: computeAvailability(item, availability), priceHistory: history.rows, externalIds: ext.rows, locationLevels: locs.rows };
   });
 
   /** Manual price change: same commercial rules as campaigns, optimistic locking on version. */
@@ -132,7 +142,19 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!r.rowCount) throw conflict('VERSION_CONFLICT', 'Concurrent update');
       await c.query(`INSERT INTO price_history (company_id, variant_id, old_price_cents, new_price_cents, source, actor_user_id) VALUES ($1,$2,$3,$4,'manual',$5)`, [s.companyId, id, item.priceCents, body.priceCents, s.userId]);
       await audit(c, { companyId: s.companyId, userId: s.userId, action: 'item.price_changed', entityType: 'variant', entityId: id, detail: { from: item.priceCents, to: body.priceCents, reasons: line.reasons } });
+      if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only') {
+        // Send it to the store right away (seconds), through the same UPC-linked path as Lightspeed changes.
+        await c.query(
+          `INSERT INTO outbound_sync_staging (company_id, variant_id, stream, decision, hold_reasons, shopify_payload, status, updated_at)
+           VALUES ($1, $2, 'availability', 'ready_for_shopify', '[]'::jsonb, '{"trigger":"manual_price"}'::jsonb, 'pending', now())
+           ON CONFLICT (company_id, variant_id, stream) DO UPDATE SET decision = 'ready_for_shopify', hold_reasons = '[]'::jsonb, status = 'pending', last_error = NULL, updated_at = now()`,
+          [s.companyId, id],
+        );
+      }
     });
+    if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only') {
+      await enqueue(ctx.pool, { companyId: s.companyId, type: 'pipeline.flush_shopify', payload: { trigger: 'manual_price' } });
+    }
     return { ok: true, warnings: line.reasons };
   });
 

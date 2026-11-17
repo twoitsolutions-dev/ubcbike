@@ -9,11 +9,30 @@
 export function normalizeGtin(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/\D/g, '');
-  if (![8, 12, 13, 14].includes(digits.length)) return null;
-  if (!isValidGtinCheckDigit(digits)) return null;
+  // Strip any leading zeros so Workstand's "00"-prefixed barcodes (including 15-digit "00"+EAN13
+  // and 16-digit "00"+GTIN14) AND Excel's zero-stripped 11-digit UPCs resolve to the exact same canonical GTIN-14.
+  const trimmed = digits.replace(/^0+/, '');
+  if (trimmed.length < 7 || trimmed.length > 14) return null;
   // All-zero or repeated placeholder codes are common in supplier feeds.
-  if (/^(\d)\1+$/.test(digits)) return null;
-  return digits.padStart(14, '0');
+  if (/^(\d)\1+$/.test(digits) || /^(\d)\1+$/.test(trimmed)) return null;
+  const gtin14 = trimmed.padStart(14, '0');
+  if (!isValidGtinCheckDigit(gtin14)) return null;
+  return gtin14;
+}
+
+/**
+ * Formats any valid GTIN/UPC/EAN (even if polluted with Workstand's "00" prefix or missing
+ * Excel's leading "0") into a clean retail scanner barcode (12-digit UPC-A, 13-digit EAN-13, or 14-digit GTIN-14).
+ */
+export function formatRetailBarcode(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const gtin14 = normalizeGtin(raw);
+  if (!gtin14) return raw.trim() || null;
+  const trimmed = gtin14.replace(/^0+/, '');
+  if (trimmed.length <= 8) return trimmed.padStart(8, '0');
+  if (trimmed.length <= 12) return trimmed.padStart(12, '0');
+  if (trimmed.length === 13) return trimmed;
+  return gtin14;
 }
 
 export function isValidGtinCheckDigit(digits: string): boolean {

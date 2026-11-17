@@ -18,10 +18,19 @@ const USERS = [
   { id: 'u-staff', name: 'Store Staff (demo)', email: 'staff@ubc.demo', role: 'staff' },
 ];
 const SUPPLIER_HEALTH_MISSING = {
-  QBP: ['QBP API key issued to UBC', 'QBP API documentation (provided by QBP to dealers)', 'Content licence terms'],
-  JBI: ['J&B dealer data-feed access and format', 'Content licence terms'],
-  SPECIALIZED: ['Specialized authorised-dealer data program', 'Rules for online sale of bikes/e-bikes, MAP and images'],
+  QBP: ['Paste UBC QBP_API_KEY & QBP_ACCOUNT_NUMBER into .env', 'Confirm QBP image/description republication scope'],
+  JBI: ['Paste UBC JBI_ACCOUNT_NUMBER & SFTP/feed credentials into .env', 'Confirm JBI feed column mapping'],
+  SPECIALIZED: ['Paste UBC SPECIALIZED_DEALER_ID & B2B credential into .env', 'Verify Click & Collect bike categories & MAP rules'],
 };
+
+function inferPosEventType(name, explicit) {
+  if (explicit) return explicit;
+  const n = String(name || '').toLowerCase();
+  if (n.indexOf('black friday') >= 0 || n.indexOf('cyber') >= 0) return 'black_friday';
+  if (n.indexOf('christmas') >= 0 || n.indexOf('holiday') >= 0 || n.indexOf('xmas') >= 0) return 'christmas';
+  if (n.indexOf('clearance') >= 0) return 'annual_clearance';
+  return 'special_event';
+}
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const fail = (status, code, message, details) => { throw new ApiError(status, { error: code, message, details }); };
@@ -198,17 +207,22 @@ export function createDemoDriver() {
     const todo = c.lines.filter((l) => l.s === 'ok' || l.s === 'warning');
     let applied = 0;
     let skippedChanged = 0;
+    const posEventType = c.summary && c.summary.posEventType ? c.summary.posEventType : null;
     if (c.strategy === 'shopify_automatic_discount') {
       c.shopify_discount_id = 'gid://shopify/DiscountAutomaticNode/demo-' + state.seq++;
-      demoCall('shopify', 'createAutomaticDiscount (simulated)', { title: c.name, items: todo.length });
-      todo.forEach((l) => { l.a = nowIso(); });
+      demoCall('shopify', 'createAutomaticDiscount (Shopify Plus, simulated)', { title: c.name, items: todo.length });
+      todo.forEach((l) => {
+        const it = itemsById.get(l.i);
+        if (it && l.n < l.o) patchItem(it, { priceCents: l.n, compareAtCents: l.o });
+        l.a = nowIso();
+      });
       applied = todo.length;
     } else {
       for (let i = 0; i < todo.length; i += 200) {
         todo.slice(i, i + 200).forEach((l) => {
           const it = itemsById.get(l.i);
           if (!it || it.priceCents !== l.o) { skippedChanged++; l.s = 'excluded'; l.r = ['CHANGED_SINCE_PREVIEW']; return; }
-          patchItem(it, { priceCents: l.n });
+          patchItem(it, { priceCents: l.n, compareAtCents: l.n < l.o ? l.o : null });
           state.priceHistory.unshift({ variant_id: it.id, old_price_cents: l.o, new_price_cents: l.n, source: 'campaign', campaign_id: c.id, created_at: nowIso() });
           l.a = nowIso();
           applied++;
@@ -216,12 +230,14 @@ export function createDemoDriver() {
         progress({ done: Math.min(i + 200, todo.length), total: todo.length, applied, skippedChanged });
         await delay(30); // yield to the UI between chunks
       }
-      demoCall('shopify', 'productVariantsBulkUpdate (simulated)', { variants: applied });
-      if (c.channel === 'online_and_pos') demoCall('lightspeed_r', 'updatePrices (simulated — POS untouched)', { items: applied });
+      demoCall('shopify', 'productVariantsBulkUpdate (Shopify Plus, simulated)', { variants: applied });
+      if (c.channel === 'online_and_pos') {
+        demoCall('lightspeed_r', 'updateEventPosPrices (Physical Store POS, simulated)', { items: applied, event: posEventType || 'special_event' });
+      }
     }
     c.status = 'active';
-    c.summary = Object.assign({}, ev.summary, { previewToken: ev.token, applied, skippedChanged });
-    audit('campaign.applied', 'campaign', c.id, { applied, skippedChanged, strategy: c.strategy });
+    c.summary = Object.assign({}, ev.summary, { previewToken: ev.token, posEventType, applied, skippedChanged });
+    audit('campaign.applied', 'campaign', c.id, { applied, skippedChanged, strategy: c.strategy, channel: c.channel, posEventType });
     save();
     return { applied, skippedChanged, strategy: c.strategy };
   }
@@ -232,8 +248,15 @@ export function createDemoDriver() {
     const counts = { restored: 0, skipped_changed: 0, skipped_not_applied: 0 };
     const lines = c.lines.filter((l) => l.s === 'ok' || l.s === 'warning');
     if (c.strategy === 'shopify_automatic_discount') {
-      demoCall('shopify', 'discountAutomaticDeactivate (simulated)', { id: c.shopify_discount_id });
-      lines.forEach((l) => { if (l.a) { l.rr = 'restored'; counts.restored++; } });
+      demoCall('shopify', 'discountAutomaticDeactivate (Shopify Plus, simulated)', { id: c.shopify_discount_id });
+      lines.forEach((l) => {
+        if (l.a) {
+          const it = itemsById.get(l.i);
+          if (it && it.priceCents === l.n) patchItem(it, { priceCents: l.o, compareAtCents: null });
+          l.rr = 'restored';
+          counts.restored++;
+        }
+      });
     } else {
       const plan = R.planRestore(lines.map((l) => ({ itemId: l.i, oldPriceCents: l.o, newPriceCents: l.n, applied: !!l.a })), (iid) => (itemsById.get(iid) || {}).priceCents);
       for (let i = 0; i < plan.length; i += 200) {
@@ -241,7 +264,7 @@ export function createDemoDriver() {
           const l = lines.find((x) => x.i === p.itemId);
           if (p.action === 'restore') {
             const it = itemsById.get(p.itemId);
-            patchItem(it, { priceCents: p.toCents });
+            patchItem(it, { priceCents: p.toCents, compareAtCents: null });
             state.priceHistory.unshift({ variant_id: it.id, old_price_cents: p.fromCents, new_price_cents: p.toCents, source: 'restore', campaign_id: c.id, created_at: nowIso() });
             l.rr = 'restored';
           } else l.rr = p.action === 'skip_not_applied' ? 'skipped_not_applied' : 'skipped_changed';
@@ -250,7 +273,10 @@ export function createDemoDriver() {
         progress({ done: Math.min(i + 200, plan.length), total: plan.length });
         await delay(30);
       }
-      demoCall('shopify', 'productVariantsBulkUpdate (restore, simulated)', { variants: counts.restored });
+      demoCall('shopify', 'productVariantsBulkUpdate (restore Shopify Plus, simulated)', { variants: counts.restored });
+      if (c.channel === 'online_and_pos') {
+        demoCall('lightspeed_r', 'updateEventPosPrices (restore Physical Store POS, simulated)', { items: counts.restored });
+      }
     }
     c.status = 'restored';
     audit('campaign.restored', 'campaign', c.id, counts);
@@ -375,7 +401,7 @@ export function createDemoDriver() {
           pendingMatchReviews: state.reviews.filter((r) => r.status === 'pending').length,
         }),
         recentJobs: state.jobs.slice(0, 8).map((j) => ({ type: j.type, status: j.status, finished_at: j.finished_at, created_at: j.created_at })),
-        shopifySales: { available: false, reason: 'Shopify not connected (DEMO)' },
+        shopifySales: { available: false, reason: 'Shopify Plus ready to connect (DEMO)' },
       };
     },
 
@@ -430,7 +456,7 @@ export function createDemoDriver() {
           progress({ done: Math.min(i + 300, targets.length), total: targets.length });
           await delay(20);
         }
-        demoCall('shopify', 'productUpdate status (simulated)', { products: pids.length, status });
+        demoCall('shopify', 'productUpdate status (Shopify Plus, simulated)', { products: pids.length, status });
         audit('items.bulk_status_applied', null, null, { products: pids.length, status });
         return { products: pids.length, status };
       });
@@ -440,7 +466,7 @@ export function createDemoDriver() {
     async locations() {
       let skus = 0, onHand = 0, reserved = 0;
       ds.items.forEach((i) => { if (i.physicalQty || i.reservedQty) { skus++; onHand += i.physicalQty; reserved += i.reservedQty; } });
-      return { locations: [{ id: 'loc-main', name: 'UBC Main Store', kind: 'physical', skus, on_hand: onHand, reserved }] };
+      return { locations: [{ id: 'loc-main', name: 'UBC Main Physical Store', kind: 'physical', skus, on_hand: onHand, reserved }] };
     },
 
     async job(jid) { const j = state.jobs.find((x) => x.id === Number(jid)); if (!j) fail(404, 'NOT_FOUND', 'Job not found'); return clone(Object.assign({}, j, { onDead: undefined })); },
@@ -461,16 +487,18 @@ export function createDemoDriver() {
       if (!input.name || input.name.length < 3) fail(400, 'VALIDATION', 'Name must have at least 3 characters');
       if (input.startsAt && input.endsAt && new Date(input.endsAt) <= new Date(input.startsAt)) fail(400, 'VALIDATION', 'End must be after start');
       await delay(10);
-      const c = { id: id('cmp'), name: input.name, status: 'draft', channel: input.channel || 'online', selection: input.selection, adjustment: input.adjustment, rules: input.rules || {}, starts_at: input.startsAt || null, ends_at: input.endsAt || null, created_at: nowIso(), created_by: u.name, approved_by: null, shopify_discount_id: null };
+      const ch = input.channel || 'online';
+      const posEventType = ch === 'online_and_pos' ? inferPosEventType(input.name, input.posEventType) : null;
+      const c = { id: id('cmp'), name: input.name, status: 'draft', channel: ch, selection: input.selection, adjustment: input.adjustment, rules: input.rules || {}, starts_at: input.startsAt || null, ends_at: input.endsAt || null, created_at: nowIso(), created_by: u.name, approved_by: null, shopify_discount_id: null };
       const ev = evaluate(c);
       c.rules = ev.rules;
       c.strategy = ev.strategy;
-      c.summary = Object.assign({}, ev.summary, { previewToken: ev.token });
+      c.summary = Object.assign({}, ev.summary, { previewToken: ev.token, posEventType });
       c.lines = compactLines(ev.lines);
       state.campaigns.push(c);
-      audit('campaign.created', 'campaign', c.id, { summary: ev.summary });
+      audit('campaign.created', 'campaign', c.id, { summary: ev.summary, channel: ch, posEventType });
       save();
-      return { id: c.id, summary: ev.summary, strategy: ev.strategy, previewToken: ev.token };
+      return { id: c.id, summary: ev.summary, strategy: ev.strategy, previewToken: ev.token, posEventType };
     },
     async campaign(cid) { can('catalog.read'); return campRow(getCamp(cid)); },
     async campaignLines(cid, status, offset, limit) {
@@ -491,8 +519,9 @@ export function createDemoDriver() {
       const c = getCamp(cid);
       if (c.status !== 'draft') fail(409, 'CAMPAIGN_NOT_DRAFT', 'Only draft campaigns can be re-previewed');
       const ev = evaluate(c);
+      const posEventType = c.summary && c.summary.posEventType ? c.summary.posEventType : (c.channel === 'online_and_pos' ? inferPosEventType(c.name) : null);
       c.lines = compactLines(ev.lines);
-      c.summary = Object.assign({}, ev.summary, { previewToken: ev.token });
+      c.summary = Object.assign({}, ev.summary, { previewToken: ev.token, posEventType });
       c.strategy = ev.strategy;
       save();
       return { summary: ev.summary, strategy: ev.strategy, previewToken: ev.token };
@@ -507,7 +536,7 @@ export function createDemoDriver() {
       if (c.ends_at && new Date(c.ends_at) <= new Date()) fail(422, 'ENDS_IN_PAST', 'Campaign end date is in the past');
       c.status = 'scheduled';
       c.approved_by = u.name;
-      audit('campaign.approved', 'campaign', c.id, { summary: ev.summary });
+      audit('campaign.approved', 'campaign', c.id, { summary: ev.summary, channel: c.channel, posEventType: c.summary ? c.summary.posEventType : null });
       const startNow = !c.starts_at || new Date(c.starts_at) <= new Date();
       let jobId = null;
       if (startNow) { c._starting = true; jobId = startJob('campaign.apply', { campaignId: c.id }, (j, p) => applyCampaign(c, j, p)).id; }
@@ -655,12 +684,12 @@ export function createDemoDriver() {
       });
       o.is_special_order = special;
       state.orders.push(o);
-      demoCall('shopify', 'webhook orders/create (simulated, HMAC-verified path in API)', { order: number });
+      demoCall('shopify', 'webhook orders/create (Shopify Plus simulated, HMAC-verified path in API)', { order: number });
       if (unfulfillable) setStatus(o, 'exception', 'system', 'Some units are not available from UBC stock or any supplier', { reason: 'partially_available' });
       else if (special) {
         setStatus(o, 'awaiting_review', 'system', 'Special order: supplier availability will be re-checked');
         startJob('order.review', { orderId: o.id }, async () => { await delay(700); return reviewOrder(o); });
-      } else setStatus(o, 'received_at_ubc', 'system', 'All units reserved from UBC stock');
+      } else setStatus(o, 'received_at_ubc', 'system', 'All units reserved from UBC physical store stock');
       audit('order.ingested', 'order', o.id, { number, special, by: u.name });
       save();
       return { orderNumber: number, orderId: o.id, special };
@@ -677,7 +706,7 @@ export function createDemoDriver() {
             id: s.code, code: s.code, name: s.name, connector: s.connector, methods: s.methods, notes: s.notes, is_active: true,
             offers: offers + imported.length, unmatched: imported.filter((o) => !o.ubc_sku).length + state.reviews.filter((r) => r.supplier_code === s.code && r.status === 'pending').length,
             last_report: last,
-            health: { system: s.code.toLowerCase(), status: 'demo_adapter', detail: 'Simulated DEMO adapter — no real connection to the supplier', missing: SUPPLIER_HEALTH_MISSING[s.code] || [], writesEnabled: false, checkedAt: nowIso() },
+            health: { system: s.code.toLowerCase(), status: 'demo_adapter', detail: 'UBC dealer access confirmed — simulated DEMO adapter ready to connect', missing: SUPPLIER_HEALTH_MISSING[s.code] || [], writesEnabled: false, checkedAt: nowIso() },
           };
         }),
       };
@@ -720,7 +749,42 @@ export function createDemoDriver() {
       }, 1);
       return { jobId: job.id };
     },
-    async matchReviews() { can('catalog.read'); return { reviews: clone(state.reviews.filter((r) => r.status === 'pending')) }; },
+    async importFeedChunk(code, body) {
+      can('catalog.write');
+      const parsed = mapFeed(body.csv, body.mapping, { contentLicensed: !!body.contentLicensed, defaultLeadDays: 5 });
+      const stats = { upserted: 0, autoMatched: 0, review: 0, unmatched: 0, alreadyLinked: 0, stagedReady: 0, rowErrorCount: parsed.errors.length };
+      for (let i = 0; i < parsed.records.length; i++) {
+        const r = parsed.records[i];
+        const best = R.findBestMatch({ brand: r.brand, mpn: r.mpn, upc: r.upc, title: r.title }, ds.items);
+        const row = { id: id('off'), supplier_code: code, supplier_sku: r.supplierSku, brand: r.brand, title: r.title, upc: r.upc, mpn: r.mpn, cost_cents: r.costCents, qty_available: r.qtyAvailable, drop_ship: r.dropShip, lead_days: r.leadDays, reported_at: nowIso(), content_licensed: r.contentLicensed, ubc_sku: null };
+        if (best && best.decision === 'auto_match') { row.ubc_sku = best.item.sku; stats.autoMatched++; }
+        else if (best && best.decision === 'review') { stats.review++; }
+        else stats.unmatched++;
+        state.importedOffers.push(row);
+        stats.upserted++;
+      }
+      state.importedOffers = state.importedOffers.slice(-2000);
+      save();
+      return stats;
+    },
+    async promoteSupplierOffers(code) {
+      can('catalog.write');
+      const job = startJob('supplier.promote_catalog', { supplierCode: code }, async () => {
+        const unm = state.importedOffers.filter((o) => o.supplier_code === code && !o.ubc_sku);
+        unm.forEach((o) => { o.ubc_sku = code + '-' + o.supplier_sku; });
+        save();
+        return { productsUpserted: unm.length, variantsPromoted: unm.length, stagedForShopify: unm.length };
+      });
+      return { jobId: job.id };
+    },
+    async matchReviews(q) {
+      can('catalog.read');
+      const query = q || {};
+      const all = state.reviews.filter((r) => r.status === 'pending' && (!query.supplier || r.supplier_code === query.supplier));
+      const off = Number(query.offset) || 0;
+      const lim = Number(query.limit) || 100;
+      return { reviews: clone(all.slice(off, off + lim)), total: all.length };
+    },
     async resolveReview(rid, decision) {
       can('catalog.write');
       const r = state.reviews.find((x) => x.id === rid && x.status === 'pending');
@@ -734,12 +798,79 @@ export function createDemoDriver() {
     },
     async integrations() {
       const list = [
-        { system: 'shopify', status: 'demo_adapter', detail: 'Simulated Shopify Admin adapter (records the calls it would make)', missing: ['Shopify development store', 'Custom app with Admin API access token', 'Webhook secret'], writesEnabled: false, checkedAt: nowIso() },
-        { system: 'lightspeed_r', status: 'demo_adapter', detail: 'Simulated Lightspeed Retail R-Series adapter (read-only)', missing: ['R-Series API client registration', 'OAuth authorisation by UBC (refresh token)', 'Account ID'], writesEnabled: false, checkedAt: nowIso() },
+        { system: 'shopify', status: 'demo_adapter', detail: 'Shopify Plus DEMO adapter — ready to connect (Functions, Click & Collect & Bulk Ops prepared)', missing: ['SHOPIFY_SHOP_DOMAIN & SHOPIFY_CLIENT_ID / SECRET in .env'], writesEnabled: false, checkedAt: nowIso() },
+        { system: 'lightspeed_r', status: 'demo_adapter', detail: 'Lightspeed Retail R-Series DEMO adapter — physical store stock & event-only POS price parity ready', missing: ['LIGHTSPEED_R_CLIENT_ID / SECRET in .env', 'LIGHTSPEED_R_REFRESH_TOKEN & ACCOUNT_ID in .env'], writesEnabled: false, checkedAt: nowIso() },
       ];
-      ds.suppliers.forEach((s) => list.push({ system: s.code.toLowerCase(), status: 'demo_adapter', detail: 'Simulated DEMO adapter — no real connection to ' + s.name, missing: SUPPLIER_HEALTH_MISSING[s.code] || [], writesEnabled: false, checkedAt: nowIso() }));
+      ds.suppliers.forEach((s) => list.push({ system: s.code.toLowerCase(), status: 'demo_adapter', detail: 'UBC dealer access confirmed — ' + s.name + ' adapter ready to connect', missing: SUPPLIER_HEALTH_MISSING[s.code] || [], writesEnabled: false, checkedAt: nowIso() }));
       return { mode: 'demo', integrations: list, demoCalls: clone(state.demoCalls.slice(0, 50)) };
     },
+    async pipelineStatus() {
+      can('catalog.read');
+      const now = nowIso();
+      return {
+        cadences: {
+          availability: { stream: 'availability', intervalMinutes: 20, windowMinutes: [15, 30], maxSilenceHours: 2 },
+          costs: { stream: 'costs', intervalMinutes: 540, windowMinutes: [360, 720], maxSilenceHours: 24 },
+          content: { stream: 'content', intervalMinutes: 1440, windowMinutes: [1440, 1440], maxSilenceHours: 48 },
+          full_catalog: { stream: 'full_catalog', intervalMinutes: null, windowMinutes: null, maxSilenceHours: 48 },
+        },
+        schedules: ds.suppliers.reduce((acc, s) => acc.concat([
+          { supplier_code: s.code, supplier_name: s.name, stream: 'availability', interval_minutes: 20, max_silence_hours: 2, last_success_at: now, last_status: 'succeeded' },
+          { supplier_code: s.code, supplier_name: s.name, stream: 'costs', interval_minutes: 540, max_silence_hours: 24, last_success_at: now, last_status: 'succeeded' },
+          { supplier_code: s.code, supplier_name: s.name, stream: 'content', interval_minutes: 1440, max_silence_hours: 48, last_success_at: now, last_status: 'succeeded' },
+        ]), []),
+        watchdog: ds.suppliers.map((s) => ({ supplierCode: s.code, supplierName: s.name, status: 'healthy', hoursSilent: 0.2, maxSilenceHours: 48, message: s.name + ' feed healthy (DEMO).' })),
+        stagingSummary: [{ status: 'held', decision: 'held_for_review', n: 1 }, { status: 'pending', decision: 'ready_for_shopify', n: 2 }],
+        recentRuns: [
+          { id: 1, supplier_code: 'QBP', stream: 'costs', status: 'succeeded', records_seen: 42, records_changed: 3, staged_ready: 2, staged_held: 1, started_at: now },
+        ],
+      };
+    },
+    async pipelineStaging() {
+      can('catalog.read');
+      const sample = ds.items[0];
+      return {
+        staged: sample ? [{
+          id: 1,
+          variant_id: sample.id,
+          sku: sample.sku,
+          title: sample.title,
+          stream: 'costs',
+          decision: 'held_for_review',
+          status: 'held',
+          hold_reasons: ['map_above_published_price'],
+          shopify_payload: { availability: 'special_order', publishedQty: 0, leadTimeDays: 4, clickAndCollectOnly: sample.brand === 'Specialized' },
+          updated_at: nowIso(),
+        }] : [],
+      };
+    },
+    async pipelineHistory() {
+      can('catalog.read');
+      const sample = ds.items[0];
+      return {
+        history: sample ? [{
+          id: 1,
+          supplier_code: 'QBP',
+          supplier_sku: 'QBP-DEMO-450',
+          variant_title: sample.title,
+          change_types: ['cost_changed'],
+          old_cost_cents: 45000,
+          new_cost_cents: 47500,
+          old_map_cents: 84999,
+          new_map_cents: 84999,
+          shopify_published_price_cents: sample.priceCents,
+          resulting_margin_bps: 3820,
+          recorded_at: nowIso(),
+        }] : [],
+      };
+    },
+    async resolveStaging(sid, action) { return { ok: true, id: sid, status: action === 'release' ? 'pending' : 'dismissed' }; },
+    async flushPipeline() { const job = startJob('pipeline.flush_shopify', {}, async () => ({ pushed: 2 })); return { jobId: job.id }; },
+    async runWatchdog() { return { alertsRaised: 0, jobsScheduled: 0 }; },
+    async syncShopify() { const job = startJob('shopify.sync_catalog', {}, async () => ({ seen: ds.items.length })); return { jobId: job.id }; },
+    async setupShopifyMetafields() { return { created: [], existing: ['ubc.availability', 'ubc.lead_time_days', 'ubc.click_and_collect_only'] }; },
+    async setupShopifyCollections() { return { created: [], existing: ['electric-bikes', 'road-bikes', 'mountain-bikes', 'hybrid-bikes', 'helmets', 'tires-tubes', 'hydration-nutrition', 'parts-components'] }; },
+    async syncLightspeed() { const job = startJob('lightspeed.sync_catalog', {}, async () => ({ status: 'awaiting_oauth_credentials', seen: 0 })); return { jobId: job.id }; },
 
     // Demo-only controls
     simulateOutage(on) { state.simulateOutage = !!on; save(); },

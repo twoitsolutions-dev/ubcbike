@@ -1,0 +1,96 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v20 — Ikeono Text-to-Chat Floating Launcher & SMS Popover
+  Integrates seamlessly with Ikeono (Bike Shop SMS & Webchat for Lightspeed / Shopify).
+  - If `settings.ubc_ikeono_script_url` or `window.Ikeono` is present, triggers Ikeono's live widget directly.
+  - Otherwise opens a fast, mobile-native UBC × Ikeono Text-to-Chat popover (`sms:+18139712277`) with department topic chips.
+  Zero Emojis · Accessible · Safe-Area Aware
+{%- endcomment -%}
+{%- if settings.ubc_ikeono_enabled != false -%}
+  {%- liquid
+    assign ik_phone = settings.ubc_ikeono_phone | default: '(813) 971-2277'
+    assign ik_sms = settings.ubc_ikeono_sms | default: '+18139712277'
+    assign ik_script = settings.ubc_ikeono_script_url | strip
+  -%}
+  {%- if ik_script != blank -%}
+    <script src="{{ ik_script | escape }}" defer="defer"></script>
+  {%- endif -%}
+
+  <div class="fb-scope ik-root" id="ubcIkeonoRoot" data-ik-sms="{{ ik_sms | escape }}" data-ik-phone="{{ ik_phone | escape }}">
+    <div class="ik-panel on-dark" id="ubcIkeonoPanel" role="dialog" aria-modal="false" aria-labelledby="ubcIkeonoTitle" hidden>
+      <div class="ik-head">
+        <div class="ik-head-copy">
+          <span class="ik-kicker"><i aria-hidden="true"></i> <span data-es="Respuesta rápida por SMS &middot; Ikeono">Live SMS Chat &middot; Ikeono</span></span>
+          <h3 id="ubcIkeonoTitle" data-es="Escríbenos a la tienda">Text Our Tampa Team</h3>
+          <p data-es="Pregunta por tallas, repuestos, estado de taller o alquiler en Alafia.">Ask about sizing, parts in stock, walk-in repair status or Alafia rentals.</p>
+        </div>
+        <button type="button" class="ik-close" id="ubcIkeonoClose" aria-label="Close Ikeono chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="ik-body">
+        <span class="ik-step-label" data-es="1. Elige un tema:">1. Choose a topic:</span>
+        <div class="ik-topics" id="ubcIkeonoTopics" role="group" aria-label="Message topic">
+          <button type="button" class="ik-topic" aria-pressed="true" data-ik-topic="Hi UBC! I have a question about a bike or e-bike in stock." data-ik-topic-es="Hola UBC, tengo una consulta sobre una bicicleta o E-Bike en stock.">
+            <span data-es="Bicis y E-Bikes">Bikes &amp; E-Bikes</span>
+          </button>
+          <button type="button" class="ik-topic" aria-pressed="false" data-ik-topic="Hi UBC! Checking availability on helmets, tires, parts or nutrition." data-ik-topic-es="Hola UBC, quiero consultar disponibilidad de cascos, llantas, repuestos o nutrición.">
+            <span data-es="Cascos, Piezas y Equipo">Parts &amp; Gear</span>
+          </button>
+          <button type="button" class="ik-topic" aria-pressed="false" data-ik-topic="Hi UBC! Question for the Tampa service workshop / tune-up." data-ik-topic-es="Hola UBC, consulta para el taller de mantenimiento en Tampa.">
+            <span data-es="Taller y Servicio">Service Status</span>
+          </button>
+          <button type="button" class="ik-topic" aria-pressed="false" data-ik-topic="Hi UBC! Question about trail bike rentals at Alafia River State Park." data-ik-topic-es="Hola UBC, consulta sobre alquiler de bicis en Alafia River State Park.">
+            <span data-es="Alquiler Alafia">Alafia Rentals</span>
+          </button>
+        </div>
+
+        <label class="ik-step-label" for="ubcIkeonoMsg" data-es="2. Tu mensaje:">2. Your message:</label>
+        <textarea
+          id="ubcIkeonoMsg"
+          rows="3"
+          maxlength="320"
+          placeholder="Hi UBC! Question about availability or sizing…"
+          data-es-placeholder="Hola UBC, consulta sobre disponibilidad o talla…"
+        >Hi UBC! I have a question about a bike or e-bike in stock.</textarea>
+
+        <div class="ik-actions">
+          <a class="fb-btn coral sm ik-send" id="ubcIkeonoSend" href="sms:{{ ik_sms | escape }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span data-es="Enviar SMS a {{ ik_phone | escape }}">Send Text &middot; {{ ik_phone | escape }}</span>
+          </a>
+          <div class="ik-meta-links">
+            <a href="tel:{{ ik_sms | escape }}" data-es="Llamar Tampa">Call Tampa</a>
+            <span aria-hidden="true">&middot;</span>
+            <a href="tel:+18134598293" data-es="Llamar Alafia">Alafia (813) 459-8293</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="ik-foot">
+        <span class="ik-powered">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+          <span data-es="Integrado con Ikeono">Connected with Ikeono</span>
+        </span>
+        <span class="ik-hours-hint" data-es="Lun–Sáb &middot; Tampa">Mon–Sat &middot; Tampa</span>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="ik-fab"
+      id="ubcIkeonoFab"
+      aria-expanded="false"
+      aria-controls="ubcIkeonoPanel"
+      aria-label="Text University Bicycle Center via Ikeono"
+    >
+      <span class="ik-fab-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <i class="ik-fab-dot"></i>
+      </span>
+      <span class="ik-fab-label" data-es="Escríbenos">Text Us</span>
+    </button>
+  </div>
+{%- endif -%}

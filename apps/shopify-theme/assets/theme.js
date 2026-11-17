@@ -2,7 +2,7 @@
  * Every feature works without JS through native forms; JS adds:
  *  - mobile menu toggle
  *  - auto-submit of collection filters
- *  - variant selection with live price/availability
+ *  - variant selection with live price/availability & in-store pickup rules
  *  - AJAX add-to-cart via Shopify's Cart API (/cart/add.js)
  *  - lazy related products via the Section Rendering API
  */
@@ -57,14 +57,22 @@
       var v = currentVariant();
       if (!v) return;
       idInput.value = v.id;
+      var priceWrap = qs('[data-price] .price', product);
       var price = qs('[data-price] .price-current', product);
+      var compareWrap = qs('[data-price] .price-compare', product);
+      var compareVal = qs('[data-price-compare]', product);
       if (price) price.textContent = v.price;
+      if (priceWrap) priceWrap.className = v.compare ? 'price price--sale' : 'price';
+      if (compareWrap) compareWrap.hidden = !v.compare;
+      if (compareVal && v.compare) compareVal.textContent = v.compare;
       var status = v.availability || (v.available && v.qty > 0 ? 'in_stock' : v.available ? 'special_order' : 'unavailable');
       var label = status === 'in_stock' ? data.labels.in_stock
         : status === 'special_order' ? (v.lead ? data.labels.special_order_days.replace('__DAYS__', v.lead) : data.labels.special_order)
         : data.labels.unavailable;
       var badge = qs('[data-availability]', product);
       if (badge) { badge.className = 'availability availability--' + status; badge.textContent = label; }
+      var pickupBadge = qs('[data-click-collect]', product);
+      if (pickupBadge) { pickupBadge.hidden = !v.pickup_only; }
       button.disabled = !v.available;
       button.textContent = v.available ? data.labels.add : data.labels.sold_out;
       if (window.history && window.history.replaceState) {

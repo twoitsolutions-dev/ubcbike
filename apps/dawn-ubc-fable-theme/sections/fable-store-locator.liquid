@@ -1,0 +1,255 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v20 — Calm, Uncluttered Store Locator (#stores on Home & Full Interactive /pages/locations)
+  - Home (#stores): Airy 2-store selector + clean unobstructed Google Map (zero duplicate HUD overlay, zero badge soup).
+  - Standalone (/pages/locations): Full distance calculator, Near Me GPS, service filter pills & interactive HUD.
+{%- endcomment -%}
+
+<div class="fb-scope">
+  <section
+    class="fb-sec sl-sec{% if section.settings.is_standalone_page %} sl-sec--page{% else %} sl-sec--home{% endif %}"
+    id="stores"
+    data-sl-root
+    data-gmaps-key="{{ section.settings.google_maps_api_key | strip | escape }}"
+  >
+    <div class="fb-wrap">
+      {%- if section.settings.is_standalone_page -%}
+        <nav class="sl-breadcrumb" aria-label="Breadcrumb">
+          <a href="{{ routes.root_url }}" data-es="Inicio">Home</a>
+          <span aria-hidden="true">/</span>
+          <span data-es="Tiendas y Mapa Interactivo">Store Locator</span>
+        </nav>
+      {%- endif -%}
+
+      <div class="fb-sec-head split sl-head">
+        <div>
+          <span class="eyebrow reveal" data-es="Visítanos &middot; Tampa y Lithia">{{ section.settings.eyebrow | escape }}</span>
+          {%- if section.settings.is_standalone_page -%}
+            <h1 class="h2 reveal" data-es="Dos tiendas. <em>Encuentra la tuya.</em>">Two shops. <em>Find yours.</em></h1>
+            <p class="lead reveal" data-es="Calcula tu distancia en tiempo real, filtra por departamento y obtén indicaciones directas.">
+              Calculate real-time distance, filter by department and launch turn-by-turn directions.
+            </p>
+          {%- else -%}
+            <h2 class="h2 reveal" data-es="Dos tiendas. <em>Visítanos hoy.</em>">Two shops. <em>Visit us today.</em></h2>
+          {%- endif -%}
+        </div>
+
+        <div class="sl-origin-controls reveal">
+          {%- if section.settings.is_standalone_page and section.settings.enable_near_me -%}
+            <div class="sl-select-wrap">
+              <svg aria-hidden="true"><use href="#i-search"/></svg>
+              <label class="sr-only" for="slOriginSelect">Starting area in Tampa Bay</label>
+              <select id="slOriginSelect">
+                <option value="" data-es="Calcular distancia desde…">Distance from…</option>
+                <option value="usf">USF / North Tampa (33612)</option>
+                <option value="downtown">Downtown Tampa (33602)</option>
+                <option value="southtampa">South Tampa / Hyde Park (33606)</option>
+                <option value="carrollwood">Carrollwood / Lutz (33618)</option>
+                <option value="wesleychapel">Wesley Chapel (33544)</option>
+                <option value="brandon">Brandon / Riverview (33511)</option>
+                <option value="lithia">Lithia / FishHawk (33547)</option>
+                <option value="stpete">St. Petersburg (33701)</option>
+              </select>
+            </div>
+
+            <div class="sl-places-wrap" id="slPlacesWrap" hidden>
+              <svg aria-hidden="true"><use href="#i-pin"/></svg>
+              <input
+                type="search"
+                id="slPlacesInput"
+                enterkeyhint="search"
+                placeholder="Enter ZIP or address…"
+                data-es-placeholder="Ingresa código postal o dirección…"
+                aria-label="Search starting address"
+              >
+            </div>
+
+            <button type="button" class="fb-btn sm" id="slNearMeBtn">
+              <svg aria-hidden="true"><use href="#i-crosshair"/></svg>
+              <span data-es="Cerca de mí">Near Me</span>
+            </button>
+          {%- endif -%}
+
+          {%- if section.settings.show_page_link and section.settings.is_standalone_page == false -%}
+            <a class="link-arrow sl-full-link" href="/pages/locations">
+              <span data-es="Calcular distancia y horarios completos">Calculate Distance &amp; Full Hours</span>
+              <svg><use href="#i-arrow-up-right"/></svg>
+            </a>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="sl-shell reveal">
+        {%- if section.settings.is_standalone_page -%}
+          <div class="sl-toolbar">
+            <div class="chips chips--wrap" id="slServiceTabs" role="group" aria-label="Filter stores by service">
+              <button type="button" class="chip chip--sm" data-sl-filter="all" aria-pressed="true" data-es="Todas las ubicaciones (2)">All Locations (2)</button>
+              <button type="button" class="chip chip--sm" data-sl-filter="ebikes" aria-pressed="false"><svg><use href="#i-bolt"/></svg> <span data-es="Showroom y Retiro">Showroom &amp; Pickup</span></button>
+              <button type="button" class="chip chip--sm" data-sl-filter="service" aria-pressed="false"><svg><use href="#i-wrench"/></svg> <span data-es="Taller Sin Cita">Walk-In Service</span></button>
+              <button type="button" class="chip chip--sm" data-sl-filter="rentals" aria-pressed="false"><svg><use href="#i-pin"/></svg> <span data-es="Alquiler en Senderos">Trailhead Rentals</span></button>
+            </div>
+
+            <div class="sl-toolbar-right">
+              <button type="button" class="chip chip--sm" id="slFitBoundsBtn" hidden data-es="Ver ambas en mapa">View Both</button>
+
+              <div class="map-segmented" role="group" aria-label="Map display style">
+                <button type="button" data-sl-map-mode="m" aria-pressed="true" data-es="Mapa">Map</button>
+                <button type="button" data-sl-map-mode="k" aria-pressed="false" data-es="Satélite">Satellite</button>
+              </div>
+            </div>
+          </div>
+        {%- endif -%}
+
+        <div class="sl-grid">
+          <div class="sl-sidebar">
+            <div class="sl-origin-banner" id="slOriginBanner" hidden>
+              <span id="slOriginLabel"></span>
+              <button type="button" id="slClearOrigin" data-es="Limpiar">Clear</button>
+            </div>
+
+            <div class="sl-cards" id="slCardsList" role="listbox" aria-label="University Bicycle Center locations"></div>
+          </div>
+
+          <div class="sl-map-stage">
+            <div class="sl-map-pins" id="slMapPins" role="group" aria-label="Select store on map">
+              <button type="button" class="sl-map-pin" data-sl-pin="main" aria-pressed="true">
+                <i aria-hidden="true"></i>
+                <span>Tampa Showroom</span>
+              </button>
+              <button type="button" class="sl-map-pin" data-sl-pin="alafia" aria-pressed="false">
+                <i aria-hidden="true"></i>
+                <span>Alafia Park</span>
+              </button>
+            </div>
+
+            <div class="sl-js-map" id="slGoogleJsCanvas" hidden></div>
+
+            <iframe
+              id="slEmbedFrame"
+              class="sl-embed-frame"
+              title="Google Map — University Bicycle Center, 1220 E Fletcher Ave, Tampa, FL 33612"
+              src="https://maps.google.com/maps?q=1220+E+Fletcher+Ave,+Tampa,+FL+33612&t=m&z=14&ie=UTF8&iwloc=&output=embed"
+              width="820"
+              height="520"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allowfullscreen
+            ></iframe>
+
+            {%- if section.settings.is_standalone_page -%}
+              <div class="sl-hud on-dark" id="slActiveHud" aria-live="polite"></div>
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="application/json" id="FableStoresData">
+      [
+        {
+          "id": "main",
+          "num": "01",
+          "name": "University Bicycle Center — Tampa",
+          "shortLabel": "Tampa Showroom",
+          "role": ["Main Showroom · Gear · Walk-In Repair", "Tienda Principal · Equipo · Taller Sin Cita"],
+          "summaryHours": ["Mon–Fri 10am–6pm · Sat 9am–5pm", "Lun–Vie 10am–6pm · Sáb 9am–5pm"],
+          "addressLine1": "1220 E Fletcher Ave",
+          "addressLine2": "Tampa, FL 33612",
+          "fullAddress": "1220 E Fletcher Ave, Tampa, FL 33612",
+          "mapQuery": "1220+E+Fletcher+Ave,+Tampa,+FL+33612",
+          "zoom": 14,
+          "lat": 28.0695,
+          "lng": -82.4459,
+          "phone": "(813) 971-2277",
+          "tel": "+18139712277",
+          "services": ["ebikes", "service"],
+          "badges": [
+            ["Bikes, Gear & Parts", "Bicis, Equipo y Piezas"],
+            ["Free Assembled Pickup", "Retiro Gratis"],
+            ["Walk-In Service", "Taller Sin Cita"]
+          ],
+          "hours": [
+            { "days": [1, 2, 3, 4, 5], "label": ["Mon – Fri", "Lun – Vie"], "time": ["10:00am – 6:00pm", "10:00am – 6:00pm"] },
+            { "days": [6], "label": ["Sat", "Sáb"], "time": ["9:00am – 5:00pm", "9:00am – 5:00pm"] },
+            { "days": [0], "label": ["Sun", "Dom"], "time": ["Closed", "Cerrado"] }
+          ],
+          "footnote": ["", ""]
+        },
+        {
+          "id": "alafia",
+          "num": "02",
+          "name": "UBC at Alafia River State Park",
+          "shortLabel": "Alafia Park",
+          "role": ["Trailhead Rentals · Trail Shop · Service", "Alquiler en Sendero · Tienda · Taller"],
+          "summaryHours": ["Wed–Fri 10am–5pm · Sat–Sun 8am–5pm", "Mié–Vie 10am–5pm · Sáb–Dom 8am–5pm"],
+          "addressLine1": "14326 S County Road 39",
+          "addressLine2": "Lithia, FL 33547",
+          "fullAddress": "14326 S County Road 39, Lithia, FL 33547",
+          "mapQuery": "14326+S+County+Road+39,+Lithia,+FL+33547",
+          "zoom": 13,
+          "lat": 27.7689,
+          "lng": -82.1264,
+          "phone": "(813) 459-8293",
+          "tel": "+18134598293",
+          "services": ["rentals", "service"],
+          "badges": [
+            ["Trailhead Bike Rentals", "Alquiler en Sendero"],
+            ["Direct Trail Access", "Acceso al Parque"],
+            ["Trail Spares & Repair", "Repuestos y Taller"]
+          ],
+          "hours": [
+            { "days": [3, 4, 5], "label": ["Wed – Fri", "Mié – Vie"], "time": ["10:00am – 5:00pm", "10:00am – 5:00pm"] },
+            { "days": [6, 0], "label": ["Sat – Sun", "Sáb – Dom"], "time": ["8:00am – 5:00pm", "8:00am – 5:00pm"] },
+            { "days": [1, 2], "label": ["Mon – Tue", "Lun – Mar"], "time": ["Closed*", "Cerrado*"] }
+          ],
+          "footnote": [
+            "*Unless a holiday or by appointment; hours may vary with trail weather.",
+            "*Excepto feriados o con cita agendada. Sujeto al clima en el sendero."
+          ]
+        }
+      ]
+    </script>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Store Locator",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow label",
+      "default": "Visit Us · Tampa & Lithia"
+    },
+    {
+      "type": "text",
+      "id": "google_maps_api_key",
+      "label": "Google Maps JS API Key (optional)",
+      "info": "Leave blank to use instant Google Maps mode with zero setup. Paste a Google Maps JavaScript API key to activate the live vector map with dual custom pins and Places address search."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_near_me",
+      "label": "Enable Near Me & distance calculator on /pages/locations",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_page_link",
+      "label": "Show link to /pages/locations",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "is_standalone_page",
+      "label": "Standalone /pages/locations header",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Store Locator"
+    }
+  ]
+}
+{% endschema %}

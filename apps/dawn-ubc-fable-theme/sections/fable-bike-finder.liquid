@@ -1,0 +1,367 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v15 — v12 Interactive Bike & E-Bike Finder
+  Official UBC Brand Colors + Option A Coral (#E04F33) · Real Specialized & Catalog Photos · Live `bikes` Collection
+{%- endcomment -%}
+{%- liquid
+  assign target_col = collections['bikes']
+  if section.settings.collection != blank
+    assign target_col = collections[section.settings.collection]
+  endif
+  if target_col == blank or target_col.products_count == 0
+    assign target_col = collections['all']
+  endif
+
+  if collections['electric-bikes'] != blank
+    assign ebike_url = collections['electric-bikes'].url
+  else
+    assign ebike_url = routes.search_url | append: '?type=product&q=Electric+Bike'
+  endif
+
+  if collections['bikes'] != blank
+    assign bikes_url = collections['bikes'].url
+  else
+    assign bikes_url = routes.search_url | append: '?type=product&q=Bike'
+  endif
+-%}
+
+<div class="fb-scope">
+  <section class="fb-sec finder" id="finder">
+    <span id="ebikes" class="fb-anchor-alias" aria-hidden="true"></span>
+    <div class="fb-wrap">
+      <div class="fb-sec-head split">
+        <div>
+          <span class="eyebrow reveal" data-es="Buscador de Bici y E-Bike">Bike &amp; E-Bike Finder</span>
+          <h2 class="h2 reveal" data-es="Dinos cómo ruedas. <em>Te mostramos tu bici.</em>">Tell us how you ride. <em>We'll show you the bike.</em></h2>
+        </div>
+        <div class="finder-head-right reveal">
+          <a class="link-arrow" id="finderAll" href="{{ target_col.url | default: routes.all_products_collection_url }}">
+            <span id="finderAllTxt" data-es="Ver catálogo">See All Bikes</span> <svg><use href="#i-arrow"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="finder-box reveal">
+        <div class="finder-controls">
+          <div class="finder-q">
+            <span class="finder-step"><i>1</i> <span data-es="¿Dónde vas a rodar?">Where will you ride?</span></span>
+            <div class="chips chips--wrap" id="rideChips" role="group" aria-label="Riding style">
+              <button class="chip chip--sm" type="button" data-ride="electric" aria-pressed="true"><svg><use href="#i-bolt"/></svg> <span data-es="E-Bike eléctrica">E-Bike Boost</span></button>
+              <button class="chip chip--sm" type="button" data-ride="road" aria-pressed="false" data-es="Ruta y pavimento">Road &amp; Speed</button>
+              <button class="chip chip--sm" type="button" data-ride="mtb" aria-pressed="false" data-es="Senderos y MTB">Trails &amp; MTB</button>
+              <button class="chip chip--sm" type="button" data-ride="fitness" aria-pressed="false" data-es="Ciudad y fitness">City &amp; Fitness</button>
+              <button class="chip chip--sm" type="button" data-ride="cruise" aria-pressed="false" data-es="Paseo cómodo">Easy Cruising</button>
+            </div>
+          </div>
+
+          <div class="finder-q finder-q--budget" id="budgetRow">
+            <label class="finder-step" for="budget"><i>2</i> <span data-es="Presupuesto máximo">Top budget</span></label>
+            <div class="budget">
+              <input id="budget" type="range" min="500" max="16000" step="500" value="16000">
+              <output id="budgetOut" for="budget">$16,000</output>
+            </div>
+          </div>
+        </div>
+
+        <div class="finder-results-head">
+          <div class="finder-results-copy">
+            <h3 id="finderTitle">Electric Bikes</h3>
+            <p id="finderNote">Smooth pedal-assist commuters, lightweight carbon road e-bikes and step-through cruisers.</p>
+          </div>
+          <span class="finder-count" id="finderCount"></span>
+        </div>
+
+        <div class="grid-products grid-products--compact" id="finderGrid" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <script type="application/json" id="FableCatalogData">
+      {%- if collections['bikes'] != blank and collections['bikes'].products_count > 10 -%}
+        [
+          {%- assign emitted_real_bikes = 0 -%}
+          {%- for p in collections['bikes'].products limit: 50 -%}
+            {%- if p.featured_image == blank or p.available == false -%}{%- continue -%}{%- endif -%}
+            {%- liquid
+              assign v = p.selected_or_first_available_variant
+              assign type_down = p.product_type | downcase
+              assign title_down = p.title | downcase
+              assign ride_cat = 'fitness'
+              if type_down contains 'electric' or title_down contains 'levo' or title_down contains 'vado' or title_down contains 'como' or title_down contains 'creo'
+                assign ride_cat = 'electric'
+              elsif type_down contains 'road' or title_down contains 'tarmac' or title_down contains 'roubaix' or title_down contains 'crux' or title_down contains 'diverge' or title_down contains 'allez' or title_down contains 'contend'
+                assign ride_cat = 'road'
+              elsif type_down contains 'mountain' or title_down contains 'stumpjumper' or title_down contains 'epic' or title_down contains 'rockhopper' or title_down contains 'chisel'
+                assign ride_cat = 'mtb'
+              elsif title_down contains 'roll' or title_down contains 'crossroads' or title_down contains 'townie' or title_down contains 'cruiser' or type_down contains 'bmx' or type_down contains 'children'
+                assign ride_cat = 'cruise'
+              endif
+              assign pickup_only = false
+              assign vend_down = p.vendor | downcase
+              if vend_down == 'specialized'
+                assign pickup_only = true
+              endif
+            -%}
+            {%- if emitted_real_bikes > 0 -%},{%- endif -%}
+            {
+              "kind": "bike",
+              "t": {{ ride_cat | json }},
+              "b": {{ p.vendor | default: 'UBC' | json }},
+              "n": {{ p.title | json }},
+              "p": {{ v.price | divided_by: 100.0 }},
+              "compareAt": {{ v.compare_at_price | default: 0 | divided_by: 100.0 }},
+              "u": {{ p.url | json }},
+              "img": {{ p.featured_image | image_url: width: 900 | json }},
+              "sku": {{ v.sku | default: '' | json }},
+              "variantId": {{ v.id | json }},
+              "availability": "in_stock",
+              "leadDays": 0,
+              "pickupOnly": {{ pickup_only | json }}
+            }
+            {%- assign emitted_real_bikes = emitted_real_bikes | plus: 1 -%}
+          {%- endfor -%}
+        ]
+      {%- else -%}
+      [
+        {
+          "kind": "bike",
+          "t": "electric",
+          "b": "Specialized",
+          "n": "Turbo Vado 4.0",
+          "sku": "SPZ-TURBO-VADO-4",
+          "p": 3249.99,
+          "u": {% if all_products['specialized-turbo-vado-4-0-step-through-e-bike-large'] != blank %}{{ all_products['specialized-turbo-vado-4-0-step-through-e-bike-large'].url | json }}{% elsif all_products['como-4-0'] != blank %}{{ all_products['como-4-0'].url | json }}{% else %}{{ ebike_url | json }}{% endif %},
+          "img": {{ 'spz-turbo-vado-4.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "electric",
+          "b": "Electra",
+          "n": "Townie Go! Step-Thru",
+          "sku": "ELC-TOWNIE-GO",
+          "p": 1999.99,
+          "u": {{ ebike_url | json }},
+          "img": {{ 'ebike-townie-go.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "electric",
+          "b": "Cannondale",
+          "n": "Synapse Neo Allroad 2",
+          "sku": "CAN-SYNAPSE-NEO2",
+          "p": 3799.99,
+          "u": {{ ebike_url | json }},
+          "img": {{ 'ebike-synapse-neo.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "electric",
+          "b": "Specialized",
+          "n": "Turbo Vado SL 4.0",
+          "sku": "SPZ-TURBO-VADO-SL",
+          "p": 3999.99,
+          "u": {{ ebike_url | json }},
+          "img": {{ 'ubc-bike-turbo-vado-sl.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "electric",
+          "b": "Specialized",
+          "n": "S-Works Turbo Creo 2",
+          "sku": "SPZ-TURBO-CREO-2",
+          "p": 6499.99,
+          "u": {{ ebike_url | json }},
+          "img": {{ 'spz-turbo-creo-2.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        }
+        {%- if target_col != blank and target_col.products_count > 0 -%}
+          {%- for p in target_col.products limit: 24 -%}
+            {%- liquid
+              assign v = p.selected_or_first_available_variant
+              assign avail = v.metafields.ubc.availability.value | default: p.metafields.ubc.availability.value | default: ''
+              if avail == blank
+                if v.available
+                  assign avail = 'in_stock'
+                else
+                  assign avail = 'unavailable'
+                endif
+              endif
+              assign lead_days = v.metafields.ubc.lead_time_days.value | default: p.metafields.ubc.lead_time_days.value | default: 0
+              assign pickup_raw = v.metafields.ubc.click_and_collect_only.value | default: p.metafields.ubc.click_and_collect_only.value
+              assign pickup_only = false
+              if pickup_raw == true or pickup_raw == 'true'
+                assign pickup_only = true
+              endif
+
+              assign title_down = p.title | downcase
+              assign type_down = p.product_type | downcase
+              assign combined_down = title_down | append: ' ' | append: type_down
+              assign ride_cat = 'road'
+              assign item_kind = 'bike'
+              assign looks_like_bike = false
+              if combined_down contains 'bike' or title_down contains 'tarmac' or title_down contains 'allez' or title_down contains 'diverge' or title_down contains 'vado' or title_down contains 'como' or title_down contains 'epic' or title_down contains 'stumpjumper' or title_down contains 'rockhopper' or title_down contains 'sirrus'
+                assign looks_like_bike = true
+              endif
+              if target_col.handle == 'all' and looks_like_bike == false
+                assign item_kind = 'gear'
+              elsif combined_down contains 'helmet' or combined_down contains 'tire' or combined_down contains 'grand prix' or combined_down contains 'bell' or combined_down contains 'hydration' or combined_down contains 'nutrition' or combined_down contains 'drink' or combined_down contains 'skratch' or combined_down contains 'groupset' or combined_down contains 'drivetrain' or combined_down contains 'ultegra' or combined_down contains 'saddle' or combined_down contains 'cockpit' or combined_down contains 'pedal' or combined_down contains 'electronic' or combined_down contains 'stand' or combined_down contains 'tool' or combined_down contains 'repair' or combined_down contains 'accessor' or combined_down contains 'part' or combined_down contains 'clothing' or combined_down contains 'shoe' or combined_down contains 'jacket' or combined_down contains 'jersey' or combined_down contains 'sock' or combined_down contains 'handlebar'
+                assign item_kind = 'gear'
+              elsif combined_down contains 'turbo' or combined_down contains 'electric' or combined_down contains 'e-bike' or combined_down contains 'vado' or combined_down contains 'como'
+                assign ride_cat = 'electric'
+              elsif combined_down contains 'epic' or combined_down contains 'rockhopper' or combined_down contains 'mtb' or combined_down contains 'mountain' or combined_down contains 'stumpjumper'
+                assign ride_cat = 'mtb'
+              elsif combined_down contains 'sirrus' or combined_down contains 'hybrid' or combined_down contains 'fitness'
+                assign ride_cat = 'fitness'
+              elsif combined_down contains 'roll' or combined_down contains 'cruiser' or combined_down contains 'comfort' or combined_down contains 'townie'
+                assign ride_cat = 'cruise'
+              endif
+
+              if title_down contains 'turbo vado 4.0'
+                assign img_src = 'spz-turbo-vado-4.png' | asset_url
+              elsif title_down contains 'tarmac'
+                assign img_src = 'fable-bike-tarmac.png' | asset_url
+              elsif title_down contains 'surly' or title_down contains 'midnight'
+                assign img_src = 'ubc-bike-diverge.png' | asset_url
+              elsif p.featured_image != blank
+                assign img_src = p.featured_image | image_url: width: 900
+              elsif title_down contains 'continental' or title_down contains 'tire'
+                assign img_src = 'spz-cannibal-tire.png' | asset_url
+              else
+                assign img_src = 'spz-propero-4.png' | asset_url
+              endif
+            -%}
+            ,{
+              "kind": {{ item_kind | json }},
+              "t": {{ ride_cat | json }},
+              "b": {{ p.vendor | default: 'UBC' | json }},
+              "n": {{ p.title | json }},
+              "p": {{ v.price | divided_by: 100.0 }},
+              "compareAt": {{ v.compare_at_price | default: 0 | divided_by: 100.0 }},
+              "u": {{ p.url | json }},
+              "img": {{ img_src | json }},
+              "sku": {{ v.sku | default: '' | json }},
+              "variantId": {{ v.id | json }},
+              "availability": {{ avail | json }},
+              "leadDays": {{ lead_days | plus: 0 }},
+              "pickupOnly": {{ pickup_only | json }}
+            }
+          {%- endfor -%}
+        {%- endif -%},
+        {
+          "kind": "bike",
+          "t": "road",
+          "b": "Specialized",
+          "n": "Allez Comp",
+          "p": 2099.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'fable-bike-allez.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "road",
+          "b": "Specialized",
+          "n": "Allez",
+          "p": 1599.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'spz-allez-2026.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "mtb",
+          "b": "Specialized",
+          "n": "Epic 9 Sport",
+          "p": 4699.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'ubc-bike-epic-9.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "mtb",
+          "b": "Specialized",
+          "n": "Rockhopper 29",
+          "p": 749.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'fable-bike-rockhopper.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "mtb",
+          "b": "Giant",
+          "n": "Talon 2",
+          "p": 799.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'cat-giant-talon.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "fitness",
+          "b": "Specialized",
+          "n": "Sirrus X 2.0",
+          "p": 849.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'fable-bike-sirrus.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "cruise",
+          "b": "Specialized",
+          "n": "Roll 2.0 Low Entry",
+          "p": 799.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'fable-bike-roll.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        },
+        {
+          "kind": "bike",
+          "t": "cruise",
+          "b": "Electra",
+          "n": "Loft 7D Step-Over",
+          "p": 499.99,
+          "u": {{ bikes_url | json }},
+          "img": {{ 'cat-electra-loft.png' | asset_url | json }},
+          "availability": "in_stock",
+          "pickupOnly": true
+        }
+      ]
+      {%- endif -%}
+    </script>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Bike Finder",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Source collection"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Bike Finder"
+    }
+  ]
+}
+{% endschema %}

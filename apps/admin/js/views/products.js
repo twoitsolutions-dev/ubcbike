@@ -1,19 +1,32 @@
 import { h, mount } from '../ui/dom.js';
-import { card, confirmDialog, dataTable, loading, pageHead, pager, toast, watchJob, progressBar, errorBox } from '../ui/components.js';
+import { card, confirmDialog, dataTable, loading, pageHead, pager, sectionTabs, toast, watchJob, progressBar, errorBox } from '../ui/components.js';
 import { availabilityBadge, dateTime, margin, money, pct } from '../ui/format.js';
-import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js';
-import { openPriceEditor } from './pricing.js';
+import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=40';
+import { openPriceEditor } from './pricing.js?v=40';
 
 const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s === 'hidden' ? '' : 'warn' }, s);
 
+export function itemSearchTabs(activeKey) {
+  return sectionTabs([
+    ['all', 'All Items', '#/products?stock=any'],
+    ['stock', 'In-Store Stock', '#/inventory'],
+    ['vendor', 'Vendor Catalog Only', '#/products?stock=virtual_only'],
+    ['margins', 'Margins & MAP', '#/pricing'],
+  ], activeKey);
+}
+
 /**
- * Shared catalog table used by Products, Prices & margins and Inventory.
+ * Shared catalog table used by Item Search (All Items, In-Store Stock, Margins & MAP).
  * Supports filters, sort, pagination and multi-selection (page or whole filter).
  */
 export async function catalogTable(ctx, opts) {
   const facets = await ctx.api.facets();
   const key = opts.memoryKey;
-  const initial = Object.assign({}, remember(key) || {}, ctx.query.stock ? { stock: ctx.query.stock } : {}, ctx.query.status ? { status: ctx.query.status } : {});
+  const mem = Object.assign({}, remember(key) || {});
+  if (ctx.query.stock === 'any') delete mem.stock;
+  else if (ctx.query.stock) mem.stock = ctx.query.stock;
+  if (ctx.query.status) mem.status = ctx.query.status;
+  const initial = mem;
   const st = { filter: initial, sort: opts.sort || { key: 'title', dir: 'asc' }, offset: 0, limit: 50, selected: new Set(), allMatching: false, data: null };
   const tableHost = h('div', loading());
   const selHost = h('div');
@@ -95,17 +108,27 @@ async function runBulkStatus(ctx, filter, count, status, done) {
   done();
 }
 
+export function renderItemPriceCell(r) {
+  if (r.compareAtCents && r.compareAtCents > r.priceCents) {
+    return h('div',
+      h('div', h('strong', money(r.priceCents)), ' ', h('span.badge.ok', 'Sale')),
+      h('div.small.muted', 'Default ', h('s', money(r.compareAtCents))));
+  }
+  return money(r.priceCents);
+}
+
 export async function renderProducts(ctx) {
   const table = await catalogTable(ctx, {
     memoryKey: 'products',
-    columns: () => [
-      { key: 'title', label: 'Product', sortable: true, cls: 'title-cell', render: (r) => h('div', h('a', { href: '#/products/' + r.id }, r.title), h('div.sku', r.sku)) },
+    columns: (c, reload) => [
+      { key: 'title', label: 'Item', sortable: true, cls: 'title-cell', render: (r) => h('div', h('a', { href: '#/products/' + r.id }, r.title), h('div.sku', r.sku)) },
       { key: 'brand', label: 'Brand', sortable: true, opt: true },
       { key: 'category', label: 'Category', opt: true },
-      { key: 'price', label: 'Price', num: true, sortable: true, render: (r) => money(r.priceCents) },
+      { key: 'price', label: 'Price / Sale', num: true, sortable: true, render: renderItemPriceCell },
       { key: 'margin', label: 'Margin', num: true, sortable: true, opt: true, render: (r) => pct(margin(r.priceCents, r.costCents)) },
-      { key: 'avail', label: 'Availability', render: (r) => availabilityBadge(r.availability) },
-      { key: 'status', label: 'Status', render: (r) => statusBadge(r.status) },
+      { key: 'avail', label: 'Stock / Vendor', render: (r) => availabilityBadge(r.availability) },
+      { key: 'status', label: 'Web Status', render: (r) => statusBadge(r.status) },
+      { key: 'edit', label: '', opt: true, render: (r) => (c.can('pricing.write') ? h('button.btn.sm', { onclick: () => openPriceEditor(c, r, reload) }, 'Price') : null) },
     ],
     bulkActions: ctx.can('catalog.write') ? ({ filter, count, clear, reload }) => [
       h('button.btn.sm', { onclick: () => runBulkStatus(ctx, filter, count, 'published', () => { clear(); reload(); }) }, 'Publish'),
@@ -115,7 +138,11 @@ export async function renderProducts(ctx) {
       }, 'Create promotion…') : null,
     ] : null,
   });
-  return h('div.stack', pageHead('Products', 'Unified catalog: UBC stock and supplier (virtual) offers, without duplicates'), table.el);
+  const activeTab = table.state.filter.stock === 'virtual_only' ? 'vendor' : 'all';
+  return h('div.stack',
+    pageHead('Item Search', 'Lightspeed-style unified item lookup: In-Store Stock (UBC) and Vendor Catalog offers in one place, never summed or duplicated.'),
+    itemSearchTabs(activeTab),
+    table.el);
 }
 
 export function sessionStorageSafeSet(k, v) { try { window.sessionStorage.setItem(k, v); } catch (e) { window.__ubcMem = window.__ubcMem || {}; window.__ubcMem[k] = v; } }
@@ -128,40 +155,46 @@ export async function renderProductDetail(ctx) {
   const m = margin(it.priceCents, it.costCents);
   return h('div.stack',
     pageHead(it.title, it.brand + ' · ' + it.category + ' · SKU ' + it.sku, [
-      h('a.btn', { href: '#/products' }, '← Products'),
+      h('a.btn', { href: '#/products' }, '← Item Search'),
       ctx.can('pricing.write') ? h('button.btn.primary', { onclick: () => openPriceEditor(ctx, it, () => ctx.navigate('#/products/' + it.id + '?r=' + Date.now())) }, 'Change price') : null,
     ]),
     h('div.grid.grid-2',
-      card('Identity & pricing', h('dl.props',
-        h('dt', 'SKU (UBC)'), h('dd', h('code', it.sku)),
-        h('dt', 'UPC / GTIN'), h('dd', it.upc ? h('code', it.upc) : h('span.muted', 'none')),
-        h('dt', 'Manufacturer part #'), h('dd', it.mpn ? h('code', it.mpn) : '—'),
-        h('dt', 'Price'), h('dd', h('strong', money(it.priceCents))),
-        h('dt', 'Cost'), h('dd', it.costCents === null ? h('span.badge.warn', 'No cost on file') : money(it.costCents)),
+      card('Item Identity & Pricing', h('dl.props',
+        h('dt', 'System SKU (UBC)'), h('dd', h('code', it.sku)),
+        h('dt', 'UPC / EAN'), h('dd', it.upc ? h('code', it.upc) : h('span.muted', 'none')),
+        h('dt', 'Manufacturer Part #'), h('dd', it.mpn ? h('code', it.mpn) : '—'),
+        h('dt', 'Default Price'), h('dd', h('strong', money(it.compareAtCents && it.compareAtCents > it.priceCents ? it.compareAtCents : it.priceCents))),
+        h('dt', 'Sale Price'), h('dd', it.compareAtCents && it.compareAtCents > it.priceCents
+          ? h('span', h('strong', money(it.priceCents)), ' ', h('span.badge.ok', 'Active Sale'))
+          : h('span.muted', 'None')),
+        h('dt', 'Default Cost'), h('dd', it.costCents === null ? h('span.badge.warn', 'No cost on file') : money(it.costCents)),
         h('dt', 'Margin'), h('dd', pct(m)),
-        h('dt', 'MAP'), h('dd', it.mapPolicy === 'none' ? 'No MAP policy' : money(it.mapCents) + ' (' + it.mapPolicy.toUpperCase() + ')'),
-        h('dt', 'Status'), h('dd', statusBadge(it.status)),
+        h('dt', 'MAP Floor'), h('dd', it.mapPolicy === 'none' ? 'No MAP policy' : money(it.mapCents) + ' (' + it.mapPolicy.toUpperCase() + ')'),
+        h('dt', 'Web Status'), h('dd', statusBadge(it.status)),
         h('dt', 'Updated'), h('dd', dateTime(it.updatedAt) + ' · version ' + it.version),
         h('dt', 'External IDs'), h('dd', d.externalIds.length ? d.externalIds.map((e) => h('div', h('span.muted', e.system + ': '), h('code', e.external_id))) : h('span.muted', 'Not linked to Shopify/Lightspeed yet')))),
-      card('Availability (physical and virtual are never mixed)', h('div.stack',
+      card('In-Store Stock & Vendor Catalogs (never summed)', h('div.stack',
         h('div.row', availabilityBadge(av)),
         h('dl.props',
-          h('dt', 'Physical on hand (UBC)'), h('dd', String(it.physicalQty)),
-          h('dt', 'Reserved for orders'), h('dd', String(it.reservedQty)),
+          h('dt', 'In-Store On Hand (UBC)'), h('dd', String(it.physicalQty)),
+          d.locationLevels && d.locationLevels.length
+            ? [h('dt', 'By Shop Location'), h('dd', d.locationLevels.map((l) => l.name + ': ' + l.on_hand).join(' · '))]
+            : null,
+          h('dt', 'Reserved for Orders'), h('dd', String(it.reservedQty)),
           h('dt', 'Sellable from UBC'), h('dd', h('strong', String(av.sellablePhysical))),
-          h('dt', 'Shopify representation'), h('dd', 'Qty ' + av.shopify.publishedQty + ' · ' + (av.shopify.inventoryPolicy === 'continue' ? 'continue selling (special order, ' + av.shopify.leadTimeDays + ' days)' : 'stop at zero'))),
+          h('dt', 'Shopify Rule'), h('dd', 'Qty ' + av.shopify.publishedQty + ' · ' + (av.shopify.inventoryPolicy === 'continue' ? 'continue selling (Special Order, ' + av.shopify.leadTimeDays + ' days)' : 'stop at zero'))),
         dataTable({
           columns: [
-            { key: 'supplierCode', label: 'Supplier' },
-            { key: 'supplierSku', label: 'Supplier SKU', render: (o) => h('code', o.supplierSku) },
+            { key: 'supplierCode', label: 'Vendor' },
+            { key: 'supplierSku', label: 'Vendor Part #', render: (o) => h('code', o.supplierSku) },
             { key: 'cost', label: 'Cost', num: true, render: (o) => money(o.costCents) },
-            { key: 'qty', label: 'Qty reported', num: true, render: (o) => String(o.qtyAvailable) },
-            { key: 'fresh', label: 'Reported', render: (o) => {
+            { key: 'qty', label: 'Vendor Qty', num: true, render: (o) => String(o.qtyAvailable) },
+            { key: 'fresh', label: 'Feed Sync', render: (o) => {
               const stale = av.staleOffers.some((s) => s.supplierSku === o.supplierSku);
               return h('span', { class: stale ? 'badge bad' : '' }, stale ? 'stale' : dateTime(o.reportedAt));
             } },
           ],
-          rows: it.offers, rowKey: (o) => o.supplierSku, empty: 'No supplier offers for this item.',
+          rows: it.offers, rowKey: (o) => o.supplierSku, empty: 'No Vendor Catalog offers for this item.',
         })))),
     card('Price history', dataTable({
       columns: [

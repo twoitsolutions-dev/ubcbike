@@ -76,8 +76,8 @@ export function orderBadge(status) {
 
 export function availabilityBadge(av) {
   if (!av) return h('span.badge', '—');
-  if (av.status === 'in_stock') return h('span.badge.ok', { title: 'Physical units at UBC' }, 'In stock · ' + av.sellablePhysical);
-  if (av.status === 'special_order') return h('span.badge.violet', { title: 'Available from a supplier; not owned by UBC' }, 'Special order · ' + av.estimatedLeadDays + 'd');
+  if (av.status === 'in_stock') return h('span.badge.ok', { title: 'Physical units at UBC store' }, 'In stock at UBC · ' + av.sellablePhysical);
+  if (av.status === 'special_order') return h('span.badge.violet', { title: 'Available from an authorized supplier; not physically in UBC stock' }, 'Special order · ' + av.estimatedLeadDays + 'd');
   return h('span.badge.bad', 'Unavailable');
 }
 
@@ -86,7 +86,7 @@ export const LINE_STATUS = { ok: ['Will apply', 'ok'], warning: ['Warning', 'war
 export const REASON_LABELS = {
   NO_COST: 'No cost on file',
   NO_CHANGE: 'No price change',
-  NON_POSITIVE_PRICE: 'Price ≤ 0',
+  NON_POSITIVE_PRICE: 'Price <= 0',
   MAP_VIOLATION: 'Below MAP',
   MAP_EXCEPTION_APPLIED: 'MAP exception',
   BELOW_MIN_MARGIN: 'Below min. margin',
@@ -100,6 +100,23 @@ export const CAMPAIGN_STATUS = {
   draft: ['Draft', ''], scheduled: ['Scheduled', 'info'], applying: ['Applying…', 'info'], active: ['Active', 'ok'],
   restoring: ['Restoring…', 'info'], restored: ['Restored', ''], cancelled: ['Cancelled', ''], failed: ['Failed', 'bad'],
 };
+
+export const POS_EVENT_LABELS = {
+  black_friday: 'Black Friday / Cyber Weekend',
+  christmas: 'Christmas / Holiday Sale',
+  holiday_sale: 'Seasonal / Holiday Event',
+  annual_clearance: 'Annual Storewide Clearance',
+  special_event: 'Special In-Store & Online Event',
+};
+
+export function channelBadge(channel, summary) {
+  if (channel !== 'online_and_pos') {
+    return h('span.badge', { title: 'Applies to Shopify Plus online store only; physical POS register prices stay unchanged' }, 'Online only');
+  }
+  const ev = summary && summary.posEventType ? POS_EVENT_LABELS[summary.posEventType] || summary.posEventType : null;
+  return h('span.badge.violet', { title: 'Omnichannel event: synchronizes prices across Shopify Plus online store and Lightspeed R-Series physical store POS' },
+    ev ? 'Online + Store POS · ' + ev : 'Online + Store POS');
+}
 
 export function campaignBadge(s) {
   const v = CAMPAIGN_STATUS[s] || [s, ''];

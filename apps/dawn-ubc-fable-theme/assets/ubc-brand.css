@@ -1,0 +1,225 @@
+/* UBC Dawn Ecommerce v15 Brand Layer on top of Shopify Dawn 16.1.1
+   Official UBC Brand Palette (#213549 Navy · #14202D Ink · #CCBB8D Gold · #FEFDF3 Cream) + Option A Coral (#E04F33) */
+:root{
+  --color-brand-dark:#213549;
+  --color-brand-ink:#14202D;
+  --color-brand-gold:#CCBB8D;
+  --color-bg:#FEFDF3;
+  --color-accent:#E04F33;
+  --color-text:#14202D;
+  --color-special:#213549;
+  --ink-2:#586776;
+  --surface-2:#F3F1E7;
+  --line:rgba(33,53,73,.14);
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  --radius:16px;
+  --font-ui:'Barlow',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-body-family:var(--font-ui);
+  --font-heading-family:var(--font-ui);
+  --font-heading-weight:700;
+  --font-body-style:normal;
+}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{font-stretch:100%;caret-color:var(--color-accent);accent-color:var(--color-accent);background-color:rgb(var(--color-background,254 253 243));color:rgb(var(--color-foreground,20 32 45))}
+body[data-ubc-edition="black_friday"]{background-color:#0C0F14;color:#F5F5F2}
+body[data-ubc-edition="christmas"]{background-color:#FBF9F6;color:#112B1E}
+body[data-ubc-edition="july_4"]{background-color:#EFF6FF;color:#08172E}
+body[data-ubc-edition="spring"]{background-color:#FCFDF9;color:#182E22}
+body[data-ubc-edition="campus"]{background-color:#F4F7F5;color:#062419}
+body[data-ubc-edition="veterans"]{background-color:#F6F3EB;color:#181D17}
+::selection{background:#CCBB8D;color:#14202D}
+
+/* Guarantee Native Dawn Button Contrast on PDPs, Collections & Cart Drawer */
+.button,.shopify-challenge__button,.customer button{
+  background-color:rgb(var(--color-button));
+  color:rgb(var(--color-button-text));
+  transition:transform 140ms var(--ease-out),background-color 180ms ease;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.button:active,.shopify-challenge__button:active,.customer button:active{transform:scale(0.97)}
+.button--secondary,.button--tertiary{
+  background-color:transparent;
+  color:rgb(var(--color-secondary-button-text));
+}
+
+.container{max-width:1280px;margin:0 auto;padding:0 16px}
+@media (min-width:750px){.container{padding:0 24px}}
+
+.ubc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:1.5px solid #213549;background:#213549;color:#FEFDF3;font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform 140ms var(--ease-out),background-color 180ms ease,color 180ms ease,border-color 180ms ease}
+.ubc-btn:active{transform:scale(0.97)}
+@media (hover:hover) and (pointer:fine){
+  .ubc-btn:hover{background:#14202D;border-color:#14202D;color:#FEFDF3}
+  .ubc-btn--gold:hover{background:#dfd1aa;border-color:#dfd1aa;color:#14202D}
+  .ubc-btn--coral:hover{background:#c63d22;border-color:#c63d22;color:#FFFFFF}
+}
+.ubc-btn--gold{background:#CCBB8D;border-color:#CCBB8D;color:#14202D}
+.ubc-btn--coral{background:#E04F33;border-color:#E04F33;color:#FFFFFF}
+.ubc-btn--light{background:#FEFDF3;border-color:#FEFDF3;color:#14202D}
+.ubc-btn--full{width:100%}
+.ubc-btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.form-message{min-height:1.5em;margin:0;font-size:14px}
+
+/* Dawn PDP, Collection Card & Cart Drawer UBC Omnichannel Availability Pills */
+.page-width{width:100%}
+product-component{display:block;height:100%}
+.product-card-wrapper,.product-card-wrapper *,.product-card-wrapper *::before,.product-card-wrapper *::after{box-sizing:border-box}
+.product-card-wrapper{height:100%}
+.product-card-wrapper .card:not(.card--horizontal){display:flex !important;flex-direction:column !important;height:100% !important;background:#FFFFFF !important;border:1px solid rgba(20,32,45,.10) !important;border-radius:18px !important;overflow:hidden;box-shadow:0 2px 10px rgba(20,32,45,.04);transition:transform 200ms var(--ease-out),box-shadow 200ms var(--ease-out),border-color 200ms ease}
+@media (hover:hover) and (pointer:fine){
+  .product-card-wrapper:hover .card:not(.card--horizontal){transform:translateY(-3px);border-color:rgba(20,32,45,.20) !important;box-shadow:0 12px 26px rgba(20,32,45,.08)}
+}
+.product-card-wrapper .card:not(.card--horizontal) .card__inner{--ratio-percent:80% !important;position:relative;background:#F4F1E6 !important;border:0 !important;border-bottom:1px solid rgba(20,32,45,.07) !important;border-radius:0 !important}
+.product-card-wrapper .card:not(.card--horizontal) .card__inner:after,.product-card-wrapper .card:not(.card--horizontal):after{display:none !important}
+.product-card-wrapper .card:not(.card--horizontal) .card__media,.product-card-wrapper .card:not(.card--horizontal) .media{position:absolute !important;inset:0 !important;width:100% !important;height:100% !important;margin:0 !important;background:transparent !important;border-radius:0 !important}
+.product-card-wrapper .card__media .media img{object-fit:contain !important;object-position:center center !important;padding:12px !important;background:transparent !important}
+.product-card-wrapper .card__media .media img[data-img-shape="wide"]{padding:10px 8px !important}
+.product-card-wrapper .card__media .media img[data-img-shape="square"]{padding:24px !important}
+.product-card-wrapper .card__media .media img[data-img-shape="tall"]{padding:16px 22px !important}
+.product-card-wrapper .card:not(.card--horizontal) .card__inner .card__content{padding:10px !important}
+.product-card-wrapper .card:not(.card--horizontal)>.card__content{display:flex !important;flex-direction:column !important;flex:1 1 auto !important;padding:14px 16px 16px !important}
+.product-card-wrapper .card:not(.card--horizontal)>.card__content>.card__information{display:flex !important;flex-direction:column !important;flex:1 1 auto !important;padding:0 !important}
+.ubc-card-vendor{font-family:var(--font-ui);font-size:11px !important;font-weight:700 !important;letter-spacing:.08em !important;text-transform:uppercase !important;color:#617182 !important;margin:0 0 4px !important;line-height:1.2 !important}
+.product-card-wrapper .card:not(.card--horizontal) .card__heading{font-family:var(--font-ui);font-size:15.5px !important;font-weight:700;letter-spacing:-0.01em;line-height:1.32 !important;color:#14202D;margin:0 0 10px !important}
+.ubc-card-title-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(15.5px * 1.32 * 2)}
+.ubc-card-footer{margin-top:auto !important;display:flex;flex-direction:column;gap:4px}
+.ubc-card-footer .price{font-family:var(--font-ui);font-weight:700;font-size:15.5px;color:#14202D;font-variant-numeric:tabular-nums}
+.ubc-card-footer .price--on-sale .price-item--regular{color:#617182;font-weight:500;font-size:13px}
+.ubc-card-footer .price--on-sale .price-item--sale{color:#C63D22;font-weight:700}
+.product-card-wrapper .ubc-badge{display:inline-flex;align-items:center;padding:4px 10px !important;border-radius:999px !important;font-family:var(--font-ui);font-size:10.5px !important;font-weight:700 !important;letter-spacing:.05em !important;text-transform:uppercase;line-height:1.1 !important;border:0 !important;box-shadow:0 2px 6px rgba(20,32,45,.12)}
+.product-card-wrapper .ubc-badge--sale{background:#E04F33 !important;color:#FFFFFF !important}
+.product-card-wrapper .ubc-badge--sold-out{background:#14202D !important;color:#FEFDF3 !important}
+@media (max-width:749px){
+  .product-card-wrapper .card__media .media img{padding:10px !important}
+  .product-card-wrapper .card:not(.card--horizontal)>.card__content{padding:12px !important}
+  .product-card-wrapper .card:not(.card--horizontal) .card__heading{font-size:14px !important;line-height:1.3 !important;margin:0 0 8px !important}
+  .ubc-card-title-text{min-height:calc(14px * 1.3 * 2)}
+  .ubc-card-footer .price{font-size:14px}
+  .product-card-wrapper .availability{font-size:11px;padding:3px 9px}
+}
+.availability{display:inline-flex;align-items:center;gap:6px;width:fit-content;max-width:100%;margin-top:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.35;text-align:left}
+.availability--in_stock{background:rgba(31,122,92,.12);color:#176349}
+.availability--special_order{background:#F4F1E6;color:#213549;border:1px solid rgba(33,53,73,.16)}
+.availability--unavailable{background:rgba(224,79,51,.12);color:#b9351c}
+.ubc-special-note{font-size:13.5px;color:var(--ink-2);margin:8px 0 0}
+
+.ubc-logo-img{display:block;height:auto;max-width:100%}
+
+.ubc-availability-group{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ubc-availability-pills{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ubc-availability-pills .availability{margin-top:0}
+.availability--pickup{background:#F4F1E6;color:#213549;border:1px solid rgba(33,53,73,.16)}
+.ubc-pickup-callout{margin:6px 0 0;padding:10px 14px;border-radius:12px;background:#F3F1E7;border-left:3px solid #E04F33;color:#14202D;font-size:13px;line-height:1.5}
+.ubc-cart-notice{margin:0 0 12px;padding:11px 14px;border-radius:12px;background:#F3F1E7;border:1px solid rgba(33,53,73,.14);color:#14202D;font-size:13px;line-height:1.45;display:flex;flex-direction:column;gap:6px}
+.ubc-cart-notice strong{color:#14202D}
+
+/* Option B Full Dark Mode — Dawn Collection Grids, PDPs & Cart Drawer */
+body[data-ubc-edition="black_friday"] .product-card-wrapper .card:not(.card--horizontal){background:#141922 !important;border-color:rgba(255,255,255,.10) !important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+@media (hover:hover) and (pointer:fine){
+  body[data-ubc-edition="black_friday"] .product-card-wrapper:hover .card:not(.card--horizontal){border-color:rgba(224,79,51,.55) !important;box-shadow:0 16px 32px rgba(0,0,0,.5)}
+}
+body[data-ubc-edition="black_friday"] .product-card-wrapper .card:not(.card--horizontal) .card__inner{background:#ECE9E0 !important;border-bottom-color:rgba(255,255,255,.08) !important}
+body[data-ubc-edition="black_friday"] .ubc-card-vendor{color:#9CA3AF !important}
+body[data-ubc-edition="black_friday"] .product-card-wrapper .card:not(.card--horizontal) .card__heading,
+body[data-ubc-edition="black_friday"] .product-card-wrapper .card:not(.card--horizontal) .card__heading a{color:#F5F5F2 !important}
+body[data-ubc-edition="black_friday"] .ubc-card-footer .price{color:#F5F5F2 !important}
+body[data-ubc-edition="black_friday"] .ubc-card-footer .price--on-sale .price-item--regular{color:#8B94A3 !important}
+body[data-ubc-edition="black_friday"] .ubc-card-footer .price--on-sale .price-item--sale{color:#FF6B4E !important}
+body[data-ubc-edition="black_friday"] .product-card-wrapper .ubc-badge--sale{background:#E04F33 !important;color:#FFFFFF !important}
+body[data-ubc-edition="black_friday"] .product-card-wrapper .ubc-badge--sold-out{background:#090B0F !important;color:#F5F5F2 !important;border:1px solid rgba(255,255,255,.18) !important}
+body[data-ubc-edition="black_friday"] .availability--in_stock{background:rgba(52,211,153,.14);color:#6EE7B7}
+body[data-ubc-edition="black_friday"] .availability--special_order,
+body[data-ubc-edition="black_friday"] .availability--pickup{background:rgba(255,255,255,.08);color:#E5E7EB;border-color:rgba(255,255,255,.16)}
+body[data-ubc-edition="black_friday"] .availability--unavailable{background:rgba(224,79,51,.18);color:#FF8A73}
+body[data-ubc-edition="black_friday"] .ubc-special-note{color:#9CA3AF}
+body[data-ubc-edition="black_friday"] .ubc-pickup-callout,
+body[data-ubc-edition="black_friday"] .ubc-cart-notice{background:#141922;color:#F5F5F2;border-color:rgba(255,255,255,.14)}
+body[data-ubc-edition="black_friday"] .ubc-pickup-callout{border-left:3px solid #E04F33}
+body[data-ubc-edition="black_friday"] .ubc-cart-notice strong{color:#FFFFFF}
+
+/* Seasonal Card Personality on Dawn Collection Grids & PDPs (Spring / USF Campus / Veterans / Christmas) */
+body[data-ubc-edition="spring"] .product-card-wrapper .card:not(.card--horizontal){background:#FFFFFF !important;border-color:rgba(35,122,75,.16) !important}
+body[data-ubc-edition="spring"] .product-card-wrapper .card:not(.card--horizontal) .card__inner{background:#F3FAF1 !important;border-bottom-color:rgba(35,122,75,.09) !important}
+body[data-ubc-edition="spring"] .product-card-wrapper .ubc-badge--sale{background:#F05243 !important;color:#FFFFFF !important}
+
+body[data-ubc-edition="campus"] .product-card-wrapper .card:not(.card--horizontal){border-radius:10px !important;border-color:rgba(0,103,71,.20) !important;border-top:3px solid #006747 !important}
+body[data-ubc-edition="campus"] .product-card-wrapper .card:not(.card--horizontal) .card__inner{background:#EAF1ED !important}
+body[data-ubc-edition="campus"] .product-card-wrapper .ubc-badge{border-radius:5px !important}
+body[data-ubc-edition="campus"] .product-card-wrapper .ubc-badge--sale{background:#F5C43E !important;color:#062419 !important}
+
+body[data-ubc-edition="veterans"] .product-card-wrapper .card:not(.card--horizontal){background:#FFFFFF !important;border-color:rgba(43,53,39,.18) !important;border-top:3px solid #D8AE56 !important}
+body[data-ubc-edition="veterans"] .product-card-wrapper .card:not(.card--horizontal) .card__inner{background:#EFECE2 !important}
+body[data-ubc-edition="veterans"] .product-card-wrapper .ubc-badge--sale{background:#B22828 !important;color:#FFFFFF !important}
+
+body[data-ubc-edition="christmas"] .product-card-wrapper .card:not(.card--horizontal){background:#FFFFFF !important;border-color:rgba(18,74,50,.18) !important;border-top:3px solid #144D34 !important}
+body[data-ubc-edition="christmas"] .product-card-wrapper .card:not(.card--horizontal) .card__inner{background:#F2F7F3 !important;border-bottom-color:rgba(18,74,50,.09) !important}
+body[data-ubc-edition="christmas"] .product-card-wrapper .ubc-badge--sale{background:#C81E2B !important;color:#FFFFFF !important}
+
+/* Dynamic Dawn Native Color-Scheme Sync across All 7 Editions (Collection, PDP, Search & Cart Drawer) */
+body[data-ubc-edition="classic"],
+body[data-ubc-edition="classic"] .color-scheme-1{--color-background:254,253,243;--gradient-background:#FEFDF3;--color-foreground:20,32,45;--color-button:33,53,73;--color-button-text:254,253,243;--color-secondary-button-text:33,53,73}
+body[data-ubc-edition="classic"] .color-scheme-2{--color-background:243,241,231;--gradient-background:#F3F1E7;--color-foreground:20,32,45;--color-button:224,79,51;--color-button-text:255,255,255;--color-secondary-button-text:33,53,73}
+
+body[data-ubc-edition="black_friday"],
+body[data-ubc-edition="black_friday"] .color-scheme-1{--color-background:12,15,20;--gradient-background:#0C0F14;--color-foreground:245,245,242;--color-button:224,79,51;--color-button-text:255,255,255;--color-secondary-button-text:245,245,242}
+body[data-ubc-edition="black_friday"] .color-scheme-2{--color-background:20,25,34;--gradient-background:#141922;--color-foreground:245,245,242;--color-button:224,79,51;--color-button-text:255,255,255;--color-secondary-button-text:245,245,242}
+
+body[data-ubc-edition="christmas"],
+body[data-ubc-edition="christmas"] .color-scheme-1{--color-background:251,249,246;--gradient-background:#FBF9F6;--color-foreground:17,43,30;--color-button:20,77,52;--color-button-text:255,255,255;--color-secondary-button-text:20,77,52}
+body[data-ubc-edition="christmas"] .color-scheme-2{--color-background:238,245,240;--gradient-background:#EEF5F0;--color-foreground:17,43,30;--color-button:200,30,43;--color-button-text:255,255,255;--color-secondary-button-text:20,77,52}
+
+body[data-ubc-edition="july_4"],
+body[data-ubc-edition="july_4"] .color-scheme-1{--color-background:239,246,255;--gradient-background:#EFF6FF;--color-foreground:8,23,46;--color-button:22,56,107;--color-button-text:254,253,243;--color-secondary-button-text:22,56,107}
+body[data-ubc-edition="july_4"] .color-scheme-2{--color-background:219,231,248;--gradient-background:#DBE7F8;--color-foreground:8,23,46;--color-button:214,40,40;--color-button-text:255,255,255;--color-secondary-button-text:22,56,107}
+
+body[data-ubc-edition="spring"],
+body[data-ubc-edition="spring"] .color-scheme-1{--color-background:252,253,249;--gradient-background:#FCFDF9;--color-foreground:24,46,34;--color-button:240,82,67;--color-button-text:255,255,255;--color-secondary-button-text:35,122,75}
+body[data-ubc-edition="spring"] .color-scheme-2{--color-background:242,250,240;--gradient-background:#F2FAF0;--color-foreground:24,46,34;--color-button:35,122,75;--color-button-text:255,255,255;--color-secondary-button-text:35,122,75}
+
+body[data-ubc-edition="campus"],
+body[data-ubc-edition="campus"] .color-scheme-1{--color-background:244,247,245;--gradient-background:#F4F7F5;--color-foreground:6,36,25;--color-button:0,103,71;--color-button-text:255,255,255;--color-secondary-button-text:0,103,71}
+body[data-ubc-edition="campus"] .color-scheme-2{--color-background:228,236,232;--gradient-background:#E4ECE8;--color-foreground:6,36,25;--color-button:245,196,62;--color-button-text:6,36,25;--color-secondary-button-text:0,103,71}
+
+body[data-ubc-edition="veterans"],
+body[data-ubc-edition="veterans"] .color-scheme-1{--color-background:246,243,235;--gradient-background:#F6F3EB;--color-foreground:24,29,23;--color-button:43,53,39;--color-button-text:246,243,235;--color-secondary-button-text:43,53,39}
+body[data-ubc-edition="veterans"] .color-scheme-2{--color-background:234,228,213;--gradient-background:#EAE4D5;--color-foreground:24,29,23;--color-button:178,40,40;--color-button-text:255,255,255;--color-secondary-button-text:43,53,39}
+
+/* Floating Interactive Theme Edition Switcher (Bottom-Left) */
+.ubc-ed-root{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:960;font-family:var(--font-ui);line-height:1}
+.ubc-ed-launcher{display:none;align-items:center;gap:8px;min-height:42px;padding:0 15px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(12,17,24,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#F5F5F2;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.32);touch-action:manipulation}
+.ubc-ed-launcher strong{font-weight:700;color:#FFFFFF}
+.ubc-ed-dot{width:8px;height:8px;border-radius:50%;background:#CCBB8D;flex:none}
+.ubc-ed-root.is-minimized .ubc-ed-bar{display:none}
+.ubc-ed-root.is-minimized .ubc-ed-launcher{display:inline-flex}
+.ubc-ed-bar{display:inline-flex;align-items:center;gap:7px;padding:5px 6px 5px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(12,17,24,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 34px rgba(0,0,0,.35);color:#F5F5F2}
+.ubc-ed-kicker{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9CA3AF;white-space:nowrap;margin-right:1px}
+.ubc-ed-pills{display:inline-flex;align-items:center;gap:3px}
+.ubc-ed-btn{display:inline-flex;align-items:center;gap:5px;min-height:31px;padding:0 10px;border-radius:999px;border:1px solid transparent;background:transparent;color:rgba(245,245,242,.78);font:inherit;font-size:11.8px;font-weight:700;letter-spacing:.01em;cursor:pointer;white-space:nowrap;touch-action:manipulation;transition:background-color 160ms ease,color 160ms ease,border-color 160ms ease,transform 120ms var(--ease-out)}
+.ubc-ed-btn:active{transform:scale(0.96)}
+@media (hover:hover) and (pointer:fine){
+  .ubc-ed-btn:not([aria-pressed="true"]):hover{background:rgba(255,255,255,.09);color:#FFFFFF}
+}
+.ubc-ed-btn[aria-pressed="true"]{background:#FFFFFF;color:#0C0F14;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+.ubc-ed-swatch{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.ubc-ed-swatch--classic{background:#CCBB8D}
+.ubc-ed-swatch--spring{background:linear-gradient(135deg,#FDE047 45%,#F05243 55%)}
+.ubc-ed-swatch--july{background:linear-gradient(135deg,#2563EB 50%,#EF4444 50%)}
+.ubc-ed-swatch--campus{background:linear-gradient(135deg,#00875A 50%,#F5C43E 50%)}
+.ubc-ed-swatch--vet{background:linear-gradient(135deg,#D8AE56 50%,#B22828 50%)}
+.ubc-ed-swatch--bf{background:#E04F33;box-shadow:0 0 0 1.5px rgba(255,255,255,.35)}
+.ubc-ed-swatch--xmas{background:linear-gradient(135deg,#C81E2B 50%,#15803D 50%)}
+.ubc-ed-min{width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#9CA3AF;display:grid;place-items:center;cursor:pointer;flex:none;transition:background-color 150ms ease,color 150ms ease}
+@media (hover:hover) and (pointer:fine){
+  .ubc-ed-min:hover{background:rgba(255,255,255,.18);color:#FFFFFF}
+}
+@media (max-width:1120px){
+  .ubc-ed-root{left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .ubc-ed-bar{position:absolute;left:0;bottom:calc(100% + 8px);flex-direction:column;align-items:stretch;border-radius:18px;padding:12px;min-width:210px;gap:8px}
+  .ubc-ed-pills{flex-direction:column;align-items:stretch;gap:4px}
+  .ubc-ed-btn{justify-content:flex-start;min-height:36px;padding:0 12px;font-size:13px}
+  .ubc-ed-min{position:absolute;top:8px;right:8px;width:26px;height:26px}
+  .ubc-ed-launcher{display:inline-flex;min-height:44px;padding:0 14px}
+}

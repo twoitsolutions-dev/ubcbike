@@ -8,7 +8,5 @@
 -%}
 <div class="price{% if on_sale %} price--sale{% endif %}">
   <span class="price-current">{{ target.price | money }}</span>
-  {%- if on_sale -%}
-    <s class="price-compare"><span class="visually-hidden">{{ 'products.regular_price' | t }}</span>{{ target.compare_at_price | money }}</s>
-  {%- endif -%}
+  <s class="price-compare"{% unless on_sale %} hidden{% endunless %}><span class="visually-hidden">{{ 'products.regular_price' | t }}</span><span data-price-compare>{% if on_sale %}{{ target.compare_at_price | money }}{% endif %}</span></s>
 </div>

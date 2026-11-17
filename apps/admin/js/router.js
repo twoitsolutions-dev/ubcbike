@@ -1,33 +1,35 @@
-import { renderDashboard } from './views/dashboard.js';
-import { renderProducts, renderProductDetail } from './views/products.js';
-import { renderInventory } from './views/inventory.js';
-import { renderSuppliers } from './views/suppliers.js';
-import { renderPricing } from './views/pricing.js';
-import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js';
-import { renderOrders, renderOrderDetail } from './views/orders.js';
-import { renderPurchasing } from './views/purchasing.js';
-import { renderStore } from './views/store.js';
-import { renderIntegrations } from './views/integrations.js';
-import { renderActivity } from './views/activity.js';
-import { renderSettings } from './views/settings.js';
+import { renderDashboard } from './views/dashboard.js?v=40';
+import { renderPipeline } from './views/pipeline.js?v=40';
+import { renderProducts, renderProductDetail } from './views/products.js?v=40';
+import { renderInventory } from './views/inventory.js?v=40';
+import { renderSuppliers } from './views/suppliers.js?v=40';
+import { renderPricing } from './views/pricing.js?v=40';
+import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=40';
+import { renderOrders, renderOrderDetail } from './views/orders.js?v=40';
+import { renderPurchasing } from './views/purchasing.js?v=40';
+import { renderStore } from './views/store.js?v=40';
+import { renderIntegrations } from './views/integrations.js?v=40';
+import { renderActivity } from './views/activity.js?v=40';
+import { renderSettings } from './views/settings.js?v=40';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },
-  { path: '/products', title: 'Products', render: renderProducts },
-  { path: '/products/:id', title: 'Product', render: renderProductDetail },
-  { path: '/inventory', title: 'Inventory', render: renderInventory },
-  { path: '/suppliers', title: 'Suppliers', render: renderSuppliers },
-  { path: '/pricing', title: 'Prices & margins', render: renderPricing },
-  { path: '/promotions', title: 'Promotions', render: renderPromotions },
-  { path: '/promotions/new', title: 'New promotion', render: renderPromotionNew },
-  { path: '/promotions/:id', title: 'Promotion', render: renderPromotionDetail },
-  { path: '/orders', title: 'Orders', render: renderOrders },
-  { path: '/orders/:id', title: 'Order', render: renderOrderDetail },
-  { path: '/purchasing', title: 'Supplier purchasing', render: renderPurchasing },
-  { path: '/store', title: 'Store (simulated)', render: renderStore },
-  { path: '/integrations', title: 'Integrations', render: renderIntegrations },
-  { path: '/activity', title: 'History & errors', render: renderActivity },
-  { path: '/settings', title: 'Settings', render: renderSettings },
+  { path: '/pipeline', title: 'Vendor Catalogs · Feed Sync', render: renderPipeline },
+  { path: '/products', title: 'Item Search', render: renderProducts },
+  { path: '/products/:id', title: 'Item Details', render: renderProductDetail },
+  { path: '/inventory', title: 'Item Search · In-Store Stock', render: renderInventory },
+  { path: '/suppliers', title: 'Vendor Catalogs', render: renderSuppliers },
+  { path: '/pricing', title: 'Item Search · Margins & MAP', render: renderPricing },
+  { path: '/promotions', title: 'Promotions / Price Rules', render: renderPromotions },
+  { path: '/promotions/new', title: 'New Promotion / Price Rule', render: renderPromotionNew },
+  { path: '/promotions/:id', title: 'Promotion Details', render: renderPromotionDetail },
+  { path: '/orders', title: 'Special Orders', render: renderOrders },
+  { path: '/orders/:id', title: 'Special Order Details', render: renderOrderDetail },
+  { path: '/purchasing', title: 'Purchase Orders (B2B)', render: renderPurchasing },
+  { path: '/store', title: 'Settings & Sync · Store Simulator', render: renderStore },
+  { path: '/integrations', title: 'Settings & Sync · Connections', render: renderIntegrations },
+  { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
+  { path: '/settings', title: 'Settings & Sync', render: renderSettings },
 ];
 
 export function matchRoute(hash) {

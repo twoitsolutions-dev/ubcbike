@@ -8,3 +8,10 @@ build/
 test-results/
 *.log
 apps/admin/js/vendor/
+.shopify/
+.hostinger/
+shopify.app.toml
+shopify.app.*.toml
+
+# Old nested copy of the project (has its own .git)
+/ubcbike/

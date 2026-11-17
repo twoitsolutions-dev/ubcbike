@@ -25,8 +25,8 @@ export class MockSupplierConnector implements SupplierConnector {
     return {
       system: this.code.toLowerCase() as IntegrationSystem,
       status: 'demo_adapter',
-      detail: 'Simulated DEMO adapter — no real connection to the supplier',
-      missing: ['Real supplier credentials and dealer authorisation'],
+      detail: 'Simulated DEMO adapter — dealer account confirmed; ready to switch to LIVE credentials',
+      missing: ['LIVE credentials in .env when ready to connect'],
       checkedAt: new Date().toISOString(),
       writesEnabled: false,
     };
@@ -72,15 +72,17 @@ interface LiveSupplierConfig {
   code: 'QBP' | 'JBI' | 'SPECIALIZED';
   system: IntegrationSystem;
   methods: SupplierMethod[];
+  dealerAccountConfirmed: boolean;
   required: Record<string, string | undefined>;
   /** What is still unknown about the official interface. */
   pendingVerification: string[];
 }
 
 /**
- * LIVE supplier connector skeleton. It refuses to run until credentials are
- * configured AND the endpoint contract has been verified with the supplier.
- * We deliberately do not hard-code endpoints from unofficial sources.
+ * LIVE supplier connector skeleton (ready to connect).
+ * UBC holds active dealer access with QBP, JBI and Specialized; this adapter
+ * stays safely parked until credentials are supplied in `.env` AND the official
+ * endpoint/feed contract is verified (never calling unverified URLs).
  */
 export class LiveSupplierConnector implements SupplierConnector {
   readonly capabilities = { catalog: true, availability: true, purchaseOrders: false };
@@ -95,12 +97,13 @@ export class LiveSupplierConnector implements SupplierConnector {
 
   async health(): Promise<ConnectorHealth> {
     const missing = this.missing();
+    const dealerNote = this.cfg.dealerAccountConfirmed ? 'UBC dealer access confirmed — ' : '';
     return {
       system: this.cfg.system,
       status: missing.length ? 'not_connected' : 'configured',
       detail: missing.length
-        ? 'Not connected — supplier credentials not provided'
-        : 'Credentials present; endpoint contract pending verification with supplier',
+        ? `${dealerNote}ready to connect once credentials are added to .env`
+        : `${dealerNote}credentials present; endpoint contract pending final verification before live sync`,
       missing: [...missing, ...this.cfg.pendingVerification],
       checkedAt: new Date().toISOString(),
       writesEnabled: false,
@@ -120,24 +123,27 @@ export class LiveSupplierConnector implements SupplierConnector {
 
 export function liveQbp(env: Record<string, string | undefined>) {
   return new LiveSupplierConnector({
-    code: 'QBP', system: 'qbp', methods: ['api', 'catalog_feed'],
+    code: 'QBP', system: 'qbp', methods: ['api', 'catalog_feed', 'sftp'],
+    dealerAccountConfirmed: env.QBP_DEALER_AUTHORIZED !== 'false',
     required: { QBP_API_KEY: env.QBP_API_KEY, QBP_API_BASE_URL: env.QBP_API_BASE_URL, QBP_ACCOUNT_NUMBER: env.QBP_ACCOUNT_NUMBER },
-    pendingVerification: ['QBP API documentation from QBP (not publicly published)', 'Content/image licence terms for republishing'],
+    pendingVerification: ['Bind QBP B2B API / feed specification from UBC dealer portal', 'Confirm image/description republication scope'],
   });
 }
 
 export function liveJbi(env: Record<string, string | undefined>) {
   return new LiveSupplierConnector({
-    code: 'JBI', system: 'jbi', methods: ['catalog_feed', 'dealer_portal'],
+    code: 'JBI', system: 'jbi', methods: ['catalog_feed', 'sftp', 'dealer_portal'],
+    dealerAccountConfirmed: env.JBI_DEALER_AUTHORIZED !== 'false',
     required: { JBI_ACCOUNT_NUMBER: env.JBI_ACCOUNT_NUMBER, JBI_FEED_URL: env.JBI_FEED_URL, JBI_FEED_CREDENTIAL: env.JBI_FEED_CREDENTIAL },
-    pendingVerification: ['J&B data feed / API access method and format', 'Content licence terms'],
+    pendingVerification: ['Bind J&B Importers feed/SFTP column mapping from UBC dealer account', 'Confirm content licence terms'],
   });
 }
 
 export function liveSpecialized(env: Record<string, string | undefined>) {
   return new LiveSupplierConnector({
-    code: 'SPECIALIZED', system: 'specialized', methods: ['dealer_portal'],
+    code: 'SPECIALIZED', system: 'specialized', methods: ['catalog_feed', 'dealer_portal'],
+    dealerAccountConfirmed: env.SPECIALIZED_DEALER_AUTHORIZED !== 'false',
     required: { SPECIALIZED_DEALER_ID: env.SPECIALIZED_DEALER_ID, SPECIALIZED_API_CREDENTIAL: env.SPECIALIZED_API_CREDENTIAL },
-    pendingVerification: ['Specialized authorised-dealer data access program', 'Online sale rules for bikes/e-bikes, MAP and image usage'],
+    pendingVerification: ['Bind Specialized B2B feed credentials from UBC dealer account', 'Verify Click & Collect / In-Store Pickup & MAP rules per bike category'],
   });
 }

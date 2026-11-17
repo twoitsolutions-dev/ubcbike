@@ -1,0 +1,50 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v21 — Zero-Bloat On-Demand Instagram Reel & Shop Video Modal
+  Injects official Instagram Reel embed (`@ubcbike.tampa` / `@ubcbike.alafia`) or native MP4 ONLY on user click.
+  Zero third-party bytes on initial page load · Zero extra scroll height · Accessible Dialog (`Escape` + Backdrop close).
+{%- endcomment -%}
+<div
+  class="fb-scope ubc-reel-modal"
+  id="ubcReelModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="ubcReelTitle"
+  hidden
+>
+  <div class="ubc-reel-backdrop" data-ubc-reel-close aria-hidden="true"></div>
+  <div class="ubc-reel-dialog" role="document">
+    <header class="ubc-reel-head">
+      <div class="ubc-reel-meta">
+        <span class="ubc-reel-acct" id="ubcReelAcct">@ubcbike.tampa</span>
+        <h3 class="ubc-reel-title" id="ubcReelTitle">Inside University Bicycle Center</h3>
+      </div>
+      <div class="ubc-reel-head-actions">
+        <a
+          class="ubc-reel-ext"
+          id="ubcReelExtLink"
+          href="https://www.instagram.com/ubcbike.tampa/"
+          target="_blank"
+          rel="noopener"
+        >
+          <span data-es="Abrir en Instagram">Open on Instagram</span>
+          <svg aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
+        </a>
+        <button
+          type="button"
+          class="ubc-reel-close"
+          id="ubcReelCloseBtn"
+          data-ubc-reel-close
+          aria-label="Close video"
+        >
+          <svg aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="ubc-reel-stage" id="ubcReelStage"></div>
+    <footer class="ubc-reel-foot">
+      <span id="ubcReelCaption" data-es="3 Generaciones en Tampa Bay desde 1972 &middot; Taller sin cita y 20,000+ productos">
+        3 Generations in Tampa Bay Since 1972 &middot; Walk-In Workshop &amp; 20,000+ Items
+      </span>
+    </footer>
+  </div>
+</div>

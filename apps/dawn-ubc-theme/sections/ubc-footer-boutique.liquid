@@ -1,0 +1,145 @@
+{%- comment -%}
+  UBC Boutique Split Showroom Footer (Pin 4 Bottom)
+  - Left dark architectural Tampa Showroom card (`1972` stroke watermark + omnichannel pillars)
+  - Center UBC navy lockup, showroom hours, inline rounded pill newsletter form, navigation links
+  - Right dot-matrix ornament & giant vertical `CON / TACT` watermark + dark copyright bar
+{%- endcomment -%}
+<footer class="ub-footer">
+  <div class="ub-dots ub-footer__dots-right" aria-hidden="true"></div>
+  <span class="ub-footer__contact-v" aria-hidden="true">CONTACT</span>
+
+  <div class="ub-shell">
+    <div class="ub-footer__grid">
+      <div class="ub-footer__showroom-card">
+        <span class="ub-footer__pin-badge">
+          <span aria-hidden="true">&#9679;</span>
+          <span>{{ section.settings.showroom_badge | escape }}</span>
+        </span>
+        <h2 class="ub-footer__showroom-title">{{ section.settings.showroom_title | escape }}</h2>
+        <p class="ub-footer__showroom-addr">{{ section.settings.showroom_address | escape }}</p>
+
+        <div class="ub-footer__pillars">
+          <div class="ub-footer__pillar">
+            <strong>In-Store Stock</strong>
+            <span>Ready today for free Tampa pickup or fast shipping.</span>
+          </div>
+          <div class="ub-footer__pillar">
+            <strong>Special Order</strong>
+            <span>Direct from authorized U.S. distributors in 3&ndash;5 days.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ub-footer__center">
+        <a href="{{ routes.root_url }}" class="ub-footer__logo">
+          {%- if settings.logo != blank -%}
+            {{
+              settings.logo
+              | image_url: width: 380
+              | image_tag: width: 190, height: 40, loading: 'lazy', alt: shop.name
+            }}
+          {%- else -%}
+            <img
+              src="{{ 'ubc-logo-navy.png' | asset_url }}"
+              width="190"
+              height="39"
+              loading="lazy"
+              alt="{{ shop.name | escape }}"
+            >
+          {%- endif -%}
+        </a>
+
+        <p class="ub-footer__hours">{{ section.settings.hours | escape }}</p>
+        <p class="ub-footer__subcopy">{{ section.settings.newsletter_copy | escape }}</p>
+
+        {%- form 'customer', id: 'UbcBoutiqueFooterNewsletter' -%}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          <div class="ub-footer__news-pill">
+            <label class="visually-hidden" for="UbcFooterEmail-{{ section.id }}">Email address</label>
+            <input
+              id="UbcFooterEmail-{{ section.id }}"
+              type="email"
+              name="contact[email]"
+              class="ub-footer__news-input"
+              value="{{ form.email }}"
+              placeholder="Enter your email for Tampa ride & service dispatches"
+              required
+            >
+            <button type="submit" class="ub-pill-btn">
+              {{ section.settings.subscribe_label | escape }}
+            </button>
+          </div>
+          {%- if form.posted_successfully? -%}
+            <p class="form-message">Subscribed &mdash; welcome to the UBC Tampa dispatch.</p>
+          {%- endif -%}
+        {%- endform -%}
+
+        <nav class="ub-footer__links" aria-label="Footer quick links">
+          <a href="{{ routes.root_url }}">Home</a>
+          <a href="{{ routes.collections_url }}/bikes">Bikes &amp; Gear</a>
+          <a href="{{ routes.all_products_collection_url }}">Full Catalog</a>
+          <a href="{{ routes.cart_url }}">Shopping Bag</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <div class="ub-footer__bottom">
+    <div class="ub-shell ub-footer__bottom-row">
+      <span>&copy; {{ 'now' | date: '%Y' }} {{ shop.name | escape }} &middot; University Bicycle Center &middot; Tampa, FL (Est. 1972)</span>
+      <span>Powered by UBC Commerce Hub &middot; TwoIT Solutions LLC</span>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "UBC Boutique Footer",
+  "enabled_on": {
+    "groups": ["footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "showroom_badge",
+      "label": "Showroom badge",
+      "default": "Tampa Showroom & Service Bay"
+    },
+    {
+      "type": "text",
+      "id": "showroom_title",
+      "label": "Showroom title",
+      "default": "University Bicycle Center"
+    },
+    {
+      "type": "textarea",
+      "id": "showroom_address",
+      "label": "Showroom address & heritage",
+      "default": "1218 E Fletcher Ave · Tampa, FL 33612 · Authorized Specialized, Surly, Continental & Bell dealer serving Tampa Bay cyclists since 1972."
+    },
+    {
+      "type": "text",
+      "id": "hours",
+      "label": "Showroom hours",
+      "default": "MON–FRI: 10:00–19:00 · SAT: 10:00–17:00 · SUN: 12:00–16:00"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_copy",
+      "label": "Newsletter subtitle",
+      "default": "Receive seasonal event releases, Tampa group rides, and workshop service reminders."
+    },
+    {
+      "type": "text",
+      "id": "subscribe_label",
+      "label": "Subscribe button label",
+      "default": "SUBSCRIBE"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Boutique Footer"
+    }
+  ]
+}
+{% endschema %}

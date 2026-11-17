@@ -1,0 +1,674 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v22 — Three Generations & The UBC Crew (#family + /pages/our-story)
+  Authentic UBC Photography & Playable Instagram Reel Previews:
+    - 1st Gen: Manny (Founder, 47.5+ yrs, Soul of UBC, personally leads the Repair Workshop)
+    - 2nd Gen: Carlos (Son, General Manager — purchasing, 20,000+ SKU inventory & daily operations)
+    - 3rd Gen (Grandsons): Ashton (Lead MTB & Road Mechanic) & Alec (Lead Sales Specialist)
+    - Extended UBC Crew & Loyal Riders: Lucy at UBC Alafia Park (@ubcbike.alafia), veteran & newer shop teammates, and multi-decade customers.
+{%- endcomment -%}
+{%- liquid
+  assign is_page = section.settings.is_standalone_page
+  assign story_url = '/pages/our-story'
+  if pages['our-story'] != blank
+    assign story_url = pages['our-story'].url
+  endif
+-%}
+
+<div class="fb-scope">
+  <section class="fb-sec fam-sec on-dark{% if is_page %} fam-sec--page{% endif %}" id="family">
+    <div class="fb-wrap">
+      {%- if is_page -%}
+        <nav class="fam-breadcrumb" aria-label="Breadcrumb">
+          <a href="{{ routes.root_url }}" data-es="Inicio">Home</a>
+          <span aria-hidden="true">/</span>
+          <span data-es="Nuestra Historia y Equipo">Our Story &amp; Crew</span>
+        </nav>
+      {%- endif -%}
+
+      <div class="fb-sec-head split">
+        <div>
+          <span class="eyebrow reveal" data-es="3 Generaciones + Equipo UBC &middot; Desde 1972">3 Generations + The UBC Crew &middot; Since 1972</span>
+          {%- if is_page -%}
+            <h1 class="h2 reveal" data-es="La familia y el equipo <em>detrás del mostrador.</em>">The family &amp; crew <em>behind the counter.</em></h1>
+          {%- else -%}
+            <h2 class="h2 reveal" data-es="Conoce el alma de UBC. <em>Tres generaciones y un gran equipo.</em>">Meet the heart of UBC. <em>Three generations &amp; one crew.</em></h2>
+          {%- endif -%}
+        </div>
+
+        {%- unless is_page -%}
+          <div class="fam-head-links reveal">
+            <a class="link-arrow fam-story-link" href="{{ story_url }}">
+              <span data-es="Historia completa y los 8 videos">Full Story &amp; All 8 Videos</span>
+              <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+            </a>
+          </div>
+        {%- endunless -%}
+      </div>
+
+      {%- comment -%} Interactive 5-Tab Family & Crew Spotlight with Real Portraits & Video Previews {%- endcomment -%}
+      <div class="fam-shell reveal" data-fam-root>
+        <div class="fam-tabs" role="tablist" aria-label="UBC Family Generations and Shop Crew">
+          <button
+            type="button"
+            class="fam-tab"
+            role="tab"
+            id="famTab-manny"
+            aria-selected="true"
+            aria-controls="famPanel-manny"
+            data-fam-tab="manny"
+          >
+            <img class="fam-tab-ava" src="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}" width="44" height="44" loading="lazy" alt="Manny" style="object-position:34% 34%">
+            <span class="fam-tab-copy">
+              <span class="fam-tab-gen" data-es="1ra Gen &middot; Fundador">1st Gen &middot; Founder</span>
+              <strong>Manny</strong>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="fam-tab"
+            role="tab"
+            id="famTab-carlos"
+            aria-selected="false"
+            aria-controls="famPanel-carlos"
+            data-fam-tab="carlos"
+          >
+            <img class="fam-tab-ava" src="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}" width="44" height="44" loading="lazy" alt="Carlos" style="object-position:44% 38%">
+            <span class="fam-tab-copy">
+              <span class="fam-tab-gen" data-es="2da Gen &middot; Manager">2nd Gen &middot; Manager</span>
+              <strong>Carlos</strong>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="fam-tab"
+            role="tab"
+            id="famTab-ashton"
+            aria-selected="false"
+            aria-controls="famPanel-ashton"
+            data-fam-tab="ashton"
+          >
+            <img class="fam-tab-ava" src="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}" width="44" height="44" loading="lazy" alt="Ashton" style="object-position:48% 24%">
+            <span class="fam-tab-copy">
+              <span class="fam-tab-gen" data-es="3ra Gen &middot; Taller">3rd Gen &middot; Lead Tech</span>
+              <strong>Ashton</strong>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="fam-tab"
+            role="tab"
+            id="famTab-alec"
+            aria-selected="false"
+            aria-controls="famPanel-alec"
+            data-fam-tab="alec"
+          >
+            <img class="fam-tab-ava" src="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}" width="44" height="44" loading="lazy" alt="Alec" style="object-position:46% 36%">
+            <span class="fam-tab-copy">
+              <span class="fam-tab-gen" data-es="3ra Gen &middot; Ventas">3rd Gen &middot; Lead Sales</span>
+              <strong>Alec</strong>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="fam-tab"
+            role="tab"
+            id="famTab-crew"
+            aria-selected="false"
+            aria-controls="famPanel-crew"
+            data-fam-tab="crew"
+          >
+            <img class="fam-tab-ava" src="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}" width="44" height="44" loading="lazy" alt="Lucy at UBC Alafia" style="object-position:48% 44%">
+            <span class="fam-tab-copy">
+              <span class="fam-tab-gen" data-es="Tampa y Alafia">Shop &amp; Park Team</span>
+              <strong data-es="Lucy y Equipo UBC">Lucy &amp; UBC Crew</strong>
+            </span>
+          </button>
+        </div>
+
+        {%- comment -%} Panel 1: Manny (Founder & Head of Workshop) {%- endcomment -%}
+        <div class="fam-panel is-active" role="tabpanel" id="famPanel-manny" aria-labelledby="famTab-manny" data-fam-panel="manny">
+          <button
+            type="button"
+            class="fam-media-card"
+            data-ubc-reel="DbqxZMWP6aO"
+            data-ubc-poster="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}"
+            data-ubc-acct="@ubcbike.tampa"
+            data-ubc-title="Meet Manny · 47 ½ Years Building UBC"
+            data-ubc-title-es="Conoce a Manny · 47 ½ Años Construyendo UBC"
+            data-ubc-caption="Manny is the owner and soul of UBC — nearly 5 decades of cycling wisdom, still hands-on in the workshop every day."
+            data-ubc-caption-es="Manny es el fundador y corazón de UBC: casi 5 décadas de historias y conocimiento mecánico al frente del taller."
+          >
+            {%- if section.settings.manny_photo != blank -%}
+              {{ section.settings.manny_photo | image_url: width: 900 | image_tag: class: 'fam-photo', loading: 'lazy', alt: 'Manny — Founder of University Bicycle Center' }}
+            {%- else -%}
+              <img
+                class="fam-photo"
+                src="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}"
+                width="540"
+                height="958"
+                loading="lazy"
+                alt="Manny building a wheel in the UBC Tampa repair workshop alongside grandson Ashton"
+                style="object-position: 50% 34%;"
+              >
+            {%- endif -%}
+            <span class="fam-media-top">
+              <span class="fam-media-acct">@ubcbike.tampa &middot; Reel</span>
+              <span class="fam-media-dur" data-es="47 ½+ Años">47 &frac12;+ Yrs</span>
+            </span>
+            <span class="fam-media-center" aria-hidden="true">
+              <svg><use href="#i-play"/></svg>
+            </span>
+            <span class="fam-media-bottom">
+              <strong data-es="Reproducir Reel: Manny construyendo UBC">&ldquo;Always too busy working!&rdquo; &mdash; Watch Reel</strong>
+              <small data-es="Manny armando ruedas en el banco Park Tool junto a Ashton">Manny wheel-building at the Park Tool bench with Ashton</small>
+            </span>
+          </button>
+
+          <div class="fam-body">
+            <div class="fam-badges">
+              <span class="fam-badge fam-badge--gold" data-es="1ra Generación &middot; Fundador">1st Generation &middot; Founder</span>
+              <span class="fam-badge" data-es="Jefe del Taller en Tampa">Head of Repair Workshop</span>
+            </div>
+            <h3 data-es="Manny &mdash; El alma de UBC y maestro del taller">Manny &mdash; Founder, Master Mechanic &amp; Soul of UBC</h3>
+            <p data-es="Con casi cinco décadas construyendo UBC, nadie conoce más sobre reparación de bicicletas y el oficio ciclista que Manny. Hoy sigue exactamente donde más disfruta estar: al frente del taller, resolviendo desde ajustes diarios hasta retos mecánicos que nadie más logra reparar.">
+              With 47 &frac12;+ years building University Bicycle Center, nobody knows bicycle mechanics or the cycling craft better than Manny. Today he remains right where he loves to be — leading the repair workshop hands-on every day and solving challenges other shops turn away.
+            </p>
+            <div class="fam-reel-row">
+              <button
+                type="button"
+                class="reel-pill reel-pill--dark"
+                data-ubc-reel="DadS0QdvEyv"
+                data-ubc-poster="{{ 'ubc-reel-manny-service.jpg' | asset_url }}"
+                data-ubc-acct="@ubcbike.tampa"
+                data-ubc-title="Manny · Tour Inside UBC's Service Area"
+                data-ubc-title-es="Manny · Presentando el Área de Servicio"
+              >
+                <span class="reel-thumb">
+                  <img src="{{ 'ubc-reel-manny-service.jpg' | asset_url }}" width="88" height="116" loading="lazy" alt="Manny Service Tour" style="object-position:50% 28%">
+                  <i><svg aria-hidden="true"><use href="#i-play"/></svg></i>
+                </span>
+                <span class="reel-txt"><small data-es="Video 02 &middot; Taller">Watch Reel 02</small><strong data-es="Manny presenta el Taller">Manny's Service Tour</strong></span>
+              </button>
+              <button
+                type="button"
+                class="reel-pill reel-pill--dark"
+                data-ubc-reel="DcbhGuEPlqk"
+                data-ubc-poster="{{ 'ubc-reel-manny-firstbike.jpg' | asset_url }}"
+                data-ubc-acct="@ubcbike.tampa"
+                data-ubc-title="Manny · Tips on Choosing Your First Bike"
+                data-ubc-title-es="Manny · Tips para tu Primera Bici"
+              >
+                <span class="reel-thumb">
+                  <img src="{{ 'ubc-reel-manny-firstbike.jpg' | asset_url }}" width="88" height="116" loading="lazy" alt="Manny First Bike Tips" style="object-position:50% 32%">
+                  <i><svg aria-hidden="true"><use href="#i-play"/></svg></i>
+                </span>
+                <span class="reel-txt"><small data-es="Video 03 &middot; Consejos">Watch Reel 03</small><strong data-es="Tips Primera Bici">First Bike Advice</strong></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {%- comment -%} Panel 2: Carlos (2nd Gen · Son · General Manager) {%- endcomment -%}
+        <div class="fam-panel" role="tabpanel" id="famPanel-carlos" aria-labelledby="famTab-carlos" data-fam-panel="carlos" hidden>
+          <button
+            type="button"
+            class="fam-media-card"
+            data-ubc-reel="Dbvdljtv4pT"
+            data-ubc-poster="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}"
+            data-ubc-acct="@ubcbike.tampa"
+            data-ubc-title="Carlos · Sharing University Bicycle Center's Story"
+            data-ubc-title-es="Carlos · La Historia y Evolución de UBC"
+            data-ubc-caption="Carlos shares how UBC grew from a local family shop into Tampa Bay's two-location cycling hub."
+            data-ubc-caption-es="Carlos cuenta cómo evolucionó UBC manteniendo intacto el trato cercano de familia."
+          >
+            {%- if section.settings.carlos_photo != blank -%}
+              {{ section.settings.carlos_photo | image_url: width: 900 | image_tag: class: 'fam-photo', loading: 'lazy', alt: 'Carlos — General Manager of University Bicycle Center' }}
+            {%- else -%}
+              <img
+                class="fam-photo"
+                src="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}"
+                width="540"
+                height="960"
+                loading="lazy"
+                alt="Carlos — General Manager sharing UBC's story inside the Tampa shop"
+                style="object-position: 50% 42%;"
+              >
+            {%- endif -%}
+            <span class="fam-media-top">
+              <span class="fam-media-acct">@ubcbike.tampa &middot; Reel</span>
+              <span class="fam-media-dur" data-es="2da Generación">2nd Gen</span>
+            </span>
+            <span class="fam-media-center" aria-hidden="true">
+              <svg><use href="#i-play"/></svg>
+            </span>
+            <span class="fam-media-bottom">
+              <strong data-es="Reproducir Reel: Carlos cuenta la historia de UBC">Watch Carlos Share UBC's Story</strong>
+              <small data-es="Compras, alianzas de marcas y operatividad diaria">Purchasing, top brands &amp; daily operations</small>
+            </span>
+          </button>
+
+          <div class="fam-body">
+            <div class="fam-badges">
+              <span class="fam-badge fam-badge--gold" data-es="2da Generación &middot; Hijo">2nd Generation &middot; Son</span>
+              <span class="fam-badge" data-es="Compras y Operatividad General">General Manager &amp; Purchasing</span>
+            </div>
+            <h3 data-es="Carlos &mdash; El motor operativo detrás de toda la tienda">Carlos &mdash; Purchasing, Inventory &amp; Store Operations</h3>
+            <p data-es="Mientras Manny lidera el taller, su hijo Carlos dirige las compras, alianzas con marcas como Specialized, Giant, Cannondale, Trek y Santa Cruz, y toda la operatividad diaria de Tampa y Alafia para que siempre encuentres el repuesto, casco o bicicleta exacta.">
+              While Manny commands the repair bay, his son Carlos runs purchasing, brand partnerships (Specialized, Giant, Cannondale, Trek, Santa Cruz &amp; SRAM), and daily store operations across Tampa and Alafia — keeping 20,000+ items stocked and ready.
+            </p>
+            <div class="fam-highlights">
+              <span><svg aria-hidden="true"><use href="#i-check"/></svg> <b data-es="20,000+ SKUs curados">20,000+ curated SKUs</b></span>
+              <span><svg aria-hidden="true"><use href="#i-check"/></svg> <b data-es="110% Precio Garantizado">110% Price Guarantee</b></span>
+              <span><svg aria-hidden="true"><use href="#i-check"/></svg> <b data-es="2 Sedes: Tampa + Alafia">2 Locations: Tampa &amp; Alafia</b></span>
+            </div>
+          </div>
+        </div>
+
+        {%- comment -%} Panel 3: Ashton (3rd Gen · Grandson · Lead MTB & Road Mechanic) {%- endcomment -%}
+        <div class="fam-panel" role="tabpanel" id="famPanel-ashton" aria-labelledby="famTab-ashton" data-fam-panel="ashton" hidden>
+          <button
+            type="button"
+            class="fam-media-card"
+            data-ubc-reel="Dew1Zk6vFfg"
+            data-ubc-poster="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}"
+            data-ubc-acct="@ubcbike.tampa"
+            data-ubc-title="Ashton · Inside a Precision UBC Tune-Up"
+            data-ubc-title-es="Ashton · Qué Hacemos en un Tune-Up UBC"
+            data-ubc-caption="Grandson & Lead Mechanic Ashton demonstrates wheel truing, hub/headset adjustments, drivetrain cleaning & bar tape."
+            data-ubc-caption-es="Ashton, nieto y mecánico principal en MTB y Ruta, muestra cada paso de un Tune-Up profesional."
+          >
+            {%- if section.settings.ashton_photo != blank -%}
+              {{ section.settings.ashton_photo | image_url: width: 900 | image_tag: class: 'fam-photo', loading: 'lazy', alt: 'Ashton — Lead MTB & Road Mechanic at UBC' }}
+            {%- else -%}
+              <img
+                class="fam-photo"
+                src="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}"
+                width="540"
+                height="959"
+                loading="lazy"
+                alt="Ashton — Grandson and Lead MTB & Road Mechanic in the UBC workshop"
+                style="object-position: 50% 24%;"
+              >
+            {%- endif -%}
+            <span class="fam-media-top">
+              <span class="fam-media-acct">@ubcbike.tampa &middot; Reel</span>
+              <span class="fam-media-dur" data-es="3ra Gen &middot; Taller">3rd Gen &middot; Tech</span>
+            </span>
+            <span class="fam-media-center" aria-hidden="true">
+              <svg><use href="#i-play"/></svg>
+            </span>
+            <span class="fam-media-bottom">
+              <strong data-es="Reproducir Reel: Ashton explica el Tune-Up UBC">Watch Ashton's Precision Tune-Up Reel</strong>
+              <small data-es="Centrado lateral/vertical, mazas, dirección y transmisión">Wheel truing, hubs, headset &amp; drivetrain wash</small>
+            </span>
+          </button>
+
+          <div class="fam-body">
+            <div class="fam-badges">
+              <span class="fam-badge fam-badge--gold" data-es="3ra Generación &middot; Nieto">3rd Generation &middot; Grandson</span>
+              <span class="fam-badge" data-es="Mecánico Principal &middot; MTB y Ruta">Lead MTB &amp; Road Mechanic</span>
+            </div>
+            <h3 data-es="Ashton &mdash; Precisión moderna en MTB, Ruta y Carbono">Ashton &mdash; Lead Mechanic Specialized in MTB &amp; Road</h3>
+            <p data-es="Nieto de Manny y mecánico principal del taller. Especializado en bicicletas de montaña de doble suspensión y ruta en carbono: centrado lateral y vertical, ajuste de mazas y dirección, grupos electrónicos, limpieza profunda de transmisión y encintado.">
+              Manny's grandson and principal mechanic on the shop floor. Specialized in high-end carbon road builds and full-suspension MTB — covering lateral &amp; vertical wheel truing, hub and headset bearings, electronic shifting, ultrasonic drivetrain wash and bar tape.
+            </p>
+            <div class="fam-highlights">
+              <span><svg aria-hidden="true"><use href="#i-wrench"/></svg> <b data-es="Centrado lateral y vertical">Lateral &amp; vertical truing</b></span>
+              <span><svg aria-hidden="true"><use href="#i-wrench"/></svg> <b data-es="Carbono MTB y Ruta">Carbon MTB &amp; Road</b></span>
+              <span><svg aria-hidden="true"><use href="#i-wrench"/></svg> <b data-es="Mazas, dirección y AXS/Di2">Hubs, headset &amp; AXS/Di2</b></span>
+            </div>
+          </div>
+        </div>
+
+        {%- comment -%} Panel 4: Alec (3rd Gen · Grandson · Lead Sales) {%- endcomment -%}
+        <div class="fam-panel" role="tabpanel" id="famPanel-alec" aria-labelledby="famTab-alec" data-fam-panel="alec" hidden>
+          <button
+            type="button"
+            class="fam-media-card"
+            data-ubc-reel="DeuoHmcS0EU"
+            data-ubc-poster="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}"
+            data-ubc-acct="@ubcbike.tampa"
+            data-ubc-title="Alec · Team Traditional Bike or Team E-Bike?"
+            data-ubc-title-es="Alec · ¿Equipo Bici Clásica o Equipo E-Bike?"
+            data-ubc-caption="Grandson & Lead Sales Specialist Alec helps riders compare classic pedal bikes vs. electric assist."
+            data-ubc-caption-es="Alec, nieto y principal en ventas, asesora sin presión entre bicis tradicionales y eléctricas."
+          >
+            {%- if section.settings.alec_photo != blank -%}
+              {{ section.settings.alec_photo | image_url: width: 900 | image_tag: class: 'fam-photo', loading: 'lazy', alt: 'Alec — Lead Sales Specialist at UBC' }}
+            {%- else -%}
+              <img
+                class="fam-photo"
+                src="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}"
+                width="540"
+                height="959"
+                loading="lazy"
+                alt="Alec — Grandson and Lead Sales Specialist on the UBC Tampa showroom floor"
+                style="object-position: 50% 38%;"
+              >
+            {%- endif -%}
+            <span class="fam-media-top">
+              <span class="fam-media-acct">@ubcbike.tampa &middot; Reel</span>
+              <span class="fam-media-dur" data-es="3ra Gen &middot; Ventas">3rd Gen &middot; Sales</span>
+            </span>
+            <span class="fam-media-center" aria-hidden="true">
+              <svg><use href="#i-play"/></svg>
+            </span>
+            <span class="fam-media-bottom">
+              <strong data-es="Reproducir Reel: ¿Bici clásica o E-Bike con Alec?">Watch Alec: Classic Bike vs. E-Bike</strong>
+              <small data-es="Asesoría honesta en el showroom de dos pisos en Tampa">Inside UBC's two-level Tampa showroom</small>
+            </span>
+          </button>
+
+          <div class="fam-body">
+            <div class="fam-badges">
+              <span class="fam-badge fam-badge--gold" data-es="3ra Generación &middot; Nieto">3rd Generation &middot; Grandson</span>
+              <span class="fam-badge" data-es="Principal en Ventas y Asesoría">Lead in Sales &amp; Rider Fit</span>
+            </div>
+            <h3 data-es="Alec &mdash; Asesoría honesta para encontrar tu bici ideal">Alec &mdash; Showroom Sales Lead &amp; E-Bike / Classic Fit</h3>
+            <p data-es="También nieto de Manny y referente principal en el piso de ventas. Ya sea que busques entrenar fuerte en una bici clásica o disfrutar asistencia eléctrica en una E-Bike, Alec y el equipo de ventas te guían en talla, postura, casco y presupuesto sin presión.">
+              Also Manny's grandson and UBC's lead on the sales floor. Whether you want a classic workout machine or electric pedal-assist for Tampa commutes, Alec guides riders through frame sizing, test rides, helmets and financing with zero sales pressure.
+            </p>
+            <div class="fam-highlights">
+              <span><svg aria-hidden="true"><use href="#i-check"/></svg> <b data-es="Comparativa Clásica vs E-Bike">Classic vs. E-Bike sizing</b></span>
+              <span><svg aria-hidden="true"><use href="#i-check"/></svg> <b data-es="Pruebas y ajuste de talla">In-store sizing &amp; setup</b></span>
+              <span><svg aria-hidden="true"><use href="#i-check"/></svg> <b data-es="Cascos, luces y accesorios">Complete rider gear</b></span>
+            </div>
+          </div>
+        </div>
+
+        {%- comment -%} Panel 5: Lucy (Alafia Park Staff) & Extended UBC Crew + Loyal Riders {%- endcomment -%}
+        <div class="fam-panel" role="tabpanel" id="famPanel-crew" aria-labelledby="famTab-crew" data-fam-panel="crew" hidden>
+          <button
+            type="button"
+            class="fam-media-card"
+            data-ubc-reel="DXwW3HhzWLQ"
+            data-ubc-poster="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}"
+            data-ubc-acct="@ubcbike.alafia"
+            data-ubc-title="Lucy · Welcome Tour Inside UBC Alafia River State Park"
+            data-ubc-title-es="Lucy · Qué Encontrarás en UBC Alafia River"
+            data-ubc-caption="UBC team member Lucy walks you through rentals, trail essentials and service inside Alafia River State Park."
+            data-ubc-caption-es="Lucy, parte del equipo UBC en Alafia River State Park, muestra las bicis de alquiler, piezas y servicio en el parque."
+          >
+            {%- if section.settings.crew_photo != blank -%}
+              {{ section.settings.crew_photo | image_url: width: 900 | image_tag: class: 'fam-photo', loading: 'lazy', alt: 'Lucy at Alafia Park and the UBC Shop Crew' }}
+            {%- else -%}
+              <img
+                class="fam-photo"
+                src="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}"
+                width="540"
+                height="958"
+                loading="lazy"
+                alt="Lucy welcoming mountain bikers in front of the UBC Alafia River State Park trailhead map"
+                style="object-position: 50% 44%;"
+              >
+            {%- endif -%}
+            <span class="fam-media-top">
+              <span class="fam-media-acct">@ubcbike.alafia &middot; Reel</span>
+              <span class="fam-media-dur" data-es="Equipo Alafia">Trailhead Team</span>
+            </span>
+            <span class="fam-media-center" aria-hidden="true">
+              <svg><use href="#i-play"/></svg>
+            </span>
+            <span class="fam-media-bottom">
+              <strong data-es="Reproducir Reel: Tour de Alafia con Lucy">Watch Lucy's Alafia Trailhead Tour</strong>
+              <small data-es="Alquiler MTB, repuestos y servicio frente a los senderos">Rentals, parts &amp; service right at the trails</small>
+            </span>
+          </button>
+
+          <div class="fam-body">
+            <div class="fam-badges">
+              <span class="fam-badge fam-badge--gold" data-es="Equipo UBC &middot; Tampa y Alafia">UBC Shop &amp; Park Team</span>
+              <span class="fam-badge" data-es="Mecánica, Ventas y Comunidad">Mechanics, Sales &amp; Riders</span>
+            </div>
+            <h3 data-es="Lucy en Alafia, veteranos de casa y nuestra comunidad">Lucy at Alafia, Veteran Techs &amp; Lifelong UBC Riders</h3>
+            <p data-es="Más allá de los lazos de sangre, UBC es una gran familia formada por otros nietos y compañeros que llevan muchísimos años en casa junto a nuevos talentos: expertos en mecánica, ventas, atención al cliente y todoterrenos como Lucy recibiéndote en nuestra tienda de Alafia River State Park.">
+              Beyond blood relatives, UBC is powered by other grandchildren and dedicated teammates — some with UBC for decades, others newer — across mechanics, sales, customer care, and trailhead staff like <strong>Lucy</strong> welcoming riders inside Alafia River State Park.
+            </p>
+            <div class="fam-reel-row">
+              <button
+                type="button"
+                class="reel-pill reel-pill--dark"
+                data-ubc-reel="Dd14TPYyQ4R"
+                data-ubc-poster="{{ 'ubc-reel-loyal-rider.jpg' | asset_url }}"
+                data-ubc-acct="@ubcbike.tampa"
+                data-ubc-title="Longtime UBC Rider · Decades Riding with UBC"
+                data-ubc-title-es="Cliente de Años · Por Qué Elige UBC"
+              >
+                <span class="reel-thumb">
+                  <img src="{{ 'ubc-reel-loyal-rider.jpg' | asset_url }}" width="88" height="116" loading="lazy" alt="Longtime UBC Customer" style="object-position:50% 34%">
+                  <i><svg aria-hidden="true"><use href="#i-play"/></svg></i>
+                </span>
+                <span class="reel-txt"><small>@ubcbike.tampa</small><strong data-es="Cliente de Muchos Años">Longtime Rider Story</strong></span>
+              </button>
+              <button
+                type="button"
+                class="reel-pill reel-pill--dark"
+                data-ubc-reel="DadS0QdvEyv"
+                data-ubc-poster="{{ 'ubc-reel-manny-service.jpg' | asset_url }}"
+                data-ubc-acct="@ubcbike.tampa"
+                data-ubc-title="Inside UBC Tampa Showroom & Service"
+                data-ubc-title-es="Por Dentro de la Tienda en Tampa"
+              >
+                <span class="reel-thumb">
+                  <img src="{{ 'ubc-reel-manny-service.jpg' | asset_url }}" width="88" height="116" loading="lazy" alt="Inside UBC Tampa" style="object-position:50% 28%">
+                  <i><svg aria-hidden="true"><use href="#i-play"/></svg></i>
+                </span>
+                <span class="reel-txt"><small>@ubcbike.tampa</small><strong data-es="Recorrido por la Tienda">Inside Tampa Shop</strong></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {%- unless is_page -%}
+          {%- comment -%} Compact Visual Video Preview Strip on Home (Shows all faces & shop energy immediately!) {%- endcomment -%}
+          <div class="fam-strip">
+            <div class="fam-strip-head">
+              <span class="fam-strip-label" data-es="Videos Reales en Tienda y Sendero &middot; Haz clic para reproducir">Inside Tampa &amp; Alafia &middot; Tap any Reel to watch</span>
+              <a href="/pages/our-story" class="fam-strip-more" data-es="Ver los 8 videos &rarr;">See all 8 Reels &rarr;</a>
+            </div>
+            <div class="fam-strip-grid">
+              <button type="button" class="fam-mini-reel" data-ubc-reel="DbqxZMWP6aO" data-ubc-poster="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Manny · 47 ½ Years Building UBC" data-ubc-title-es="Manny · 47 ½ Años Construyendo UBC">
+                <img src="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}" width="270" height="480" loading="lazy" alt="Manny 47.5 years" style="object-position:42% 34%">
+                <span class="fam-mini-play" aria-hidden="true"><svg><use href="#i-play"/></svg></span>
+                <span class="fam-mini-cap"><strong>Manny</strong><small data-es="47 ½ Años">47 &frac12; Yrs</small></span>
+              </button>
+
+              <button type="button" class="fam-mini-reel" data-ubc-reel="Dbvdljtv4pT" data-ubc-poster="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Carlos · Sharing UBC's Story" data-ubc-title-es="Carlos · La Historia de UBC">
+                <img src="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}" width="270" height="480" loading="lazy" alt="Carlos story" style="object-position:50% 40%">
+                <span class="fam-mini-play" aria-hidden="true"><svg><use href="#i-play"/></svg></span>
+                <span class="fam-mini-cap"><strong>Carlos</strong><small data-es="Historia UBC">UBC Story</small></span>
+              </button>
+
+              <button type="button" class="fam-mini-reel" data-ubc-reel="Dew1Zk6vFfg" data-ubc-poster="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Ashton · Inside a UBC Tune-Up" data-ubc-title-es="Ashton · Tune-Up en Taller">
+                <img src="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}" width="270" height="480" loading="lazy" alt="Ashton tune-up" style="object-position:50% 24%">
+                <span class="fam-mini-play" aria-hidden="true"><svg><use href="#i-play"/></svg></span>
+                <span class="fam-mini-cap"><strong>Ashton</strong><small data-es="Tune-Up Pro">Pro Tune-Up</small></span>
+              </button>
+
+              <button type="button" class="fam-mini-reel" data-ubc-reel="DeuoHmcS0EU" data-ubc-poster="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Alec · Classic Bike vs. E-Bike" data-ubc-title-es="Alec · Clásica vs. E-Bike">
+                <img src="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}" width="270" height="480" loading="lazy" alt="Alec sales" style="object-position:50% 38%">
+                <span class="fam-mini-play" aria-hidden="true"><svg><use href="#i-play"/></svg></span>
+                <span class="fam-mini-cap"><strong>Alec</strong><small data-es="Bici vs E-Bike">Bike vs E-Bike</small></span>
+              </button>
+
+              <button type="button" class="fam-mini-reel" data-ubc-reel="DXwW3HhzWLQ" data-ubc-poster="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}" data-ubc-acct="@ubcbike.alafia" data-ubc-title="Lucy · UBC Alafia River State Park" data-ubc-title-es="Lucy · Tienda Alafia Park">
+                <img src="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}" width="270" height="480" loading="lazy" alt="Lucy at Alafia" style="object-position:50% 44%">
+                <span class="fam-mini-play" aria-hidden="true"><svg><use href="#i-play"/></svg></span>
+                <span class="fam-mini-cap"><strong>Lucy</strong><small>Alafia Park</small></span>
+              </button>
+
+              <button type="button" class="fam-mini-reel" data-ubc-reel="Dd14TPYyQ4R" data-ubc-poster="{{ 'ubc-reel-loyal-rider.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Longtime UBC Customer Story" data-ubc-title-es="Cliente de Muchos Años">
+                <img src="{{ 'ubc-reel-loyal-rider.jpg' | asset_url }}" width="270" height="480" loading="lazy" alt="Longtime UBC rider" style="object-position:50% 34%">
+                <span class="fam-mini-play" aria-hidden="true"><svg><use href="#i-play"/></svg></span>
+                <span class="fam-mini-cap"><strong data-es="Comunidad">Riders</strong><small data-es="Cliente Fiel">Loyal Client</small></span>
+              </button>
+            </div>
+          </div>
+        {%- endunless -%}
+      </div>
+
+      {%- if is_page -%}
+        {%- comment -%} Dedicated `/pages/our-story` Extended Timeline + Full 8-Reel Visual Portrait Gallery {%- endcomment -%}
+        <div class="fam-story-extra">
+          <div class="fam-milestones reveal">
+            <article class="fam-mile">
+              <span>1972</span>
+              <h3 data-es="Raíces frente a USF en Tampa">Founded Near USF in Tampa</h3>
+              <p data-es="Manny abre las puertas con una premisa simple: reparar cualquier bicicleta con honestidad y tratar a cada ciclista como vecino.">
+                Built on straightforward mechanical honesty, fair pricing and welcoming every rider from first-timers to racers.
+              </p>
+            </article>
+            <article class="fam-mile">
+              <span>2 Locations</span>
+              <h3 data-es="Showroom en Fletcher Ave + Alafia Park">Fletcher Showroom + Alafia Park</h3>
+              <p data-es="Bajo la gestión operativa de Carlos, UBC suma más de 20,000 productos en Tampa y una sede directo en los senderos de Lithia.">
+                With Carlos managing operations and buying, UBC pairs a 20,000+ SKU Tampa showroom with a trailhead shop inside Alafia River State Park.
+              </p>
+            </article>
+            <article class="fam-mile">
+              <span>3rd Gen + Crew</span>
+              <h3 data-es="Ashton, Alec y un equipo de expertos">Ashton, Alec &amp; Seasoned Crew</h3>
+              <p data-es="La tercera generación lidera hoy el taller de precisión y las ventas, hombro a hombro con mecánicos y asesores de larga trayectoria.">
+                Grandsons Ashton and Alec lead modern workshop precision and rider sales alongside veteran mechanics and trailhead staff.
+              </p>
+            </article>
+          </div>
+
+          <div class="fam-reels-gallery reveal">
+            <div class="fam-reels-head">
+              <div>
+                <span class="eyebrow" data-es="Historias Reales en Video">Real Shop &amp; Trailhead Videos</span>
+                <h2 class="h2" data-es="8 momentos dentro de <em>Tampa y Alafia.</em>">8 moments inside <em>Tampa &amp; Alafia.</em></h2>
+              </div>
+              <p data-es="Haz clic en cualquier video para reproducirlo aquí mismo sin salir de la página.">
+                Click any video card to watch the Reel right on the page.
+              </p>
+            </div>
+
+            <div class="fam-reels-grid">
+              <button type="button" class="fam-reel-card" data-ubc-reel="DbqxZMWP6aO" data-ubc-poster="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Manny · 47 ½ Years Building UBC" data-ubc-title-es="Manny · 47 ½ Años Construyendo UBC">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-manny-47yrs.jpg' | asset_url }}" width="540" height="958" loading="lazy" alt="Manny 47.5 years" style="object-position:50% 34%">
+                <span class="fam-rc-top"><span>01 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Manny: 47 ½ años trabajando sin parar">Manny: 47 &frac12; Years Building UBC</strong>
+                  <small data-es="Fundador y alma del taller">Founder &amp; Soul of UBC</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="Dbvdljtv4pT" data-ubc-poster="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Carlos · Sharing UBC's Story" data-ubc-title-es="Carlos · La Historia de UBC">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-carlos-story.jpg' | asset_url }}" width="540" height="960" loading="lazy" alt="Carlos story" style="object-position:50% 42%">
+                <span class="fam-rc-top"><span>02 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Carlos cuenta la historia de UBC">Carlos Shares UBC's Story</strong>
+                  <small data-es="2da Gen · Compras y Operatividad">2nd Gen &middot; Manager &amp; Buying</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="Dew1Zk6vFfg" data-ubc-poster="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Ashton · Inside a UBC Tune-Up" data-ubc-title-es="Ashton · Qué Incluye un Tune-Up UBC">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-ashton-tuneup.jpg' | asset_url }}" width="540" height="959" loading="lazy" alt="Ashton tune-up" style="object-position:50% 24%">
+                <span class="fam-rc-top"><span>03 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Ashton: Qué incluye un Tune-Up real">Ashton: Inside a UBC Tune-Up</strong>
+                  <small data-es="3ra Gen · Nieto · Mecánico Principal">3rd Gen &middot; Lead MTB &amp; Road Tech</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="DeuoHmcS0EU" data-ubc-poster="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Alec · Traditional Bike vs. E-Bike" data-ubc-title-es="Alec · ¿Bici Clásica o E-Bike?">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-alec-ebike.jpg' | asset_url }}" width="540" height="959" loading="lazy" alt="Alec classic vs ebike" style="object-position:50% 38%">
+                <span class="fam-rc-top"><span>04 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Alec: ¿Bici tradicional o E-Bike?">Alec: Classic Bike vs. E-Bike?</strong>
+                  <small data-es="3ra Gen · Nieto · Principal en Ventas">3rd Gen &middot; Lead Sales Specialist</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="DadS0QdvEyv" data-ubc-poster="{{ 'ubc-reel-manny-service.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Manny · Presenting the UBC Service Area" data-ubc-title-es="Manny · Presentando el Área de Servicio">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-manny-service.jpg' | asset_url }}" width="540" height="960" loading="lazy" alt="Manny service bay" style="object-position:50% 28%">
+                <span class="fam-rc-top"><span>05 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Manny presenta el área de servicio">Manny Presents the Service Bay</strong>
+                  <small data-es="Taller sin cita todo el día">All-Day Walk-In Workshop</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="DcbhGuEPlqk" data-ubc-poster="{{ 'ubc-reel-manny-firstbike.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Manny · First Bike Buying Tips" data-ubc-title-es="Manny · Tips para Elegir tu Primera Bici">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-manny-firstbike.jpg' | asset_url }}" width="540" height="960" loading="lazy" alt="Manny first bike tips" style="object-position:50% 32%">
+                <span class="fam-rc-top"><span>06 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Manny: Cómo elegir tu primera bici">Manny: First Bike Buying Tips</strong>
+                  <small data-es="5 décadas de experiencia">5 Decades of Rider Advice</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="DXwW3HhzWLQ" data-ubc-poster="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}" data-ubc-acct="@ubcbike.alafia" data-ubc-title="Lucy · Welcome to UBC Alafia River State Park" data-ubc-title-es="Lucy · Tour en UBC Alafia River State Park">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-lucy-alafia.jpg' | asset_url }}" width="540" height="958" loading="lazy" alt="Lucy at Alafia Park" style="object-position:50% 44%">
+                <span class="fam-rc-top"><span>07 &middot; @ubcbike.alafia</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Lucy: Qué encontrarás en Alafia Park">Lucy: Inside UBC Alafia Park</strong>
+                  <small data-es="Equipo UBC en el sendero">Alafia Trailhead Team</small>
+                </span>
+              </button>
+
+              <button type="button" class="fam-reel-card" data-ubc-reel="Dd14TPYyQ4R" data-ubc-poster="{{ 'ubc-reel-loyal-rider.jpg' | asset_url }}" data-ubc-acct="@ubcbike.tampa" data-ubc-title="Longtime UBC Customer Story" data-ubc-title-es="Historia de un Cliente de Muchos Años">
+                <img class="fam-rc-img" src="{{ 'ubc-reel-loyal-rider.jpg' | asset_url }}" width="540" height="958" loading="lazy" alt="Longtime UBC customer" style="object-position:50% 34%">
+                <span class="fam-rc-top"><span>08 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
+                <span class="fam-rc-bot">
+                  <strong data-es="Un cliente de muchos años en UBC">A Longtime UBC Rider's Story</strong>
+                  <small data-es="Comunidad ciclista de Tampa">Tampa Cycling Community</small>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Family & Crew Story",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "is_standalone_page",
+      "label": "Render full Our Story page layout + 8-Reel gallery",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "manny_photo",
+      "label": "Optional photo override: Manny (Founder)"
+    },
+    {
+      "type": "image_picker",
+      "id": "carlos_photo",
+      "label": "Optional photo override: Carlos (Manager)"
+    },
+    {
+      "type": "image_picker",
+      "id": "ashton_photo",
+      "label": "Optional photo override: Ashton (Lead Mechanic)"
+    },
+    {
+      "type": "image_picker",
+      "id": "alec_photo",
+      "label": "Optional photo override: Alec (Lead Sales)"
+    },
+    {
+      "type": "image_picker",
+      "id": "crew_photo",
+      "label": "Optional photo override: Lucy & UBC Shop Crew"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Family & Crew Story"
+    }
+  ]
+}
+{% endschema %}

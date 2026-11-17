@@ -1,0 +1,443 @@
+{
+  "sections": {
+    "boutique_hero": {
+      "type": "ubc-boutique-hero",
+      "blocks": {
+        "h1": {
+          "type": "slide",
+          "settings": {
+            "default_handle": "specialized-tarmac-sl7-sport-56cm",
+            "fallback_asset": "ubc-bike-tarmac-sl9.webp",
+            "watermark_top": "RIDE FOR",
+            "watermark_bottom": "PASSION",
+            "ghost_word": "TARMAC",
+            "kicker": "University Bicycle Center · Tampa, FL · Est. 1972",
+            "title_light": "THE SPECIALIZED",
+            "title_bold": "TARMAC SL7",
+            "title_accent": "56",
+            "subtitle_prefix": "FACT 9R CARBON ·",
+            "subtitle_strong": "AERO RACE GEOMETRY",
+            "fallback_price": "$2,799.99",
+            "wheel_tag": "Road Bikes",
+            "cta_label": "DISCOVER",
+            "swatch_1": "#18222d",
+            "swatch_2": "#e84c3d",
+            "pin_1_label": "Aero Carbon Cockpit · Clean Internal Routing",
+            "pin_1_x": 68,
+            "pin_1_y": 24,
+            "pin_2_label": "Shimano 105 12-Speed Mechanical Drivetrain",
+            "pin_2_x": 44,
+            "pin_2_y": 66,
+            "pin_3_label": "Hydraulic Flat-Mount Disc Calipers",
+            "pin_3_x": 79,
+            "pin_3_y": 64
+          }
+        },
+        "h2": {
+          "type": "slide",
+          "settings": {
+            "default_handle": "surly-midnight-special-frame-54cm",
+            "fallback_asset": "ubc-bike-diverge.webp",
+            "watermark_top": "ALL ROAD",
+            "watermark_bottom": "FREEDOM",
+            "ghost_word": "GRAVEL",
+            "kicker": "Special Order · Direct Distributor Dispatch",
+            "title_light": "SURLY & ALL-ROAD",
+            "title_bold": "MIDNIGHT SPECIAL",
+            "title_accent": "54",
+            "subtitle_prefix": "4130 CHROMOLY & CARBON ·",
+            "subtitle_strong": "MIXED-TERRAIN ENDURANCE",
+            "fallback_price": "$899.99",
+            "wheel_tag": "Gravel Bikes",
+            "cta_label": "DISCOVER",
+            "swatch_1": "#213549",
+            "swatch_2": "#ccbb8d",
+            "pin_1_label": "44mm Headtube · Tapered Fork Clearance",
+            "pin_1_x": 69,
+            "pin_1_y": 28,
+            "pin_2_label": "Wide-Range Gravel Drivetrain Compatibility",
+            "pin_2_x": 43,
+            "pin_2_y": 67,
+            "pin_3_label": "650b x 60mm / 700c x 42mm Tire Clearance",
+            "pin_3_x": 80,
+            "pin_3_y": 63
+          }
+        },
+        "h3": {
+          "type": "slide",
+          "settings": {
+            "fallback_asset": "ubc-bike-turbo-vado-sl.webp",
+            "watermark_top": "SUPER",
+            "watermark_bottom": "LIGHT",
+            "ghost_word": "TURBO",
+            "kicker": "Tampa Bay E-Commute & Fitness",
+            "title_light": "THE SPECIALIZED",
+            "title_bold": "TURBO VADO SL",
+            "title_accent": "2.0",
+            "subtitle_prefix": "SUPERLIGHT ASSIST ·",
+            "subtitle_strong": "2X RIDER AMPLIFICATION",
+            "fallback_price": "$3,499.99",
+            "wheel_tag": "E-Bikes",
+            "cta_label": "DISCOVER",
+            "swatch_1": "#0f172a",
+            "swatch_2": "#ff6b4a",
+            "pin_1_label": "MasterMind TCD Display & Cockpit",
+            "pin_1_x": 67,
+            "pin_1_y": 21,
+            "pin_2_label": "Whisper-Quiet Mid-Drive SL Motor",
+            "pin_2_x": 46,
+            "pin_2_y": 69,
+            "pin_3_label": "All-Weather Hydraulic Disc Stopping",
+            "pin_3_x": 81,
+            "pin_3_y": 65
+          }
+        },
+        "h4": {
+          "type": "slide",
+          "settings": {
+            "fallback_asset": "ubc-bike-epic-9.webp",
+            "watermark_top": "SINGLE",
+            "watermark_bottom": "TRACK",
+            "ghost_word": "EPIC",
+            "kicker": "Florida XC & Singletrack Performance",
+            "title_light": "THE SPECIALIZED",
+            "title_bold": "EPIC 9",
+            "title_accent": "EVO",
+            "subtitle_prefix": "120MM PROGRESSIVE XC ·",
+            "subtitle_strong": "FLIGHT ATTENDANT READY",
+            "fallback_price": "$4,799.99",
+            "wheel_tag": "XC Trail",
+            "cta_label": "DISCOVER",
+            "swatch_1": "#1e293b",
+            "swatch_2": "#e84c3d",
+            "pin_1_label": "Progressive 120mm Suspension Kinematics",
+            "pin_1_x": 52,
+            "pin_1_y": 38,
+            "pin_2_label": "SRAM Eagle T-Type Transmission",
+            "pin_2_x": 24,
+            "pin_2_y": 68,
+            "pin_3_label": "4-Piston Trail Hydraulic Brakes",
+            "pin_3_x": 81,
+            "pin_3_y": 64
+          }
+        }
+      },
+      "block_order": [
+        "h1",
+        "h2",
+        "h3",
+        "h4"
+      ],
+      "settings": {
+        "aria_label": "University Bicycle Center featured bicycles"
+      }
+    },
+    "tech_parts": {
+      "type": "ubc-parts-tech",
+      "blocks": {
+        "c1": {
+          "type": "component",
+          "settings": {
+            "kicker": "Genuine Parts & E-Drive Lab",
+            "title": "SPARE PARTS FOR YOUR BIKE",
+            "description": "Direct catalog integration with QBP, J&B Importers, and Specialized USA. Stocked in our Tampa showroom or ordered on demand in 3–5 business days with transparent pricing.",
+            "part_asset": "ubc-part-motor.webp"
+          }
+        },
+        "c2": {
+          "type": "component",
+          "settings": {
+            "kicker": "Precision Shifting & Cassettes",
+            "title": "DRIVETRAIN & GROUPSETS",
+            "description": "Shimano 105, Ultegra Di2, CUES, and SRAM Eagle drivetrains indexed and torque-checked by UBC master mechanics.",
+            "part_asset": "ubc-part-drivetrain.webp"
+          }
+        },
+        "c3": {
+          "type": "component",
+          "settings": {
+            "kicker": "Stopping Power & Rotors",
+            "title": "HYDRAULIC DISC BRAKE SYSTEMS",
+            "description": "4-piston calipers, Centerlock rotors, and sintered or organic pad compounds bled in-house for consistent Florida wet-weather modulation.",
+            "part_asset": "ubc-part-brakes.webp"
+          }
+        },
+        "c4": {
+          "type": "component",
+          "settings": {
+            "kicker": "Rolling Resistance & Tubeless",
+            "title": "PRO-TOUR TIRES & WHEELSETS",
+            "description": "Continental Grand Prix 5000, Specialized Pathfinder, and tubeless sealant setups mounted on site while you wait.",
+            "part_asset": "ubc-part-tires.webp"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ],
+      "settings": {
+        "watermark": "COMPONENTS",
+        "kicker": "Genuine Parts & Drivetrain Lab",
+        "heading": "SPARE PARTS FOR YOUR BIKE",
+        "button_label": "SEE MORE"
+      }
+    },
+    "shop_spotlight": {
+      "type": "ubc-shop-spotlight",
+      "settings": {
+        "tab_title": "SHOP",
+        "limit": 4
+      }
+    },
+    "promo_cards": {
+      "type": "ubc-promo-cards",
+      "settings": {
+        "tab_title": "PROMOTIONS & IN-STORE LINEUP",
+        "products_to_show": 4
+      }
+    },
+    "argon_stage": {
+      "type": "ubc-argon-stage",
+      "blocks": {
+        "s1": {
+          "type": "stage_bike",
+          "settings": {
+            "default_handle": "specialized-tarmac-sl7-sport-56cm",
+            "bike_asset": "ubc-bike-tarmac-sl9.webp",
+            "giant_name": "TARMAC SL9",
+            "year_left": "1972",
+            "year_right": "2026",
+            "discover_label": "DISCOVER BIKE"
+          }
+        },
+        "s2": {
+          "type": "stage_bike",
+          "settings": {
+            "default_handle": "surly-midnight-special-frame-54cm",
+            "bike_asset": "ubc-bike-diverge.webp",
+            "giant_name": "DIVERGE STR",
+            "year_left": "1972",
+            "year_right": "2026",
+            "discover_label": "DISCOVER BIKE"
+          }
+        },
+        "s3": {
+          "type": "stage_bike",
+          "settings": {
+            "bike_asset": "ubc-bike-turbo-vado-evo.webp",
+            "giant_name": "VADO EVO",
+            "year_left": "1972",
+            "year_right": "2026",
+            "discover_label": "DISCOVER BIKE"
+          }
+        },
+        "s4": {
+          "type": "stage_bike",
+          "settings": {
+            "bike_asset": "ubc-bike-epic-9.webp",
+            "giant_name": "EPIC 9 EVO",
+            "year_left": "1972",
+            "year_right": "2026",
+            "discover_label": "DISCOVER BIKE"
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "settings": {
+        "aria_label": "Architectural dark stage showcase"
+      }
+    },
+    "inside": {
+      "type": "ubc-product-hotspots",
+      "blocks": {
+        "p1": {
+          "type": "point",
+          "settings": {
+            "title": "Cockpit & display",
+            "x": 66,
+            "y": 10,
+            "spec": "Integrated colour touch-screen display in the cockpit; Body Geometry grips.",
+            "detail_asset": "ubc-part-cockpit.webp",
+            "text": "<p>Your controls and ride info in one place: assist level, battery and navigation on the display, brakes and shifting at your fingertips.</p>"
+          }
+        },
+        "p2": {
+          "type": "point",
+          "settings": {
+            "title": "Saddle & seatpost",
+            "x": 35,
+            "y": 19,
+            "spec": "Bridge Sport saddle, steel rails, 155 mm.",
+            "detail_asset": "ubc-part-saddle.webp",
+            "text": "<p>Where your weight rests. We set height and angle during your fitting.</p>"
+          }
+        },
+        "p3": {
+          "type": "point",
+          "settings": {
+            "title": "Battery",
+            "x": 56,
+            "y": 48,
+            "spec": "Specialized Turbo X2 840 Wh integrated battery, side entry; 4 A charger.",
+            "detail_asset": "ubc-part-battery.webp",
+            "text": "<p>Integrated in the down tube. Charge it on or off the bike; we explain care and storage at pickup.</p>"
+          }
+        },
+        "p4": {
+          "type": "point",
+          "settings": {
+            "title": "Motor",
+            "x": 45,
+            "y": 72,
+            "spec": "Specialized 3.1 motor, 105 Nm torque, 810 W.",
+            "detail_asset": "ubc-part-motor.webp",
+            "text": "<p>The mid-drive motor adds power as you pedal, so it feels natural on hills and headwinds.</p>"
+          }
+        },
+        "p5": {
+          "type": "point",
+          "settings": {
+            "title": "Cranks & chain",
+            "x": 53,
+            "y": 75,
+            "spec": "170 mm cranks, 48T chainring with chain guard; KMC eGlide 11-speed chain.",
+            "detail_asset": "ubc-part-cranks.webp",
+            "text": "<p>Turn your pedalling into motion; the guard keeps trousers clean.</p>"
+          }
+        },
+        "p6": {
+          "type": "point",
+          "settings": {
+            "title": "Suspension fork",
+            "x": 74,
+            "y": 36,
+            "spec": "SR Suntour, 120 mm travel (100 mm size S), 34 mm stanchions, 15 mm thru-axle.",
+            "detail_asset": "ubc-part-fork.webp",
+            "text": "<p>Absorbs bumps from the road so the ride stays comfortable and controlled.</p>"
+          }
+        },
+        "p7": {
+          "type": "point",
+          "settings": {
+            "title": "Disc brakes",
+            "x": 81,
+            "y": 70,
+            "spec": "Tektro HD-T5040 4-piston calipers, 2.3 mm rotors, 5 mm pads.",
+            "detail_asset": "ubc-part-brakes.webp",
+            "text": "<p>Hydraulic disc brakes, front and rear, for consistent stopping in dry or wet conditions.</p>"
+          }
+        },
+        "p8": {
+          "type": "point",
+          "settings": {
+            "title": "Drivetrain",
+            "x": 18,
+            "y": 70,
+            "spec": "Shimano CUES 11-speed, 11–50T cassette, derailleur with Shadow Plus.",
+            "detail_asset": "ubc-part-drivetrain.webp",
+            "text": "<p>A wide gear range for climbs and flats. We tune it at every service.</p>"
+          }
+        },
+        "p9": {
+          "type": "point",
+          "settings": {
+            "title": "Rack & kickstand",
+            "x": 20,
+            "y": 37,
+            "spec": "Seatstay-mounted MIK HD rack, 27 kg max load; adjustable kickstand.",
+            "detail_asset": "ubc-part-rack.webp",
+            "text": "<p>Carry bags or a child seat; MIK-compatible accessories click on and off.</p>"
+          }
+        },
+        "p10": {
+          "type": "point",
+          "settings": {
+            "title": "Tires & fenders",
+            "x": 93,
+            "y": 62,
+            "spec": "Hemisphere Flat Resistant All Terrain Reflect 27.5×2.6; alloy fenders.",
+            "detail_asset": "ubc-part-tires.webp",
+            "text": "<p>Puncture-resistant, reflective tires for mixed surfaces, with fenders that keep spray off you.</p>"
+          }
+        },
+        "n1": {
+          "type": "note",
+          "settings": {
+            "title": "Motor",
+            "text": "How the assist works and when it helps most."
+          }
+        },
+        "n2": {
+          "type": "note",
+          "settings": {
+            "title": "Battery",
+            "text": "Charging, care and storage."
+          }
+        },
+        "n3": {
+          "type": "note",
+          "settings": {
+            "title": "Fit",
+            "text": "Sized and adjusted to you in store."
+          }
+        },
+        "n4": {
+          "type": "note",
+          "settings": {
+            "title": "Service",
+            "text": "Tune-ups and repairs by UBC mechanics."
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4",
+        "p5",
+        "p6",
+        "p7",
+        "p8",
+        "p9",
+        "p10",
+        "n1",
+        "n2",
+        "n3",
+        "n4"
+      ],
+      "settings": {
+        "text": "Select any numbered pin on the frame to inspect its component spec up close.",
+        "heading": "Inside the Engineering · Component Anatomy"
+      }
+    },
+    "workshop_pill": {
+      "type": "ubc-workshop-pill",
+      "settings": {
+        "watermark": "WORKSHOP",
+        "kicker": "Precision Fitting & Master Service · Tampa, FL",
+        "heading": "BUILT, TORQUED & FITTED TO YOUR GEOMETRY",
+        "description": "Every complete bicycle at University Bicycle Center includes certified mechanic assembly, hydraulic bleed verification, drivetrain indexing, and an individualized Tampa showroom rider fit since 1972.",
+        "button_label": "EXPLORE IN-STORE PICKUP",
+        "fallback_asset": "ubc-bike-aethos.webp",
+        "badge_text": "TAMPA, FL · SERVING RIDERS SINCE 1972"
+      }
+    }
+  },
+  "order": [
+    "boutique_hero",
+    "tech_parts",
+    "shop_spotlight",
+    "promo_cards",
+    "argon_stage",
+    "inside",
+    "workshop_pill"
+  ]
+}

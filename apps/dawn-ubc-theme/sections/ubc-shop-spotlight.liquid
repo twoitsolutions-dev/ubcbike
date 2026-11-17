@@ -1,0 +1,171 @@
+{%- comment -%}
+  UBC "SHOP" Quick-Buy Spotlight (Pin 4 Middle)
+  - Centered "SHOP" tab header with coral underline
+  - Interactive product switcher reading live Shopify collection (`bikes`)
+  - Smart studio cutout fallback when a sandbox product has no uploaded image
+  - Architectural thin price + detailed `ubc.*` omnichannel badge + circular bag AJAX Add-to-Cart
+{%- endcomment -%}
+{%- liquid
+  assign spot_coll = section.settings.collection
+  if spot_coll == blank
+    assign spot_coll = collections['bikes'] | default: collections['all']
+  endif
+-%}
+<section class="ub-shop-spot" data-ub-spotlight aria-label="{{ section.settings.tab_title | escape }}">
+  <div class="ub-shell">
+    <div class="ub-tab-head">
+      <h2 class="ub-tab-head__title">{{ section.settings.tab_title | escape }}</h2>
+    </div>
+
+    {%- if spot_coll != blank and spot_coll.products_count > 0 -%}
+      {%- for product in spot_coll.products limit: section.settings.limit -%}
+        {%- liquid
+          assign v = product.selected_or_first_available_variant
+          assign h = product.handle | downcase
+          assign fallback_img = 'ubc-bike-tarmac-sl9.webp'
+          if h contains 'surly' or h contains 'diverge' or h contains 'frame'
+            assign fallback_img = 'ubc-bike-diverge.webp'
+          elsif h contains 'tire' or h contains 'continental' or h contains 'gp5'
+            assign fallback_img = 'ubc-part-tires.webp'
+          elsif h contains 'helmet' or h contains 'bell'
+            assign fallback_img = 'ubc-part-cockpit.webp'
+          elsif h contains 'vado'
+            assign fallback_img = 'ubc-bike-turbo-vado-evo.webp'
+          endif
+          assign ghost_word = product.vendor | default: 'UBC' | upcase
+        -%}
+        <div
+          class="ub-shop-spot__row{% if forloop.first %} is-active{% endif %}"
+          data-ub-slide
+          {% unless forloop.first %}hidden{% endunless %}
+        >
+          <div class="ub-shop-spot__media">
+            <span class="ub-shop-spot__ghost" aria-hidden="true">{{ ghost_word | escape }}</span>
+            <a href="{{ product.url }}">
+              {%- if product.featured_image != blank -%}
+                {{
+                  product.featured_image
+                  | image_url: width: 1100
+                  | image_tag: width: 1100, height: 720, loading: 'lazy', alt: product.title
+                }}
+              {%- else -%}
+                <img
+                  src="{{ fallback_img | asset_url }}"
+                  width="1100"
+                  height="720"
+                  loading="lazy"
+                  alt="{{ product.title | escape }}"
+                >
+              {%- endif -%}
+            </a>
+          </div>
+
+          <div>
+            <div class="ub-shop-spot__head">
+              <button type="button" class="ub-round-arrow" data-ub-prev aria-label="Previous product">
+                &lsaquo;
+              </button>
+              <h3 class="ub-shop-spot__name">
+                <a href="{{ product.url }}" style="color: inherit; text-decoration: none;">
+                  {{ product.title | escape }}
+                </a>
+              </h3>
+              <button type="button" class="ub-round-arrow" data-ub-next aria-label="Next product">
+                &rsaquo;
+              </button>
+            </div>
+
+            <p class="ub-shop-spot__spec">
+              {%- if product.description != blank -%}
+                {{ product.description | strip_html | truncate: 175 }}
+              {%- else -%}
+                Authorized {{ product.vendor | default: 'UBC' }} build inspected and torqued by certified University Bicycle Center mechanics in Tampa, FL.
+              {%- endif -%}
+            </p>
+
+            <p class="ub-shop-spot__price">{{ v.price | money }}</p>
+
+            {%- render 'ubc-availability', variant: v, detailed: true -%}
+
+            <form method="post" action="{{ routes.cart_add_url }}" class="ub-shop-spot__buy" data-ub-bag-form>
+              <input type="hidden" name="id" value="{{ v.id }}">
+              <button
+                type="submit"
+                class="ub-circle-bag"
+                {% unless v.available %}disabled{% endunless %}
+                aria-label="Add {{ product.title | escape }} to bag"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+              </button>
+              <span class="ub-shop-spot__add-label">
+                {%- if v.available -%}
+                  Add to Bag &middot;SKU {{ v.sku | default: 'UBC' }}
+                {%- else -%}
+                  Currently Unavailable
+                {%- endif -%}
+              </span>
+            </form>
+          </div>
+        </div>
+      {%- endfor -%}
+    {%- else -%}
+      <div class="ub-shop-spot__row is-active" data-ub-slide>
+        <div class="ub-shop-spot__media">
+          <span class="ub-shop-spot__ghost" aria-hidden="true">SPECIALIZED</span>
+          <img
+            src="{{ 'ubc-bike-tarmac-sl9.webp' | asset_url }}"
+            width="1100"
+            height="720"
+            loading="lazy"
+            alt="Specialized Tarmac SL7 Sport 56cm"
+          >
+        </div>
+        <div>
+          <h3 class="ub-shop-spot__name">Specialized Tarmac SL7 Sport &mdash; 56cm</h3>
+          <p class="ub-shop-spot__spec">FACT 9r carbon aero road frame paired with Shimano 105 12-speed mechanical shifting and hydraulic disc brakes. Assembled and fitted in Tampa.</p>
+          <p class="ub-shop-spot__price">$2,799.99</p>
+          <a href="{{ routes.all_products_collection_url }}" class="ub-pill-btn">Browse Catalog</a>
+        </div>
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "UBC Shop Quick Spotlight",
+  "tag": "section",
+  "class": "section-ubc-shop-spotlight",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tab_title",
+      "label": "Section tab heading",
+      "default": "SHOP"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Product collection"
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "label": "Maximum products in spotlight",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Shop Quick Spotlight"
+    }
+  ]
+}
+{% endschema %}

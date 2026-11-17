@@ -1,0 +1,50 @@
+{
+  "sections": {
+    "hero_showcase": {
+      "type": "fable-hero-showcase",
+      "settings": {
+        "eyebrow": "3-Generation Family Cycling Shop · Tampa Since 1972"
+      }
+    },
+    "new_arrivals": {
+      "type": "fable-new-arrivals",
+      "settings": {}
+    },
+    "workshop_pro": {
+      "type": "fable-workshop-pro",
+      "settings": {}
+    },
+    "bike_finder": {
+      "type": "fable-bike-finder",
+      "settings": {}
+    },
+    "family_story": {
+      "type": "fable-family-story",
+      "settings": {
+        "is_standalone_page": false
+      }
+    },
+    "service_rentals_stores": {
+      "type": "fable-service-rentals-stores",
+      "settings": {}
+    },
+    "store_locator": {
+      "type": "fable-store-locator",
+      "settings": {
+        "eyebrow": "Visit Us · Tampa & Lithia",
+        "enable_near_me": true,
+        "show_page_link": true,
+        "is_standalone_page": false
+      }
+    }
+  },
+  "order": [
+    "hero_showcase",
+    "new_arrivals",
+    "workshop_pro",
+    "bike_finder",
+    "family_story",
+    "service_rentals_stores",
+    "store_locator"
+  ]
+}

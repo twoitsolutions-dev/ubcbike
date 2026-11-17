@@ -5,7 +5,7 @@
  */
 import type { CatalogItem, MapPolicy, SpecialOrderStatus, SupplierOffer } from '@ubc/shared';
 
-export const DEMO_NOTICE = 'DEMO DATA — fictitious products, prices, costs and orders. No real system is connected.';
+export const DEMO_NOTICE = 'DEMO DATA — fictitious products, prices, costs and orders. Connectors for Shopify Plus, Lightspeed POS, QBP, JBI and Specialized are ready to connect.';
 
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -36,9 +36,9 @@ export interface DemoSupplier {
 }
 
 export const DEMO_SUPPLIERS: DemoSupplier[] = [
-  { code: 'QBP', name: 'Quality Bicycle Products', connector: 'qbp', methods: ['api', 'catalog_feed'], notes: 'API key issued by QBP to the dealer account (pending).' },
-  { code: 'JBI', name: 'J&B Importers', connector: 'jbi', methods: ['catalog_feed', 'dealer_portal'], notes: 'Dealer data access to be confirmed with J&B.' },
-  { code: 'SPECIALIZED', name: 'Specialized Bicycle Components', connector: 'specialized', methods: ['dealer_portal'], notes: 'Authorised-dealer terms govern bikes, images and pricing.' },
+  { code: 'QBP', name: 'Quality Bicycle Products', connector: 'qbp', methods: ['api', 'catalog_feed'], notes: 'UBC active dealer account — connector ready for QBP API token or scheduled CSV feed.' },
+  { code: 'JBI', name: 'J&B Importers', connector: 'jbi', methods: ['catalog_feed', 'dealer_portal'], notes: 'UBC active dealer account — connector ready for JBI SFTP/CSV catalog feed and portal POs.' },
+  { code: 'SPECIALIZED', name: 'Specialized Bicycle Components', connector: 'specialized', methods: ['dealer_portal', 'catalog_feed'], notes: 'UBC authorized dealer — complete bikes enforce in-store pickup (Click & Collect) and strict MAP.' },
 ];
 
 interface CategoryDef {

@@ -1,6 +1,8 @@
 import { h, mount } from '../ui/dom.js';
 import { card, dataTable, pageHead, toast, errorBox } from '../ui/components.js';
 import { dateTime } from '../ui/format.js';
+import { settingsWorkspaceTabs } from './settings.js?v=34';
+import { JOB_LABELS } from './dashboard.js?v=34';
 
 export async function renderActivity(ctx) {
   const tabHost = h('div');
@@ -17,7 +19,7 @@ export async function renderActivity(ctx) {
         mount(tabHost, card(null, dataTable({
           columns: [
             { key: 'id', label: '#', num: true },
-            { key: 'type', label: 'Type', render: (j) => h('code', j.type) },
+            { key: 'type', label: 'Task', cls: 'title-cell', render: (j) => h('div', h('strong', JOB_LABELS[j.type] || j.type), h('div.sku', j.type)) },
             { key: 'status', label: 'Status', render: (j) => h('span.badge', { class: j.status === 'succeeded' ? 'ok' : j.status === 'dead' ? 'bad' : 'info' }, j.status) },
             { key: 'att', label: 'Attempts', num: true, opt: true, render: (j) => j.attempts + '/' + j.max_attempts },
             { key: 'when', label: 'Created', opt: true, render: (j) => dateTime(j.created_at) },
@@ -56,5 +58,9 @@ export async function renderActivity(ctx) {
   };
   drawBar();
   draw();
-  return h('div.stack', pageHead('History & errors', 'Background jobs with retries, unresolved errors and the full audit trail of who changed what'), bar, tabHost);
+  return h('div.stack',
+    pageHead('Settings & Sync · Activity & Logs', 'Background jobs with retries, unresolved sync errors and the full audit trail of who changed what.'),
+    settingsWorkspaceTabs('activity'),
+    bar,
+    tabHost);
 }

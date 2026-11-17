@@ -1,0 +1,55 @@
+{%- comment -%}
+  Renders omnichannel availability & Click-and-Collect rules published by UBC Commerce Hub:
+    variant.metafields.ubc.availability           -> in_stock | special_order | unavailable
+    variant.metafields.ubc.lead_time_days         -> integer business days (special orders)
+    variant.metafields.ubc.click_and_collect_only -> boolean (e.g. Specialized complete bikes)
+  Supplier quantities are never published as stock: special-order variants use
+  inventory policy "continue" with 0 units. Falls back to Shopify inventory.
+  Usage:
+    Compact (cards / showcase): {% render 'ubc-availability', variant: v %}
+    Detailed (PDP):             {% render 'ubc-availability', variant: v, detailed: true %}
+{%- endcomment -%}
+{%- liquid
+  assign status = variant.metafields.ubc.availability.value
+  if status == blank
+    if variant.available and variant.inventory_quantity > 0
+      assign status = 'in_stock'
+    elsif variant.available
+      assign status = 'special_order'
+    else
+      assign status = 'unavailable'
+    endif
+  endif
+  assign lead = variant.metafields.ubc.lead_time_days.value
+  assign pickup_only = variant.metafields.ubc.click_and_collect_only.value
+-%}
+<div class="ubc-availability-group" data-ubc-availability-wrap>
+  <div class="ubc-availability-pills">
+    <span class="availability availability--{{ status }}" data-availability>
+      {%- case status -%}
+        {%- when 'in_stock' -%}
+          {{ 'ubc.products.availability.in_stock' | t }}
+        {%- when 'special_order' -%}
+          {%- if lead != blank -%}
+            {{ 'ubc.products.availability.special_order_days' | t: days: lead }}
+          {%- else -%}
+            {{ 'ubc.products.availability.special_order' | t }}
+          {%- endif -%}
+        {%- else -%}
+          {{ 'ubc.products.availability.unavailable' | t }}
+      {%- endcase -%}
+    </span>
+    {%- if pickup_only -%}
+      <span class="availability availability--pickup" data-pickup-badge>
+        In-store pickup only &middot; Tampa
+      </span>
+    {%- endif -%}
+  </div>
+  {%- if detailed and pickup_only -%}
+    <p class="ubc-pickup-callout" data-pickup-callout>
+      <strong>In-Store Pickup Only (Tampa Showroom):</strong> Complete bicycles include certified UBC mechanic assembly &amp; safety inspection and must be picked up in store.
+    </p>
+  {%- elsif detailed and status == 'special_order' -%}
+    <p class="ubc-special-note">{{ 'ubc.products.special_order_explainer' | t }}</p>
+  {%- endif -%}
+</div>

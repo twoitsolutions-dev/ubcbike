@@ -1,0 +1,449 @@
+{%- comment -%}
+  UBC Boutique Hero Slider (Pin 1 + Pin 3 Fusion)
+  - Left vertical 01–04 rail
+  - Center coral halo circle + layered gold watermark + cutout bike + pulse hotspots + tilted wheel tag
+  - Right editorial column: vertical ghost word, two-weight title, live price + ubc.* availability, '+' Discover CTA, color swatches
+  - Bottom Scroll cue + horizontal bike thumbnail selector with prev/next arrows
+{%- endcomment -%}
+<section class="ub-hero" data-ub-hero aria-label="{{ section.settings.aria_label | escape }}">
+  <div class="ub-dots ub-hero__dots-top" aria-hidden="true"></div>
+
+  <div class="ub-shell">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        assign slide_idx = forloop.index0
+        assign prod = block.settings.product
+        if prod == blank and block.settings.default_handle != blank
+          assign prod = all_products[block.settings.default_handle]
+        endif
+        assign v = prod.selected_or_first_available_variant
+        assign fallback_asset = block.settings.fallback_asset | default: 'ubc-bike-tarmac-sl9.webp'
+        assign bike_url = prod.url | default: block.settings.cta_url | default: routes.all_products_collection_url
+      -%}
+      <div
+        class="ub-hero__grid{% if forloop.first %} is-active{% endif %}"
+        data-ub-slide
+        {% unless forloop.first %}hidden{% endunless %}
+        {{ block.shopify_attributes }}
+      >
+        <div class="ub-hero__rail" role="tablist" aria-label="Featured bikes">
+          {%- for nav_block in section.blocks -%}
+            {%- assign idx0 = forloop.index0 -%}
+            <button
+              type="button"
+              class="ub-rail-btn"
+              data-ub-go="{{ idx0 }}"
+              {% if idx0 == slide_idx %}aria-current="true"{% endif %}
+              aria-label="Slide {{ forloop.index | prepend: '0' | slice: -2, 2 }}"
+            >
+              {{ forloop.index | prepend: '0' | slice: -2, 2 }}
+            </button>
+          {%- endfor -%}
+        </div>
+
+        <div class="ub-hero__stage">
+          <div class="ub-hero__watermark" aria-hidden="true">
+            <span>{{ block.settings.watermark_top | escape }}</span>
+            <span>{{ block.settings.watermark_bottom | escape }}</span>
+          </div>
+
+          <div class="ub-hero__halo" aria-hidden="true"></div>
+
+          <div class="ub-hero__bike-wrap">
+            {%- if block.settings.custom_image != blank -%}
+              {{
+                block.settings.custom_image
+                | image_url: width: 1300
+                | image_tag:
+                  class: 'ub-hero__bike-img',
+                  width: 1300,
+                  height: 820,
+                  loading: 'eager',
+                  alt: block.settings.title_bold
+              }}
+            {%- elsif prod != blank and prod.featured_image != blank -%}
+              {{
+                prod.featured_image
+                | image_url: width: 1300
+                | image_tag:
+                  class: 'ub-hero__bike-img',
+                  width: 1300,
+                  height: 820,
+                  loading: 'eager',
+                  alt: prod.title
+              }}
+            {%- else -%}
+              <img
+                src="{{ fallback_asset | asset_url }}"
+                class="ub-hero__bike-img"
+                width="1300"
+                height="820"
+                {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                alt="{{ block.settings.title_bold | escape }}"
+              >
+            {%- endif -%}
+
+            {%- if block.settings.pin_1_label != blank -%}
+              <button
+                type="button"
+                class="ub-hero__pin"
+                style="left: {{ block.settings.pin_1_x }}%; top: {{ block.settings.pin_1_y }}%;"
+                aria-label="{{ block.settings.pin_1_label | escape }}"
+              >
+                <span class="ub-hero__pin-tip">{{ block.settings.pin_1_label | escape }}</span>
+              </button>
+            {%- endif -%}
+
+            {%- if block.settings.pin_2_label != blank -%}
+              <button
+                type="button"
+                class="ub-hero__pin"
+                style="left: {{ block.settings.pin_2_x }}%; top: {{ block.settings.pin_2_y }}%;"
+                aria-label="{{ block.settings.pin_2_label | escape }}"
+              >
+                <span class="ub-hero__pin-tip">{{ block.settings.pin_2_label | escape }}</span>
+              </button>
+            {%- endif -%}
+
+            {%- if block.settings.pin_3_label != blank -%}
+              <button
+                type="button"
+                class="ub-hero__pin"
+                style="left: {{ block.settings.pin_3_x }}%; top: {{ block.settings.pin_3_y }}%;"
+                aria-label="{{ block.settings.pin_3_label | escape }}"
+              >
+                <span class="ub-hero__pin-tip">{{ block.settings.pin_3_label | escape }}</span>
+              </button>
+            {%- endif -%}
+
+            {%- if block.settings.wheel_tag != blank -%}
+              <span class="ub-hero__wheel-tag">{{ block.settings.wheel_tag | escape }}</span>
+            {%- endif -%}
+          </div>
+        </div>
+
+        <div class="ub-hero__copy">
+          <span class="ub-hero__ghost-v" aria-hidden="true">{{ block.settings.ghost_word | escape }}</span>
+          <p class="ub-hero__kicker">{{ block.settings.kicker | escape }}</p>
+
+          <h2 class="ub-hero__title">
+            {{ block.settings.title_light | escape }}
+            <strong>
+              {{ block.settings.title_bold | escape }}
+              {%- if block.settings.title_accent != blank -%}
+                <em>{{ block.settings.title_accent | escape }}</em>
+              {%- endif -%}
+            </strong>
+          </h2>
+
+          <p class="ub-hero__sub">
+            {{ block.settings.subtitle_prefix | escape }}
+            <strong>{{ block.settings.subtitle_strong | escape }}</strong>
+          </p>
+
+          <div class="ub-hero__price-row">
+            {%- if v != blank -%}
+              <p class="ub-hero__price">{{ v.price | money }}</p>
+              {%- render 'ubc-availability', variant: v -%}
+            {%- elsif block.settings.fallback_price != blank -%}
+              <p class="ub-hero__price">{{ block.settings.fallback_price | escape }}</p>
+              <span class="availability availability--in_stock">Tampa Showroom &middot; Ready to Fit</span>
+            {%- endif -%}
+          </div>
+
+          <div class="ub-hero__cta-row">
+            <a href="{{ bike_url }}" class="ub-plus-cta">
+              <span class="ub-plus-cta__circle" aria-hidden="true">+</span>
+              <span>{{ block.settings.cta_label | escape }}</span>
+            </a>
+
+            <div class="ub-swatches" aria-label="Available finishes">
+              <span class="ub-swatches__label">Finish</span>
+              <span class="ub-swatch" style="background: {{ block.settings.swatch_1 }};"></span>
+              <span class="ub-swatch" style="background: {{ block.settings.swatch_2 }};"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    {%- endfor -%}
+
+    <div class="ub-hero__bottom">
+      <div class="ub-scroll-cue" aria-hidden="true">
+        <span class="ub-scroll-cue__mouse"></span>
+        <span>Scroll</span>
+      </div>
+
+      <div class="ub-hero__thumbs" aria-label="Select featured bicycle">
+        <button type="button" class="ub-round-arrow" data-ub-prev aria-label="Previous bicycle">
+          &lsaquo;
+        </button>
+
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign thumb_prod = block.settings.product
+            if thumb_prod == blank and block.settings.default_handle != blank
+              assign thumb_prod = all_products[block.settings.default_handle]
+            endif
+            assign thumb_asset = block.settings.fallback_asset | default: 'ubc-bike-tarmac-sl9.webp'
+          -%}
+          <button
+            type="button"
+            class="ub-hero-thumb"
+            data-ub-go="{{ forloop.index0 }}"
+            {% if forloop.first %}aria-current="true"{% endif %}
+            aria-label="{{ block.settings.title_bold | escape }}"
+          >
+            {%- if block.settings.custom_image != blank -%}
+              {{
+                block.settings.custom_image
+                | image_url: width: 260
+                | image_tag: width: 260, height: 164, loading: 'lazy', alt: block.settings.title_bold
+              }}
+            {%- elsif thumb_prod != blank and thumb_prod.featured_image != blank -%}
+              {{
+                thumb_prod.featured_image
+                | image_url: width: 260
+                | image_tag: width: 260, height: 164, loading: 'lazy', alt: thumb_prod.title
+              }}
+            {%- else -%}
+              <img
+                src="{{ thumb_asset | asset_url }}"
+                width="260"
+                height="164"
+                loading="lazy"
+                alt="{{ block.settings.title_bold | escape }}"
+              >
+            {%- endif -%}
+          </button>
+        {%- endfor -%}
+
+        <button type="button" class="ub-round-arrow" data-ub-next aria-label="Next bicycle">
+          &rsaquo;
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "UBC Boutique Hero",
+  "tag": "section",
+  "class": "section-ubc-boutique-hero",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Accessible region label",
+      "default": "Featured bicycles showcase"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Hero bike slide",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Linked Shopify product"
+        },
+        {
+          "type": "text",
+          "id": "default_handle",
+          "label": "Auto-bind product handle (fallback)"
+        },
+        {
+          "type": "image_picker",
+          "id": "custom_image",
+          "label": "Custom cutout image (optional)"
+        },
+        {
+          "type": "text",
+          "id": "fallback_asset",
+          "label": "Bundled studio cutout filename",
+          "default": "ubc-bike-tarmac-sl9.webp"
+        },
+        {
+          "type": "text",
+          "id": "watermark_top",
+          "label": "Layered watermark line 1",
+          "default": "RIDE FOR"
+        },
+        {
+          "type": "text",
+          "id": "watermark_bottom",
+          "label": "Layered watermark line 2",
+          "default": "PASSION"
+        },
+        {
+          "type": "text",
+          "id": "ghost_word",
+          "label": "Vertical ghosted word",
+          "default": "TARMAC"
+        },
+        {
+          "type": "text",
+          "id": "kicker",
+          "label": "Eyebrow kicker",
+          "default": "University Bicycle Center · Tampa, FL"
+        },
+        {
+          "type": "text",
+          "id": "title_light",
+          "label": "Title light line",
+          "default": "THE SPECIALIZED"
+        },
+        {
+          "type": "text",
+          "id": "title_bold",
+          "label": "Title bold model",
+          "default": "TARMAC SL7"
+        },
+        {
+          "type": "text",
+          "id": "title_accent",
+          "label": "Title accent suffix",
+          "default": "56"
+        },
+        {
+          "type": "text",
+          "id": "subtitle_prefix",
+          "label": "Subtitle prefix",
+          "default": "FACT 9R CARBON ·"
+        },
+        {
+          "type": "text",
+          "id": "subtitle_strong",
+          "label": "Subtitle highlight",
+          "default": "AERO RACE GEOMETRY"
+        },
+        {
+          "type": "text",
+          "id": "fallback_price",
+          "label": "Fallback price (when no product linked)",
+          "default": "$2,799.99"
+        },
+        {
+          "type": "text",
+          "id": "wheel_tag",
+          "label": "Wheel discipline badge",
+          "default": "Road Bikes"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "CTA label",
+          "default": "DISCOVER"
+        },
+        {
+          "type": "url",
+          "id": "cta_url",
+          "label": "Fallback CTA link"
+        },
+        {
+          "type": "color",
+          "id": "swatch_1",
+          "label": "Finish swatch 1",
+          "default": "#18222d"
+        },
+        {
+          "type": "color",
+          "id": "swatch_2",
+          "label": "Finish swatch 2",
+          "default": "#e84c3d"
+        },
+        {
+          "type": "text",
+          "id": "pin_1_label",
+          "label": "Hotspot 1 tooltip",
+          "default": "Aero Carbon Cockpit · Internal Routing"
+        },
+        {
+          "type": "range",
+          "id": "pin_1_x",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "label": "Hotspot 1 X",
+          "default": 68
+        },
+        {
+          "type": "range",
+          "id": "pin_1_y",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "label": "Hotspot 1 Y",
+          "default": 24
+        },
+        {
+          "type": "text",
+          "id": "pin_2_label",
+          "label": "Hotspot 2 tooltip",
+          "default": "Shimano 105 12-Speed Drivetrain"
+        },
+        {
+          "type": "range",
+          "id": "pin_2_x",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "label": "Hotspot 2 X",
+          "default": 44
+        },
+        {
+          "type": "range",
+          "id": "pin_2_y",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "label": "Hotspot 2 Y",
+          "default": 66
+        },
+        {
+          "type": "text",
+          "id": "pin_3_label",
+          "label": "Hotspot 3 tooltip",
+          "default": "Hydraulic Flat-Mount Disc Rotors"
+        },
+        {
+          "type": "range",
+          "id": "pin_3_x",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "label": "Hotspot 3 X",
+          "default": 79
+        },
+        {
+          "type": "range",
+          "id": "pin_3_y",
+          "min": 5,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "label": "Hotspot 3 Y",
+          "default": 64
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Boutique Hero",
+      "blocks": [
+        {
+          "type": "slide"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,30 @@
+{%- if cart != empty -%}
+  {%- liquid
+    assign has_pickup_only = false
+    assign has_special_order = false
+    assign max_lead_days = 0
+    for item in cart.items
+      assign v = item.variant
+      if v.metafields.ubc.click_and_collect_only.value == true
+        assign has_pickup_only = true
+      endif
+      if v.metafields.ubc.availability.value == 'special_order'
+        assign has_special_order = true
+        assign ld = v.metafields.ubc.lead_time_days.value | plus: 0
+        if ld > max_lead_days
+          assign max_lead_days = ld
+        endif
+      endif
+    endfor
+  -%}
+  {%- if has_pickup_only or has_special_order -%}
+    <div class="ubc-cart-notice" role="status">
+      {%- if has_pickup_only -%}
+        <div><strong>In-Store Pickup in Tampa:</strong> Complete bikes include professional UBC mechanic assembly and are picked up at our showroom.</div>
+      {%- endif -%}
+      {%- if has_special_order -%}
+        <div><strong>Special Order Included:</strong> Distributor-fulfilled items arrive in {% if max_lead_days > 0 %}about {{ max_lead_days }} days{% else %}3–5 business days{% endif %}.</div>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{%- endif -%}

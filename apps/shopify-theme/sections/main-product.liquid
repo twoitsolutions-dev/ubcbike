@@ -69,6 +69,7 @@
             "compare": {% if v.compare_at_price > v.price %}{{ v.compare_at_price | money | json }}{% else %}null{% endif %},
             "availability": {{ v.metafields.ubc.availability.value | default: '' | json }},
             "lead": {{ v.metafields.ubc.lead_time_days.value | default: '' | json }},
+            "pickup_only": {{ v.metafields.ubc.click_and_collect_only.value | default: false | json }},
             "qty": {{ v.inventory_quantity | json }}
           }{% unless forloop.last %},{% endunless %}
         {%- endfor -%}
@@ -78,6 +79,7 @@
         "special_order": {{ 'products.availability.special_order' | t | json }},
         "special_order_days": {{ 'products.availability.special_order_days' | t: days: '__DAYS__' | json }},
         "unavailable": {{ 'products.availability.unavailable' | t | json }},
+        "click_and_collect_only": {{ 'products.availability.click_and_collect_only' | t | json }},
         "add": {{ 'products.add_to_cart' | t | json }},
         "sold_out": {{ 'products.sold_out' | t | json }}
       }

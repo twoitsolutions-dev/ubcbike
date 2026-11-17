@@ -1,0 +1,231 @@
+{%- comment -%}
+  UBC Dawn Ecommerce v23 — Official UBC Ink Footer with Infinite-Resolution Vector SVG `SINCE 1972`
+  - `SINCE 1972` monumental wordmark rendered as mathematical Bezier SVG paths in Official UBC Gold (#CCBB8D) stroke ONLY, zero fill.
+  - Supports Shopify `link_list` menus per column + dynamic `tel:` phone href + `home_anchor` locale-safe routes.
+{%- endcomment -%}
+{%- liquid
+  assign word_clean = section.settings.giant_word | default: 'SINCE 1972' | strip | upcase
+  assign raw_phone = section.settings.phone | default: '(813) 971-2277'
+  assign phone_digits = raw_phone | remove: ' ' | remove: '(' | remove: ')' | remove: '-' | remove: '.' | remove: '+'
+  if phone_digits.size == 10
+    assign phone_tel = '+1' | append: phone_digits
+  elsif phone_digits != blank
+    assign phone_tel = '+' | append: phone_digits
+  else
+    assign phone_tel = '+18139712277'
+  endif
+
+  assign home_anchor = ''
+  if template.name != 'index'
+    assign home_anchor = routes.root_url
+    unless home_anchor == '/'
+      assign home_anchor = home_anchor | append: '/'
+    endunless
+  endif
+
+  assign story_href = home_anchor | append: '#family'
+  if pages['our-story'] != blank
+    assign story_href = pages['our-story'].url
+  endif
+
+  assign locations_href = home_anchor | append: '#stores'
+  if pages['locations'] != blank
+    assign locations_href = pages['locations'].url
+  endif
+
+  assign all_bikes_href = routes.all_products_collection_url
+  if collections['bikes'] != blank
+    assign all_bikes_href = collections['bikes'].url
+  endif
+-%}
+<div class="fb-scope">
+  <footer class="fb-footer on-dark">
+    <div class="fb-wrap">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <img
+            src="{{ 'fable-logo-white.png' | asset_url }}"
+            width="184"
+            height="38"
+            alt="{{ shop.name | escape }}"
+            loading="lazy"
+          >
+          <p data-es="Tres generaciones de tradición familiar ciclista en Tampa Bay desde 1972. Bicicletas, E-Bikes, scooters, cascos, nutrición, repuestos, taller sin cita y descuentos permanentes en tienda para Estudiantes, Veteranos y Policías.">
+            Three generations of family-owned cycling passion in Tampa Bay since 1972. Bikes, e-bikes, scooters, helmets, nutrition, OEM parts, all-day walk-in repair, and everyday in-store discounts for Students, Veterans &amp; Police.
+          </p>
+          <div class="social" aria-label="Official social channels">
+            <a href="https://www.instagram.com/ubcbike.tampa/" target="_blank" rel="noopener" aria-label="Instagram Tampa (@ubcbike.tampa)" title="Instagram Tampa (@ubcbike.tampa)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.8" fill="currentColor"/></svg>
+            </a>
+            <a href="https://www.instagram.com/ubcbike.alafia/" target="_blank" rel="noopener" aria-label="Instagram Alafia (@ubcbike.alafia)" title="Instagram Alafia (@ubcbike.alafia)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.8" fill="currentColor"/></svg>
+            </a>
+            <a href="https://www.facebook.com/pages/University-Bicycle-Center/100635673341641" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.5-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.8 1.4-3.8 3.9v2.3H8v3h2.5V21h3z"/></svg>
+            </a>
+            <a href="https://www.youtube.com/@ubcbike" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 8.2a2.5 2.5 0 00-1.8-1.8C18.2 6 12 6 12 6s-6.2 0-7.8.4a2.5 2.5 0 00-1.8 1.8C2 9.8 2 12 2 12s0 2.2.4 3.8a2.5 2.5 0 001.8 1.8c1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4a2.5 2.5 0 001.8-1.8c.4-1.6.4-3.8.4-3.8s0-2.2-.4-3.8zM10 14.8V9.2l5 2.8-5 2.8z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <details class="foot-acc" open>
+          <summary><h4 data-es="Tienda y Promos">{{ section.settings.col1_heading | escape }}</h4><svg aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <ul>
+            {%- if section.settings.footer_menu_1 != blank and section.settings.footer_menu_1.links.size > 0 -%}
+              {%- for link in section.settings.footer_menu_1.links -%}
+                <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+              {%- endfor -%}
+            {%- else -%}
+              <li><a href="{{ home_anchor }}#new-arrivals" data-na-jump="deals" data-es="Promos y Combos Activos">Active Promos &amp; Bundles</a></li>
+              <li><a href="{{ home_anchor }}#new-arrivals" data-na-jump="helmets" data-es="Cascos MIPS y Luces">Helmets, Lights &amp; Gear</a></li>
+              <li><a href="{{ home_anchor }}#new-arrivals" data-na-jump="nutrition" data-es="Hidratación Skratch y GU">Hydration &amp; Nutrition</a></li>
+              <li><a href="{{ home_anchor }}#new-arrivals" data-na-jump="parts" data-es="Llantas y Piezas OEM">Parts, Saddles &amp; Tires</a></li>
+              <li><a href="{{ all_bikes_href }}" data-es="Bicicletas y E-Bikes">Bikes &amp; E-Bikes</a></li>
+            {%- endif -%}
+          </ul>
+        </details>
+
+        <details class="foot-acc" open>
+          <summary><h4 data-es="Taller y Servicios">{{ section.settings.col2_heading | escape }}</h4><svg aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <ul>
+            {%- if section.settings.footer_menu_2 != blank and section.settings.footer_menu_2.links.size > 0 -%}
+              {%- for link in section.settings.footer_menu_2.links -%}
+                <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+              {%- endfor -%}
+            {%- else -%}
+              <li><a href="{{ home_anchor }}#service" data-es="Taller Sin Cita (Bicis y Scooters)">Walk-In Repair Workshop</a></li>
+              <li><a href="{{ home_anchor }}#service" data-es="Tune-Ups ($100 / $160 / $250)">Tune-Up Packages</a></li>
+              <li><a href="{{ home_anchor }}#rentals" data-es="Alquiler en Alafia River">Alafia Trail Rentals</a></li>
+              <li><a href="{{ home_anchor }}#financing" data-es="Financiamiento 0% APR">0% APR Financing</a></li>
+              <li><a href="{{ home_anchor }}#financing" data-es="Programa Trade-In">Bicycle Trade-In</a></li>
+            {%- endif -%}
+          </ul>
+        </details>
+
+        <details class="foot-acc" open>
+          <summary><h4 data-es="Familia y Tiendas">{{ section.settings.col3_heading | escape }}</h4><svg aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <ul>
+            {%- if section.settings.footer_menu_3 != blank and section.settings.footer_menu_3.links.size > 0 -%}
+              {%- for link in section.settings.footer_menu_3.links -%}
+                <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+              {%- endfor -%}
+            {%- else -%}
+              <li><a href="{{ story_href }}" data-es="Conoce a Manny, Carlos y Equipo">Our Family Story &amp; Videos</a></li>
+              <li><a href="{{ locations_href }}" data-es="Mapa Interactivo de Tiendas">Interactive Store Locator</a></li>
+              <li><a href="{{ home_anchor }}#stores">Tampa &middot; 1220 E Fletcher Ave</a></li>
+              <li><a href="tel:{{ phone_tel }}">{{ raw_phone | escape }}</a></li>
+              <li><a href="{{ home_anchor }}#stores">Lithia &middot; Alafia River Park</a></li>
+            {%- endif -%}
+          </ul>
+        </details>
+      </div>
+    </div>
+
+    <div class="foot-word-wrap" aria-hidden="true">
+      {%- if word_clean == 'SINCE 1972' -%}
+        <svg
+          class="foot-word-svg"
+          viewBox="-24 -1840 8908 1900"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          role="presentation"
+          shape-rendering="geometricPrecision"
+        >
+          <path
+            d="M496 16Q255 16 148.5 -104.0Q42 -224 42 -486V-658H390V-438Q390 -377 408.5 -342.5Q427 -308 473 -308Q521 -308 539.5 -336.0Q558 -364 558 -428Q558 -509 542.0 -563.5Q526 -618 486.5 -667.5Q447 -717 377 -783L219 -933Q42 -1100 42 -1315Q42 -1540 146.5 -1658.0Q251 -1776 449 -1776Q691 -1776 792.5 -1647.0Q894 -1518 894 -1255H536V-1376Q536 -1412 515.5 -1432.0Q495 -1452 460 -1452Q418 -1452 398.5 -1428.5Q379 -1405 379 -1368Q379 -1331 399.0 -1288.0Q419 -1245 478 -1189L681 -994Q742 -936 793.0 -871.5Q844 -807 875.0 -721.5Q906 -636 906 -513Q906 -265 814.5 -124.5Q723 16 496 16ZM1052 0V-1760H1392V0ZM1577 0V-1760H1939L2101 -917V-1760H2441V0H2097L1921 -880V0ZM3052 16Q2861 16 2744.5 -103.0Q2628 -222 2628 -436V-1248Q2628 -1504 2729.5 -1640.0Q2831 -1776 3060 -1776Q3185 -1776 3282.5 -1730.0Q3380 -1684 3436.0 -1592.5Q3492 -1501 3492 -1362V-1058H3142V-1318Q3142 -1397 3122.0 -1424.5Q3102 -1452 3060 -1452Q3011 -1452 2994.0 -1416.5Q2977 -1381 2977 -1322V-441Q2977 -368 2998.5 -338.0Q3020 -308 3060 -308Q3105 -308 3123.5 -345.0Q3142 -382 3142 -441V-758H3496V-425Q3496 -193 3379.0 -88.5Q3262 16 3052 16ZM3658 0V-1760H4362V-1420H4016V-1077H4348V-746H4016V-343H4385V0ZM5236 0V-1356Q5200 -1313 5137.0 -1286.5Q5074 -1260 5018 -1260V-1541Q5071 -1549 5132.0 -1575.5Q5193 -1602 5245.5 -1648.5Q5298 -1695 5326 -1761H5609V0ZM6218 16Q6107 16 6011.0 -22.5Q5915 -61 5856.0 -138.0Q5797 -215 5797 -329V-519H6136V-483Q6136 -439 6140.5 -395.0Q6145 -351 6163.5 -322.0Q6182 -293 6224 -293Q6283 -293 6306.0 -325.5Q6329 -358 6329 -419V-772Q6304 -726 6254.0 -697.0Q6204 -668 6132 -668Q5987 -668 5908.0 -726.5Q5829 -785 5799.0 -901.0Q5769 -1017 5769 -1191Q5769 -1367 5812.0 -1498.5Q5855 -1630 5955.5 -1703.0Q6056 -1776 6228 -1776Q6412 -1776 6515.0 -1713.5Q6618 -1651 6660.5 -1525.5Q6703 -1400 6703 -1211V-735Q6703 -552 6687.5 -412.0Q6672 -272 6623.0 -177.0Q6574 -82 6477.0 -33.0Q6380 16 6218 16ZM6236 -979Q6329 -979 6329 -1104V-1322Q6329 -1452 6241 -1452Q6179 -1452 6167.0 -1399.5Q6155 -1347 6155 -1265V-1123Q6155 -979 6236 -979ZM6917 -1Q6933 -247 6986.0 -461.0Q7039 -675 7108.0 -859.5Q7177 -1044 7241 -1198L7339 -1435H6842V-1761H7730V-1569Q7730 -1463 7695.0 -1355.0Q7660 -1247 7603 -1117Q7479 -835 7405.5 -555.5Q7332 -276 7315 -1ZM7891 0V-84Q7891 -215 7931.5 -319.5Q7972 -424 8036.0 -513.5Q8100 -603 8171 -689Q8240 -773 8302.5 -861.5Q8365 -950 8404.5 -1053.5Q8444 -1157 8444 -1286Q8444 -1348 8425.5 -1392.5Q8407 -1437 8349 -1437Q8261 -1437 8261 -1280V-1065H7891Q7890 -1088 7888.5 -1117.0Q7887 -1146 7887 -1173Q7887 -1363 7927.0 -1495.5Q7967 -1628 8068.5 -1697.5Q8170 -1767 8354 -1767Q8573 -1767 8694.5 -1644.0Q8816 -1521 8816 -1293Q8816 -1138 8776.0 -1021.5Q8736 -905 8670.0 -809.5Q8604 -714 8525 -619Q8469 -552 8416.5 -482.0Q8364 -412 8324 -332H8804V0Z"
+            fill="none"
+            stroke="#ccbb8d"
+            stroke-width="2"
+            vector-effect="non-scaling-stroke"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+        </svg>
+      {%- else -%}
+        <svg class="foot-word-svg" viewBox="0 0 1400 260" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
+          <text
+            x="50%"
+            y="220"
+            text-anchor="middle"
+            font-family="Anton, Impact, sans-serif"
+            font-size="236"
+            letter-spacing="4"
+            fill="none"
+            stroke="#ccbb8d"
+            stroke-width="2"
+            vector-effect="non-scaling-stroke"
+          >{{ section.settings.giant_word | escape }}</text>
+        </svg>
+      {%- endif -%}
+    </div>
+
+    <div class="fb-wrap">
+      <div class="foot-bottom">
+        <span>&copy; {{ 'now' | date: '%Y' }} University Bicycle Center &middot; Tampa &amp; Lithia, Florida</span>
+        <span>Powered by UBC Commerce Hub &middot; TwoIT Solutions LLC</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Ecommerce Footer",
+  "enabled_on": {
+    "groups": ["footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "giant_word",
+      "label": "Monumental wordmark",
+      "default": "SINCE 1972"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Footer showroom phone",
+      "default": "(813) 971-2277"
+    },
+    {
+      "type": "text",
+      "id": "col1_heading",
+      "label": "Column 1 heading",
+      "default": "Shop & Promos"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu_1",
+      "label": "Column 1 menu (optional Shopify menu)"
+    },
+    {
+      "type": "text",
+      "id": "col2_heading",
+      "label": "Column 2 heading",
+      "default": "Workshop & Park"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu_2",
+      "label": "Column 2 menu (optional Shopify menu)"
+    },
+    {
+      "type": "text",
+      "id": "col3_heading",
+      "label": "Column 3 heading",
+      "default": "Family & Stores"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu_3",
+      "label": "Column 3 menu (optional Shopify menu)"
+    }
+  ],
+  "presets": [
+    {
+      "name": "UBC Ecommerce Footer"
+    }
+  ]
+}
+{% endschema %}

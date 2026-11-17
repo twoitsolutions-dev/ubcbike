@@ -2,18 +2,72 @@ import pg from 'pg';
 import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
-
 const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, len: number, opts: object) => Promise<Buffer>;
 
 export type Pool = pg.Pool;
 export type PoolClient = pg.PoolClient;
 
+/**
+ * Normalises PostgreSQL connection options for both local Postgres and managed
+ * cloud providers (Supabase Session/Transaction Pooler, Neon, RDS, etc.).
+ *
+ * Note on node-postgres (`pg` v8) + Supabase:
+ *  - Supabase poolers (`*.pooler.supabase.com` / `*.supabase.co`) require TLS
+ *    and present the Supabase Root CA, which triggers `SELF_SIGNED_CERT_IN_CHAIN`
+ *    on Windows unless `ssl: { rejectUnauthorized: false }` is set.
+ *  - `pg-connection-string` overrides `ssl` if `?sslmode=require` remains on
+ *    `connectionString`, so we strip `sslmode` when managing `ssl` explicitly.
+ */
+export function resolvePoolConfig(rawUrl = process.env.DATABASE_URL): pg.PoolConfig {
+  if (!rawUrl?.trim()) throw new Error('DATABASE_URL is not set');
+  const trimmed = rawUrl.trim();
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    parsed = null;
+  }
+
+  const host = parsed?.hostname.toLowerCase() ?? '';
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '';
+  const sslModeParam = parsed?.searchParams.get('sslmode')?.toLowerCase();
+  const isCloudTlsHost =
+    host.endsWith('.supabase.co') ||
+    host.endsWith('.supabase.com') ||
+    host.endsWith('.neon.tech') ||
+    process.env.DATABASE_SSL === 'true' ||
+    (sslModeParam !== undefined && sslModeParam !== 'disable');
+
+  const max = Number(process.env.DATABASE_POOL_MAX ?? 10);
+  if (isLocal && process.env.DATABASE_SSL !== 'true') {
+    return { connectionString: trimmed, max };
+  }
+
+  if (isCloudTlsHost && parsed) {
+    parsed.searchParams.delete('sslmode');
+    const strictVerify = process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true';
+    return {
+      connectionString: parsed.toString(),
+      max,
+      keepAlive: true,
+      idleTimeoutMillis: 30_000,
+      ssl: { rejectUnauthorized: strictVerify },
+    };
+  }
+
+  return { connectionString: trimmed, max, keepAlive: true };
+}
+
 export function createPool(url = process.env.DATABASE_URL): pg.Pool {
-  if (!url) throw new Error('DATABASE_URL is not set');
   // Return BIGINT/NUMERIC as JS numbers where safe (ids from bigserial stay < 2^53 for our volumes).
   pg.types.setTypeParser(20, (v) => Number(v));
   pg.types.setTypeParser(1700, (v) => Number(v));
-  return new pg.Pool({ connectionString: url, max: Number(process.env.DATABASE_POOL_MAX ?? 10) });
+  const pool = new pg.Pool(resolvePoolConfig(url));
+  pool.on('error', () => {
+    // Managed cloud poolers (e.g. Supabase Supavisor) periodically recycle idle TCP sockets;
+    // swallowing idle-client socket resets lets pg.Pool open a fresh connection on next checkout.
+  });
+  return pool;
 }
 
 export async function withTransaction<T>(pool: pg.Pool, fn: (c: pg.PoolClient) => Promise<T>): Promise<T> {

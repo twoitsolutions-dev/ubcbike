@@ -1,0 +1,49 @@
+{%- comment -%}
+  Roadster hero: dark stage, giant outlined word behind, condensed headline, the bike on a reflective floor.
+  Scroll moves the bike forward and lifts the word (theme motion.js sets --p from 0 to 1; reduced motion: static).
+{%- endcomment -%}
+<section class="roadster" data-scroll-progress aria-labelledby="Roadster-{{ section.id }}">
+  {%- if section.settings.mark_asset != blank -%}
+    <img class="roadster-word roadster-word--mark" src="{{ section.settings.mark_asset | asset_url }}" width="1680" height="668" alt="" aria-hidden="true">
+  {%- else -%}
+    <p class="roadster-word" aria-hidden="true">{{ section.settings.word | escape }}</p>
+  {%- endif -%}
+  <div class="container roadster-inner">
+    <div class="roadster-copy">
+      <h2 class="roadster-title" id="Roadster-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+      {%- if section.settings.text != blank -%}<p class="roadster-text">{{ section.settings.text | escape }}</p>{%- endif -%}
+      {%- if section.settings.button_label != blank -%}
+        <a class="ubc-btn ubc-btn--light" href="{{ section.settings.button_link | default: routes.all_products_collection_url }}">{{ section.settings.button_label | escape }}</a>
+      {%- endif -%}
+    </div>
+  </div>
+  <div class="roadster-media">
+    {%- if section.settings.image != blank -%}
+      {{ section.settings.image | image_url: width: 2000 | image_tag: class: 'roadster-bike', loading: 'eager', fetchpriority: 'high', widths: '800, 1200, 1600, 2000', sizes: '(min-width: 990px) 70vw, 110vw', alt: section.settings.image.alt | default: section.settings.heading | escape }}
+      {{ section.settings.image | image_url: width: 1200 | image_tag: class: 'roadster-reflection', loading: 'lazy', alt: '', aria-hidden: 'true' }}
+    {%- elsif section.settings.fallback_image != blank -%}
+      <img src="{{ section.settings.fallback_image | asset_url }}" class="roadster-bike" width="1400" height="850" loading="eager" fetchpriority="high" alt="{{ section.settings.heading | escape }}">
+      <img src="{{ section.settings.fallback_image | asset_url }}" class="roadster-reflection" width="1400" height="850" loading="lazy" alt="" aria-hidden="true">
+    {%- else -%}
+      <div class="roadster-bike roadster-bike--drawn">{% render 'ubc-bike-illustration' %}</div>
+    {%- endif -%}
+  </div>
+  <p class="roadster-scroll" aria-hidden="true"><span>{{ 'ubc.motion.scroll' | t }}</span></p>
+</section>
+
+{% schema %}
+{
+  "name": "Hero — Roadster",
+  "settings": [
+    { "type": "image_picker", "id": "image", "label": "Bike photo", "info": "Side view, transparent background (PNG/WebP), at least 1600 px wide" },
+    { "type": "text", "id": "fallback_image", "label": "Bundled bike (theme asset)", "default": "ubc-bike-turbo-vado-sl.webp", "info": "Used while no photo is picked. Specialized imagery, licensed to UBC as a dealer." },
+    { "type": "text", "id": "mark_asset", "label": "Background mark (theme asset)", "default": "ubc-icon-outline.png", "info": "Outline of the UBC icon from the brand files. Empty = use the word below." },
+    { "type": "text", "id": "word", "label": "Giant background word (only without mark)", "default": "UBC" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Ride the future" },
+    { "type": "text", "id": "text", "label": "Text", "default": "Road, gravel and electric bikes, built and serviced in Tampa." },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Shop bikes" },
+    { "type": "url", "id": "button_link", "label": "Button link" }
+  ],
+  "presets": [{ "name": "Hero — Roadster" }]
+}
+{% endschema %}

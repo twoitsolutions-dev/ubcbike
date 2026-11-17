@@ -15,10 +15,22 @@ export function dollarsToCents(v) {
 export function filterBar(facets, filter, onChange, opts) {
   const o = opts || {};
   const f = Object.assign({}, filter);
-  const emit = () => onChange(Object.assign({}, f));
+  const toggle = h('button.btn', { type: 'button', 'aria-expanded': o.expanded ? 'true' : 'false' }, 'More filters');
+
+  const countExtra = () => {
+    let n = 0;
+    if (f.categories && f.categories.length) n++;
+    if (f.brands && f.brands.length) n++;
+    if (f.suppliers && f.suppliers.length) n++;
+    if (f.priceMinCents !== undefined || f.priceMaxCents !== undefined) n++;
+    if (f.marginMinPct !== undefined || f.marginMaxPct !== undefined) n++;
+    toggle.textContent = n ? 'More filters (' + n + ')' : 'More filters';
+  };
+
+  const emit = () => { countExtra(); onChange(Object.assign({}, f)); };
   const emitSoon = debounce(emit, 250);
 
-  const q = h('input', { type: 'search', placeholder: 'Search title, brand, SKU, UPC, MPN…', value: f.q || '', 'aria-label': 'Search', oninput: (e) => { f.q = e.target.value; emitSoon(); } });
+  const q = h('input', { type: 'search', placeholder: 'Item, Brand, SKU, UPC or Part #…', value: f.q || '', 'aria-label': 'Search', oninput: (e) => { f.q = e.target.value; emitSoon(); } });
   const sel = (label, key, options) => h('label.field', label, h('select', {
     onchange: (e) => { f[key] = e.target.value || undefined; emit(); },
   }, options.map(([v, t]) => h('option', { value: v, selected: (f[key] || '') === v }, t))));
@@ -32,24 +44,25 @@ export function filterBar(facets, filter, onChange, opts) {
 
   const more = h('div.filters', { hidden: !o.expanded },
     h('label.field.grow', 'Categories', chips(facets.categories.map((c) => ({ value: c.value, n: c.n })), f.categories, (v) => { f.categories = v; emit(); })),
-    h('label.field.grow', 'Suppliers', chips(facets.suppliers.map((s) => ({ value: s.value, label: s.value })), f.suppliers, (v) => { f.suppliers = v; emit(); })),
-    h('label.field.grow', 'Brands', h('select', {
-      multiple: true, 'aria-label': 'Brands',
-      onchange: (e) => { f.brands = Array.from(e.target.selectedOptions).map((x) => x.value); emit(); },
-    }, facets.brands.map((b) => h('option', { value: b.value, selected: (f.brands || []).indexOf(b.value) >= 0 }, b.value + ' (' + b.n + ')')))),
+    h('label.field.grow', 'Brands', chips(facets.brands.map((b) => ({ value: b.value, n: b.n })), f.brands, (v) => { f.brands = v; emit(); })),
+    h('label.field.grow', 'Vendors', chips(facets.suppliers.map((s) => ({ value: s.value, label: s.value })), f.suppliers, (v) => { f.suppliers = v; emit(); })),
     num('Min price ($)', 'priceMinCents', '0', dollarsToCents, centsOut),
     num('Max price ($)', 'priceMaxCents', 'any', dollarsToCents, centsOut),
     num('Min margin (%)', 'marginMinPct', '0', pctIn, pctOut),
     num('Max margin (%)', 'marginMaxPct', '100', pctIn, pctOut));
 
-  const toggle = h('button.btn', { type: 'button', 'aria-expanded': o.expanded ? 'true' : 'false', onclick: () => { more.hidden = !more.hidden; toggle.setAttribute('aria-expanded', more.hidden ? 'false' : 'true'); } }, 'More filters');
-  const reset = h('button.btn.ghost', { type: 'button', onclick: () => { Object.keys(f).forEach((k) => delete f[k]); onChange({}); } }, 'Clear');
+  toggle.addEventListener('click', () => {
+    more.hidden = !more.hidden;
+    toggle.setAttribute('aria-expanded', more.hidden ? 'false' : 'true');
+  });
+  const reset = h('button.btn.ghost', { type: 'button', onclick: () => { Object.keys(f).forEach((k) => delete f[k]); countExtra(); onChange({}); } }, 'Clear');
+  countExtra();
 
   return h('div',
     h('div.filters',
-      h('label.field.grow', 'Search', q),
-      sel('Availability', 'stock', [['', 'Any'], ['physical', 'In stock at UBC'], ['virtual_only', 'Supplier only (special order)'], ['unavailable', 'Unavailable']]),
-      o.hideStatus ? null : sel('Status', 'status', [['', 'Any'], ['published', 'Published'], ['hidden', 'Hidden'], ['draft', 'Draft']]),
+      h('label.field.grow', 'Item Search', q),
+      sel('Availability', 'stock', [['', 'Any'], ['physical', 'In-Store Stock (UBC)'], ['virtual_only', 'Vendor Catalog Only (Special Order)'], ['unavailable', 'Out of Stock']]),
+      o.hideStatus ? null : sel('Web Status', 'status', [['', 'Any'], ['published', 'Published'], ['hidden', 'Hidden'], ['draft', 'Draft']]),
       h('div.row', toggle, reset)),
     more);
 }

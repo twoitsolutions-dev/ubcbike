@@ -1,0 +1,47 @@
+{
+  "sections": {
+    "main": {
+      "type": "ubc-main-product-spin",
+      "blocks": {
+        "p1": {
+          "type": "pin",
+          "settings": {
+            "title": "Frame",
+            "x": 48,
+            "y": 40
+          }
+        },
+        "p2": {
+          "type": "pin",
+          "settings": {
+            "title": "Drivetrain",
+            "x": 40,
+            "y": 66
+          }
+        },
+        "p3": {
+          "type": "pin",
+          "settings": {
+            "title": "Cockpit",
+            "x": 62,
+            "y": 24
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "settings": {}
+    },
+    "related": {
+      "type": "related-products",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main",
+    "related"
+  ]
+}

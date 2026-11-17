@@ -31,6 +31,57 @@ export function filterFromQuery(q: Record<string, unknown>): ItemFilter {
   });
 }
 
+/** Lightspeed ↔ Shopify (Workstand store) coverage for the dashboard. Cached 60 s per company. */
+const syncStatsCache = new Map<string, { at: number; v: unknown }>();
+async function shopifySyncStats(ctx: AppContext, companyId: string) {
+  const hit = syncStatsCache.get(companyId);
+  if (hit && Date.now() - hit.at < 60_000) return hit.v;
+  const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+  const r = await ctx.pool.query<Record<string, number>>(
+    `WITH q AS (SELECT variant_id, sum(on_hand) AS qty FROM inventory_levels WHERE company_id = $1 GROUP BY variant_id),
+     lk AS (SELECT DISTINCT variant_id FROM shopify_variant_links WHERE company_id = $1 AND shop_domain = $2),
+     ls AS (
+       SELECT v.id, COALESCE(v.upc ~ '^[0-9]{8,14}$', false) AS has_upc, COALESCE(q.qty, 0) AS qty, (lk.variant_id IS NOT NULL) AS linked
+       FROM variants v
+       JOIN products p ON p.id = v.product_id
+       JOIN external_ids e ON e.company_id = v.company_id AND e.entity_type = 'variant' AND e.entity_id = v.id AND e.system = 'lightspeed_r'
+       LEFT JOIN q ON q.variant_id = v.id
+       LEFT JOIN lk ON lk.variant_id = v.id
+       WHERE v.company_id = $1 AND p.status <> 'hidden')
+     SELECT count(*)::int AS ls_items,
+            count(*) FILTER (WHERE has_upc)::int AS ls_with_upc,
+            count(*) FILTER (WHERE linked)::int AS linked_items,
+            count(*) FILTER (WHERE qty > 0)::int AS in_stock,
+            count(*) FILTER (WHERE qty > 0 AND linked)::int AS in_stock_linked,
+            count(*) FILTER (WHERE qty > 0 AND NOT linked AND has_upc)::int AS in_stock_missing,
+            count(*) FILTER (WHERE qty > 0 AND NOT has_upc)::int AS in_stock_no_upc,
+            COALESCE(sum(qty) FILTER (WHERE qty > 0), 0)::int AS units,
+            COALESCE(sum(qty) FILTER (WHERE qty > 0 AND linked), 0)::int AS units_linked,
+            (SELECT count(*) FROM shopify_variant_links WHERE company_id = $1 AND shop_domain = $2)::int AS linked_variants
+     FROM ls`,
+    [companyId, shop],
+  );
+  const last = async (action: string) => (await ctx.pool.query<{ created_at: Date; detail: Record<string, unknown> }>(
+    `SELECT created_at, detail FROM audit_log WHERE company_id = $1 AND action = $2 ORDER BY created_at DESC LIMIT 1`, [companyId, action])).rows[0] ?? null;
+  const [match, reconcile, lsSync] = await Promise.all([
+    last('shopify.upc_links_proposed'), last('pipeline.shopify_prices_reconciled'), last('lightspeed.catalog_synced'),
+  ]);
+  const fixed24h = (await ctx.pool.query<{ prices: number; stock: number }>(
+    `SELECT COALESCE(sum((detail->>'drifted')::int), 0)::int AS prices, COALESCE(sum((detail->>'stockDrifted')::int), 0)::int AS stock
+     FROM audit_log WHERE company_id = $1 AND action = 'pipeline.shopify_prices_reconciled' AND created_at > now() - interval '24 hours'`, [companyId])).rows[0];
+  const v = {
+    shop,
+    ...r.rows[0],
+    storeVariants: match ? Number(match.detail.storeVariants) || null : null,
+    lastMatchAt: match?.created_at ?? null,
+    lastReconcileAt: reconcile?.created_at ?? null,
+    lastLightspeedSyncAt: lsSync?.created_at ?? null,
+    overwrittenFixed24h: fixed24h,
+  };
+  syncStatsCache.set(companyId, { at: Date.now(), v });
+  return v;
+}
+
 export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/health', async () => ({ ok: true }));
 
@@ -79,7 +130,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       q(`SELECT count(*)::int n FROM upc_link_proposals WHERE company_id = $1 AND status = 'pending'`).catch(() => 0),
     ]);
     const syncs = await ctx.pool.query(`SELECT type, status, finished_at, created_at FROM jobs WHERE company_id = $1 ORDER BY created_at DESC LIMIT 8`, [c]);
+    const shopifySync = ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only' ? await shopifySyncStats(ctx, c).catch(() => null) : null;
     return {
+      shopifySync,
+      storeUrl: ctx.config.env.SHOPIFY_STORE_URL || (ctx.config.env.SHOPIFY_SHOP_DOMAIN ? `https://${ctx.config.env.SHOPIFY_SHOP_DOMAIN}` : null),
       counts: { ...counts, orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, pendingMatchReviews: reviews, upcReview },
       recentJobs: syncs.rows,
       shopifySales: ctx.config.mode === 'demo' ? { available: false, reason: 'Shopify not connected (DEMO)' } : { available: false, reason: 'Requires authorised Shopify connection' },

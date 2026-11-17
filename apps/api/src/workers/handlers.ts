@@ -22,7 +22,9 @@ export const handlers: Record<string, Handler> = {
   'po.submit': (ctx, j) => submitPoJob(ctx, j.company_id, String(j.payload.purchaseOrderId)),
   'supplier.import_feed': (ctx, j) => importFeedJob(ctx, j.company_id, j.payload as never, j.id),
   'supplier.promote_catalog': (ctx, j) => promoteUnmatchedOffersJob(ctx, j.company_id, j.payload as never, j.id),
-  'shopify.sync_catalog': (ctx, j) => syncFromShopifyJob(ctx, j.company_id, j.id),
+  'shopify.sync_catalog': async (ctx, j) => (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only'
+    ? { skipped: 'Workstand-owned store: catalog import disabled (use UPC Matches)' }
+    : syncFromShopifyJob(ctx, j.company_id, j.id)),
   'shopify.ensure_collections': (ctx) => ctx.connectors.shopify.ensureSmartCollections(),
   'lightspeed.sync_catalog': (ctx, j) => syncFromLightspeedJob(ctx, j.company_id, j.payload as never, j.id),
   'lightspeed.sync_special_orders': (ctx, j) => syncLightspeedSpecialOrdersJob(ctx, j.company_id),

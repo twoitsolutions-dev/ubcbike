@@ -408,6 +408,10 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // ---------- Shopify-First Bootstrap & Setup ----------
   app.post('/api/shopify/sync', { preHandler: requireAuth(ctx, 'integrations.manage') }, async (req, reply) => {
+    if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only') {
+      // The Workstand store has ~200k catalog variants: importing them as Hub products is never wanted.
+      throw new HttpError(409, 'NOT_AVAILABLE', 'This store’s catalog belongs to Workstand. Use “UPC Matches” to connect Lightspeed items to it.');
+    }
     const s = req.session!;
     const job = await enqueue(ctx.pool, {
       companyId: s.companyId,

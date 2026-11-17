@@ -396,17 +396,17 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
           idempotencyKey: `sched:shopify:reconcile:${rcBucket}`,
         });
         if (j2.created) jobsScheduled++;
-        // Nightly at 07:00 UTC (2–3 AM in Tampa): refresh the UPC links so new Lightspeed items and new
-        // Workstand catalog products start syncing on their own.
-        if (now.getUTCHours() === 7) {
-          const j3 = await enqueue(ctx.pool, {
-            companyId: comp.id,
-            type: 'shopify.link_store',
-            payload: {},
-            idempotencyKey: `sched:shopify:link_store:${now.toISOString().slice(0, 10)}`,
-          });
-          if (j3.created) jobsScheduled++;
-        }
+        // Every UPC_MATCH_EVERY_MINUTES (default 60): look for new UPC matches (new Lightspeed items / new
+        // Workstand products). Only PROPOSES them — Carlos approves in "UPC Matches", so running often is safe.
+        const every = Math.max(15, Number(process.env.UPC_MATCH_EVERY_MINUTES) || 60);
+        const lkBucket = Math.floor(now.getTime() / (every * 60_000));
+        const j3 = await enqueue(ctx.pool, {
+          companyId: comp.id,
+          type: 'shopify.link_store',
+          payload: {},
+          idempotencyKey: `sched:shopify:link_store:${every}:${lkBucket}`,
+        });
+        if (j3.created) jobsScheduled++;
       }
     }
   }

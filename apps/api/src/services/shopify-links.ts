@@ -104,18 +104,27 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   }
 
   const fresh = proposals.filter((p) => !rejectedKey.has(`${p.kind}|${p.svid}|${p.vid ?? ''}`));
-  // Replace the open list with tonight's proposals (anything not proposed again is no longer valid).
-  await ctx.pool.query(`DELETE FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending'`, [companyId, shop]);
+  // Upsert this run's proposals (ids stay stable while Carlos has the list open), then drop open
+  // proposals that were not found again (no longer valid).
+  const runStart = (await ctx.pool.query<{ t: Date }>(`SELECT now() AS t`)).rows[0]!.t;
   for (let i = 0; i < fresh.length; i += 1000) {
     await ctx.pool.query(
       `INSERT INTO upc_link_proposals (company_id, shop_domain, kind, variant_id, old_variant_id, link_id, shopify_variant_id, shopify_product_id,
                                        shopify_inventory_item_id, shopify_title, shopify_barcode, shopify_price_cents, shopify_compare_at_cents)
        SELECT $1, $2, r.kind, r.vid, r.old, r.link, r.svid, r.pid, r.inv, r.title, r.barcode, r.p, r.c
        FROM jsonb_to_recordset($3::jsonb) AS r(kind text, vid uuid, old uuid, link bigint, svid text, pid text, inv text, title text, barcode text, p int, c int)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (company_id, shop_domain, shopify_variant_id) WHERE status = 'pending' DO UPDATE SET
+         kind = EXCLUDED.kind, variant_id = EXCLUDED.variant_id, old_variant_id = EXCLUDED.old_variant_id, link_id = EXCLUDED.link_id,
+         shopify_product_id = EXCLUDED.shopify_product_id, shopify_inventory_item_id = EXCLUDED.shopify_inventory_item_id,
+         shopify_title = EXCLUDED.shopify_title, shopify_barcode = EXCLUDED.shopify_barcode,
+         shopify_price_cents = EXCLUDED.shopify_price_cents, shopify_compare_at_cents = EXCLUDED.shopify_compare_at_cents, updated_at = now()`,
       [companyId, shop, JSON.stringify(fresh.slice(i, i + 1000))],
     );
   }
+  await ctx.pool.query(
+    `DELETE FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending' AND updated_at < $3`,
+    [companyId, shop, runStart],
+  );
 
   const count = (k: string) => fresh.filter((p) => p.kind === k).length;
   const summary = {

@@ -8,9 +8,11 @@ const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s
 
 export function itemSearchTabs(activeKey) {
   return sectionTabs([
+    ['instock', 'In Stock', '#/products'],
     ['all', 'All Items', '#/products?stock=any'],
-    ['stock', 'In-Store Stock', '#/inventory'],
+    ['out', 'Out of Stock', '#/products?stock=unavailable'],
     ['vendor', 'Vendor Catalog Only', '#/products?stock=virtual_only'],
+    ['stock', 'Stock by Store', '#/inventory'],
     ['margins', 'Margins & MAP', '#/pricing'],
   ], activeKey);
 }
@@ -23,8 +25,10 @@ export async function catalogTable(ctx, opts) {
   const facets = await ctx.api.facets();
   const key = opts.memoryKey;
   const mem = Object.assign({}, remember(key) || {});
+  // Default view = items with stock. Out-of-stock / all items only when asked (tab or filter).
   if (ctx.query.stock === 'any') delete mem.stock;
   else if (ctx.query.stock) mem.stock = ctx.query.stock;
+  else mem.stock = 'physical';
   if (ctx.query.status) mem.status = ctx.query.status;
   const initial = mem;
   const st = { filter: initial, sort: opts.sort || { key: 'title', dir: 'asc' }, offset: 0, limit: 50, selected: new Set(), allMatching: false, data: null };
@@ -138,9 +142,10 @@ export async function renderProducts(ctx) {
       }, 'Create promotion…') : null,
     ] : null,
   });
-  const activeTab = table.state.filter.stock === 'virtual_only' ? 'vendor' : 'all';
+  const fs = table.state.filter.stock;
+  const activeTab = fs === 'virtual_only' ? 'vendor' : fs === 'unavailable' ? 'out' : fs === 'physical' ? 'instock' : 'all';
   return h('div.stack',
-    pageHead('Item Search', 'Lightspeed-style unified item lookup: In-Store Stock (UBC) and Vendor Catalog offers in one place, never summed or duplicated.'),
+    pageHead('Item Search', 'Shows items with stock by default. Use the tabs or the Availability filter to see out-of-stock or vendor-catalog-only items.'),
     itemSearchTabs(activeTab),
     table.el);
 }

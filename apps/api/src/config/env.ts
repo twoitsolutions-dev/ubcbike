@@ -32,6 +32,8 @@ const schema = z.object({
    *               and stock of variants linked in `shopify_variant_links`. Never creates products.
    */
   SHOPIFY_SYNC_MODE: z.enum(['full', 'update_only']).default('full'),
+  /** Public storefront URL shown in the Hub (e.g. https://ubcbike.myshopify.com). Defaults to https://SHOPIFY_SHOP_DOMAIN. */
+  SHOPIFY_STORE_URL: z.string().optional(),
   /**
    * update_only: Lightspeed shopID → Shopify location, e.g. "1=gid://shopify/Location/111,2=gid://shopify/Location/222".
    * Stock is pushed per location only for mapped shops; other Shopify locations (e.g. "Workstand Supplier Stock") are never touched.

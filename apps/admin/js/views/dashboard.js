@@ -19,7 +19,44 @@ export const JOB_LABELS = {
   'items.bulk_status': 'Bulk publish / hide items',
   'order.review': 'Evaluate incoming Special Order',
   'po.submit': 'Record vendor B2B PO',
+  'lightspeed.sync_catalog': 'Read changes from Lightspeed',
+  'lightspeed.sync_special_orders': 'Read Lightspeed special orders',
+  'shopify.reconcile_links': 'Check Shopify prices & stock',
+  'shopify.link_store': 'Find new UPC matches',
 };
+
+function pctOf(a, b) {
+  return b ? Math.round((a / b) * 100) + '%' : '—';
+}
+
+/** Lightspeed ↔ Shopify (Workstand store) coverage: what Carlos has vs. what is already sellable online. */
+function syncCoverageCard(s) {
+  const n = (v) => (typeof v === 'number' ? v.toLocaleString('en-US') : '—');
+  const row = (label, value, hint, href) => h(href ? 'a.attn-row' : 'div.attn-row', { href },
+    h('span', label, hint ? h('div.sku', hint) : null), h('strong', value));
+  return card('Lightspeed ↔ Shopify (matched by UPC)', h('div.stack',
+    h('div.kpis',
+      h('a.kpi', { href: '#/products' },
+        h('div.label', 'In-stock items already online'),
+        h('div.value', pctOf(s.in_stock_linked, s.in_stock)),
+        h('div.hint', n(s.in_stock_linked) + ' of ' + n(s.in_stock) + ' items with stock in Lightspeed')),
+      h('div.kpi',
+        h('div.label', 'Lightspeed items found in Shopify'),
+        h('div.value', n(s.linked_items)),
+        h('div.hint', 'of ' + n(s.ls_with_upc) + ' with a UPC (' + n(s.ls_items) + ' items total)')),
+      h('a.kpi', { href: '#/upc-matches' },
+        h('div.label', 'Shopify store (Workstand)'),
+        h('div.value', n(s.storeVariants)),
+        h('div.hint', 'variants · ' + n(s.linked_variants) + ' synced from Lightspeed'))),
+    h('div.attn-list',
+      row('In stock, has UPC, but not in Shopify yet', n(s.in_stock_missing), 'Workstand has not uploaded these products (or the UPC differs)'),
+      row('In stock without a UPC in Lightspeed', n(s.in_stock_no_upc), 'Add the UPC in Lightspeed so they can sync'),
+      row('Units in stock that are online', n(s.units_linked) + ' / ' + n(s.units), null),
+      row('Prices / stock that Workstand overwrote and the Hub put back (last 24 h)',
+        n(s.overwrittenFixed24h && s.overwrittenFixed24h.prices) + ' / ' + n(s.overwrittenFixed24h && s.overwrittenFixed24h.stock), 'Should go to 0 once Workstand stops changing Lightspeed items'),
+      row('Last Lightspeed sync · last check · last UPC search',
+        ago(s.lastLightspeedSyncAt) + ' · ' + ago(s.lastReconcileAt) + ' · ' + ago(s.lastMatchAt), null))), { flush: false });
+}
 
 export async function renderDashboard(ctx) {
   const [d, orders, camps] = await Promise.all([
@@ -38,6 +75,7 @@ export async function renderDashboard(ctx) {
   if (c.openErrors) attention.push(['Unresolved sync errors', c.openErrors, '#/activity?tab=errors', 'bad']);
   if (c.deadJobs) attention.push(['Failed background jobs', c.deadJobs, '#/activity?tab=jobs', 'bad']);
   if (c.pendingMatchReviews) attention.push(['Vendor Catalog matches to review', c.pendingMatchReviews, '#/suppliers', 'warn']);
+  if (c.upcReview) attention.push(['UPC matches to approve (Lightspeed ↔ Shopify)', c.upcReview, '#/upc-matches', 'warn']);
 
   const active = camps.campaigns.filter((x) => ['active', 'scheduled', 'applying', 'restoring'].indexOf(x.status) >= 0);
   const recentOrders = orders.orders.slice(0, 5);
@@ -61,26 +99,23 @@ export async function renderDashboard(ctx) {
       h('span.quick-title', 'Item Search'),
       h('span.quick-sub', 'Search items, In-Store Stock, Vendor Catalogs & Margins')));
 
-  const storeBase = 'https://ubcbike-hub.myshopify.com';
-  const themeBar = card('Live Shopify Storefront & Seasonal Theme Previews',
+  // Link to the store the Hub is actually connected to (Carlos's live store), not a test store.
+  const themeBar = d.storeUrl ? card('Online store',
     h('div.row', { style: 'justify-content:space-between;flex-wrap:wrap;gap:12px' },
-      h('span.muted', 'Open the live Shopify store in any seasonal edition (or switch editions live inside the storefront using the bottom-left Theme Preview bar):'),
-      h('div.row', { style: 'flex-wrap:wrap;gap:8px' },
-        h('a.btn.primary.sm', { href: storeBase + '/?edition=classic', target: '_blank', rel: 'noopener' }, 'Classic ↗'),
-        h('a.btn.sm', { href: storeBase + '/?edition=spring', target: '_blank', rel: 'noopener' }, 'Spring / Bike Month ↗'),
-        h('a.btn.sm', { href: storeBase + '/?edition=july_4', target: '_blank', rel: 'noopener' }, 'July 4th ↗'),
-        h('a.btn.sm', { href: storeBase + '/?edition=campus', target: '_blank', rel: 'noopener' }, 'USF Campus ↗'),
-        h('a.btn.sm', { href: storeBase + '/?edition=veterans', target: '_blank', rel: 'noopener' }, 'Veterans & Heroes ↗'),
-        h('a.btn.sm', { href: storeBase + '/?edition=black_friday', target: '_blank', rel: 'noopener' }, 'Black Friday (Dark) ↗'),
-        h('a.btn.sm', { href: storeBase + '/?edition=christmas', target: '_blank', rel: 'noopener' }, 'Christmas ↗'))));
+      h('span.muted', 'The Shopify store this Hub keeps in sync with Lightspeed.'),
+      h('a.btn.primary.sm', { href: d.storeUrl, target: '_blank', rel: 'noopener' }, 'Open online store ↗'))) : null;
 
   return h('div.stack',
     pageHead('Welcome back, ' + ctx.me.user.name.split(' ')[0], 'University Bicycle Center — Online Store (Shopify), Store POS (Lightspeed R-Series) & Vendor B2B Hub',
       [ctx.can('pricing.write') ? h('a.btn.primary', { href: '#/promotions/new' }, 'New promotion') : null, h('a.btn', { href: '#/orders' }, 'Special Orders')]),
     quickActions,
+    d.shopifySync ? syncCoverageCard(d.shopifySync) : null,
     themeBar,
     h('div.kpis',
-      kpi('Published online', c.published, '#/products?status=published', 'of ' + c.total.toLocaleString('en-US') + ' total items'),
+      // With the Workstand-owned store, "online" = matched by UPC; Hub publish flags are not the store's truth.
+      d.shopifySync
+        ? kpi('Online (matched by UPC)', d.shopifySync.linked_items, '#/upc-matches?status=approved', 'Lightspeed items synced to Shopify')
+        : kpi('Published online', c.published, '#/products?status=published', 'of ' + c.total.toLocaleString('en-US') + ' total items'),
       kpi('In-Store Stock (UBC)', c.physical, '#/inventory?stock=physical', 'Ready on floor today'),
       kpi('Vendor Catalog Only', c.virtualOnly, '#/products?stock=virtual_only', 'Special Order via distributor'),
       kpi('Out of stock', c.unavailable, '#/products?stock=unavailable', '0 store & 0 vendor'),

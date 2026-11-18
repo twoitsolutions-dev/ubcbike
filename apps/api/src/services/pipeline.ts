@@ -388,10 +388,10 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
         if (j1.created) jobsScheduled++;
       }
 
-      // update_only store: every 15 min re-check that nobody (e.g. Workstand) overwrote the Lightspeed prices/stock,
+      // update_only store: every 10 min re-check that nobody (e.g. Workstand) overwrote the Lightspeed prices/stock,
       // and refresh the storefront filter tags (store / brand / price) from Lightspeed stock.
       if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only' && ctx.config.env.SHOPIFY_WRITES_ENABLED) {
-        const rcBucket = Math.floor(now.getTime() / (15 * 60_000));
+        const rcBucket = Math.floor(now.getTime() / (10 * 60_000));
         const j2 = await enqueue(ctx.pool, {
           companyId: comp.id,
           type: 'shopify.reconcile_links',
@@ -406,9 +406,9 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
           idempotencyKey: `sched:shopify:sync_tags:${rcBucket}`,
         });
         if (j4.created) jobsScheduled++;
-        // Every UPC_MATCH_EVERY_MINUTES (default 60): look for new UPC matches (new Lightspeed items / new
+        // Every UPC_MATCH_EVERY_MINUTES (default 30): look for new UPC matches (new Lightspeed items / new
         // Workstand products). Only PROPOSES them — Carlos approves in "UPC Matches", so running often is safe.
-        const every = Math.max(15, Number(process.env.UPC_MATCH_EVERY_MINUTES) || 60);
+        const every = Math.max(15, Number(process.env.UPC_MATCH_EVERY_MINUTES) || 30);
         const lkBucket = Math.floor(now.getTime() / (every * 60_000));
         const j3 = await enqueue(ctx.pool, {
           companyId: comp.id,

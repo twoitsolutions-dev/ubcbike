@@ -46,8 +46,30 @@ export async function setProgress(pool: Pool, jobId: number, progress: Record<st
   await pool.query(`UPDATE jobs SET progress = $2 WHERE id = $1`, [jobId, JSON.stringify(progress)]);
 }
 
+/**
+ * Recurring sync jobs: when one succeeds, older errors of the same kind are no longer happening
+ * (e.g. a Lightspeed outage that has recovered), so they are closed automatically. One-off jobs
+ * (a PO submission, a campaign) are NOT in this list: their errors stay open until a person reviews them.
+ */
+export const SELF_HEALING_JOB_TYPES = new Set([
+  'lightspeed.sync_catalog', 'lightspeed.sync_special_orders', 'pipeline.flush_shopify',
+  'shopify.reconcile_links', 'shopify.link_store', 'shopify.sync_catalog', 'pipeline.watchdog',
+]);
+
 export async function completeJob(pool: Pool, jobId: number, result: unknown) {
-  await pool.query(`UPDATE jobs SET status = 'succeeded', result = $2, finished_at = now(), locked_at = NULL, last_error = NULL WHERE id = $1`, [jobId, JSON.stringify(result ?? {})]);
+  const r = await pool.query<{ type: string; company_id: string; created_at: Date }>(
+    `UPDATE jobs SET status = 'succeeded', result = $2, finished_at = now(), locked_at = NULL, last_error = NULL WHERE id = $1
+     RETURNING type, company_id, created_at`,
+    [jobId, JSON.stringify(result ?? {})],
+  );
+  const j = r.rows[0];
+  if (j && SELF_HEALING_JOB_TYPES.has(j.type)) {
+    await pool.query(
+      `UPDATE error_log SET resolved_at = now(), context = context || '{"autoResolved":"a later run of the same sync succeeded"}'::jsonb
+       WHERE company_id = $1 AND source = $2 AND resolved_at IS NULL AND created_at < $3`,
+      [j.company_id, `job:${j.type}`, j.created_at],
+    ).catch(() => {});
+  }
 }
 
 const NON_RETRYABLE = new Set(['NOT_CONFIGURED', 'WRITES_DISABLED', 'PENDING_VERIFICATION', 'INVALID_TRANSITION', 'FORBIDDEN', 'VALIDATION']);

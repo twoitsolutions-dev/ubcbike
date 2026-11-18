@@ -125,7 +125,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       q(`SELECT count(*)::int n FROM orders WHERE company_id = $1 AND internal_status = 'awaiting_approval'`),
       q(`SELECT count(*)::int n FROM campaigns WHERE company_id = $1 AND status IN ('active','scheduled','applying')`),
       q(`SELECT count(*)::int n FROM error_log WHERE company_id = $1 AND resolved_at IS NULL`),
-      q(`SELECT count(*)::int n FROM jobs WHERE company_id = $1 AND status = 'dead'`),
+      // Failed jobs that are still a problem: a dead recurring sync stops counting once a later run of it succeeded.
+      q(`SELECT count(*)::int n FROM jobs d WHERE d.company_id = $1 AND d.status = 'dead'
+          AND NOT (d.type = ANY('{lightspeed.sync_catalog,lightspeed.sync_special_orders,pipeline.flush_shopify,shopify.reconcile_links,shopify.link_store,shopify.sync_catalog,pipeline.watchdog}'::text[])
+                   AND EXISTS (SELECT 1 FROM jobs s WHERE s.company_id = d.company_id AND s.type = d.type AND s.status = 'succeeded' AND s.created_at > d.created_at))`),
       q(`SELECT count(*)::int n FROM match_reviews WHERE company_id = $1 AND status = 'pending'`),
       q(`SELECT count(*)::int n FROM upc_link_proposals WHERE company_id = $1 AND status = 'pending'`).catch(() => 0),
     ]);

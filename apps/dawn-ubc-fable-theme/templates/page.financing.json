@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ubc-ws-page",
+      "settings": { "page_kind": "financing" }
+    }
+  },
+  "order": ["main"]
+}

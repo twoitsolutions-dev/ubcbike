@@ -24,7 +24,7 @@ export const rulesSchema = z.object({
   minMarginPct: z.number().min(0).max(0.95),
   warnMarginPct: z.number().min(0).max(0.95),
   clampToMinMargin: z.boolean(),
-  excludeWithoutCost: z.literal(true).default(true),
+  excludeWithoutCost: z.boolean(),
 }).partial();
 
 export const posSyncEventSchema = z.enum([
@@ -65,7 +65,11 @@ export function previewToken(lines: readonly CampaignLine[]): string {
 
 export async function evaluate(db: Q, companyId: string, selection: ItemFilter, adj: PriceAdjustment, rules: Partial<CampaignRules> | undefined, channel: 'online' | 'online_and_pos') {
   const settings = await getSettings(db, companyId);
-  const effective: CampaignRules = { ...settings.campaignRules, ...rules, excludeWithoutCost: true };
+  const effective: CampaignRules = {
+    ...settings.campaignRules,
+    ...rules,
+    excludeWithoutCost: rules?.excludeWithoutCost ?? settings.campaignRules.excludeWithoutCost,
+  };
   const items = await loadAllMatching(db, companyId, selection, settings.availability);
   const { lines, summary } = evaluateCampaign(items, adj, { rules: effective, mapExceptions: await mapExceptions(db, companyId) });
   return { lines, summary, rules: effective, strategy: chooseExecutionStrategy(adj, channel, summary), token: previewToken(lines) };
@@ -104,6 +108,29 @@ export async function createCampaign(ctx: AppContext, companyId: string, userId:
     )).rows[0]!.id;
     await storeLines(c, id, ev.lines);
     await audit(c, { companyId, userId, action: 'campaign.created', entityType: 'campaign', entityId: id, detail: { summary: ev.summary, strategy: ev.strategy, channel: input.channel, posEventType } });
+    return { id, summary: ev.summary, strategy: ev.strategy, previewToken: ev.token, posEventType };
+  });
+}
+
+export async function updateCampaign(ctx: AppContext, companyId: string, userId: string, id: string, input: CampaignInput) {
+  const existing = await getCampaign(ctx.pool, companyId, id);
+  if (existing.status !== 'draft' && existing.status !== 'failed') {
+    throw conflict('CAMPAIGN_NOT_EDITABLE', `Cannot edit a campaign in status ${existing.status}`);
+  }
+  const ev = await evaluate(ctx.pool, companyId, input.selection, input.adjustment, input.rules, input.channel);
+  const posEventType = input.channel === 'online_and_pos' ? inferPosEventType(input.name, input.posEventType) : null;
+  return withTransaction(ctx.pool, async (c) => {
+    await c.query(
+      `UPDATE campaigns
+       SET name = $2, status = 'draft', channel = $3, selection = $4, adjustment = $5, rules = $6,
+           strategy = $7, starts_at = $8, ends_at = $9, summary = $10, updated_at = now()
+       WHERE id = $1 AND company_id = $11`,
+      [id, input.name, input.channel, JSON.stringify(input.selection), JSON.stringify(input.adjustment),
+        JSON.stringify(ev.rules), ev.strategy, input.startsAt ?? null, input.endsAt ?? null,
+        JSON.stringify({ ...ev.summary, previewToken: ev.token, posEventType }), companyId],
+    );
+    await storeLines(c, id, ev.lines);
+    await audit(c, { companyId, userId, action: 'campaign.updated', entityType: 'campaign', entityId: id, detail: { summary: ev.summary, strategy: ev.strategy, channel: input.channel, posEventType } });
     return { id, summary: ev.summary, strategy: ev.strategy, previewToken: ev.token, posEventType };
   });
 }

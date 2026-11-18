@@ -153,6 +153,240 @@ export function chips(options, selectedValues, onChange) {
   return wrap;
 }
 
+/** Searchable multi-select chips: pins selected items on top, hides long tails behind "Show all". */
+export function searchableChips(options, selectedValues, onChange, opts) {
+  const o = opts || {};
+  const set = new Set(selectedValues || []);
+  let query = '';
+  let showAll = false;
+  const limit = o.limit || 20;
+  const wrap = h('div.stack-sm');
+  const chipsHost = h('div.chips');
+  const footerHost = h('div.row');
+  const searchInput = h('input', {
+    type: 'search',
+    placeholder: o.placeholder || 'Filter…',
+    oninput: (e) => { query = (e.target.value || '').trim().toLowerCase(); render(); },
+  });
+
+  const render = () => {
+    clear(chipsHost);
+    clear(footerHost);
+    const matches = options.filter((it) => {
+      const v = String(typeof it === 'string' ? it : it.value);
+      const lbl = String(typeof it === 'string' ? it : (it.label || it.value));
+      return set.has(v) || !query || v.toLowerCase().includes(query) || lbl.toLowerCase().includes(query);
+    });
+    // Selected items always stay visible on top
+    matches.sort((a, b) => {
+      const va = typeof a === 'string' ? a : a.value;
+      const vb = typeof b === 'string' ? b : b.value;
+      const sa = set.has(va) ? 0 : 1;
+      const sb = set.has(vb) ? 0 : 1;
+      return sa - sb;
+    });
+    const visible = showAll || query ? matches : matches.slice(0, limit);
+    visible.forEach((it) => {
+      const v = typeof it === 'string' ? it : it.value;
+      const label = typeof it === 'string' ? it : (it.label || it.value) + (it.n !== undefined ? ' · ' + it.n : '');
+      chipsHost.appendChild(h('button.chip', {
+        type: 'button', class: set.has(v) ? 'on' : '', 'aria-pressed': set.has(v) ? 'true' : 'false',
+        onclick: () => { if (set.has(v)) set.delete(v); else set.add(v); render(); onChange(Array.from(set)); },
+      }, label));
+    });
+    if (!visible.length) {
+      chipsHost.appendChild(h('span.small.muted', 'No matches for “' + query + '”.'));
+    }
+    if (!query && matches.length > limit) {
+      footerHost.appendChild(h('button.btn.sm.ghost', {
+        type: 'button',
+        onclick: () => { showAll = !showAll; render(); },
+      }, showAll ? 'Show fewer' : 'Show all ' + matches.length));
+    }
+    if (set.size > 0) {
+      footerHost.appendChild(h('button.btn.sm.ghost', {
+        type: 'button',
+        onclick: () => { set.clear(); render(); onChange([]); },
+      }, 'Clear (' + set.size + ')'));
+    }
+  };
+
+  render();
+  wrap.appendChild(searchInput);
+  wrap.appendChild(chipsHost);
+  wrap.appendChild(footerHost);
+  return wrap;
+}
+
+/** Searchable multi-select dropdown: keeps long lists (brands, categories, suppliers) compact. */
+export function searchableDropdown(options, selectedValues, onChange, opts) {
+  const o = opts || {};
+  const set = new Set(selectedValues || []);
+  let open = false;
+  let query = '';
+  const allLabel = o.allLabel || 'All';
+  const noun = o.noun || 'items';
+
+  const wrap = h('div.msd');
+  const triggerText = h('span.msd-trigger-text');
+  const trigger = h('button.msd-trigger', {
+    type: 'button',
+    'aria-expanded': 'false',
+    onclick: (e) => {
+      e.stopPropagation();
+      open = !open;
+      panel.hidden = !open;
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        renderList();
+        searchInput.focus();
+      }
+    },
+  }, triggerText, h('span.msd-caret', '▾'));
+
+  const searchInput = h('input.msd-search', {
+    type: 'search',
+    placeholder: o.placeholder || 'Search ' + noun + '…',
+    onclick: (e) => e.stopPropagation(),
+    oninput: (e) => {
+      query = (e.target.value || '').trim().toLowerCase();
+      renderList();
+    },
+  });
+
+  const listHost = h('div.msd-list');
+  const actionsHost = h('div.msd-actions');
+  const panel = h('div.msd-panel', { hidden: true, onclick: (e) => e.stopPropagation() },
+    h('div.msd-panel-top', searchInput, actionsHost),
+    listHost);
+  const tagsHost = h('div.msd-tags');
+
+  const getMatches = () => options.filter((it) => {
+    const v = String(typeof it === 'string' ? it : it.value);
+    const lbl = String(typeof it === 'string' ? it : (it.label || it.value));
+    return !query || v.toLowerCase().includes(query) || lbl.toLowerCase().includes(query);
+  });
+
+  const updateTriggerAndTags = () => {
+    clear(tagsHost);
+    if (set.size === 0) {
+      triggerText.textContent = allLabel;
+      trigger.classList.remove('has-val');
+    } else if (set.size <= 2) {
+      triggerText.textContent = Array.from(set).join(', ');
+      trigger.classList.add('has-val');
+    } else {
+      triggerText.textContent = set.size + ' ' + noun + ' selected';
+      trigger.classList.add('has-val');
+    }
+    if (set.size > 0) {
+      Array.from(set).forEach((v) => {
+        tagsHost.appendChild(h('button.msd-tag', {
+          type: 'button',
+          title: 'Remove ' + v,
+          onclick: () => {
+            set.delete(v);
+            updateTriggerAndTags();
+            if (open) renderList();
+            onChange(Array.from(set));
+          },
+        }, v + ' ×'));
+      });
+      if (set.size > 1) {
+        tagsHost.appendChild(h('button.msd-tag.clear', {
+          type: 'button',
+          onclick: () => {
+            set.clear();
+            updateTriggerAndTags();
+            if (open) renderList();
+            onChange([]);
+          },
+        }, 'Clear all'));
+      }
+    }
+  };
+
+  const renderList = () => {
+    clear(listHost);
+    clear(actionsHost);
+    const matches = getMatches().slice();
+    matches.sort((a, b) => {
+      const va = typeof a === 'string' ? a : a.value;
+      const vb = typeof b === 'string' ? b : b.value;
+      return (set.has(va) ? 0 : 1) - (set.has(vb) ? 0 : 1);
+    });
+
+    if (query && matches.length > 0 && matches.length <= 25) {
+      actionsHost.appendChild(h('button.btn.sm.ghost', {
+        type: 'button',
+        onclick: () => {
+          matches.forEach((it) => set.add(typeof it === 'string' ? it : it.value));
+          updateTriggerAndTags();
+          renderList();
+          onChange(Array.from(set));
+        },
+      }, 'Select ' + matches.length + ' matching'));
+    }
+    if (set.size > 0) {
+      actionsHost.appendChild(h('button.btn.sm.ghost', {
+        type: 'button',
+        onclick: () => {
+          set.clear();
+          updateTriggerAndTags();
+          renderList();
+          onChange([]);
+        },
+      }, 'Clear (' + set.size + ')'));
+    }
+
+    if (!matches.length) {
+      listHost.appendChild(h('div.msd-empty', 'No matches for “' + query + '”.'));
+      return;
+    }
+
+    matches.slice(0, 120).forEach((it) => {
+      const v = typeof it === 'string' ? it : it.value;
+      const lbl = typeof it === 'string' ? it : (it.label || it.value);
+      const checked = set.has(v);
+      const cb = h('input', {
+        type: 'checkbox',
+        checked,
+        onchange: () => {
+          if (cb.checked) set.add(v); else set.delete(v);
+          updateTriggerAndTags();
+          onChange(Array.from(set));
+        },
+      });
+      listHost.appendChild(h('label.msd-item', { class: checked ? 'on' : '' },
+        cb,
+        h('span.msd-item-lbl', lbl),
+        it && it.n !== undefined ? h('span.msd-item-n', String(it.n)) : null));
+    });
+    if (matches.length > 120) {
+      listHost.appendChild(h('div.msd-empty', 'Type to narrow down (' + (matches.length - 120) + ' more)…'));
+    }
+  };
+
+  const onDocClick = (e) => {
+    if (!document.body.contains(wrap)) {
+      document.removeEventListener('click', onDocClick);
+      return;
+    }
+    if (open && !wrap.contains(e.target)) {
+      open = false;
+      panel.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+  };
+  document.addEventListener('click', onDocClick);
+
+  updateTriggerAndTags();
+  wrap.appendChild(trigger);
+  wrap.appendChild(panel);
+  wrap.appendChild(tagsHost);
+  return wrap;
+}
+
 /** Poll a job until it finishes, updating a progress element. */
 export async function watchJob(api, jobId, progressEl, statusEl) {
   for (let i = 0; i < 600; i++) {

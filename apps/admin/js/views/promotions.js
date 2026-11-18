@@ -1,14 +1,14 @@
 import { h, mount, clear, debounce } from '../ui/dom.js';
-import { card, chips, confirmDialog, dataTable, errorBox, loading, pageHead, pager, progressBar, toast, watchJob } from '../ui/components.js';
+import { card, confirmDialog, dataTable, errorBox, loading, pageHead, pager, progressBar, searchableDropdown, toast, watchJob } from '../ui/components.js?v=42';
 import { adjustmentLabel, campaignBadge, channelBadge, dateTime, LINE_STATUS, money, pct, POS_EVENT_LABELS, REASON_LABELS } from '../ui/format.js';
 import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=40';
 import { sessionStorageSafeGet } from './products.js?v=40';
 
 const PRESETS = {
-  online: { key: 'online', kicker: 'Everyday Web Promo', title: 'Online Promo', sub: '15% off · Online Store Only', name: 'Online Sale', channel: 'online', event: null, pct: 15, rounding: 'none', featured: true },
-  black_friday: { key: 'black_friday', kicker: 'Omnichannel Event', title: 'Black Friday', sub: '20% off (.99) · Online + Store POS', name: 'Black Friday', channel: 'online_and_pos', event: 'black_friday', pct: 20, rounding: 'charm_99' },
-  christmas: { key: 'christmas', kicker: 'Omnichannel Event', title: 'Holiday / Christmas', sub: '15% off (.99) · Online + Store POS', name: 'Holiday Sale', channel: 'online_and_pos', event: 'christmas', pct: 15, rounding: 'charm_99' },
-  clearance: { key: 'clearance', kicker: 'Omnichannel Event', title: 'Clearance Event', sub: '25% off (Whole $) · Online + Store POS', name: 'Annual Clearance', channel: 'online_and_pos', event: 'annual_clearance', pct: 25, rounding: 'whole_dollar' },
+  online: { key: 'online', kicker: 'Web Promo', title: 'Online Promo', sub: '15% off · Exact price · Online Store', name: 'Online Sale', channel: 'online', event: null, pct: 15, rounding: 'none', featured: true },
+  black_friday: { key: 'black_friday', kicker: 'Seasonal Sale', title: 'Black Friday', sub: '20% off (.99) · Online Store', name: 'Black Friday', channel: 'online', event: 'black_friday', pct: 20, rounding: 'charm_99' },
+  christmas: { key: 'christmas', kicker: 'Seasonal Sale', title: 'Holiday / Christmas', sub: '15% off (.99) · Online Store', name: 'Holiday Sale', channel: 'online', event: 'christmas', pct: 15, rounding: 'charm_99' },
+  clearance: { key: 'clearance', kicker: 'Clearance', title: 'Clearance Event', sub: '25% off (Whole $) · Online Store', name: 'Annual Clearance', channel: 'online', event: 'annual_clearance', pct: 25, rounding: 'whole_dollar' },
 };
 
 export async function renderPromotions(ctx) {
@@ -68,10 +68,16 @@ export async function renderPromotions(ctx) {
   drawTabs();
   drawTable();
 
+  const kpiStrip = h('div.kpis',
+    h('div.kpi', h('div.label', 'Active & Scheduled'), h('div.value', String(counts.live)), h('div.sub', 'Live or queued promos')),
+    h('div.kpi', h('div.label', 'Draft Previews'), h('div.value', String(counts.draft)), h('div.sub', 'Waiting for review')),
+    h('div.kpi', h('div.label', 'Past / Restored'), h('div.value', String(counts.past)), h('div.sub', 'Safely reverted')),
+    h('div.kpi', h('div.label', 'Total Price Rules'), h('div.value', String(counts.all)), h('div.sub', 'History & templates')));
+
   const quickTemplates = ctx.can('pricing.write')
     ? h('div.stack-sm',
-      h('div.row-between', h('h2', 'Quick-start templates'), h('span.small.muted', '1 click to pre-fill — you always preview every price before publishing')),
-      h('div.quick-grid', Object.keys(PRESETS).map((k) => {
+      h('div.row-between', h('h2', 'Quick-start templates'), h('span.small.muted', 'Pre-filled defaults — you can pick brands, categories, or specific SKUs/UPCs before previewing')),
+      h('div.promo-preset-row', Object.keys(PRESETS).map((k) => {
         const p = PRESETS[k];
         return h('a.quick-card', { href: '#/promotions/new?preset=' + p.key, class: p.featured ? 'featured' : '' },
           h('span.quick-kicker', p.kicker),
@@ -81,10 +87,11 @@ export async function renderPromotions(ctx) {
     : null;
 
   return h('div.stack',
-    pageHead('Promotions / Price Rules', 'Create online sales or storewide events in 3 simple steps — MAP & minimum margin are protected automatically, and original prices can be restored in one click.',
-      ctx.can('pricing.write') ? [h('a.btn.primary', { href: '#/promotions/new' }, 'New promotion')] : []),
+    pageHead('Promotions & Price Rules', 'Run targeted discounts by brand, category, or specific products (Name / UPC / SKU). MAP and margin floors are checked before anything goes live.',
+      ctx.can('pricing.write') ? [h('a.btn.primary', { href: '#/promotions/new' }, '+ New promotion')] : []),
+    kpiStrip,
     quickTemplates,
-    card('Price Rules & Campaigns', tableHost, { flush: true, actions: tabsHost }));
+    card('All Promotions', tableHost, { flush: true, actions: tabsHost }));
 }
 
 function toLocalInput(d) {
@@ -120,31 +127,40 @@ function computeSamplePriceCents(sampleCents, adjType, rawVal, rounding) {
 
 export async function renderPromotionNew(ctx) {
   if (!ctx.can('pricing.write')) return errorBox({ message: 'Your role cannot create promotions.' });
-  const [facets, settings] = await Promise.all([ctx.api.facets(), ctx.api.settings()]);
+  const editId = ctx.query.edit || null;
+  const [facets, settings, editCamp] = await Promise.all([
+    ctx.api.facets(),
+    ctx.api.settings(),
+    editId ? ctx.api.campaign(editId) : Promise.resolve(null),
+  ]);
+  const posEnabled = !!(ctx.system && ctx.system.posEventWritesEnabled);
 
-  let selection = { categories: ['Accessories & Gear'] };
-  let scopeMode = 'category';
-  if (ctx.query.from === 'selection') {
+  let selection = { stock: 'physical' };
+  let scopeMode = 'filter';
+  if (editCamp) {
+    selection = Object.assign({}, editCamp.selection || {});
+    if (selection.ids && selection.ids.length) scopeMode = 'selected';
+  } else if (ctx.query.from === 'selection') {
     try { selection = JSON.parse(sessionStorageSafeGet('ubc-promo-selection') || '{}'); } catch (e) { selection = {}; }
     if (selection.ids && selection.ids.length) scopeMode = 'selected';
-    else if (selection.brands && selection.brands.length && (!selection.categories || !selection.categories.length)) scopeMode = 'brand';
-    else if (!selection.categories || !selection.categories.length) scopeMode = 'all';
   }
 
+  const editAdj = editCamp && editCamp.adjustment ? editCamp.adjustment : null;
+  const editIsPct = editAdj && editAdj.type.indexOf('percent') === 0;
   const st = {
-    channel: 'online',
-    posEventType: 'black_friday',
-    adjType: 'percent_off',
-    value: '20',
-    rounding: 'none',
-    scheduleMode: 'immediate',
-    presetKey: ctx.query.preset && PRESETS[ctx.query.preset] ? ctx.query.preset : null,
-    customName: false,
+    channel: editCamp ? (editCamp.channel === 'online_and_pos' && posEnabled ? 'online_and_pos' : 'online') : 'online',
+    posEventType: (editCamp && editCamp.summary && editCamp.summary.posEventType) || 'black_friday',
+    adjType: editAdj ? editAdj.type : 'percent_off',
+    value: editAdj ? String(editIsPct ? Math.round(editAdj.value * 10000) / 100 : editAdj.value / 100) : '20',
+    rounding: (editAdj && editAdj.rounding) || 'charm_99',
+    scheduleMode: editCamp && (editCamp.starts_at || editCamp.ends_at) ? 'scheduled' : 'immediate',
+    presetKey: !editCamp && ctx.query.preset && PRESETS[ctx.query.preset] ? ctx.query.preset : null,
+    customName: !!editCamp,
   };
 
   if (st.presetKey) {
     const pr = PRESETS[st.presetKey];
-    st.channel = pr.channel;
+    st.channel = pr.channel === 'online_and_pos' && posEnabled ? 'online_and_pos' : 'online';
     if (pr.event) st.posEventType = pr.event;
     st.value = String(pr.pct);
     st.rounding = pr.rounding;
@@ -157,7 +173,7 @@ export async function renderPromotionNew(ctx) {
   };
 
   const nameInput = h('input', {
-    type: 'text', value: defaultNameForState(), maxlength: '120', required: true, id: 'promo-name',
+    type: 'text', value: editCamp ? editCamp.name : defaultNameForState(), maxlength: '120', required: true, id: 'promo-name',
     oninput: () => { st.customName = true; renderSummary(); },
   });
   const syncAutoName = () => {
@@ -168,6 +184,13 @@ export async function renderPromotionNew(ctx) {
   let matchedCount = null;
   const updateCount = async () => {
     try {
+      if (scopeMode === 'selected') {
+        const cnt = (selection.ids && selection.ids.length) ? selection.ids.length : 0;
+        matchedCount = cnt;
+        countBadge.textContent = cnt.toLocaleString('en-US') + ' selected';
+        renderSummary();
+        return;
+      }
       const r = await ctx.api.items(Object.assign({}, cleanFilter(selection), { limit: 1 }));
       matchedCount = r.total;
       countBadge.textContent = r.total.toLocaleString('en-US') + ' products match';
@@ -179,7 +202,7 @@ export async function renderPromotionNew(ctx) {
   const updateCountDebounced = debounce(updateCount, 220);
 
   // --- Preset Strip ---
-  const presetHost = h('div.quick-grid');
+  const presetHost = h('div.promo-preset-row');
   const drawPresets = () => {
     clear(presetHost);
     Object.keys(PRESETS).forEach((k) => {
@@ -217,29 +240,33 @@ export async function renderPromotionNew(ctx) {
         type: 'button', class: st.channel === 'online' ? 'on' : '',
         onclick: () => { st.channel = 'online'; syncAutoName(); drawChannel(); renderSummary(); },
       },
-      h('div.choice-title', h('span', 'Online Store Only'), h('span.choice-dot')),
-      h('div.choice-desc', 'Applies to Shopify online store. In-store Lightspeed POS register prices stay untouched.')),
+      h('div.choice-title', h('span', 'Online Store Only (Shopify)'), h('span.choice-dot')),
+      h('div.choice-desc', 'Applies to your Shopify store. In-store Lightspeed register prices stay untouched.')),
       h('button.choice-card', {
-        type: 'button', class: st.channel === 'online_and_pos' ? 'on' : '',
-        onclick: () => { st.channel = 'online_and_pos'; syncAutoName(); drawChannel(); renderSummary(); },
+        type: 'button',
+        class: st.channel === 'online_and_pos' ? 'on' : '',
+        disabled: !posEnabled,
+        style: posEnabled ? null : { opacity: '0.55', cursor: 'not-allowed' },
+        onclick: () => { if (!posEnabled) return; st.channel = 'online_and_pos'; syncAutoName(); drawChannel(); renderSummary(); },
       },
-      h('div.choice-title', h('span', 'Online + Physical Store POS'), h('span.choice-dot')),
-      h('div.choice-desc', 'Matches event prices on both Shopify and in-store Lightspeed registers, then restores both.')));
+      h('div.choice-title', h('span', 'Online + Store POS (Lightspeed)'), h('span.choice-dot')),
+      h('div.choice-desc', posEnabled
+        ? 'Updates both Shopify and Lightspeed POS registers, then restores both.'
+        : 'Disabled right now: Lightspeed connection is read-only (inventory & prices read only).')));
 
     channelHost.appendChild(cards);
-    if (st.channel === 'online_and_pos') {
+    if (st.channel === 'online_and_pos' && posEnabled) {
       const evChips = h('div.chips', Object.keys(POS_EVENT_LABELS).map((k) => h('button.chip', {
         type: 'button', class: st.posEventType === k ? 'on' : '',
         onclick: () => { st.posEventType = k; syncAutoName(); drawChannel(); renderSummary(); },
       }, POS_EVENT_LABELS[k])));
       channelHost.appendChild(h('div.stack-sm',
-        h('label.field', 'Select Special Event', evChips),
-        h('div.notice.warn', 'Omnichannel Event Mode: synchronizes prices across Shopify and Lightspeed R-Series POS for the event duration.')));
+        h('label.field', 'Select Special Event', evChips)));
     }
   };
 
   const scopeTabsHost = h('div.seg-group');
-  const scopeBodyHost = h('div');
+  const scopeBodyHost = h('div.promo-scope-box');
   const advWrap = h('div.stack-sm', { hidden: true });
   let advOpen = false;
   const advBtn = h('button.btn.sm.ghost', {
@@ -247,9 +274,29 @@ export async function renderPromotionNew(ctx) {
     onclick: () => {
       advOpen = !advOpen;
       advWrap.hidden = !advOpen;
-      advBtn.textContent = advOpen ? 'Hide extra filters ▴' : '+ Extra filters (keyword, stock, supplier, price range)';
+      advBtn.textContent = advOpen ? 'Hide extra filters ▴' : '+ Extra filters (keyword/UPC/SKU, stock, supplier, price range)';
     },
-  }, '+ Extra filters (keyword, stock, supplier, price range)');
+  }, '+ Extra filters (keyword/UPC/SKU, stock, supplier, price range)');
+
+  const selectedItemsMap = new Map();
+  let pickerState = { q: '', brands: [], inStock: true, results: [], loading: false };
+
+  const loadInitialSelected = async () => {
+    if (selection.ids && selection.ids.length && selectedItemsMap.size === 0) {
+      try {
+        const res = await ctx.api.items({ ids: selection.ids.slice(0, 200), limit: 200 });
+        (res.items || []).forEach((it) => selectedItemsMap.set(it.id, it));
+        if (scopeMode === 'selected') drawScope();
+      } catch (e) { /* ignore */ }
+    }
+  };
+
+  const syncSelectedIds = () => {
+    selection.ids = Array.from(selectedItemsMap.keys());
+    if (!selection.ids.length) delete selection.ids;
+    syncAutoName();
+    updateCount();
+  };
 
   const rebuildAdvFilters = () => {
     clear(advWrap);
@@ -260,7 +307,13 @@ export async function renderPromotionNew(ctx) {
     const stockSel = h('select', {
       onchange: (e) => { selection.stock = e.target.value || undefined; syncAutoName(); updateCount(); },
     }, [['', 'Any availability'], ['physical', 'In stock at UBC store'], ['virtual_only', 'Supplier special-order only'], ['unavailable', 'Unavailable']].map(([v, t]) => h('option', { value: v, selected: (selection.stock || '') === v }, t)));
-    const supChips = chips(facets.suppliers.map((s) => ({ value: s.value, label: s.value })), selection.suppliers, (v) => { selection.suppliers = v; syncAutoName(); updateCount(); });
+    const supDropdown = (facets.suppliers && facets.suppliers.length)
+      ? searchableDropdown(facets.suppliers.map((s) => ({ value: s.value, label: s.value, n: s.n })), selection.suppliers, (v) => {
+        selection.suppliers = v.length ? v : undefined;
+        syncAutoName();
+        updateCount();
+      }, { allLabel: 'All suppliers', noun: 'suppliers', placeholder: 'Search suppliers…' })
+      : null;
     const minPrice = h('input', {
       type: 'number', inputmode: 'decimal', min: '0', step: 'any', placeholder: '0', value: selection.priceMinCents === undefined ? '' : String(selection.priceMinCents / 100),
       oninput: (e) => { selection.priceMinCents = dollarsToCents(e.target.value); updateCountDebounced(); },
@@ -270,60 +323,248 @@ export async function renderPromotionNew(ctx) {
       oninput: (e) => { selection.priceMaxCents = dollarsToCents(e.target.value); updateCountDebounced(); },
     });
     advWrap.appendChild(h('div.form-grid',
-      h('label.field', 'Search keyword / SKU', qInput),
+      h('label.field', 'Search keyword / UPC / SKU', qInput),
       h('label.field', 'Availability', stockSel),
       h('label.field', 'Min current price ($)', minPrice),
       h('label.field', 'Max current price ($)', maxPrice)));
-    if (facets.suppliers && facets.suppliers.length) {
-      advWrap.appendChild(h('label.field', 'Filter by supplier', supChips));
+    if (supDropdown) {
+      advWrap.appendChild(h('label.field', 'Filter by supplier', supDropdown));
     }
   };
 
   const drawScope = () => {
     clear(scopeTabsHost);
-    const modes = [
-      ['category', 'By Category'],
-      ['all', 'All Products'],
-      ['brand', 'By Brand'],
-    ];
-    if (selection.ids && selection.ids.length) modes.unshift(['selected', 'Selected Products (' + selection.ids.length + ')']);
-    modes.forEach(([m, label]) => {
+    clear(scopeBodyHost);
+
+    [
+      ['filter', 'Filter by Brand & Category'],
+      ['selected', 'Pick Specific Products (Name, UPC, SKU)' + (selectedItemsMap.size ? ' · ' + selectedItemsMap.size : '')],
+    ].forEach(([mode, label]) => {
       scopeTabsHost.appendChild(h('button.seg-btn', {
-        type: 'button', class: scopeMode === m ? 'on' : '',
+        type: 'button',
+        class: scopeMode === mode ? 'on' : '',
         onclick: () => {
-          scopeMode = m;
-          if (m === 'all') { delete selection.categories; delete selection.brands; delete selection.ids; }
-          if (m === 'category') { delete selection.ids; if (!selection.categories || !selection.categories.length) selection.categories = facets.categories[0] ? [facets.categories[0].value] : []; }
-          if (m === 'brand') { delete selection.ids; delete selection.categories; }
-          syncAutoName();
+          if (scopeMode === mode) return;
+          scopeMode = mode;
+          if (mode === 'filter') {
+            delete selection.ids;
+          } else {
+            syncSelectedIds();
+          }
           drawScope();
           updateCount();
         },
       }, label));
     });
 
-    clear(scopeBodyHost);
     if (scopeMode === 'selected') {
-      scopeBodyHost.appendChild(h('div.notice.info', selection.ids.length + ' specific products carried over from your catalog selection.'));
-    } else if (scopeMode === 'all') {
-      scopeBodyHost.appendChild(h('div.notice.info', 'Entire catalog selected — every active product will be evaluated against MAP and minimum margin rules.'));
-    } else if (scopeMode === 'category') {
-      scopeBodyHost.appendChild(h('div.stack-sm',
-        h('span.small.muted', 'Tap one or more categories:'),
-        chips(facets.categories.map((c) => ({ value: c.value, n: c.n })), selection.categories, (v) => {
-          selection.categories = v;
-          syncAutoName();
-          updateCount();
-        })));
-    } else if (scopeMode === 'brand') {
-      scopeBodyHost.appendChild(h('div.stack-sm',
-        h('span.small.muted', 'Tap one or more brands:'),
-        chips(facets.brands.map((b) => ({ value: b.value, n: b.n })), selection.brands, (v) => {
-          selection.brands = v;
-          syncAutoName();
-          updateCount();
-        })));
+      advBtn.hidden = true;
+      advWrap.hidden = true;
+
+      const resultsHost = h('div.picker-results');
+      const selectedHost = h('div.picker-selected');
+
+      const renderSelectedTray = () => {
+        clear(selectedHost);
+        const items = Array.from(selectedItemsMap.values());
+        selectedHost.appendChild(h('div.row-between',
+          h('strong.small', 'Selected products for this promotion (' + items.length + ')'),
+          items.length ? h('button.btn.sm.ghost', {
+            type: 'button',
+            onclick: () => {
+              selectedItemsMap.clear();
+              syncSelectedIds();
+              drawScope();
+            },
+          }, 'Clear all') : null));
+
+        if (!items.length) {
+          selectedHost.appendChild(h('div.small.muted', 'No products selected yet. Search by product name, UPC, or SKU above and click "+ Add".'));
+          return;
+        }
+        const list = h('div.picker-selected-list');
+        items.forEach((it) => {
+          list.appendChild(h('div.picker-selected-item',
+            h('div',
+              h('strong', it.title),
+              h('div.small.muted', [it.brand, it.sku ? 'SKU: ' + it.sku : null, it.upc ? 'UPC: ' + it.upc : null, money(it.priceCents)].filter(Boolean).join(' · '))),
+            h('button.btn.sm.ghost', {
+              type: 'button',
+              onclick: () => {
+                selectedItemsMap.delete(it.id);
+                syncSelectedIds();
+                renderSelectedTray();
+                renderResults();
+                const tabBtn = scopeTabsHost.children[1];
+                if (tabBtn) tabBtn.textContent = 'Pick Specific Products (Name, UPC, SKU)' + (selectedItemsMap.size ? ' · ' + selectedItemsMap.size : '');
+              },
+            }, '× Remove')));
+        });
+        selectedHost.appendChild(list);
+      };
+
+      const renderResults = () => {
+        clear(resultsHost);
+        if (pickerState.loading) {
+          resultsHost.appendChild(h('div.msd-empty', 'Searching catalog…'));
+          return;
+        }
+        if (!pickerState.results.length) {
+          resultsHost.appendChild(h('div.msd-empty', 'No products match that search. Try a product name, UPC, SKU, or brand.'));
+          return;
+        }
+        pickerState.results.forEach((it) => {
+          const isPicked = selectedItemsMap.has(it.id);
+          resultsHost.appendChild(h('div.picker-row',
+            h('div',
+              h('div.picker-row-title', it.title),
+              h('div.picker-row-meta', [
+                it.brand || null,
+                it.sku ? 'SKU: ' + it.sku : null,
+                it.upc ? 'UPC: ' + it.upc : null,
+                'Qty: ' + (it.physicalQty || 0),
+              ].filter(Boolean).map((txt) => h('span', txt)))),
+            h('div.picker-row-price',
+              h('div', h('strong', money(it.priceCents))),
+              it.mapCents ? h('div.small.muted', 'MAP ' + money(it.mapCents)) : null),
+            h('button.btn.sm', {
+              type: 'button',
+              class: isPicked ? 'ghost' : 'primary',
+              onclick: () => {
+                if (isPicked) selectedItemsMap.delete(it.id);
+                else selectedItemsMap.set(it.id, it);
+                syncSelectedIds();
+                renderResults();
+                renderSelectedTray();
+                const tabBtn = scopeTabsHost.children[1];
+                if (tabBtn) tabBtn.textContent = 'Pick Specific Products (Name, UPC, SKU)' + (selectedItemsMap.size ? ' · ' + selectedItemsMap.size : '');
+              },
+            }, isPicked ? '✓ Added' : '+ Add')));
+        });
+      };
+
+      const runPickerSearch = async () => {
+        pickerState.loading = true;
+        renderResults();
+        try {
+          const r = await ctx.api.items(cleanFilter({
+            q: pickerState.q || undefined,
+            brands: pickerState.brands.length ? pickerState.brands : undefined,
+            stock: pickerState.inStock ? 'physical' : undefined,
+            limit: 25,
+          }));
+          pickerState.results = r.items || [];
+        } catch (e) {
+          pickerState.results = [];
+        } finally {
+          pickerState.loading = false;
+          renderResults();
+        }
+      };
+      const runPickerSearchDebounced = debounce(runPickerSearch, 240);
+
+      const searchBox = h('input', {
+        type: 'search',
+        placeholder: 'Search by Name, UPC, SKU, or MPN…',
+        value: pickerState.q,
+        oninput: (e) => {
+          pickerState.q = e.target.value || '';
+          runPickerSearchDebounced();
+        },
+      });
+      const brandDrop = searchableDropdown(
+        facets.brands.map((b) => ({ value: b.value, label: b.value, n: b.n })),
+        pickerState.brands,
+        (v) => { pickerState.brands = v; runPickerSearch(); },
+        { allLabel: 'All brands', noun: 'brands', placeholder: 'Filter by brand…' },
+      );
+      const stockOnlyCb = h('input', {
+        type: 'checkbox',
+        checked: pickerState.inStock,
+        onchange: (e) => { pickerState.inStock = e.target.checked; runPickerSearch(); },
+      });
+      const addAllBtn = h('button.btn.sm', {
+        type: 'button',
+        onclick: () => {
+          pickerState.results.forEach((it) => selectedItemsMap.set(it.id, it));
+          syncSelectedIds();
+          renderResults();
+          renderSelectedTray();
+          const tabBtn = scopeTabsHost.children[1];
+          if (tabBtn) tabBtn.textContent = 'Pick Specific Products (Name, UPC, SKU)' + (selectedItemsMap.size ? ' · ' + selectedItemsMap.size : '');
+        },
+      }, '+ Add all shown');
+
+      scopeBodyHost.appendChild(h('div.picker-box',
+        h('div.picker-toolbar', searchBox, brandDrop, addAllBtn),
+        h('div.row-between',
+          h('label.check', stockOnlyCb, h('span.small', 'In stock at UBC stores only')),
+          h('span.small.muted', 'Showing up to 25 matching products')),
+        resultsHost,
+        selectedHost));
+
+      renderSelectedTray();
+      runPickerSearch();
+      return;
     }
+
+    advBtn.hidden = false;
+    advWrap.hidden = !advOpen;
+
+    const inStockCheck = h('input', {
+      type: 'checkbox',
+      checked: selection.stock === 'physical',
+      onchange: (e) => {
+        selection.stock = e.target.checked ? 'physical' : undefined;
+        syncAutoName();
+        updateCount();
+      },
+    });
+    const clearAllBtn = h('button.btn.sm.ghost', {
+      type: 'button',
+      onclick: () => {
+        delete selection.categories;
+        delete selection.brands;
+        delete selection.q;
+        delete selection.suppliers;
+        delete selection.priceMinCents;
+        delete selection.priceMaxCents;
+        delete selection.stock;
+        drawScope();
+        rebuildAdvFilters();
+        syncAutoName();
+        updateCount();
+      },
+    }, 'Reset filters');
+
+    const catDropdown = searchableDropdown(
+      facets.categories.map((c) => ({ value: c.value, label: c.value, n: c.n })),
+      selection.categories,
+      (v) => {
+        selection.categories = v.length ? v : undefined;
+        syncAutoName();
+        updateCount();
+      },
+      { allLabel: 'All categories', noun: 'categories', placeholder: 'Search categories…' },
+    );
+    const brandDropdown = searchableDropdown(
+      facets.brands.map((b) => ({ value: b.value, label: b.value, n: b.n })),
+      selection.brands,
+      (v) => {
+        selection.brands = v.length ? v : undefined;
+        syncAutoName();
+        updateCount();
+      },
+      { allLabel: 'All brands', noun: 'brands', placeholder: 'Search brands (e.g. Specialized, Fox, Giant)…' },
+    );
+
+    scopeBodyHost.appendChild(h('div.stack',
+      h('div.row-between',
+        h('label.check', inStockCheck, h('strong', 'In stock at UBC stores only (Tampa / Alafia)')),
+        clearAllBtn),
+      h('div.form-grid',
+        h('label.field', 'Brands (dropdown filter)', brandDropdown),
+        h('label.field', 'Categories (dropdown filter)', catDropdown))));
   };
 
   // --- Step 2: Discount & Price Ending ---
@@ -342,7 +583,7 @@ export async function renderPromotionNew(ctx) {
   const drawQuickPcts = () => {
     clear(quickPctHost);
     if (st.adjType !== 'percent_off') return;
-    [10, 15, 20, 25, 30].forEach((p) => {
+    [10, 15, 20, 25, 30, 50].forEach((p) => {
       quickPctHost.appendChild(h('button.chip', {
         type: 'button', class: Number(valueInput.value) === p ? 'on' : '',
         onclick: () => { valueInput.value = String(p); st.value = String(p); drawQuickPcts(); renderExample(); renderSummary(); },
@@ -439,14 +680,32 @@ export async function renderPromotionNew(ctx) {
     });
   };
 
-  const minMargin = h('input', { type: 'number', min: '0', max: '95', step: '0.5', value: String(settings.campaignRules.minMarginPct * 100), oninput: () => renderGuardrailSummary() });
-  const warnMargin = h('input', { type: 'number', min: '0', max: '95', step: '0.5', value: String(settings.campaignRules.warnMarginPct * 100) });
-  const clamp = h('input', { type: 'checkbox', checked: !!settings.campaignRules.clampToMinMargin, onchange: () => renderGuardrailSummary() });
+  const editRules = editCamp && editCamp.rules ? editCamp.rules : null;
+  const minMargin = h('input', {
+    type: 'number', min: '0', max: '95', step: '0.5',
+    value: String((editRules ? editRules.minMarginPct : settings.campaignRules.minMarginPct) * 100),
+    oninput: () => renderGuardrailSummary(),
+  });
+  const warnMargin = h('input', {
+    type: 'number', min: '0', max: '95', step: '0.5',
+    value: String((editRules ? editRules.warnMarginPct : settings.campaignRules.warnMarginPct) * 100),
+  });
+  const clamp = h('input', {
+    type: 'checkbox',
+    checked: editRules ? !!editRules.clampToMinMargin : true,
+    onchange: () => renderGuardrailSummary(),
+  });
+  const includeNoCost = h('input', {
+    type: 'checkbox',
+    checked: editRules ? !editRules.excludeWithoutCost : true,
+    onchange: () => renderGuardrailSummary(),
+  });
   const rulesFields = h('div.stack-sm', { hidden: true },
     h('div.form-grid',
-      h('label.field', 'Minimum profit margin (%)', minMargin, h('span.help', 'Products below this margin are protected')),
+      h('label.field', 'Minimum profit margin (%) — set 0 for no margin block', minMargin, h('span.help', 'MAP floor still applies automatically')),
       h('label.field', 'Low-margin warning (%)', warnMargin, h('span.help', 'Flagged for your review'))),
-    h('label.check', clamp, 'Automatically stop discount at minimum margin instead of blocking the product'));
+    h('label.check', clamp, 'Auto-adjust price to minimum margin instead of blocking the product'),
+    h('label.check', includeNoCost, 'Include items that have $0 / no cost on file in Lightspeed'));
 
   let rulesOpen = false;
   const rulesBtn = h('button.btn.sm', {
@@ -499,6 +758,7 @@ export async function renderPromotionNew(ctx) {
   drawSchedule();
   renderGuardrailSummary();
   updateCount();
+  loadInitialSelected();
 
   const leftCol = h('div.stack',
     card(null, h('div.stack-sm',
@@ -538,6 +798,10 @@ export async function renderPromotionNew(ctx) {
     onsubmit: async (e) => {
       e.preventDefault();
       clear(err);
+      if (scopeMode === 'selected' && !(selection.ids && selection.ids.length)) {
+        err.appendChild(h('div.notice.bad', 'Pick at least one specific product (or switch to "Filter by Brand & Category").'));
+        return;
+      }
       const isPct = st.adjType.indexOf('percent') === 0;
       const raw = Number(valueInput.value);
       if (!(raw >= 0) || isNaN(raw)) { err.appendChild(h('div.notice.bad', 'Enter a valid discount value.')); return; }
@@ -555,23 +819,31 @@ export async function renderPromotionNew(ctx) {
           posEventType: st.channel === 'online_and_pos' ? st.posEventType : undefined,
           selection: cleanFilter(selection),
           adjustment,
-          rules: { minMarginPct: Number(minMargin.value) / 100, warnMarginPct: Number(warnMargin.value) / 100, clampToMinMargin: clamp.checked },
+          rules: {
+            minMarginPct: (Number(minMargin.value) || 0) / 100,
+            warnMarginPct: (Number(warnMargin.value) || 0) / 100,
+            clampToMinMargin: clamp.checked,
+            excludeWithoutCost: !includeNoCost.checked,
+          },
           startsAt,
           endsAt,
         };
-        const res = await ctx.api.createCampaign(payload);
+        const res = editCamp
+          ? await ctx.api.updateCampaign(editCamp.id, payload)
+          : await ctx.api.createCampaign(payload);
         ctx.navigate('#/promotions/' + res.id);
       } catch (ex) {
         submit.disabled = false;
-        submit.textContent = 'Preview impact';
+        submit.textContent = editCamp ? 'Save & re-preview' : 'Preview impact';
         err.appendChild(h('div.notice.bad', ex.message + (ex.details && Array.isArray(ex.details) ? ': ' + ex.details.map((d) => d.path + ' ' + d.message).join('; ') : '')));
       }
     },
   }, leftCol, rightCol);
 
+  if (editCamp) submit.textContent = 'Save & re-preview';
   return h('div.stack',
-    pageHead('New promotion', 'Choose your products and discount below, then preview every calculated price, margin and MAP check before approving.',
-      [h('a.btn', { href: '#/promotions' }, '← Back to Promotions')]),
+    pageHead(editCamp ? 'Edit promotion' : 'New promotion', 'Pick categories/brands, set your % or $ discount and price ending (.99 / .00 / exact), then preview before publishing.',
+      [h('a.btn', { href: editCamp ? '#/promotions/' + editCamp.id : '#/promotions' }, editCamp ? '← Back to Preview' : '← Back to Promotions')]),
     form);
 }
 
@@ -641,6 +913,9 @@ export async function renderPromotionDetail(ctx) {
     : 'Online (Shopify) + Physical Store POS (Lightspeed)' + (evLabel ? ' — ' + evLabel : '');
 
   const actions = [];
+  if ((c.status === 'draft' || c.status === 'failed') && ctx.can('pricing.write')) {
+    actions.push(h('a.btn', { href: '#/promotions/new?edit=' + c.id }, 'Edit % / .99 / brands'));
+  }
   if (c.status === 'draft') {
     if (ctx.can('pricing.write')) actions.push(h('button.btn', { onclick: async () => { await ctx.api.previewCampaign(c.id); toast('Preview refreshed with current data'); ctx.navigate('#/promotions/' + c.id + '?r=' + Date.now()); } }, 'Refresh preview'));
     if (ctx.can('campaign.approve')) {

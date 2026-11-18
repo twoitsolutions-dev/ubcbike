@@ -2201,7 +2201,26 @@
     'Accessories': 'Accesorios', 'Tools & Care': 'Herramientas y cuidado',
     'At Warehouse · Available to Order': 'En bodega · Disponible por pedido',
     'At Warehouse · Available by Order': 'En bodega · Disponible por pedido',
-    'In-store pickup only · Tampa': 'Solo retiro en tienda · Tampa'
+    'In-store pickup only · Tampa': 'Solo retiro en tienda · Tampa',
+    '← All Departments': '← Todos los departamentos',
+    'All Parts': 'Todos los repuestos',
+    'All Tires & Tubes': 'Todas las llantas y cámaras',
+    'All Hydration & Nutrition': 'Toda hidratación y nutrición',
+    'Bike Service & Repair': 'Servicio y Reparación de Bicis',
+    'Tune-Up Packages': 'Paquetes de Mantenimiento',
+    'How To Find Us': 'Cómo Encontrarnos',
+    'Get Directions': 'Cómo Llegar',
+    'Contact Us': 'Contáctanos',
+    'Financing': 'Financiamiento',
+    'Ride Now. Pay Later.': 'Rueda Hoy. Paga Después.',
+    'Your Financing Options': 'Tus Opciones de Financiamiento',
+    "Buyer's Guide": 'Guía de Compra',
+    'Bike Size Chart': 'Tabla de Tallas',
+    'What is the UBC Difference?': '¿Qué es la Diferencia UBC?',
+    '5 Reasons to Buy Your Next Bike at UBC': '5 Razones para Comprar tu Próxima Bici en UBC',
+    'Apply Now': 'Solicitar Ahora',
+    'Payment Calculator': 'Calculadora de Pagos',
+    'Manage Account': 'Administrar Cuenta'
   };
   var UBC_ES_RX = [
     [/^([\d,]+) results$/, '$1 resultados'], [/^([\d,]+) result$/, '$1 resultado'],

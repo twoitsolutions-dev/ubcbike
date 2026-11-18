@@ -1,0 +1,672 @@
+{%- comment -%}
+  UBC Workstand-Mirrored Page Layouts (Service, Contact, Locations, About, Reasons, Financing, Buyer's Guide)
+  - Preserves 100% of Carlos's Workstand copy, store photos (`images[...]`), tune-up packages, and financing links.
+  - Supports bilingual EN/ES translation via `ubc-fable.js`.
+{%- endcomment -%}
+
+<div class="ubc-ws-page" data-ubc-ws-page="{{ section.settings.page_kind }}">
+  {%- case section.settings.page_kind -%}
+
+    {%- when 'service' -%}
+      {%- assign hero_img = images['ubc-service-wheel-truing.jpg'] -%}
+      <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
+        <div>
+          <span class="ubc-ws-kicker">1 Day on Most Repairs / No Appointment Needed / Walk-Ins Welcome</span>
+          <h1 class="ubc-ws-h1">{{ page.title | default: 'Bike Service & Repair' }}</h1>
+          <p class="ubc-ws-lead">Since 1972, we have focused most of our business on servicing our customers as well as their riding experience. Servicing your bike at the right interval will promote quality and longevity of your parts. We have trained technicians to meet or exceed the industry standard and with 13 - 28 years of experience, your bike will be cared for well. Most bicycle repairs will be completed within 24 hours, but walk-ins are always welcome.</p>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="tel:+18139712277">Call (813) 971-2277</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">How To Find Us</a>
+          </div>
+        </div>
+        {%- if hero_img -%}
+          <div class="ubc-ws-hero-media">
+            {{ hero_img | image_url: width: 1100 | image_tag: loading: 'eager', alt: 'Bike Service & Repair at University Bicycle Center' }}
+          </div>
+        {%- endif -%}
+      </section>
+
+      <section class="ubc-ws-section">
+        <h2 class="ubc-ws-h2">Tune-Up Packages</h2>
+        <div class="ubc-ws-grid">
+          <article class="ubc-ws-card">
+            <div>
+              <h3>Level 1 Tune-Up</h3>
+              <div class="ubc-ws-price">$100.00</div>
+              <p class="ubc-ws-note">This service is a refresh of the parts, having clean and lubricated cables make the systems work better.</p>
+              <ul class="ubc-ws-list">
+                <li>Clean, Lube, and Trim Cables</li>
+                <li>Adjust Headset &amp; Bottom Bracket</li>
+                <li>Adjust Front and Rear Hubs</li>
+                <li>Adjust Front and Rear Derailleurs &amp; Brakes</li>
+                <li>True Wheels Laterally</li>
+                <li>Oil Chain and Air Tires</li>
+                <li>Clean Bike &amp; Safety Inspection</li>
+              </ul>
+            </div>
+            <div>
+              <p class="ubc-ws-note">Additional parts not included</p>
+              <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
+            </div>
+          </article>
+
+          <article class="ubc-ws-card ubc-ws-card--featured">
+            <div>
+              <span class="ubc-ws-kicker">Most Popular</span>
+              <h3>Level 2 Tune-Up</h3>
+              <div class="ubc-ws-price">$160.00</div>
+              <p class="ubc-ws-note">Choose this package if your drivetrain is dirty or if you need your wheels trued.</p>
+              <ul class="ubc-ws-list">
+                <li>Everything in Level 1 Tune-Up</li>
+                <li>Full removal and detail cleaning of drive components</li>
+                <li>Full Wheel True</li>
+                <li>Safety Inspection</li>
+              </ul>
+            </div>
+            <div>
+              <p class="ubc-ws-note">Additional parts not included</p>
+              <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
+            </div>
+          </article>
+
+          <article class="ubc-ws-card">
+            <div>
+              <h3>Level 1 Overhaul</h3>
+              <div class="ubc-ws-price">$250.00</div>
+              <p class="ubc-ws-note">This service is extensive and is vital for the longevity of the parts.</p>
+              <ul class="ubc-ws-list">
+                <li>Clean, Lube, and Trim Cables</li>
+                <li>Overhaul, Clean, and Grease Headset, Bottom Bracket &amp; Hub Bearings</li>
+                <li>Full removal and detail cleaning of drive components</li>
+                <li>Adjust Derailleurs &amp; Brakes</li>
+                <li>Full Wheel True, Clean Bike &amp; Safety Inspection</li>
+              </ul>
+            </div>
+            <div>
+              <p class="ubc-ws-note">Additional parts not included</p>
+              <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="ubc-ws-section">
+        <h2 class="ubc-ws-h2">Maintenance Service</h2>
+        <p class="ubc-ws-lead">Servicing your bike is very important for your safety and the longevity of the parts. Below is a common checklist and maintenance schedule.</p>
+        <div class="ubc-ws-grid">
+          <div class="ubc-ws-card">
+            <h3>300-500 Miles or Every 2-3 Months</h3>
+            <ul class="ubc-ws-list">
+              <li>Clean the bike and inspect for cracks</li>
+              <li>Clean chain, cassette cogs, chainrings, and derailleurs</li>
+              <li>Check spoke tension</li>
+              <li>Check crank, pedal, stem, handlebar &amp; seat bolts</li>
+              <li>Lube pivot points with dry spray lube (keep off brake pads/rotors)</li>
+              <li>Check cleats, pedals &amp; suspension lockout/rebound</li>
+            </ul>
+          </div>
+          <div class="ubc-ws-card">
+            <h3>1000-2500 Miles or Every 6 Months</h3>
+            <ul class="ubc-ws-list">
+              <li>Inspect tires for wear, cracks, or embedded debris</li>
+              <li>Check headset, bottom bracket, and hubs</li>
+              <li>Check brake pads, bar tape &amp; grips for wear</li>
+              <li>Check chain, cassette, and chainrings for stretch/wear</li>
+              <li>Deep clean drivetrain &amp; inspect suspension</li>
+            </ul>
+          </div>
+          <div class="ubc-ws-card">
+            <h3>2500-5000 Miles or Every Year</h3>
+            <ul class="ubc-ws-list">
+              <li>Replace grease in headset, bottom bracket, and hubs</li>
+              <li>Inspect/replace cables and housings</li>
+              <li>Replace brake pads and bleed disc brakes</li>
+              <li>Inspect wheels, braking surfaces &amp; pedal bearings</li>
+              <li>Full drivetrain clean &amp; safety overhaul</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="ubc-ws-hero ubc-ws-hero--text-only">
+        <div>
+          <h2 class="ubc-ws-h2">Schedule Your Bike Repair Now</h2>
+          <p class="ubc-ws-lead">Bring your bike to our Tampa showroom or our Alafia River State Park shop — walk-ins are always welcome and most repairs are completed within 24 hours.</p>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="/pages/contact-us">Contact Us</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">How To Find Us</a>
+          </div>
+        </div>
+      </section>
+
+    {%- when 'locations' -%}
+      <section class="ubc-ws-hero ubc-ws-hero--text-only ubc-ws-hero--compact">
+        <div>
+          <span class="ubc-ws-kicker" data-es="Tampa y Lithia, Florida">Tampa &amp; Lithia, Florida</span>
+          <h1 class="ubc-ws-h1" data-es="Cómo Encontrarnos">{{ page.title | default: 'How To Find Us' }}</h1>
+          <p class="ubc-ws-lead" data-es="Visita cualquiera de nuestras dos tiendas en Tampa Bay para bicis nuevas, taller profesional, rentas y asesoría local de senderos.">Visit either of our two Tampa Bay locations for new bikes, professional walk-in repairs, trailhead rentals, and expert local riding advice.</p>
+          <div class="ubc-ws-pills">
+            <span class="ubc-ws-pill" data-es="2 Tiendas en Tampa Bay">2 Tampa Bay Locations</span>
+            <span class="ubc-ws-pill" data-es="Taller Sin Cita · Tampa">Walk-In Workshop · Tampa</span>
+            <span class="ubc-ws-pill" data-es="Rentas en Senderos · Alafia">Trailhead Rentals · Alafia</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-grid ubc-ws-grid--2">
+          <article class="ubc-ws-card ubc-ws-card--location">
+            <div class="ubc-ws-loc-body">
+              <div class="ubc-ws-loc-top">
+                <span class="ubc-ws-kicker" data-es="Tienda Principal y Taller">Main Store &amp; Workshop</span>
+                <span class="ubc-ws-badge" data-es="A 5 min de USF">5 min from USF</span>
+              </div>
+              <h2 class="ubc-ws-h2">University Bicycle Center</h2>
+              <p class="ubc-ws-address">
+                1220 E Fletcher Ave, Tampa, FL 33612<br>
+                <a href="tel:+18139712277">(813) 971-2277</a> &middot; <a href="mailto:ubc@ubcbike.com">ubc@ubcbike.com</a>
+              </p>
+
+              <div class="ubc-ws-map">
+                <iframe
+                  title="University Bicycle Center Tampa Map"
+                  src="https://maps.google.com/maps?q=1220+E+Fletcher+Ave+Tampa+FL+33612&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen></iframe>
+              </div>
+
+              <div class="ubc-ws-hours">
+                <div class="ubc-ws-hours-row"><span data-es="Lunes – Viernes">Mon – Fri</span><strong>10:00am – 6:00pm</strong></div>
+                <div class="ubc-ws-hours-row"><span data-es="Sábado">Saturday</span><strong>9:00am – 5:00pm</strong></div>
+                <div class="ubc-ws-hours-row"><span data-es="Domingo">Sunday</span><strong data-es="Cerrado">Closed</strong></div>
+              </div>
+
+              <ul class="ubc-ws-list">
+                <li data-es="Salón completo de bicis, e-bikes, cascos y accesorios">Full showroom of bikes, e-bikes, helmets &amp; gear</li>
+                <li data-es="Taller profesional sin cita para todas las marcas">Walk-in repair workshop servicing all brands</li>
+              </ul>
+            </div>
+            <div class="ubc-ws-actions">
+              <a class="ubc-ws-btn" href="https://www.google.com/maps/dir/?api=1&destination=1220+E+Fletcher+Ave+Tampa+FL+33612" target="_blank" rel="noopener" data-es="Cómo Llegar">Get Directions</a>
+              <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/in-stock-tampa" data-es="Ver Stock Tampa">Shop Tampa Stock</a>
+            </div>
+          </article>
+
+          <article class="ubc-ws-card ubc-ws-card--location">
+            <div class="ubc-ws-loc-body">
+              <div class="ubc-ws-loc-top">
+                <span class="ubc-ws-kicker" data-es="Rentas / Tienda / Servicio">Bicycle Rental / Store / Services</span>
+                <span class="ubc-ws-badge" data-es="Alafia State Park">Alafia State Park</span>
+              </div>
+              <h2 class="ubc-ws-h2">UBC at Alafia River State Park</h2>
+              <p class="ubc-ws-address">
+                14326 S County Road 39, Lithia, FL 33547<br>
+                <a href="tel:+18134598293">(813) 459-8293</a>
+              </p>
+
+              <div class="ubc-ws-map">
+                <iframe
+                  title="UBC Alafia River State Park Map"
+                  src="https://maps.google.com/maps?q=14326+S+County+Road+39+Lithia+FL+33547&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen></iframe>
+              </div>
+
+              <div class="ubc-ws-hours">
+                <div class="ubc-ws-hours-row"><span data-es="Miércoles – Viernes">Wed – Fri</span><strong>10:00am – 5:00pm</strong></div>
+                <div class="ubc-ws-hours-row"><span data-es="Sábado – Domingo">Sat – Sun</span><strong>8:00am – 5:00pm</strong></div>
+                <div class="ubc-ws-hours-row"><span data-es="Lunes – Martes">Mon – Tue</span><strong data-es="Cerrado (salvo festivos/cita)">Closed (holidays/appt)</strong></div>
+              </div>
+
+              <ul class="ubc-ws-list">
+                <li data-es="Renta de bicis MTB y e-MTB directo en el sendero">MTB &amp; E-MTB rentals right at the trailhead</li>
+                <li data-es="Sujeto al clima del parque estatal">Subject to state park weather &amp; trail conditions</li>
+              </ul>
+            </div>
+            <div class="ubc-ws-actions">
+              <a class="ubc-ws-btn" href="https://www.google.com/maps/dir/?api=1&destination=14326+S+County+Road+39+Lithia+FL+33547" target="_blank" rel="noopener" data-es="Cómo Llegar">Get Directions</a>
+              <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/in-stock-alafia" data-es="Ver Stock Alafia">Shop Alafia Stock</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    {%- when 'contact' -%}
+      <section class="ubc-ws-hero ubc-ws-hero--text-only ubc-ws-hero--compact">
+        <div>
+          <span class="ubc-ws-kicker">University Bicycle Center</span>
+          <h1 class="ubc-ws-h1" data-es="Contáctanos">{{ page.title | default: 'Contact Us' }}</h1>
+          <p class="ubc-ws-lead" data-es="¿Dudas sobre tallas, inventario en tienda, taller o financiamiento? Escríbenos o llámanos y nuestro equipo de Tampa Bay te responde.">Have a question about bike sizing, live in-store stock, walk-in repairs, or financing? Reach out and our Tampa Bay team will get right back to you.</p>
+          <div class="ubc-ws-pills">
+            <a class="ubc-ws-pill ubc-ws-pill--link" href="mailto:ubc@ubcbike.com">ubc@ubcbike.com</a>
+            <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18139712277">Tampa: (813) 971-2277</a>
+            <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18134598293">Alafia: (813) 459-8293</a>
+            <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18008812472">Toll-Free: (800) 881-2472</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-contact-grid">
+          <div class="ubc-ws-card ubc-ws-card--form">
+            <div>
+              <span class="ubc-ws-kicker" data-es="Respuesta Rápida">Direct Message</span>
+              <h2 class="ubc-ws-h2" data-es="Envíanos un Mensaje">Send Us a Message</h2>
+            </div>
+            {%- form 'contact', id: 'UbcContactForm' -%}
+              {%- if form.posted_successfully? -%}
+                <div class="ubc-ws-alert ubc-ws-alert--ok" data-es="¡Gracias! Tu mensaje fue enviado a University Bicycle Center.">
+                  Thank you! Your message has been sent to University Bicycle Center.
+                </div>
+              {%- elsif form.errors -%}
+                <div class="ubc-ws-alert ubc-ws-alert--bad">
+                  {{ form.errors | default_errors }}
+                </div>
+              {%- endif -%}
+              <div class="ubc-ws-form-grid">
+                <label class="ubc-ws-field">
+                  <span data-es="Nombre">Name</span>
+                  <input type="text" name="contact[name]" autocomplete="name" placeholder="Your full name" value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.name }}{% endif %}">
+                </label>
+                <label class="ubc-ws-field">
+                  <span data-es="Teléfono">Phone</span>
+                  <input type="tel" name="contact[phone]" autocomplete="tel" placeholder="(813) 555-0199" value="{{ form.phone }}">
+                </label>
+                <label class="ubc-ws-field ubc-ws-field--full">
+                  <span data-es="Correo electrónico *">Email *</span>
+                  <input type="email" name="contact[email]" required autocomplete="email" placeholder="you@example.com" value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}">
+                </label>
+                <label class="ubc-ws-field ubc-ws-field--full">
+                  <span data-es="Mensaje">Message</span>
+                  <textarea name="contact[body]" rows="5" placeholder="Tell us which bike, size, or service you're looking for...">{{ form.body }}</textarea>
+                </label>
+              </div>
+              <div class="ubc-ws-actions" style="margin-top: 1.6rem;">
+                <button type="submit" class="ubc-ws-btn" data-es="Enviar Mensaje">Send Message</button>
+              </div>
+            {%- endform -%}
+          </div>
+
+          <div class="ubc-ws-contact-side">
+            <article class="ubc-ws-card">
+              <span class="ubc-ws-kicker" data-es="Tienda Principal · Tampa">Tampa Showroom</span>
+              <h3>1220 E Fletcher Ave</h3>
+              <p class="ubc-ws-note">Tampa, FL 33612 &middot; <a href="tel:+18139712277"><strong>(813) 971-2277</strong></a></p>
+              <p class="ubc-ws-note" data-es="Lun–Vie: 10am–6pm &middot; Sáb: 9am–5pm &middot; Dom: Cerrado">Mon–Fri: 10am–6pm &middot; Sat: 9am–5pm &middot; Sun: Closed</p>
+              <div class="ubc-ws-actions">
+                <a class="ubc-ws-btn ubc-ws-btn--ghost" href="https://www.google.com/maps/dir/?api=1&destination=1220+E+Fletcher+Ave+Tampa+FL+33612" target="_blank" rel="noopener" data-es="Cómo Llegar">Get Directions</a>
+              </div>
+            </article>
+
+            <article class="ubc-ws-card">
+              <span class="ubc-ws-kicker" data-es="Sendero y Rentas · Alafia">Alafia River Trailhead</span>
+              <h3>14326 S County Road 39</h3>
+              <p class="ubc-ws-note">Lithia, FL 33547 &middot; <a href="tel:+18134598293"><strong>(813) 459-8293</strong></a></p>
+              <p class="ubc-ws-note" data-es="Mié–Vie: 10am–5pm &middot; Sáb–Dom: 8am–5pm">Wed–Fri: 10am–5pm &middot; Sat–Sun: 8am–5pm</p>
+              <div class="ubc-ws-actions">
+                <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations" data-es="Ver Horarios y Mapas">Hours &amp; Maps</a>
+              </div>
+            </article>
+
+            <article class="ubc-ws-card ubc-ws-card--dark">
+              <span class="ubc-ws-kicker" data-es="Taller Sin Cita">Walk-In Workshop</span>
+              <h3 data-es="¿Necesitas servicio hoy?">Need Bike Service Today?</h3>
+              <p class="ubc-ws-note" data-es="Pasa sin cita en Tampa para pinchazos, ajustes de frenos/cambios o tune-up completo.">Walk right in during business hours for flat fixes, brake/gear adjustments, or full tune-ups.</p>
+              <div class="ubc-ws-actions">
+                <a class="ubc-ws-btn ubc-ws-btn--light" href="/pages/bike-service-repair" data-es="Ver Servicio y Precios">Service &amp; Pricing</a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+    {%- when 'about' -%}
+      {%- assign hero_img = images['ubc-difference-storefront.jpg'] -%}
+      <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
+        <div>
+          <span class="ubc-ws-kicker" data-es="Sin Promesas Vacías">No Empty Promises</span>
+          <h1 class="ubc-ws-h1" data-es="¿Qué es la Diferencia UBC?">{{ page.title | default: 'What is the UBC Difference?' }}</h1>
+          <p class="ubc-ws-lead" data-es="En University Bicycle Center vamos más allá de vender bicicletas: respaldamos cada producto con servicio real, honestidad, ajustes gratuitos, garantía de precio más bajo del 110% y asesoría experta en Tampa Bay.">At University Bicycle Center, we go beyond just selling bikes — we stand behind every product with service, honesty, and care. "The UBC Difference" means riding with confidence backed by complimentary tune-ups, fair trade-ins, safety-first guidance, and the best price guarantee in town.</p>
+          <div class="ubc-ws-pills" style="margin-bottom:2rem;">
+            <span class="ubc-ws-pill" data-es="50+ Años en Tampa Bay">50+ Years in Tampa Bay</span>
+            <span class="ubc-ws-pill" data-es="Garantía de Precio 110%">110% Price Guarantee</span>
+            <span class="ubc-ws-pill" data-es="Ajustes Gratis de por Vida">Complimentary Adjustments</span>
+          </div>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="/collections/bikes" data-es="Ver Bicicletas">Shop Bikes</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/why-shop-at-ubc" data-es="5 Razones UBC">5 Reasons to Buy at UBC</a>
+          </div>
+        </div>
+        {%- if hero_img -%}
+          <div class="ubc-ws-hero-media">
+            {{ hero_img | image_url: width: 1100 | image_tag: loading: 'eager', alt: 'University Bicycle Center Storefront' }}
+          </div>
+        {%- endif -%}
+      </section>
+
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-section-head">
+          <span class="ubc-ws-kicker" data-es="Programa Incluido con Tu Bici">Included With Every New Bike</span>
+          <h2 class="ubc-ws-h2" data-es="Programa de Servicio Gratuito y Garantía">Complimentary Service &amp; Warranty Timeline</h2>
+        </div>
+        <div class="ubc-ws-grid">
+          <article class="ubc-ws-card">
+            <span class="ubc-ws-num">1</span>
+            <h3 data-es="30 – 90 Días · Revisión Inicial">30 – 90 Days · Break-In Check</h3>
+            <p class="ubc-ws-note" data-es="Reajustamos cables, cambios, frenos y tornillería tras tus primeras rodadas para que la bici quede perfecta.">We inspect and re-tension cables, brakes, shifting, and key bolts after your initial break-in rides.</p>
+          </article>
+          <article class="ubc-ws-card">
+            <span class="ubc-ws-num">2</span>
+            <h3 data-es="6 Meses · Ajuste Intermedio">6 Months · Mid-Year Tune</h3>
+            <p class="ubc-ws-note" data-es="Revisión completa de transmisión, centrado de ruedas, bujes, dirección y presión de llantas.">Full check of drivetrain, wheel true, hubs, bearings, headset torque, and tire pressure.</p>
+          </article>
+          <article class="ubc-ws-card">
+            <span class="ubc-ws-num">3</span>
+            <h3 data-es="1 Año + Dueño Original">1 Year + Original Owner</h3>
+            <p class="ubc-ws-note" data-es="Cobertura de 1 año en mano de obra/partes de garantía y ajustes gratis de frenos, cambios y baleros para el dueño original.">1-year warranty labor &amp; parts coverage, plus complimentary brake, gear, and bearing adjustments for the original owner. (30-day warranty on used bikes.)</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-grid ubc-ws-grid--2">
+          <article class="ubc-ws-card">
+            <span class="ubc-ws-kicker" data-es="Qué Incluye Cada Inspección">What Each Inspection Covers</span>
+            <h3 data-es="Lista Completa de Taller">Workshop Inspection Checklist</h3>
+            <ul class="ubc-ws-list">
+              <li data-es="Ajuste de manijas de freno, calipers, rotores y cambios">Brake lever, caliper, rotor &amp; shifting adjustments</li>
+              <li data-es="Torques de bielas, platos, pedales, potencia y manubrio">Crank-arm, chainring, pedal, stem &amp; handlebar torque checks</li>
+              <li data-es="Centrado de ruedas, ajuste de mazas y presión de llantas">Wheel true, hub adjustment &amp; tire pressure check</li>
+              <li data-es="Alineación de sillín y lubricación de puntos de pivote">Seat alignment &amp; pivot-point lubrication</li>
+            </ul>
+          </article>
+
+          <article class="ubc-ws-card ubc-ws-card--featured">
+            <div>
+              <span class="ubc-ws-kicker" data-es="Compra con Confianza">Buy With Confidence</span>
+              <h3 data-es="Garantía de Precio Más Bajo del 110%">110% Low Price Guarantee</h3>
+              <p class="ubc-ws-note" data-es="Garantizamos el precio más bajo en todas las bicis en stock. Si dentro de los 30 días posteriores a tu compra encuentras la misma bici en stock en otro distribuidor local a menor precio, te reembolsamos el 110% de la diferencia.">UBC guarantees the lowest price on all bicycles in stock. If, within thirty (30) days of purchasing a bicycle from UBC, you find the same bicycle in stock at another local dealer at a lower price, we will refund 110% of the price difference.</p>
+            </div>
+            <div class="ubc-ws-callout">
+              <strong data-es="Consejos de Seguridad en Florida:">Florida Safety Tips:</strong>
+              <span data-es="Las luces son obligatorias de noche y menores de 16 años deben usar casco ajustado. Revisa presión de llantas, ejes, frenos y cambios antes de rodar.">Lights are required when riding at night and riders under 16 must wear a properly fitted helmet. Always check tires, skewers, stem/seatpost, brakes, and shifting before riding.</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    {%- when 'reasons' -%}
+      {%- assign hero_img = images['ubc-difference-storefront.jpg'] -%}
+      <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
+        <div>
+          <span class="ubc-ws-kicker">Over 50 Years Serving Tampa Bay</span>
+          <h1 class="ubc-ws-h1">{{ page.title | default: '5 Reasons to Buy Your Next Bike at UBC' }}</h1>
+          <p class="ubc-ws-lead">At University Bicycle Center, we don't just offer quality bikes, we provide a unique experience backed by over 50 years of knowledge and dedication to cycling.</p>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="/collections/bikes">Shop Bikes</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">How To Find Us</a>
+          </div>
+        </div>
+        {%- if hero_img -%}
+          <div class="ubc-ws-hero-media">
+            {{ hero_img | image_url: width: 1100 | image_tag: loading: 'eager', alt: 'University Bicycle Center' }}
+          </div>
+        {%- endif -%}
+      </section>
+
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-grid">
+          {%- assign r1 = images['5ReasonstoBuyYourNextBikeatUBC.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if r1 -%}<div class="ubc-ws-card-media">{{ r1 | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Personalized Experience' }}</div>{%- endif -%}
+            <span class="ubc-ws-num">1</span>
+            <h3>Personalized Experience and Professional Advice</h3>
+            <p class="ubc-ws-note">We offer personalized advice in-store with experts who listen to your needs and help you find the perfect bike for your lifestyle and riding style.</p>
+          </article>
+
+          {%- assign r2 = images['5ReasonstoBuyYourNextBikeatUBC3.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if r2 -%}<div class="ubc-ws-card-media">{{ r2 | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Bikes Ready to Ride' }}</div>{%- endif -%}
+            <span class="ubc-ws-num">2</span>
+            <h3>Bikes Ready to Ride from Day One</h3>
+            <p class="ubc-ws-note">Every bike we sell is assembled and thoroughly checked in our store — adjusted and ready for your first ride.</p>
+          </article>
+
+          {%- assign r3 = images['5ReasonstoBuyYourNextBikeatUBC4.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if r3 -%}<div class="ubc-ws-card-media">{{ r3 | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Long-Term Commitment' }}</div>{%- endif -%}
+            <span class="ubc-ws-num">3</span>
+            <h3>Long-Term Commitment to Your Satisfaction</h3>
+            <p class="ubc-ws-note">We offer periodic maintenance check-ups to keep your bike in excellent condition year-round.</p>
+          </article>
+
+          {%- assign r4 = images['5ReasonstoBuyYourNextBikeatUBC5.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if r4 -%}<div class="ubc-ws-card-media">{{ r4 | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Quality and Trust' }}</div>{%- endif -%}
+            <span class="ubc-ws-num">4</span>
+            <h3>Quality and Trust Guarantee</h3>
+            <p class="ubc-ws-note">Trusted brands, full manufacturer warranty support, and repairs carried out by expert technicians.</p>
+          </article>
+
+          {%- assign r5 = images['5ReasonstoBuyYourNextBikeatUBC6.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if r5 -%}<div class="ubc-ws-card-media">{{ r5 | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Over 50 Years of Trust' }}</div>{%- endif -%}
+            <span class="ubc-ws-num">5</span>
+            <h3>Over 50 Years of Trust with Cyclists</h3>
+            <p class="ubc-ws-note">A cornerstone of the Tampa Bay cycling community for more than 50 years.</p>
+          </article>
+
+          <article class="ubc-ws-card ubc-ws-card--featured">
+            <div>
+              <span class="ubc-ws-kicker">The UBC Difference</span>
+              <h3>Your Next Bike Awaits</h3>
+              <p class="ubc-ws-note">Visit us in Tampa or at Alafia River State Park, or browse our live in-stock inventory online.</p>
+            </div>
+            <div class="ubc-ws-actions">
+              <a class="ubc-ws-btn" href="/collections/bikes">Shop All Bikes</a>
+              <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/about-us">The UBC Difference</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    {%- when 'financing' -%}
+      {%- assign sync_card = images['ubc-financing-synchrony-card.png'] -%}
+      <section class="ubc-ws-hero{% unless sync_card %} ubc-ws-hero--text-only{% endunless %}">
+        <div>
+          <span class="ubc-ws-kicker">Ride Now. Pay Later.</span>
+          <h1 class="ubc-ws-h1">{{ page.title | default: 'Financing' }}</h1>
+          <p class="ubc-ws-lead">Thanks to our special financing offers, a fantastic new bicycle is within your reach. Apply online in minutes or visit us in-store with a valid ID, credit card, and your Social Security Number.</p>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="#financing-options">Your Financing Options</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/bikes">Shop All Bikes</a>
+          </div>
+        </div>
+        {%- if sync_card -%}
+          <div class="ubc-ws-hero-media">
+            {{ sync_card | image_url: width: 900 | image_tag: loading: 'eager', alt: 'Synchrony Freedom to Ride Credit Card' }}
+          </div>
+        {%- endif -%}
+      </section>
+
+      <section class="ubc-ws-section" id="financing-options">
+        <h2 class="ubc-ws-h2">Your Financing Options</h2>
+        <div class="ubc-ws-grid">
+          {%- assign acima_logo = images['ubc-financing-acima-logo.png'] -%}
+          <article class="ubc-ws-card">
+            <div>
+              {%- if acima_logo -%}<div class="ubc-ws-card-media ubc-ws-card-media--logo">{{ acima_logo | image_url: width: 420 | image_tag: loading: 'lazy', alt: 'Acima' }}</div>{%- endif -%}
+              <h3>Acima</h3>
+              <p class="ubc-ws-note">Flexible Monthly Payments — lease-to-own options designed to help you ride home today.</p>
+            </div>
+            <a class="ubc-ws-btn" href="https://ams.acimacredit.com/discover/new?lang=en.leases&location_guid=loca-703aa24e-31e6-4aec-8f39-c1d5c6147cf6&merchant_guid=merc-4949370c-a29b-41d5-b86a-894e8bd532aa&utm_campaign=merchant&utm_source=web&utm_term=mktg_lp#/about_leasing" target="_blank" rel="noopener">Apply Now</a>
+          </article>
+
+          {%- assign sync_logo = images['ubc-financing-synchrony-logo.png'] -%}
+          <article class="ubc-ws-card ubc-ws-card--featured" id="synchrony">
+            <div>
+              {%- if sync_logo -%}<div class="ubc-ws-card-media ubc-ws-card-media--logo">{{ sync_logo | image_url: width: 420 | image_tag: loading: 'lazy', alt: 'Synchrony' }}</div>{%- endif -%}
+              <h3>Synchrony — Freedom to Ride</h3>
+              <p class="ubc-ws-note">0% Interest Financing options. Prequalify without impacting your credit bureau score or apply directly.</p>
+            </div>
+            <div class="ubc-ws-actions">
+              <a class="ubc-ws-btn" href="https://www.synchrony.com/mmc/FT186212409?sitecode=acewel401" target="_blank" rel="noopener">Apply Now</a>
+              <a class="ubc-ws-btn ubc-ws-btn--ghost" href="https://www.synchrony.com/consumer-resources/payment-calculator/syfhome" target="_blank" rel="noopener">Payment Calculator</a>
+            </div>
+          </article>
+
+          {%- assign snap_logo = images['ubc-financing-snap-logo.png'] -%}
+          <article class="ubc-ws-card">
+            <div>
+              {%- if snap_logo -%}<div class="ubc-ws-card-media ubc-ws-card-media--logo">{{ snap_logo | image_url: width: 420 | image_tag: loading: 'lazy', alt: 'Snap Finance' }}</div>{%- endif -%}
+              <h3>Snap Finance</h3>
+              <p class="ubc-ws-note">Buy Now, Pay Later — quick online decision with convenient payment schedules.</p>
+            </div>
+            <a class="ubc-ws-btn" href="https://bk.snapfinance.com/origination?paramId=3w%2FEWVFzVGcQioSdKn1vuqdr2hNr3A1xiMt4CtG%2BqOW6%2FoVDUYR%2B662lEkK1hZ0tog9ZSjNG2GyQln5HQrzShOzYiaK%2FnFnEZXfXtyBXVEw%3D" target="_blank" rel="noopener">Apply Now</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-grid ubc-ws-grid--2">
+          <div class="ubc-ws-card">
+            <h3>How It Works</h3>
+            <ul class="ubc-ws-list">
+              <li>Quick Application — instant decisions for most applicants</li>
+              <li>Use Card Instantly once approved</li>
+              <li>Pay Over Time with convenient monthly terms</li>
+              <li>No Annual Fee &amp; $0 fraud liability (Synchrony)</li>
+            </ul>
+          </div>
+          <div class="ubc-ws-card">
+            <div>
+              <h3>Already Have a Synchrony Account?</h3>
+              <p class="ubc-ws-note">Sign in online to manage your account, estimate monthly payments, or pay your bill.</p>
+            </div>
+            <div class="ubc-ws-actions">
+              <a class="ubc-ws-btn" href="https://www.synchrony.com/accounts/" target="_blank" rel="noopener">Manage Account</a>
+              <a class="ubc-ws-btn ubc-ws-btn--ghost" href="https://www.synchrony.com/consumer-resources/payment-calculator/syfhome" target="_blank" rel="noopener">Estimate Payments</a>
+            </div>
+            <p class="ubc-ws-note">*Subject to credit approval. New Account APR is 29.99%. Minimum Interest Charge is $2.</p>
+          </div>
+        </div>
+      </section>
+
+    {%- when 'guide' -%}
+      {%- assign hero_img = images['ubc-guide-hero.jpg'] -%}
+      <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
+        <div>
+          <span class="ubc-ws-kicker">How to Choose the Right Bicycle?</span>
+          <h1 class="ubc-ws-h1">{{ page.title | default: "Buyer's Guide" }}</h1>
+          <p class="ubc-ws-lead">Simplify your bike-buying process with key questions: Riding Companions, Preferred Terrain, Past Enjoyment, Address Dislikes, and Budget &amp; Preference.</p>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="/collections/bikes">Shop Bikes</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">How To Find Us</a>
+          </div>
+        </div>
+        {%- if hero_img -%}
+          <div class="ubc-ws-hero-media">
+            {{ hero_img | image_url: width: 1100 | image_tag: loading: 'eager', alt: "UBC Bicycle Buyer's Guide" }}
+          </div>
+        {%- endif -%}
+      </section>
+
+      <section class="ubc-ws-section">
+        <h2 class="ubc-ws-h2">Types of Bicycles</h2>
+        <div class="ubc-ws-grid">
+          {%- assign img_road = images['Road_Bikes.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if img_road -%}<div class="ubc-ws-card-media">{{ img_road | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Road Bikes' }}</div>{%- endif -%}
+            <h3>Road Bikes</h3>
+            <p class="ubc-ws-note">Fast and easy to pedal on pavement with dropped handlebars and endurance geometry options.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/road-bikes">Shop Road Bikes</a>
+          </article>
+
+          {%- assign img_hybrid = images['Hybrid_Bikes.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if img_hybrid -%}<div class="ubc-ws-card-media">{{ img_hybrid | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Hybrid Bikes' }}</div>{%- endif -%}
+            <h3>Hybrid Bikes</h3>
+            <p class="ubc-ws-note">Almost as fast as road bikes and as comfortable as mountain bikes — great for commuting, fitness, and errands.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/hybrid-bikes">Shop Hybrid Bikes</a>
+          </article>
+
+          {%- assign img_mtb = images['Mountain_Bikes.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if img_mtb -%}<div class="ubc-ws-card-media">{{ img_mtb | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Mountain Bikes' }}</div>{%- endif -%}
+            <h3>Mountain Bikes</h3>
+            <p class="ubc-ws-note">Built for off-road trails, dirt, and rocky paths with wider tires and suspension in XC, trail, and enduro styles.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/mountain-bikes">Shop Mountain Bikes</a>
+          </article>
+
+          {%- assign img_comfort = images['Comfort_Bikes.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if img_comfort -%}<div class="ubc-ws-card-media">{{ img_comfort | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Comfort Bikes' }}</div>{%- endif -%}
+            <h3>Comfort Bikes</h3>
+            <p class="ubc-ws-note">Upright riding position, wide handlebars, plush seat, and flat-resistant tires for relaxed riding.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/hybrid-bikes">Shop Comfort Bikes</a>
+          </article>
+
+          {%- assign img_cruiser = images['Cruiser_Bikes.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if img_cruiser -%}<div class="ubc-ws-card-media">{{ img_cruiser | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Cruiser Bikes' }}</div>{%- endif -%}
+            <h3>Cruiser Bikes</h3>
+            <p class="ubc-ws-note">Designed for fun and neighborhood or coastal rides at a relaxed pace.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/hybrid-bikes">Shop Cruisers</a>
+          </article>
+
+          {%- assign img_rec = images['Recumbent_Bikes.jpg'] -%}
+          <article class="ubc-ws-card">
+            {%- if img_rec -%}<div class="ubc-ws-card-media">{{ img_rec | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Recumbent Bikes' }}</div>{%- endif -%}
+            <h3>Recumbent Bikes</h3>
+            <p class="ubc-ws-note">Known for ergonomic comfort and impressive aerodynamic speed.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/contact-us">Ask Our Team</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="ubc-ws-section">
+        <h2 class="ubc-ws-h2">Bike Size Chart</h2>
+        <p class="ubc-ws-note" style="margin-bottom:1.2rem;">General reference for most road, gravel, urban, and hybrid bikes. Visit us for a professional fitting.</p>
+        <div class="ubc-ws-table-wrap">
+          <table class="ubc-ws-table">
+            <thead>
+              <tr><th>Rider Height</th><th>Frame Size</th><th>Road / Gravel (cm)</th><th>Mountain / Hybrid</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>4'10" – 5'2"</td><td>XS</td><td>44 – 49 cm</td><td>13" – 14"</td></tr>
+              <tr><td>5'2" – 5'6"</td><td>S</td><td>50 – 52 cm</td><td>15" – 16"</td></tr>
+              <tr><td>5'6" – 5'10"</td><td>M</td><td>54 cm</td><td>17" – 18"</td></tr>
+              <tr><td>5'10" – 6'1"</td><td>L</td><td>56 – 58 cm</td><td>19" – 20"</td></tr>
+              <tr><td>6'1" – 6'5"+</td><td>XL / XXL</td><td>60 – 61+ cm</td><td>21"+</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+  {%- endcase -%}
+</div>
+
+{% schema %}
+{
+  "name": "UBC Workstand Page",
+  "settings": [
+    {
+      "type": "select",
+      "id": "page_kind",
+      "label": "Page Layout",
+      "default": "about",
+      "options": [
+        { "value": "service", "label": "Bike Service & Repair" },
+        { "value": "contact", "label": "Contact Us" },
+        { "value": "locations", "label": "Locations" },
+        { "value": "about", "label": "About Us / UBC Difference" },
+        { "value": "reasons", "label": "Why Shop At UBC (5 Reasons)" },
+        { "value": "financing", "label": "Financing" },
+        { "value": "guide", "label": "Buyer's Guide" }
+      ]
+    }
+  ]
+}
+{% endschema %}

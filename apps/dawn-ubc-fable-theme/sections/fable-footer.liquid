@@ -94,11 +94,11 @@
                 <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
               {%- endfor -%}
             {%- else -%}
-              <li><a href="{{ home_anchor }}#service" data-es="Taller Sin Cita (Bicis y Scooters)">Walk-In Repair Workshop</a></li>
-              <li><a href="{{ home_anchor }}#service" data-es="Tune-Ups ($100 / $160 / $250)">Tune-Up Packages</a></li>
-              <li><a href="{{ home_anchor }}#rentals" data-es="Alquiler en Alafia River">Alafia Trail Rentals</a></li>
-              <li><a href="{{ home_anchor }}#financing" data-es="Financiamiento 0% APR">0% APR Financing</a></li>
-              <li><a href="{{ home_anchor }}#financing" data-es="Programa Trade-In">Bicycle Trade-In</a></li>
+              <li><a href="/pages/bike-service-repair" data-es="Servicio y Reparación">Bike Service &amp; Repair</a></li>
+              <li><a href="/pages/buyers-guide" data-es="Guía de Compra y Tallas">Buyer's Guide &amp; Size Chart</a></li>
+              <li><a href="/pages/bike-rentals" data-es="Alquiler en Alafia River">Alafia Trail Rentals</a></li>
+              <li><a href="/pages/financing" data-es="Financiamiento (Synchrony / Acima / Snap)">Financing Options</a></li>
+              <li><a href="/pages/maps-trails" data-es="Mapas y Senderos">Maps &amp; Trails</a></li>
             {%- endif -%}
           </ul>
         </details>
@@ -111,11 +111,11 @@
                 <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
               {%- endfor -%}
             {%- else -%}
-              <li><a href="{{ story_href }}" data-es="Conoce a Manny, Carlos y Equipo">Our Family Story &amp; Videos</a></li>
-              <li><a href="{{ locations_href }}" data-es="Mapa Interactivo de Tiendas">Interactive Store Locator</a></li>
-              <li><a href="{{ home_anchor }}#stores">Tampa &middot; 1220 E Fletcher Ave</a></li>
+              <li><a href="/pages/about-us" data-es="La Diferencia UBC">The UBC Difference</a></li>
+              <li><a href="/pages/why-shop-at-ubc" data-es="5 Razones para Comprar en UBC">5 Reasons to Buy at UBC</a></li>
+              <li><a href="/pages/locations" data-es="Cómo Llegar (Tampa y Alafia)">How To Find Us</a></li>
+              <li><a href="/pages/contact-us" data-es="Contáctanos">Contact Us</a></li>
               <li><a href="tel:{{ phone_tel }}">{{ raw_phone | escape }}</a></li>
-              <li><a href="{{ home_anchor }}#stores">Lithia &middot; Alafia River Park</a></li>
             {%- endif -%}
           </ul>
         </details>

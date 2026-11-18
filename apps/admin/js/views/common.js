@@ -1,5 +1,5 @@
 import { h, debounce } from '../ui/dom.js';
-import { chips } from '../ui/components.js';
+import { chips, searchableChips } from '../ui/components.js';
 
 /** Convert dollars text → cents (or undefined). */
 export function dollarsToCents(v) {
@@ -43,8 +43,8 @@ export function filterBar(facets, filter, onChange, opts) {
   const centsOut = (v) => String(v / 100);
 
   const more = h('div.filters', { hidden: !o.expanded },
-    h('label.field.grow', 'Categories', chips(facets.categories.map((c) => ({ value: c.value, n: c.n })), f.categories, (v) => { f.categories = v; emit(); })),
-    h('label.field.grow', 'Brands', chips(facets.brands.map((b) => ({ value: b.value, n: b.n })), f.brands, (v) => { f.brands = v; emit(); })),
+    h('label.field.grow', 'Categories', searchableChips(facets.categories.map((c) => ({ value: c.value, n: c.n })), f.categories, (v) => { f.categories = v; emit(); }, { placeholder: 'Search categories…', limit: 16 })),
+    h('label.field.grow', 'Brands', searchableChips(facets.brands.map((b) => ({ value: b.value, n: b.n })), f.brands, (v) => { f.brands = v; emit(); }, { placeholder: 'Search brands…', limit: 18 })),
     h('label.field.grow', 'Vendors', chips(facets.suppliers.map((s) => ({ value: s.value, label: s.value })), f.suppliers, (v) => { f.suppliers = v; emit(); })),
     num('Min price ($)', 'priceMinCents', '0', dollarsToCents, centsOut),
     num('Max price ($)', 'priceMaxCents', 'any', dollarsToCents, centsOut),

@@ -90,6 +90,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/system', async () => ({
     mode: ctx.config.mode,
     demoNotice: ctx.config.mode === 'demo' ? DEMO_NOTICE : null,
+    posEventWritesEnabled: !!ctx.config.env.LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED,
     version: '0.1.0',
   }));
 
@@ -164,8 +165,8 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const c = req.session!.companyId;
     const [cats, brands, sups] = await Promise.all([
-      ctx.pool.query(`SELECT category AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 GROUP BY 1 ORDER BY 1`, [c]),
-      ctx.pool.query(`SELECT brand AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 GROUP BY 1 ORDER BY 1`, [c]),
+      ctx.pool.query(`SELECT category AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 AND trim(category) <> '' GROUP BY 1 ORDER BY n DESC, 1`, [c]),
+      ctx.pool.query(`SELECT brand AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 AND trim(brand) <> '' GROUP BY 1 ORDER BY n DESC, 1`, [c]),
       ctx.pool.query(`SELECT code AS value, name FROM suppliers WHERE company_id = $1 AND is_active ORDER BY code`, [c]),
     ]);
     return { categories: cats.rows, brands: brands.rows, suppliers: sups.rows };

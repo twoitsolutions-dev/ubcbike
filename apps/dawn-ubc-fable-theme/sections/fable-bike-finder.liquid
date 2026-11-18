@@ -75,10 +75,10 @@
     </div>
 
     <script type="application/json" id="FableCatalogData">
-      {%- if collections['bikes'] != blank and collections['bikes'].products_count > 10 -%}
+      {%- if target_col != blank and target_col.products_count > 0 -%}
         [
           {%- assign emitted_real_bikes = 0 -%}
-          {%- for p in collections['bikes'].products limit: 50 -%}
+          {%- for p in target_col.products limit: 50 -%}
             {%- if p.featured_image == blank or p.available == false -%}{%- continue -%}{%- endif -%}
             {%- liquid
               assign v = p.selected_or_first_available_variant

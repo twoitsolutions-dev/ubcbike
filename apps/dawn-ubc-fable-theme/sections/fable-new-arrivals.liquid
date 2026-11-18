@@ -243,20 +243,26 @@
     </div>
 
     <script type="application/json" id="FableNewArrivalsData">
-      {%- if collections['helmets'] != blank and collections['helmets'].products_count > 5 -%}
+      {%- if collections['all'] != blank and collections['all'].products_count > 0 -%}
         [
           {%- assign na_emitted = 0 -%}
-          {%- assign na_sources = 'helmets:helmets:4,hydration-nutrition:nutrition:4,tires-tubes:parts:4,bikes:bikes:4' | split: ',' -%}
+          {%- assign na_sources = 'helmets:helmets:4,hydration-nutrition:nutrition:4,nutrition:nutrition:4,tires-tubes:parts:4,parts:parts:4,bikes:bikes:4,all:parts:8' | split: ',' -%}
+          {%- assign na_seen_handles = ',' -%}
           {%- for src in na_sources -%}
+            {%- if na_emitted >= 16 -%}{%- break -%}{%- endif -%}
             {%- assign sp = src | split: ':' -%}
             {%- assign sh = sp[0] -%}
             {%- assign scat = sp[1] -%}
+            {%- assign smax = sp[2] | plus: 0 -%}
             {%- assign sc = collections[sh] -%}
             {%- if sc != blank and sc.products_count > 0 -%}
               {%- assign group_count = 0 -%}
               {%- for p in sc.products limit: 16 -%}
-                {%- if group_count >= 4 -%}{%- break -%}{%- endif -%}
+                {%- if group_count >= smax or na_emitted >= 16 -%}{%- break -%}{%- endif -%}
                 {%- if p.featured_image == blank or p.available == false -%}{%- continue -%}{%- endif -%}
+                {%- assign h_token = ',' | append: p.handle | append: ',' -%}
+                {%- if na_seen_handles contains h_token -%}{%- continue -%}{%- endif -%}
+                {%- assign na_seen_handles = na_seen_handles | append: p.handle | append: ',' -%}
                 {%- liquid
                   assign v = p.selected_or_first_available_variant
                   assign price_num = v.price | divided_by: 100.0

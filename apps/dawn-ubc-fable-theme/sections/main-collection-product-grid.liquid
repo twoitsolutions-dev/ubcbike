@@ -224,7 +224,26 @@
 >
   <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
     {%- liquid
-      assign ubc_dept_handles = 'all:All In-Stock,bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes,helmets:Helmets,clothing:Apparel,cycling-shoes:Shoes,eyewear:Sunglasses,tires-tubes:Tires,tubes:Tubes,parts-components:Parts,saddles:Saddles,pedals:Pedals,hydration-nutrition:Nutrition,bottles-cages:Bottles & Cages,accessories-gear:Accessories,tools-workshop:Tools & Care' | split: ','
+      assign h_cur = collection.handle
+      assign show_back_all = false
+      if h_cur == 'all' or h_cur == 'in-stock-tampa' or h_cur == 'in-stock-alafia'
+        assign ubc_dept_handles = 'all:All In-Stock,bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes,helmets:Helmets,clothing:Apparel,cycling-shoes:Shoes,eyewear:Sunglasses,tires-tubes:Tires & Tubes,parts-components:Parts,hydration-nutrition:Nutrition,accessories-gear:Accessories,tools-workshop:Tools & Care' | split: ','
+      elsif h_cur == 'bikes' or h_cur == 'electric-bikes' or h_cur == 'road-bikes' or h_cur == 'mountain-bikes' or h_cur == 'hybrid-bikes' or h_cur == 'kids-bikes'
+        assign ubc_dept_handles = 'bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes' | split: ','
+        assign show_back_all = true
+      elsif h_cur == 'parts-components' or h_cur == 'saddles' or h_cur == 'pedals'
+        assign ubc_dept_handles = 'parts-components:All Parts,saddles:Saddles,pedals:Pedals' | split: ','
+        assign show_back_all = true
+      elsif h_cur == 'tires-tubes' or h_cur == 'tubes' or h_cur == 'bicycle-tires'
+        assign ubc_dept_handles = 'tires-tubes:All Tires & Tubes,bicycle-tires:Tires,tubes:Inner Tubes' | split: ','
+        assign show_back_all = true
+      elsif h_cur == 'hydration-nutrition' or h_cur == 'bottles-cages'
+        assign ubc_dept_handles = 'hydration-nutrition:All Hydration & Nutrition,bottles-cages:Bottles & Cages' | split: ','
+        assign show_back_all = true
+      else
+        assign ubc_dept_handles = '' | split: ','
+        assign show_back_all = true
+      endif
       assign active_store_tag = ''
       assign active_brand_tag = ''
       assign active_price_tag = ''
@@ -315,7 +334,17 @@
         </div>
       {%- endif -%}
 
+      {%- if show_back_all or ubc_dept_handles.size > 0 -%}
       <nav class="ubc-dept-pills" aria-label="Store departments">
+        {%- if show_back_all -%}
+          {%- assign back_all_href = routes.collections_url | append: '/all' -%}
+          {%- if active_store_tag != '' -%}
+            {%- assign back_all_href = back_all_href | append: '/' | append: active_store_tag -%}
+          {%- endif -%}
+          <a class="ubc-dept-pill" href="{{ back_all_href }}">
+            <span>&larr; All Departments</span>
+          </a>
+        {%- endif -%}
         {%- for pair in ubc_dept_handles -%}
           {%- assign parts = pair | split: ':' -%}
           {%- assign dh = parts[0] -%}
@@ -337,6 +366,7 @@
           {%- endif -%}
         {%- endfor -%}
       </nav>
+      {%- endif -%}
 
       <div class="ubc-facets-row" id="ubcFacetsRow">
         <div class="ubc-facet-ctl">

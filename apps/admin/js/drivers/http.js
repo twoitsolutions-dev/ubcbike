@@ -62,6 +62,7 @@ export function createHttpDriver() {
     saveSettings: (s) => req('PUT', '/api/settings', s),
     campaigns: () => req('GET', '/api/campaigns'),
     createCampaign: (input) => req('POST', '/api/campaigns', input),
+    updateCampaign: (id, input) => req('PATCH', '/api/campaigns/' + id, input),
     campaign: (id) => req('GET', '/api/campaigns/' + id),
     campaignLines: (id, status, offset, limit) => req('GET', '/api/campaigns/' + id + '/lines' + qs({ status, offset, limit })),
     previewCampaign: (id) => req('POST', '/api/campaigns/' + id + '/preview', {}),

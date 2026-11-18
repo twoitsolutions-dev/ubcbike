@@ -5,7 +5,7 @@ import { signShopifyWebhook, verifyShopifyWebhook, type ShopifyOrderWebhook } fr
 import { requireAuth } from '../middleware/auth.js';
 import { audit } from '../services/audit.js';
 import {
-  approveCampaign, campaignInputSchema, cancelCampaign, createCampaign, getCampaign, refreshPreview, requestRestore,
+  approveCampaign, campaignInputSchema, cancelCampaign, createCampaign, getCampaign, refreshPreview, requestRestore, updateCampaign,
 } from '../services/campaigns.js';
 import { getItem } from '../services/catalog.js';
 import { HttpError, notFound, type AppContext } from '../services/context.js';
@@ -41,6 +41,12 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/campaigns/:id', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const { id } = uuidParam.parse(req.params);
     return getCampaign(ctx.pool, req.session!.companyId, id);
+  });
+
+  app.patch('/api/campaigns/:id', { preHandler: requireAuth(ctx, 'pricing.write') }, async (req) => {
+    const { id } = uuidParam.parse(req.params);
+    const input = campaignInputSchema.parse(req.body);
+    return updateCampaign(ctx, req.session!.companyId, req.session!.userId, id, input);
   });
 
   app.get('/api/campaigns/:id/lines', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {

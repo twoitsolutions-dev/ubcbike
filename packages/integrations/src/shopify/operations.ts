@@ -105,6 +105,15 @@ export interface ShopifyAdminPort {
   setInventoryOnHand(locationId: string, quantities: { inventoryItemId: string; quantity: number }[]): Promise<void>;
   ensureUbcMetafieldDefinitions(): Promise<{ created: string[]; existing: string[] }>;
   ensureSmartCollections(): Promise<{ created: string[]; existing: string[] }>;
+  listActiveStockCollectionCoverage(): Promise<{
+    id: string;
+    title: string;
+    vendor: string;
+    productType: string;
+    totalInventory: number;
+    tags: string[];
+    collections: { handle: string; title: string }[];
+  }[]>;
 }
 
 /** One store variant as read by `bulkReadVariants` (compare-at only when above price). */
@@ -791,6 +800,61 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     }
     return { created, existing };
   }
+
+  async listActiveStockCollectionCoverage() {
+    type R = {
+      products: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: {
+          id: string;
+          title: string;
+          vendor: string;
+          productType: string;
+          totalInventory: number;
+          tags: string[];
+          collections: { nodes: { handle: string; title: string }[] };
+        }[];
+      };
+    };
+    const out: {
+      id: string;
+      title: string;
+      vendor: string;
+      productType: string;
+      totalInventory: number;
+      tags: string[];
+      collections: { handle: string; title: string }[];
+    }[] = [];
+    let cursor: string | null = null;
+    for (let page = 0; page < 40; page++) {
+      const r: R = await this.client.query<R>(
+        `query ActiveCoverage($cursor: String) {
+          products(first: 100, after: $cursor, query: "status:active inventory_total:>0") {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              id title vendor productType totalInventory tags
+              collections(first: 15) { nodes { handle title } }
+            }
+          }
+        }`,
+        { cursor },
+      );
+      for (const p of r.products.nodes) {
+        out.push({
+          id: p.id,
+          title: p.title,
+          vendor: p.vendor,
+          productType: p.productType,
+          totalInventory: p.totalInventory,
+          tags: p.tags,
+          collections: p.collections.nodes,
+        });
+      }
+      if (!r.products.pageInfo.hasNextPage) break;
+      cursor = r.products.pageInfo.endCursor;
+    }
+    return out;
+  }
 }
 
 /** DEMO adapter: records calls in memory so tests and the demo can assert what would have been sent. */
@@ -833,4 +897,5 @@ export class MockShopifyAdmin implements ShopifyAdminPort {
   async setInventoryOnHand(locationId: string, quantities: unknown) { this.calls.push({ op: 'setInventoryOnHand', args: { locationId, quantities } }); }
   async ensureUbcMetafieldDefinitions() { this.calls.push({ op: 'ensureUbcMetafieldDefinitions', args: null }); return { created: ['ubc.availability', 'ubc.lead_time_days', 'ubc.click_and_collect_only'], existing: [] }; }
   async ensureSmartCollections() { this.calls.push({ op: 'ensureSmartCollections', args: null }); return { created: ['electric-bikes', 'road-bikes', 'mountain-bikes', 'helmets', 'tires-tubes'], existing: [] }; }
+  async listActiveStockCollectionCoverage() { this.calls.push({ op: 'listActiveStockCollectionCoverage', args: null }); return []; }
 }

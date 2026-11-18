@@ -1,4 +1,5 @@
 import { renderDashboard } from './views/dashboard.js?v=46';
+import { renderReports } from './views/reports.js?v=47';
 import { renderPipeline } from './views/pipeline.js?v=40';
 import { renderProducts, renderProductDetail } from './views/products.js?v=43';
 import { renderInventory } from './views/inventory.js?v=40';
@@ -14,6 +15,7 @@ import { renderUpcReview } from './views/upc-review.js?v=40';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },
+  { path: '/reports', title: 'Reports', render: renderReports },
   { path: '/pipeline', title: 'Vendor Catalogs · Feed Sync', render: renderPipeline },
   { path: '/products', title: 'Item Search', render: renderProducts },
   { path: '/products/:id', title: 'Item Details', render: renderProductDetail },

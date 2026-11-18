@@ -177,6 +177,85 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     return { total, items: items.map((i) => ({ ...i, availability: computeAvailability(i, availability) })) };
   });
 
+  const collectionsGapCache = new Map<string, { at: number; data: unknown }>();
+  const GENERAL_HANDLES = new Set(['all', 'in-stock-tampa', 'in-stock-alafia']);
+
+  app.get('/api/reports/collections-gap', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const refresh = (req.query as { refresh?: string })?.refresh === '1';
+    const hit = collectionsGapCache.get(companyId);
+    if (!refresh && hit && Date.now() - hit.at < 3 * 60_000) return hit.data;
+
+    const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+    const raw = await ctx.connectors.shopify.listActiveStockCollectionCoverage();
+
+    const outsideDept: {
+      id: string;
+      numericId: string;
+      adminUrl: string;
+      title: string;
+      vendor: string;
+      productType: string;
+      totalInventory: number;
+      deptTags: string[];
+      collections: { handle: string; title: string }[];
+      gapType: 'no_collections' | 'no_department';
+      reason: string;
+    }[] = [];
+
+    const byType = new Map<string, number>();
+    let inDeptCount = 0;
+    let outsideAllCount = 0;
+
+    for (const p of raw) {
+      const deptCols = p.collections.filter((c) => !GENERAL_HANDLES.has(c.handle));
+      if (deptCols.length > 0) {
+        inDeptCount++;
+        continue;
+      }
+      const gapType = p.collections.length === 0 ? 'no_collections' : 'no_department';
+      if (gapType === 'no_collections') outsideAllCount++;
+      const deptTags = p.tags.filter((t) => t.startsWith('dept-'));
+      const pt = (p.productType || '').trim() || '(empty)';
+      byType.set(pt, (byType.get(pt) ?? 0) + 1);
+      const numericId = p.id.split('/').pop() || '';
+      const reason = gapType === 'no_collections'
+        ? 'Not in ANY collection (even general/store)'
+        : (deptTags.length ? `Has ${deptTags.join(', ')} but not matched to a dept collection` : `No dept-* tag & productType "${pt}" has no collection rule`);
+      outsideDept.push({
+        id: p.id,
+        numericId,
+        adminUrl: shop ? `https://${shop}/admin/products/${numericId}` : '',
+        title: p.title,
+        vendor: p.vendor,
+        productType: pt,
+        totalInventory: p.totalInventory,
+        deptTags,
+        collections: p.collections,
+        gapType,
+        reason,
+      });
+    }
+
+    const typeBreakdown = Array.from(byType.entries())
+      .map(([productType, count]) => ({ productType, count }))
+      .sort((a, b) => b.count - a.count || a.productType.localeCompare(b.productType));
+
+    const data = {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalActiveInStock: raw.length,
+        inDeptCollections: inDeptCount,
+        outsideDeptCollections: outsideDept.length,
+        outsideAllCollections: outsideAllCount,
+      },
+      typeBreakdown,
+      items: outsideDept,
+    };
+    collectionsGapCache.set(companyId, { at: Date.now(), data });
+    return data;
+  });
+
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const c = req.session!.companyId;
     const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();

@@ -2,13 +2,19 @@ import { CONFIG } from './config.js';
 import { createHttpDriver } from './drivers/http.js';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=46';
+import { matchRoute } from './router.js?v=47';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
 
 const NAV = [
-  { group: 'Overview', items: [['#/dashboard', 'Dashboard', 'dashboard']] },
+  {
+    group: 'Overview',
+    items: [
+      ['#/dashboard', 'Dashboard', 'dashboard'],
+      ['#/reports', 'Reports', 'clipboard'],
+    ],
+  },
   {
     group: 'Inventory',
     items: [
@@ -37,6 +43,7 @@ function navParentFor(hash) {
   if (path.indexOf('#/orders') === 0) return '#/orders';
   if (path.indexOf('#/purchasing') === 0) return '#/purchasing';
   if (path.indexOf('#/upc-matches') === 0) return '#/upc-matches';
+  if (path.indexOf('#/reports') === 0) return '#/reports';
   return '#/dashboard';
 }
 

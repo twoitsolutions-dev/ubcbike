@@ -41,6 +41,7 @@ export function createHttpDriver() {
     logout: () => req('POST', '/api/auth/logout', {}),
     system: () => req('GET', '/api/system'),
     dashboard: () => req('GET', '/api/dashboard'),
+    reportsCollectionGap: (refresh) => req('GET', '/api/reports/collections-gap' + (refresh ? '?refresh=1' : '')),
     items: (q) => req('GET', '/api/items' + qs(q)),
     facets: () => req('GET', '/api/items/facets'),
     item: (id) => req('GET', '/api/items/' + id),

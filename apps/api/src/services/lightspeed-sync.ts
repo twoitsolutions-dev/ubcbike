@@ -706,8 +706,7 @@ export async function syncFromLightspeedJob(
           `DELETE FROM variants v
            WHERE v.company_id = $1 AND v.id = ANY($2::uuid[])
              AND NOT EXISTS (SELECT 1 FROM order_lines ol WHERE ol.variant_id = v.id)
-             AND NOT EXISTS (SELECT 1 FROM campaign_lines cl WHERE cl.variant_id = v.id)
-             AND NOT EXISTS (SELECT 1 FROM purchase_order_lines pol WHERE pol.variant_id = v.id)`,
+             AND NOT EXISTS (SELECT 1 FROM campaign_lines cl WHERE cl.variant_id = v.id)`,
           [companyId, vids],
         );
         await ctx.pool.query(

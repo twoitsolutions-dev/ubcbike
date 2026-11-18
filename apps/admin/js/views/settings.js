@@ -20,6 +20,7 @@ export async function renderSettings(ctx) {
   const supSafety = num(s.availability.supplierSafetyQty, { min: '0', max: '100' });
   const maxAge = num(s.availability.maxOfferAgeHours, { min: '1', max: '720' });
   const handling = num(s.availability.handlingDays, { min: '0', max: '60' });
+  const showUpcMatches = h('input', { type: 'checkbox', checked: s.availability.showUpcMatches !== false, disabled: !canEdit });
   const err = h('div');
 
   const save = h('button.btn.primary', {
@@ -28,10 +29,20 @@ export async function renderSettings(ctx) {
       mount(err);
       const body = {
         campaignRules: { minMarginPct: Number(minM.value) / 100, warnMarginPct: Number(warnM.value) / 100, clampToMinMargin: clamp.checked },
-        availability: { physicalSafetyQty: Number(physSafety.value), supplierSafetyQty: Number(supSafety.value), maxOfferAgeHours: Number(maxAge.value), handlingDays: Number(handling.value) },
+        availability: {
+          physicalSafetyQty: Number(physSafety.value),
+          supplierSafetyQty: Number(supSafety.value),
+          maxOfferAgeHours: Number(maxAge.value),
+          handlingDays: Number(handling.value),
+          showUpcMatches: showUpcMatches.checked,
+        },
       };
       if (body.campaignRules.warnMarginPct < body.campaignRules.minMarginPct) { mount(err, h('div.notice.bad', 'The warning threshold must be at or above the minimum margin.')); return; }
-      try { await ctx.api.saveSettings(body); toast('Settings saved', 'ok'); } catch (e) { mount(err, h('div.notice.bad', e.message)); }
+      try {
+        await ctx.api.saveSettings(body);
+        toast('Settings saved', 'ok');
+        if (ctx.refreshNav) await ctx.refreshNav();
+      } catch (e) { mount(err, h('div.notice.bad', e.message)); }
     },
   }, 'Save settings');
 
@@ -62,6 +73,8 @@ export async function renderSettings(ctx) {
       h('label.field', 'Supplier safety quantity', supSafety, h('span.help', 'Supplier must report more than this')),
       h('label.field', 'Max age of supplier data (hours)', maxAge, h('span.help', 'Older data is ignored')),
       h('label.field', 'Handling days at UBC', handling, h('span.help', 'Added to supplier lead time')))),
+    card('Hub Modules', h('div.stack',
+      h('label.check', showUpcMatches, h('strong', 'Show "UPC Matches" in Hub menu & dashboard'), h('span.small.muted', ' — uncheck anytime to hide the UPC Matches queue')))),
     err,
     h('div.row', save),
     demoTools,

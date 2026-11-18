@@ -133,6 +133,7 @@ export async function renderPromotionNew(ctx) {
     ctx.api.settings(),
     editId ? ctx.api.campaign(editId) : Promise.resolve(null),
   ]);
+  const promoBrands = (facets.shopifyBrands && facets.shopifyBrands.length) ? facets.shopifyBrands : facets.brands;
   const posEnabled = !!(ctx.system && ctx.system.posEventWritesEnabled);
 
   let selection = { stock: 'physical' };
@@ -268,7 +269,7 @@ export async function renderPromotionNew(ctx) {
   const scopeTabsHost = h('div.seg-group');
   const scopeBodyHost = h('div.promo-scope-box');
   const advWrap = h('div.stack-sm', { hidden: true });
-  let advOpen = false;
+  let advOpen = !!(selection.q || (selection.suppliers && selection.suppliers.length) || selection.priceMinCents !== undefined || selection.priceMaxCents !== undefined || (selection.stock && selection.stock !== 'physical'));
   const advBtn = h('button.btn.sm.ghost', {
     type: 'button',
     onclick: () => {
@@ -276,7 +277,7 @@ export async function renderPromotionNew(ctx) {
       advWrap.hidden = !advOpen;
       advBtn.textContent = advOpen ? 'Hide extra filters ▴' : '+ Extra filters (keyword/UPC/SKU, stock, supplier, price range)';
     },
-  }, '+ Extra filters (keyword/UPC/SKU, stock, supplier, price range)');
+  }, advOpen ? 'Hide extra filters ▴' : '+ Extra filters (keyword/UPC/SKU, stock, supplier, price range)');
 
   const selectedItemsMap = new Map();
   let pickerState = { q: '', brands: [], inStock: true, results: [], loading: false };
@@ -473,10 +474,10 @@ export async function renderPromotionNew(ctx) {
         },
       });
       const brandDrop = searchableDropdown(
-        facets.brands.map((b) => ({ value: b.value, label: b.value, n: b.n })),
+        promoBrands.map((b) => ({ value: b.value, label: b.value, n: b.n })),
         pickerState.brands,
         (v) => { pickerState.brands = v; runPickerSearch(); },
-        { allLabel: 'All brands', noun: 'brands', placeholder: 'Filter by brand…' },
+        { allLabel: 'All Shopify brands', noun: 'brands', placeholder: 'Filter by Shopify brand…' },
       );
       const stockOnlyCb = h('input', {
         type: 'checkbox',
@@ -548,14 +549,14 @@ export async function renderPromotionNew(ctx) {
       { allLabel: 'All categories', noun: 'categories', placeholder: 'Search categories…' },
     );
     const brandDropdown = searchableDropdown(
-      facets.brands.map((b) => ({ value: b.value, label: b.value, n: b.n })),
+      promoBrands.map((b) => ({ value: b.value, label: b.value, n: b.n })),
       selection.brands,
       (v) => {
         selection.brands = v.length ? v : undefined;
         syncAutoName();
         updateCount();
       },
-      { allLabel: 'All brands', noun: 'brands', placeholder: 'Search brands (e.g. Specialized, Fox, Giant)…' },
+      { allLabel: 'All Shopify brands', noun: 'brands', placeholder: 'Search Shopify brands (e.g. Specialized, Fox, Giant)…' },
     );
 
     scopeBodyHost.appendChild(h('div.stack',
@@ -654,10 +655,18 @@ export async function renderPromotionNew(ctx) {
 
   // --- Step 3: Timing & Automatic Safety Guardrails ---
   const schedTabsHost = h('div.seg-group');
-  const startInput = h('input', { type: 'datetime-local', oninput: () => renderSummary() });
-  const endInput = h('input', { type: 'datetime-local', oninput: () => renderSummary() });
-  startInput.min = toLocalInput(new Date());
-  const schedFields = h('div.form-grid', { hidden: true },
+  const startInput = h('input', {
+    type: 'datetime-local',
+    value: editCamp && editCamp.starts_at ? toLocalInput(new Date(editCamp.starts_at)) : '',
+    oninput: () => renderSummary(),
+  });
+  const endInput = h('input', {
+    type: 'datetime-local',
+    value: editCamp && editCamp.ends_at ? toLocalInput(new Date(editCamp.ends_at)) : '',
+    oninput: () => renderSummary(),
+  });
+  if (!editCamp) startInput.min = toLocalInput(new Date());
+  const schedFields = h('div.form-grid', { hidden: st.scheduleMode !== 'scheduled' },
     h('label.field', 'Start date & time', startInput, h('span.help', 'Leave empty to start on approval')),
     h('label.field', 'End date & time', endInput, h('span.help', 'Leave empty to end manually')));
 
@@ -761,9 +770,9 @@ export async function renderPromotionNew(ctx) {
   loadInitialSelected();
 
   const leftCol = h('div.stack',
-    card(null, h('div.stack-sm',
+    !editCamp ? card(null, h('div.stack-sm',
       h('div.row-between', h('strong', 'Quick event templates (optional)'), h('span.small.muted', 'Or configure manually below')),
-      presetHost)),
+      presetHost)) : null,
     card(h('span.row', h('span.step-badge', '1'), 'Where & Which Products'), h('div.stack',
       h('label.field', 'Promotion name', nameInput),
       h('div.stack-sm', h('span.small.muted', 'Where should this promotion apply?'), channelHost),

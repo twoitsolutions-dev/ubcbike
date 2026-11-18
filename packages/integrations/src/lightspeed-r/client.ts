@@ -299,6 +299,21 @@ export class LightspeedRClient {
     }
   }
 
+  /** Iterate archived Item IDs (sinceTimestamp optional) so items archived in Lightspeed can be removed/hidden from the Hub. */
+  async *iterateArchivedIds(sinceTimestamp?: string): AsyncGenerator<string[]> {
+    const params = new URLSearchParams({ archived: 'true', limit: '100' });
+    if (sinceTimestamp) params.set('timeStamp', `>,${sinceTimestamp}`);
+    let next: string | null = `/Item.json?${params.toString()}`;
+    while (next) {
+      type Page = { '@attributes'?: { next?: string }; Item?: LsItem | LsItem[] };
+      const page: Page = await this.get<Page>(next);
+      const items = page.Item ? (Array.isArray(page.Item) ? page.Item : [page.Item]) : [];
+      const ids = items.map((it) => it.itemID).filter(Boolean);
+      if (ids.length) yield ids;
+      next = page['@attributes']?.next || null;
+    }
+  }
+
   /**
    * Read-only iteration of Lightspeed R-Series `SpecialOrder` records (`/SpecialOrder.json`).
    * Used to detect when Carlos links an item to a vendor PO (`ordered`) or when UBC reception
@@ -416,8 +431,8 @@ export function mapLsItem(item: LsItem, physicalShopIds?: string[]) {
     compareAtCents,
     defaultPriceCents,
     salePriceCents: hasActiveSale ? rawSaleCents : null,
-    // $0.00 defaultCost/avgCost in Lightspeed means no cost on file (e.g. USED bikes, labor, uncosted items) -> null so margin floors protect them!
-    costCents: toPositiveCents(item.defaultCost) ?? toPositiveCents(item.avgCost),
+    // $0.00 avgCost/defaultCost in Lightspeed means no cost on file (e.g. USED bikes, labor, uncosted items) -> null so margin floors protect them!
+    costCents: toPositiveCents(item.avgCost) ?? toPositiveCents(item.defaultCost),
     msrpCents: toPositiveCents(msrp?.amount),
     physicalQty: qty,
     shopQuantities,

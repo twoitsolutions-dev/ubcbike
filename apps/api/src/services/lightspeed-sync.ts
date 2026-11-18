@@ -688,6 +688,45 @@ export async function syncFromLightspeedJob(
   }
   await flushBuffer();
 
+  // Remove/hide any Lightspeed items archived since last sync so archived items never stay in the Hub.
+  if (sinceCursor && typeof ls.iterateArchivedIds === 'function') {
+    const archivedIds: string[] = [];
+    for await (const ids of ls.iterateArchivedIds(sinceCursor)) {
+      archivedIds.push(...ids);
+    }
+    if (archivedIds.length > 0) {
+      const found = await ctx.pool.query<{ entity_id: string }>(
+        `SELECT entity_id FROM external_ids
+         WHERE company_id = $1 AND system = 'lightspeed_r' AND entity_type = 'variant' AND external_id = ANY($2::text[])`,
+        [companyId, archivedIds],
+      );
+      if (found.rows.length > 0) {
+        const vids = found.rows.map((r) => r.entity_id);
+        await ctx.pool.query(
+          `DELETE FROM variants v
+           WHERE v.company_id = $1 AND v.id = ANY($2::uuid[])
+             AND NOT EXISTS (SELECT 1 FROM order_lines ol WHERE ol.variant_id = v.id)
+             AND NOT EXISTS (SELECT 1 FROM campaign_lines cl WHERE cl.variant_id = v.id)
+             AND NOT EXISTS (SELECT 1 FROM purchase_order_lines pol WHERE pol.variant_id = v.id)`,
+          [companyId, vids],
+        );
+        await ctx.pool.query(
+          `DELETE FROM external_ids e
+           WHERE e.company_id = $1 AND e.system = 'lightspeed_r' AND e.entity_type = 'variant'
+             AND NOT EXISTS (SELECT 1 FROM variants v WHERE v.id = e.entity_id)`,
+          [companyId],
+        );
+        await ctx.pool.query(
+          `UPDATE products p SET status = 'hidden', updated_at = now()
+           FROM variants v
+           WHERE p.company_id = $1 AND v.product_id = p.id AND v.id = ANY($2::uuid[]) AND p.status <> 'hidden'`,
+          [companyId, vids],
+        );
+        await ctx.pool.query(`DELETE FROM inventory_levels WHERE variant_id = ANY($1::uuid[])`, [vids]);
+      }
+    }
+  }
+
   await ctx.pool.query(
     `INSERT INTO integration_connections (
        company_id, system, status, detail, missing, writes_enabled, last_checked_at, sync_cursor, last_synced_at, records_synced

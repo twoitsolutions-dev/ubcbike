@@ -84,7 +84,7 @@ export async function renderDashboard(ctx) {
   if (c.openErrors) attention.push(['Unresolved sync errors', c.openErrors, '#/activity?tab=errors', 'bad']);
   if (c.deadJobs) attention.push(['Failed background jobs', c.deadJobs, '#/activity?tab=jobs', 'bad']);
   if (c.pendingMatchReviews) attention.push(['Vendor Catalog matches to review', c.pendingMatchReviews, '#/suppliers', 'warn']);
-  if (c.upcReview) attention.push(['UPC matches to approve (Lightspeed ↔ Shopify)', c.upcReview, '#/upc-matches', 'warn']);
+  if (c.upcReview && ctx.showUpcMatches !== false) attention.push(['UPC matches to approve (Lightspeed ↔ Shopify)', c.upcReview, '#/upc-matches', 'warn']);
 
   const active = camps.campaigns.filter((x) => ['active', 'scheduled', 'applying', 'restoring'].indexOf(x.status) >= 0);
   const recentOrders = orders.orders.slice(0, 5);

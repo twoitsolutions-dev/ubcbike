@@ -1,15 +1,15 @@
-import { renderDashboard } from './views/dashboard.js?v=45';
+import { renderDashboard } from './views/dashboard.js?v=46';
 import { renderPipeline } from './views/pipeline.js?v=40';
 import { renderProducts, renderProductDetail } from './views/products.js?v=43';
 import { renderInventory } from './views/inventory.js?v=40';
 import { renderSuppliers } from './views/suppliers.js?v=40';
 import { renderPricing } from './views/pricing.js?v=40';
-import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=44';
+import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=46';
 import { renderOrders, renderOrderDetail } from './views/orders.js?v=40';
 import { renderPurchasing } from './views/purchasing.js?v=40';
 import { renderIntegrations } from './views/integrations.js?v=40';
 import { renderActivity } from './views/activity.js?v=40';
-import { renderSettings } from './views/settings.js?v=40';
+import { renderSettings } from './views/settings.js?v=46';
 import { renderUpcReview } from './views/upc-review.js?v=40';
 
 export const routes = [

@@ -119,7 +119,8 @@ export function evaluateLine(item: CatalogItem, adj: PriceAdjustment, opts: Eval
   const reasons: LineReason[] = [];
   let status: LineStatus = 'ok';
   const oldPrice = item.priceCents;
-  let newPrice = applyAdjustment(oldPrice, adj);
+  const promoBasePrice = item.compareAtCents && item.compareAtCents > item.priceCents ? item.compareAtCents : item.priceCents;
+  let newPrice = applyAdjustment(promoBasePrice, adj);
   const cost = item.costCents;
 
   const base = {

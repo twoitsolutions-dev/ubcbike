@@ -179,12 +179,26 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const c = req.session!.companyId;
-    const [cats, brands, sups] = await Promise.all([
+    const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+    const [cats, brands, shopifyBrands, sups] = await Promise.all([
       ctx.pool.query(`SELECT category AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 AND trim(category) <> '' GROUP BY 1 ORDER BY n DESC, 1`, [c]),
       ctx.pool.query(`SELECT brand AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 AND trim(brand) <> '' GROUP BY 1 ORDER BY n DESC, 1`, [c]),
+      shop
+        ? ctx.pool.query(
+          `SELECT ci.brand AS value, count(*)::int n
+           FROM catalog_items ci
+           WHERE ci.company_id = $1 AND trim(ci.brand) <> ''
+             AND EXISTS (
+               SELECT 1 FROM shopify_variant_links l
+               WHERE l.company_id = ci.company_id AND l.shop_domain = $2 AND l.variant_id = ci.id
+             )
+           GROUP BY 1 ORDER BY n DESC, 1`,
+          [c, shop],
+        )
+        : Promise.resolve({ rows: [] }),
       ctx.pool.query(`SELECT code AS value, name FROM suppliers WHERE company_id = $1 AND is_active ORDER BY code`, [c]),
     ]);
-    return { categories: cats.rows, brands: brands.rows, suppliers: sups.rows };
+    return { categories: cats.rows, brands: brands.rows, shopifyBrands: shopifyBrands.rows, suppliers: sups.rows };
   });
 
   app.get('/api/items/:id', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
@@ -310,6 +324,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       availability: z.object({
         physicalSafetyQty: z.number().int().min(0).max(100), supplierSafetyQty: z.number().int().min(0).max(100),
         maxOfferAgeHours: z.number().int().min(1).max(720), handlingDays: z.number().int().min(0).max(60),
+        showUpcMatches: z.boolean().optional(),
       }),
     }).parse(req.body);
     const s = req.session!;

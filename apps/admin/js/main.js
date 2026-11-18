@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { createHttpDriver } from './drivers/http.js';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=45';
+import { matchRoute } from './router.js?v=46';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
@@ -61,8 +61,19 @@ function closeNav() {
 }
 
 let badgeCounts = {};
+async function refreshNavVisibility() {
+  try {
+    const s = await state.api.settings();
+    state.settings = s;
+    const showUpc = !s || !s.availability || s.availability.showUpcMatches !== false;
+    const upcNav = document.querySelector('[data-nav="#/upc-matches"]');
+    if (upcNav) upcNav.hidden = !showUpc;
+  } catch (e) { /* ignore */ }
+}
+
 async function refreshBadges() {
   try {
+    await refreshNavVisibility();
     const d = await state.api.dashboard();
     badgeCounts = d.counts;
     document.querySelectorAll('[data-count]').forEach((el) => {
@@ -118,7 +129,19 @@ async function route() {
   clear(view);
   view.removeAttribute('data-route');
   try {
-    const ctx = { api: state.api, me: state.me, can, params: m.params, query: m.query, isCurrent: () => seq === renderSeq, refreshBadges, navigate: (to) => { location.hash = to; } };
+    const ctx = {
+      api: state.api,
+      me: state.me,
+      system: state.system,
+      showUpcMatches: !state.settings || !state.settings.availability || state.settings.availability.showUpcMatches !== false,
+      can,
+      params: m.params,
+      query: m.query,
+      isCurrent: () => seq === renderSeq,
+      refreshBadges,
+      refreshNav: refreshNavVisibility,
+      navigate: (to) => { location.hash = to; },
+    };
     const node = await m.route.render(ctx);
     if (seq !== renderSeq) return;
     mount(view, node);

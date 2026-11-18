@@ -2246,6 +2246,29 @@
     if (gmapsKey) bootVectorGoogleMaps(gmapsKey);
   }
   if (lang === 'es') applyLanguage('es');
+  // The store's Shopify language is Spanish, so Liquid strings like the "Oferta" / "Agotado" badges are
+  // rendered in Spanish. In English mode, switch the elements that carry an explicit data-en text.
+  else qsa('[data-en][data-es]').forEach(function (el) { el.innerHTML = el.getAttribute('data-en'); });
+  // Product cards loaded later (filters, sorting, pagination, recommendations) get the same language.
+  if (window.MutationObserver) {
+    var ubcLangTimer = null;
+    new MutationObserver(function (muts) {
+      var hasNew = muts.some(function (m) {
+        return Array.prototype.some.call(m.addedNodes, function (n) {
+          return n.nodeType === 1 && (n.hasAttribute && n.hasAttribute('data-es') || (n.querySelector && n.querySelector('[data-es]')));
+        });
+      });
+      if (!hasNew) return;
+      clearTimeout(ubcLangTimer);
+      ubcLangTimer = setTimeout(function () {
+        qsa('[data-es]').forEach(function (el) {
+          if (el.dataset.en == null) el.dataset.en = el.innerHTML;
+          var want = lang === 'es' ? el.getAttribute('data-es') : el.dataset.en;
+          if (el.innerHTML !== want) el.innerHTML = want;
+        });
+      }, 30);
+    }).observe(document.body, { childList: true, subtree: true });
+  }
 
   /* ---------- Live Interactive Theme Edition Switcher (6 Distinct Seasonal Worlds) ---------- */
   var ED_META = {

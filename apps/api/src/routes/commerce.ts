@@ -552,6 +552,16 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     if (!store.rows[0]) { reply.code(404); return { error: 'unknown shop' }; }
     const { id: storeId, company_id: companyId } = store.rows[0];
+    if (topic === 'products/create') {
+      // A product was created in Shopify (by Workstand or by hand): look for UPC matches a few minutes later.
+      // Bursts (Workstand uploads hundreds) collapse into one search per 10-minute window; payload not stored.
+      const bucket = Math.floor(Date.now() / 600_000);
+      await enqueue(ctx.pool, {
+        companyId, type: 'shopify.link_store', payload: { trigger: 'products/create' },
+        idempotencyKey: `webhook:link_store:${bucket}`, runAt: new Date((bucket + 1) * 600_000),
+      });
+      return { ok: true, scheduled: 'upc_match' };
+    }
     const ev = await ctx.pool.query<{ id: number }>(
       `INSERT INTO sync_events (company_id, source, topic, idempotency_key, payload) VALUES ($1,'shopify',$2,$3,$4)
        ON CONFLICT (company_id, source, idempotency_key) DO NOTHING RETURNING id`, [companyId, topic, webhookId, raw.toString('utf8')]);

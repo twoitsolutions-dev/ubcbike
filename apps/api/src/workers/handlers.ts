@@ -59,6 +59,9 @@ export const handlers: Record<string, Handler> = {
     const products = await ctx.pool.query<{ product_id: string }>(`SELECT DISTINCT product_id FROM catalog_items WHERE ${sql}`, params);
     const ids = products.rows.map((r) => r.product_id);
     let done = 0;
+    let shopifyProducts = 0;
+    let notInShopify = 0;
+    const updateOnlyMode = ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only';
     for (let i = 0; i < ids.length; i += 500) {
       const chunk = ids.slice(i, i + 500);
       await withTransaction(ctx.pool, async (c) => {
@@ -74,6 +77,16 @@ export const handlers: Record<string, Handler> = {
         : await ctx.pool.query<{ external_id: string }>(
           `SELECT external_id FROM external_ids WHERE company_id = $1 AND system = 'shopify' AND entity_type = 'product' AND entity_id = ANY($2::uuid[])`, [j.company_id, chunk]);
       const gids = shopifyIds.rows.map((r) => r.external_id);
+      shopifyProducts += gids.length;
+      if (updateOnlyMode) {
+        // Hub products with no Shopify variant linked by UPC: publishing them changes nothing online.
+        const missing = await ctx.pool.query<{ n: number }>(
+          `SELECT count(*)::int n FROM unnest($2::uuid[]) AS pid
+           WHERE NOT EXISTS (SELECT 1 FROM shopify_variant_links l JOIN variants v ON v.id = l.variant_id
+                             WHERE l.company_id = $1 AND l.shop_domain = $3 AND v.product_id = pid)`,
+          [j.company_id, chunk, String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase()]);
+        notInShopify += missing.rows[0]!.n;
+      }
       const targetShopifyStatus = status === 'published' ? 'ACTIVE' : 'DRAFT';
       for (let k = 0; k < gids.length; k += 4) {
         await ctx.connectors.shopify.setProductsStatus(gids.slice(k, k + 4), targetShopifyStatus);
@@ -82,7 +95,7 @@ export const handlers: Record<string, Handler> = {
       await setProgress(ctx.pool, j.id, { done, total: ids.length });
     }
     await audit(ctx.pool, { companyId: j.company_id, userId: j.created_by, action: 'items.bulk_status_applied', detail: { products: ids.length, status } });
-    return { products: ids.length, status };
+    return { products: ids.length, status, shopifyProducts, notInShopify };
   },
 };
 

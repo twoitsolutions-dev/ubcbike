@@ -107,7 +107,14 @@ async function runBulkStatus(ctx, filter, count, status, done) {
   try {
     const job = await watchJob(ctx.api, r.jobId, pb.bar, lbl);
     t.remove();
-    if (job.status === 'succeeded') toast((status === 'published' ? 'Published ' : 'Hidden ') + job.result.products + ' products', 'ok');
+    if (job.status === 'succeeded') {
+      const res = job.result || {};
+      toast((status === 'published' ? 'Published ' : 'Hidden ') + res.products + ' products' + (typeof res.shopifyProducts === 'number' ? ' · ' + res.shopifyProducts + ' updated in Shopify' : ''), 'ok');
+      if (res.notInShopify) {
+        // Not in the online store yet: nothing to publish there until it is matched by UPC or created.
+        toast(res.notInShopify + ' of them are not in the Shopify store yet (no product with that UPC). Create it with "Create Shopify product…" or check "UPC Matches".', 'bad');
+      }
+    }
     else toast('Bulk update failed: ' + job.last_error, 'bad');
   } catch (e) { t.remove(); toast(e.message, 'bad'); }
   done();

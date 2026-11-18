@@ -145,6 +145,7 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   type P = {
     kind: 'add' | 'repoint' | 'remove'; vid: string | null; old: string | null; link: number | null;
     svid: string; pid: string | null; inv: string | null; title: string | null; barcode: string | null; p: number | null; c: number | null;
+    manual?: boolean;
   };
   const proposals: P[] = [];
   const unmatched = new Map<number, P>();
@@ -159,7 +160,8 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
       if (ex) unmatched.set(ex.id, { ...base, kind: 'remove', vid: ex.variant_id, old: null, link: ex.id });
       return;
     }
-    if (!ex) proposals.push({ ...base, kind: 'add', vid, old: null, link: null });
+    // manual = product created by hand in Shopify (no workstand.variant_uuid), e.g. Carlos's Jupiter bikes.
+    if (!ex) proposals.push({ ...base, kind: 'add', vid, old: null, link: null, manual: !row.fromWorkstand });
     else if (ex.variant_id !== vid) proposals.push({ ...base, kind: 'repoint', vid, old: ex.variant_id, link: ex.id });
     else if (ex.shopify_product_id !== row.productId || ex.shopify_inventory_item_id !== row.inventoryItemId) {
       // Same item, Shopify moved the variant to another product / inventory item: safe bookkeeping, no decision needed.
@@ -212,10 +214,29 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     [companyId, shop, runStart],
   );
 
+  // Auto-approve NEW matches of products Carlos created by hand in Shopify (not Workstand) whose
+  // barcode is exactly the Lightspeed UPC: he already decided by typing the UPC. Everything from
+  // Workstand, changed matches and removals still wait for him in "UPC Matches".
+  const manualSvids = fresh.filter((p) => p.kind === 'add' && p.manual).map((p) => p.svid);
+  let autoApproved = 0;
+  if (manualSvids.length) {
+    const ids = (await ctx.pool.query<{ id: number }>(
+      `SELECT id FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending' AND kind = 'add' AND shopify_variant_id = ANY($3::text[])`,
+      [companyId, shop, manualSvids],
+    )).rows.map((r) => Number(r.id));
+    if (ids.length) {
+      autoApproved = (await decideUpcProposals(ctx, companyId, null, ids, 'approve')).updated;
+      await ctx.pool.query(
+        `UPDATE upc_link_proposals SET note = 'Auto-approved: product created by hand in Shopify and its barcode is the Lightspeed UPC' WHERE id = ANY($1::bigint[])`,
+        [ids],
+      );
+    }
+  }
+
   const count = (k: string) => fresh.filter((p) => p.kind === k).length;
   const summary = {
     shop, storeVariants: total, links: existing.rows.length, proposedAdd: count('add'), proposedRepoint: count('repoint'),
-    proposedRemove: count('remove'), removalsSuppressed, previouslyRejected: proposals.length - fresh.length, duplicateUpcsSkipped: dupSkipped,
+    proposedRemove: count('remove'), autoApprovedManual: autoApproved, removalsSuppressed, previouslyRejected: proposals.length - fresh.length, duplicateUpcsSkipped: dupSkipped,
   };
   await audit(ctx.pool, { companyId, action: 'shopify.upc_links_proposed', detail: summary });
   return summary;
@@ -255,7 +276,7 @@ export async function listUpcProposals(ctx: AppContext, companyId: string, statu
  * Shopify gets the Lightspeed price, sale price and stock within seconds. reject → never proposed again.
  * unlink (on an approved add) → removes the link; Shopify keeps its current price until Workstand changes it.
  */
-export async function decideUpcProposals(ctx: AppContext, companyId: string, userId: string, ids: number[], decision: 'approve' | 'reject' | 'unlink') {
+export async function decideUpcProposals(ctx: AppContext, companyId: string, userId: string | null, ids: number[], decision: 'approve' | 'reject' | 'unlink') {
   const shop = shopOf(ctx);
   const wanted = decision === 'unlink' ? 'approved' : 'pending';
   const rows = await ctx.pool.query<{

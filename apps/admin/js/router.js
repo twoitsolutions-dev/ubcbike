@@ -7,7 +7,6 @@ import { renderPricing } from './views/pricing.js?v=40';
 import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=40';
 import { renderOrders, renderOrderDetail } from './views/orders.js?v=40';
 import { renderPurchasing } from './views/purchasing.js?v=40';
-import { renderStore } from './views/store.js?v=40';
 import { renderIntegrations } from './views/integrations.js?v=40';
 import { renderActivity } from './views/activity.js?v=40';
 import { renderSettings } from './views/settings.js?v=40';
@@ -28,7 +27,6 @@ export const routes = [
   { path: '/orders/:id', title: 'Special Order Details', render: renderOrderDetail },
   { path: '/purchasing', title: 'Purchase Orders (B2B)', render: renderPurchasing },
   { path: '/upc-matches', title: 'UPC Matches (Lightspeed ↔ Shopify)', render: renderUpcReview },
-  { path: '/store', title: 'Settings & Sync · Store Simulator', render: renderStore },
   { path: '/integrations', title: 'Settings & Sync · Connections', render: renderIntegrations },
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
   { path: '/settings', title: 'Settings & Sync', render: renderSettings },

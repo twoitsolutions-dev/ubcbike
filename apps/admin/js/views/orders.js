@@ -120,7 +120,7 @@ export async function renderOrders(ctx) {
   await load();
   return h('div.stack',
     pageHead('Special Orders', 'Customer orders from Shopify — tracks Vendor Special Orders separately from In-Store Stock fulfillment.',
-      [h('a.btn', { href: '#/purchasing' }, 'Purchase Orders (B2B)'), ctx.can('orders.write') ? h('a.btn', { href: '#/store' }, 'Store Simulator') : null]),
+      [h('a.btn', { href: '#/purchasing' }, 'Purchase Orders (B2B)')]),
     quickHost,
     h('section.card', h('div.filters', h('label.field.grow', 'Search', search), h('label.field', 'Status', statusSel), h('label.field', 'Order Type', typeSel)), host));
 }
@@ -296,7 +296,7 @@ export async function renderOrderDetail(ctx) {
           },
           { key: 'qty', label: 'Qty', num: true },
           { key: 'price', label: 'Price', num: true, render: (l) => money(l.price_cents) },
-          { key: 'src', label: 'Fulfilled from', render: (l) => (l.source === 'ubc_stock' ? h('span.badge.ok', 'UBC stock') : l.source === 'supplier' ? h('span.badge.violet', l.supplier_code + ' · cost ' + money(l.quoted_cost_cents)) : h('span.badge.bad', 'Unavailable')) },
+          { key: 'src', label: 'Fulfilled from', render: (l) => (l.source === 'ubc_stock' ? h('span.badge.ok', 'UBC stock') : l.source === 'supplier' ? h('span.badge.violet', l.supplier_code + ' · cost ' + money(l.quoted_cost_cents)) : l.source === 'workstand_catalog' ? h('span.badge', { title: 'Not a Lightspeed item — handled by Workstand' }, 'Workstand catalog') : h('span.badge.bad', 'Unavailable')) },
         ],
         rows: d.lines,
       }), { flush: true }),

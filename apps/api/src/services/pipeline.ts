@@ -652,7 +652,7 @@ export async function flushUpdateOnlyToShopify(
   const heldMap: number[] = [];
   const okRows = new Set<number>();
   const priceByProduct = new Map<string, { link: UpdateOnlyLink; price: number; compareAt: number | null }[]>();
-  const stockByLocation = new Map<string, { link: UpdateOnlyLink; qty: number }[]>();
+  const stockByLocation = new Map<string, { link: UpdateOnlyLink; qty: number; activate: boolean }[]>();
 
   for (const r of rows.rows) {
     const ls = linksByVariant.get(r.variant_id);
@@ -676,7 +676,8 @@ export async function flushUpdateOnlyToShopify(
           if (want === 0 && (last === undefined || last === -1)) continue;
           if (want !== last) {
             const arr = stockByLocation.get(gid) ?? [];
-            arr.push({ link, qty: want });
+            // Not known to be stocked at this location: Shopify silently ignores quantities there, so activate first.
+            arr.push({ link, qty: want, activate: last === undefined || last === -1 });
             stockByLocation.set(gid, arr);
           }
         }
@@ -722,6 +723,12 @@ export async function flushUpdateOnlyToShopify(
     stockChanged += done.length;
   };
   for (const [gid, items] of stockByLocation) {
+    // Start stocking at this store first (only items with real stock reach here when not yet stocked).
+    for (const s of items.filter((x) => x.activate && x.qty > 0)) {
+      await ctx.connectors.shopify.activateInventoryAtLocation(s.link.shopify_inventory_item_id!, gid).catch(async (err: Error) => {
+        await logError(ctx.pool, { companyId, source: 'pipeline:update_only_stock', message: `activate: ${err.message}`, context: { location: gid, variant: s.link.shopify_variant_id } }).catch(() => {});
+      });
+    }
     for (let i = 0; i < items.length; i += 100) {
       const chunk = items.slice(i, i + 100);
       try {

@@ -1,7 +1,93 @@
-import { normalizeGtin } from '@ubc/business-rules';
+import { formatRetailBarcode, normalizeGtin } from '@ubc/business-rules';
 import { audit, logError } from './audit.js';
-import type { AppContext } from './context.js';
+import { HttpError, type AppContext } from './context.js';
 import { enqueue } from './jobs.js';
+
+/**
+ * "Create Shopify product" (for products Workstand does not have, e.g. Jupiter): Carlos picks the
+ * Lightspeed items that are the same product in different colors/sizes; the Hub creates ONE DRAFT
+ * product in Shopify with one variant per item (barcode = Lightspeed UPC, SKU = System ID, Lightspeed
+ * price / sale price), links them right away (Carlos's own decision) and pushes stock per store.
+ * Carlos then adds photos/description in Shopify and publishes it.
+ */
+export async function createShopifyProductFromItems(
+  ctx: AppContext,
+  companyId: string,
+  userId: string,
+  input: { variantIds: string[]; title: string; vendor: string; productType: string; optionName: string; values: Record<string, string> },
+) {
+  if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') throw new HttpError(409, 'NOT_AVAILABLE', 'Only available with the live Shopify store');
+  const shop = shopOf(ctx);
+  const rows = await ctx.pool.query<{
+    id: string; title: string; sku: string; upc: string | null; price_cents: number; compare_at_cents: number | null; cost_cents: number | null; links: number;
+  }>(
+    `SELECT v.id, v.title, v.sku, v.upc, v.price_cents, v.compare_at_cents, v.cost_cents,
+            (SELECT count(*)::int FROM shopify_variant_links l WHERE l.variant_id = v.id AND l.shop_domain = $3) AS links
+     FROM variants v
+     JOIN external_ids e ON e.company_id = v.company_id AND e.entity_type = 'variant' AND e.entity_id = v.id AND e.system = 'lightspeed_r'
+     WHERE v.company_id = $1 AND v.id = ANY($2::uuid[])`,
+    [companyId, input.variantIds, shop],
+  );
+  const problems: string[] = [];
+  if (rows.rows.length !== input.variantIds.length) problems.push('Some selected items are not Lightspeed items');
+  for (const r of rows.rows) {
+    if (!normalizeGtin(r.upc)) problems.push(`${r.title}: no valid UPC in Lightspeed (needed to keep it synced)`);
+    if (r.links > 0) problems.push(`${r.title}: already linked to a Shopify variant`);
+    if (!(r.price_cents > 0)) problems.push(`${r.title}: no price in Lightspeed`);
+    if (!String(input.values[r.id] ?? '').trim()) problems.push(`${r.title}: missing ${input.optionName} value`);
+  }
+  const vals = rows.rows.map((r) => String(input.values[r.id] ?? '').trim().toLowerCase());
+  if (new Set(vals).size !== vals.length) problems.push(`Each item needs a different ${input.optionName} value`);
+  if (problems.length) throw new HttpError(422, 'CANNOT_CREATE', 'Cannot create the product', { problems });
+
+  const created = await ctx.connectors.shopify.createDraftProductFromItems({
+    title: input.title.trim(),
+    vendor: input.vendor.trim() || 'UBC',
+    productType: input.productType.trim() || 'Bikes',
+    status: 'DRAFT',
+    variants: rows.rows.map((r) => ({
+      sku: r.sku,
+      barcode: formatRetailBarcode(r.upc) ?? undefined,
+      priceCents: r.price_cents,
+      compareAtCents: r.compare_at_cents,
+      costCents: r.cost_cents,
+      optionValues: { [input.optionName.trim() || 'Color']: String(input.values[r.id]).trim() },
+      availability: 'in_stock',
+      onHandQty: 0,
+    })) as never,
+  });
+
+  const bySku = new Map(rows.rows.map((r) => [r.sku, r]));
+  const linked: { vid: string; svid: string; inv: string | null; p: number; c: number | null }[] = [];
+  for (const v of created.variants) {
+    const r = bySku.get(v.sku);
+    if (r) linked.push({ vid: r.id, svid: v.variantId, inv: v.inventoryItemId, p: r.price_cents, c: r.compare_at_cents && r.compare_at_cents > r.price_cents ? r.compare_at_cents : null });
+  }
+  await ctx.pool.query(
+    `INSERT INTO shopify_variant_links (company_id, shop_domain, variant_id, shopify_product_id, shopify_variant_id, shopify_inventory_item_id, match_method, last_price_cents, last_compare_at_cents)
+     SELECT $1, $2, r.vid, $3, r.svid, r.inv, 'created_in_hub', r.p, r.c FROM jsonb_to_recordset($4::jsonb) AS r(vid uuid, svid text, inv text, p int, c int)
+     ON CONFLICT (company_id, shop_domain, shopify_variant_id) DO NOTHING`,
+    [companyId, shop, created.productId, JSON.stringify(linked)],
+  );
+  await ctx.pool.query(
+    `INSERT INTO upc_link_proposals (company_id, shop_domain, kind, variant_id, shopify_variant_id, shopify_product_id, shopify_inventory_item_id,
+                                     shopify_title, shopify_price_cents, shopify_compare_at_cents, status, note, decided_by, decided_at)
+     SELECT $1, $2, 'add', r.vid, r.svid, $3, r.inv, $4, r.p, r.c, 'approved', 'Created in the Hub as a draft Shopify product', $5, now()
+     FROM jsonb_to_recordset($6::jsonb) AS r(vid uuid, svid text, inv text, p int, c int)`,
+    [companyId, shop, created.productId, input.title.trim(), userId, JSON.stringify(linked)],
+  );
+  // Push stock per store (activates the locations that have stock).
+  await ctx.pool.query(
+    `INSERT INTO outbound_sync_staging (company_id, variant_id, stream, decision, hold_reasons, shopify_payload, status, updated_at)
+     SELECT $1, vid, 'availability', 'ready_for_shopify', '[]'::jsonb, '{"trigger":"created_in_hub"}'::jsonb, 'pending', now() FROM unnest($2::uuid[]) AS vid
+     ON CONFLICT (company_id, variant_id, stream) DO UPDATE SET decision = 'ready_for_shopify', status = 'pending', last_error = NULL, updated_at = now()`,
+    [companyId, linked.map((l) => l.vid)],
+  );
+  await enqueue(ctx.pool, { companyId, type: 'pipeline.flush_shopify', payload: { trigger: 'created_in_hub' } });
+  await audit(ctx.pool, { companyId, userId, action: 'shopify.product_created_from_items', detail: { productId: created.productId, title: input.title, variants: linked.length } });
+  const numericId = created.productId.split('/').pop();
+  return { productId: created.productId, variants: linked.length, adminUrl: `https://${shop}/admin/products/${numericId}` };
+}
 
 /**
  * Nightly (update_only): compare Lightspeed items with the variants of the Workstand-owned Shopify

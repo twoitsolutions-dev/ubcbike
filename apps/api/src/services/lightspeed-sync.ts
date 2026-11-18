@@ -299,6 +299,7 @@ export async function ingestLightspeedItemsBatch(
         qty: number;
         shopQuantities: Record<string, number>;
         options: Record<string, string>;
+        sku: string | null;
       }[] = [];
 
       const newItems: typeof chunk = [];
@@ -330,6 +331,7 @@ export async function ingestLightspeedItemsBatch(
             qty: it.physicalQty,
             shopQuantities: it.shopQuantities,
             options: lsOptionValues(it.itemAttributes ?? undefined, attrSetNames),
+            sku: it.sku?.trim() || null,
           });
         } else {
           newItems.push(it);
@@ -370,12 +372,16 @@ export async function ingestLightspeedItemsBatch(
            SET price_cents = COALESCE(r.price, v.price_cents),
                compare_at_cents = CASE WHEN r.price IS NOT NULL THEN r.compare_at ELSE v.compare_at_cents END,
                cost_cents = COALESCE(r.cost, v.cost_cents),
-               upc = COALESCE(v.upc, r.upc),
-               mpn = COALESCE(v.mpn, r.mpn),
+               -- Lightspeed is the source of truth: its UPC, Manufact. SKU and System ID win.
+               upc = COALESCE(r.upc, v.upc),
+               mpn = COALESCE(r.mpn, v.mpn),
+               sku = CASE WHEN r.sku IS NOT NULL AND r.sku <> v.sku
+                           AND NOT EXISTS (SELECT 1 FROM variants x WHERE x.company_id = v.company_id AND x.sku = r.sku AND x.id <> v.id)
+                          THEN r.sku ELSE v.sku END,
                -- Matrix options (Color/Size) from Lightspeed fill in only when the variant has none yet.
                option_values = CASE WHEN v.option_values = '{}'::jsonb AND r.options IS NOT NULL THEN r.options ELSE v.option_values END,
                updated_at = now()
-           FROM jsonb_to_recordset($2::jsonb) AS r(vid uuid, price int, compare_at int, cost int, upc text, mpn text, options jsonb)
+           FROM jsonb_to_recordset($2::jsonb) AS r(vid uuid, price int, compare_at int, cost int, upc text, mpn text, options jsonb, sku text)
            WHERE v.company_id = $1 AND v.id = r.vid`,
           [companyId, JSON.stringify(existingUpdates)],
         );

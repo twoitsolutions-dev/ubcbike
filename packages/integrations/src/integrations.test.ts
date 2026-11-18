@@ -210,7 +210,7 @@ describe('lightspeed R-Series (Physical Store POS)', () => {
       if (url.includes('page2')) return new Response(JSON.stringify({ '@attributes': {}, Item: { itemID: '2', description: 'Tube', ItemShops: { ItemShop: { shopID: '1', qoh: '4' } } } }));
       return new Response(JSON.stringify({
         '@attributes': { next: 'https://api.example/page2' },
-        Item: [{ itemID: '1', description: 'Helmet', upc: '036000291452', customSku: 'UBC-1', manufacturerSku: 'BL-1', defaultCost: '50.00',
+        Item: [{ itemID: '1', description: 'Helmet', upc: '036000291452', systemSku: '210000000283', customSku: 'UBC-1', manufacturerSku: 'BL-1', defaultCost: '50.00',
           Prices: { ItemPrice: [{ amount: '99.99', useType: 'Default' }, { amount: '89.99', useType: 'MSRP' }] },
           ItemShops: { ItemShop: [{ shopID: '0', qoh: '7' }, { shopID: '1', qoh: '3' }, { shopID: '2', qoh: '4' }] } }],
       }));
@@ -227,7 +227,7 @@ describe('lightspeed R-Series (Physical Store POS)', () => {
       costCents: 5000,
       physicalQty: 7,
       shopQuantities: { '1': 3, '2': 4 },
-      sku: 'UBC-1',
+      sku: '210000000283', // System ID, never the Custom SKU
       mpn: 'BL-1',
     });
     expect(mapLsItem(pages[0]![0]!, ['1']).physicalQty).toBe(3);

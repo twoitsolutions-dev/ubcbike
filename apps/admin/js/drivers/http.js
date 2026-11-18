@@ -53,6 +53,7 @@ export function createHttpDriver() {
     upcReview: (status, kind) => req('GET', '/api/upc-review' + qs({ status, kind })),
     decideUpc: (ids, decision) => req('POST', '/api/upc-review/decide', { ids, decision }),
     runUpcMatch: () => req('POST', '/api/upc-review/run', {}),
+    createShopifyProduct: (input) => req('POST', '/api/shopify/products/from-items', input),
     errors: () => req('GET', '/api/errors'),
     resolveError: (id) => req('POST', '/api/errors/' + id + '/resolve', {}),
     audit: () => req('GET', '/api/audit'),

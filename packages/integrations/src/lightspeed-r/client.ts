@@ -53,6 +53,9 @@ export interface LsItem {
   description: string;
   upc?: string;
   ean?: string;
+  /** Lightspeed "System ID" (e.g. 210000000283) — the Hub's System SKU. */
+  systemSku?: string;
+  /** Not used by the Hub (Carlos: do not map Custom SKU). */
   customSku?: string;
   manufacturerSku?: string;
   defaultCost?: string;
@@ -406,7 +409,8 @@ export function mapLsItem(item: LsItem, physicalShopIds?: string[]) {
     brand,
     rawCategory,
     upc: item.upc || item.ean || null,
-    sku: item.customSku || null,
+    // Hub System SKU = Lightspeed System ID (systemSku). Custom SKU is intentionally not mapped.
+    sku: item.systemSku || null,
     mpn: item.manufacturerSku || null,
     priceCents,
     compareAtCents,

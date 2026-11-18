@@ -12,7 +12,7 @@ import { HttpError, notFound, type AppContext } from '../services/context.js';
 import { enqueue } from '../services/jobs.js';
 import { transitionOrder, transitionSchema } from '../services/orders.js';
 import { getPipelineStatus, runPipelineWatchdogAndSchedules } from '../services/pipeline.js';
-import { decideUpcProposals, listUpcProposals } from '../services/shopify-links.js';
+import { createShopifyProductFromItems, decideUpcProposals, listUpcProposals } from '../services/shopify-links.js';
 import {
   importChunkSchema,
   importSchema,
@@ -496,6 +496,18 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = z.object({ ids: z.array(z.number().int().positive()).min(1).max(5000), decision: z.enum(['approve', 'reject', 'unlink']) }).parse(req.body);
     if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') throw new HttpError(409, 'NOT_AVAILABLE', 'UPC review is only used with the Workstand-owned store (update_only mode)');
     return decideUpcProposals(ctx, req.session!.companyId, req.session!.userId, body.ids, body.decision);
+  });
+
+  app.post('/api/shopify/products/from-items', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = z.object({
+      variantIds: z.array(z.string().uuid()).min(1).max(100),
+      title: z.string().trim().min(3).max(200),
+      vendor: z.string().trim().max(100).default(''),
+      productType: z.string().trim().max(100).default(''),
+      optionName: z.string().trim().min(1).max(40).default('Color'),
+      values: z.record(z.string(), z.string().max(80)),
+    }).parse(req.body);
+    return createShopifyProductFromItems(ctx, req.session!.companyId, req.session!.userId, body);
   });
 
   app.post('/api/upc-review/run', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req, reply) => {

@@ -78,6 +78,12 @@ export interface ShopifyAdminPort {
   listVariants(cursor: string | null): Promise<{ variants: ShopifyVariantRecord[]; nextCursor: string | null }>;
   upsertProduct(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult>;
   updateVariantPrices(productId: string, updates: { variantId: string; priceCents: number; compareAtCents: number | null }[]): Promise<void>;
+  /**
+   * Explicit, human-initiated creation of ONE draft product whose variants are Lightspeed items
+   * (e.g. the 4 colors of a bike). Allowed even when the catalog belongs to Workstand (update_only),
+   * unlike the automatic `upsertProduct`.
+   */
+  createDraftProductFromItems(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult>;
   /** Read every variant of the store with a Shopify bulk query (read-only; streamed, low memory). */
   bulkReadVariants(onRow: (v: StoreVariantRow) => void): Promise<number>;
   /** Start stocking an inventory item at a location (needed before its quantity can be set there). */
@@ -393,6 +399,10 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     };
   }
 
+  async createDraftProductFromItems(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult> {
+    return this.upsertProduct({ ...input, existingProductId: null, status: 'DRAFT', locationId: null });
+  }
+
   async upsertProduct(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult> {
     const optNames = Array.from(
       new Set(input.variants.flatMap((v) => Object.keys(v.optionValues ?? {}))),
@@ -482,10 +492,8 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
 
   async activateInventoryAtLocation(inventoryItemId: string, locationId: string) {
     type R = { inventoryActivate: { userErrors: { field: string[]; message: string }[] } };
-    const r = await this.client.mutate<R>(
-      `mutation($inventoryItemId: ID!, $locationId: ID!) { inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId) { inventoryLevel { id } userErrors { field message } } }`,
-      { inventoryItemId, locationId },
-    );
+    // API 2026-10 requires @idempotent on inventoryActivate (INVENTORY_ACTIVATE carries it).
+    const r = await this.client.mutate<R>(INVENTORY_ACTIVATE, { idempotencyKey: randomUUID(), inventoryItemId, locationId });
     assertNoUserErrors(r.inventoryActivate.userErrors);
   }
 
@@ -757,6 +765,9 @@ export class MockShopifyAdmin implements ShopifyAdminPort {
         inventoryItemId: `gid://shopify/InventoryItem/demo-${seq}-${idx + 1}`,
       })),
     };
+  }
+  async createDraftProductFromItems(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult> {
+    return this.upsertProduct({ ...input, existingProductId: null, status: 'DRAFT' });
   }
   async updateVariantPrices(productId: string, updates: unknown) { this.calls.push({ op: 'updateVariantPrices', args: { productId, updates } }); }
   async getVariantPrices(variantIds: string[]) { this.calls.push({ op: 'getVariantPrices', args: { count: variantIds.length } }); return []; }

@@ -6,7 +6,6 @@ export function settingsWorkspaceTabs(activeKey) {
     ['rules', 'Pricing & Stock Rules', '#/settings'],
     ['connections', 'Connections', '#/integrations'],
     ['activity', 'Activity & Logs', '#/activity'],
-    ['store', 'Store Simulator', '#/store'],
   ], activeKey);
 }
 
@@ -50,7 +49,7 @@ export async function renderSettings(ctx) {
     h('p.small.muted', 'Demo data lives only in this browser. Nothing here touches Shopify, Lightspeed or any supplier.'))) : card('Demo data', h('p.small.muted', 'Server DEMO database: reset with `npm run db:reset-demo` (see docs/DEPLOYMENT.md).'));
 
   return h('div.stack',
-    pageHead('Settings & Sync', canEdit ? 'Commercial guardrails, system connections, logs & storefront simulator' : 'Read-only — changing rules requires an owner/admin'),
+    pageHead('Settings & Sync', canEdit ? 'Commercial guardrails, system connections & logs' : 'Read-only — changing rules requires an owner/admin'),
     settingsWorkspaceTabs('rules'),
     card('Promotion & Price Rules Guardrails', h('div.stack',
       h('div.form-grid',

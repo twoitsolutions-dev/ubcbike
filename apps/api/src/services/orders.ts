@@ -75,6 +75,25 @@ async function checkSupplierQuote(ctx: AppContext, companyId: string, supplierCo
   };
 }
 
+/** Hub variant for a Shopify order line: 1st the UPC link to the Workstand store, then the legacy paths. */
+async function resolveLineVariant(c: PoolClient, companyId: string, li: { variant_id?: string | number | null; sku?: string | null }): Promise<string | null> {
+  const rawVarId = String(li.variant_id ?? '');
+  const v = await c.query<{ id: string }>(
+    `SELECT id FROM (
+       SELECT l.variant_id AS id, 0 AS rank FROM shopify_variant_links l
+       WHERE l.company_id = $1 AND $2 <> '' AND l.shopify_variant_id = ('gid://shopify/ProductVariant/' || $2)
+       UNION ALL
+       SELECT v.id, 1 FROM variants v LEFT JOIN external_ids e ON e.entity_id = v.id AND e.system = 'shopify' AND e.entity_type = 'variant'
+       WHERE v.company_id = $1
+         AND (
+           e.external_id = $2
+           OR ($2 <> '' AND e.external_id = ('gid://shopify/ProductVariant/' || $2))
+           OR ($3 <> '' AND v.sku = $3)
+         )
+     ) m ORDER BY rank LIMIT 1`, [companyId, rawVarId, li.sku ?? '']);
+  return v.rows[0]?.id ?? null;
+}
+
 /**
  * Ingest a Shopify order (webhook or DEMO checkout). Idempotent on
  * (store, shopify order id): a redelivered webhook never creates a second
@@ -83,7 +102,17 @@ async function checkSupplierQuote(ctx: AppContext, companyId: string, supplierCo
 export async function ingestShopifyOrder(ctx: AppContext, companyId: string, storeId: string, payload: ShopifyOrderWebhook) {
   const settings = await getSettings(ctx.pool, companyId);
   const method: 'pickup' | 'ship' = payload.shipping_lines?.some((s) => /pick ?up/i.test(`${s.code} ${s.title}`)) ? 'pickup' : payload.shipping_lines?.length ? 'ship' : 'pickup';
+  const updateOnly = ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only';
   const result = await withTransaction(ctx.pool, async (c) => {
+    // Workstand-owned store: lines that are not Lightspeed items (Workstand catalog only) are Workstand's
+    // business. An order made only of those is not recorded in the Hub at all.
+    if (updateOnly) {
+      let anyHub = false;
+      for (const li of payload.line_items) {
+        if (await resolveLineVariant(c, companyId, li)) { anyHub = true; break; }
+      }
+      if (!anyHub) return { orderId: null, duplicate: false, special: false, ignored: 'workstand_catalog_only' as const };
+    }
     const ins = await c.query<{ id: string }>(
       `INSERT INTO orders (company_id, store_id, shopify_order_id, number, customer_name, fulfillment_method, financial_status, shopify_fulfillment_status, total_cents, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (store_id, shopify_order_id) DO NOTHING RETURNING id`,
@@ -99,18 +128,14 @@ export async function ingestShopifyOrder(ctx: AppContext, companyId: string, sto
     let special = false;
     let unfulfillable = false;
     for (const li of payload.line_items) {
-      const rawVarId = String(li.variant_id ?? '');
-      const v = await c.query<{ id: string }>(
-        `SELECT v.id FROM variants v LEFT JOIN external_ids e ON e.entity_id = v.id AND e.system = 'shopify' AND e.entity_type = 'variant'
-         WHERE v.company_id = $1
-           AND (
-             e.external_id = $2
-             OR ($2 <> '' AND e.external_id = ('gid://shopify/ProductVariant/' || $2))
-             OR ($3 <> '' AND v.sku = $3)
-           )
-         LIMIT 1`, [companyId, rawVarId, li.sku ?? '']);
-      const item = v.rows[0] ? await getItem(c, companyId, v.rows[0].id) : null;
+      const vid = await resolveLineVariant(c, companyId, li);
+      const item = vid ? await getItem(c, companyId, vid) : null;
       const price = priceToCents(li.price);
+      if (!item && updateOnly) {
+        // Workstand catalog item (not in Lightspeed): recorded for reference, handled by Workstand, no alert.
+        await c.query(`INSERT INTO order_lines (order_id, sku, title, qty, price_cents, source) VALUES ($1,$2,$3,$4,$5,'workstand_catalog')`, [orderId, li.sku ?? '?', li.title, li.quantity, price]);
+        continue;
+      }
       if (!item) {
         unfulfillable = true;
         await c.query(`INSERT INTO order_lines (order_id, sku, title, qty, price_cents, source) VALUES ($1,$2,$3,$4,$5,'unfulfillable')`, [orderId, li.sku ?? '?', li.title, li.quantity, price]);

@@ -47,7 +47,6 @@ const SUBNAV_PARENT = {
   '#/pipeline': '#/suppliers',
   '#/integrations': '#/settings',
   '#/activity': '#/settings',
-  '#/store': '#/settings',
 };
 
 async function nav(page, hash, mobile) {
@@ -95,7 +94,7 @@ async function runSuite(browser, label, contextOpts, baseUrl) {
   await page.screenshot({ path: join(SHOTS, `${label}-dashboard.png`), fullPage: false });
 
   // Navigation across every sidebar section + unified workspace tabs
-  const sections = ['#/products', '#/inventory', '#/pricing', '#/orders', '#/purchasing', '#/suppliers', '#/pipeline', '#/promotions', '#/settings', '#/integrations', '#/activity', '#/store', '#/dashboard'];
+  const sections = ['#/products', '#/inventory', '#/pricing', '#/orders', '#/purchasing', '#/suppliers', '#/pipeline', '#/promotions', '#/settings', '#/integrations', '#/activity', '#/dashboard'];
   let navOk = true;
   for (const s of sections) {
     try { await nav(page, s, mobile); if (!(await noHorizontalOverflow(page))) { navOk = false; console.log('    overflow on', s); } } catch (e) { navOk = false; console.log('    nav failed', s, e.message); }
@@ -155,33 +154,6 @@ async function runSuite(browser, label, contextOpts, baseUrl) {
   await page.click('.modal-foot button:has-text("Restore prices")');
   await page.waitForFunction(() => Array.from(document.querySelectorAll('#view .badge')).some((b) => b.textContent === 'Restored'), null, { timeout: 30000 });
   check(`${label}: original prices restored`, true);
-
-  // Store: add to cart, checkout -> appears in orders as special order
-  await nav(page, '#/store', mobile);
-  await page.waitForSelector('.product-card');
-  const specialCard = page.locator('.product-card', { has: page.locator('.badge.violet') }).first();
-  await specialCard.locator('button:has-text("Add to cart")').click();
-  check(`${label}: item added to cart`, (await page.textContent('#view')).includes('Cart (1)'));
-  await page.click('button:has-text("Complete demo purchase")');
-  await page.waitForFunction(() => location.hash.indexOf('#/orders/') === 0, null, { timeout: 15000 });
-  await page.waitForSelector('.stepper');
-  check(`${label}: purchase appears in orders`, (await page.textContent('h1')).includes('#DEMO-'));
-  // review job moves it to awaiting approval
-  await page.waitForTimeout(1500);
-  await page.reload();
-  await page.waitForSelector('.stepper');
-  await page.waitForFunction(() => document.body.textContent.includes('Approve B2B purchase'), null, { timeout: 10000 });
-  check(`${label}: special order awaits Carlos's approval`, (await page.textContent('.stepper .current')).includes('Awaiting Approval'));
-  await page.click('button:has-text("Approve B2B purchase")');
-  await page.click('.modal-foot button:has-text("Approve B2B purchase")');
-  await page.waitForFunction(() => document.body.textContent.includes('Mark ordered in B2B'), null, { timeout: 10000 });
-  check(`${label}: Carlos approves (simulated)`, (await page.textContent('.stepper .current')).includes('Approved'));
-  await page.click('button:has-text("Mark ordered in B2B")');
-  await page.click('.modal-foot button:has-text("Mark ordered in B2B")');
-  await page.waitForFunction(() => document.body.textContent.includes('Supplier confirmed'), null, { timeout: 15000 });
-  await page.click('button:has-text("Supplier confirmed")');
-  await page.waitForFunction(() => document.querySelector('.stepper .current') && document.querySelector('.stepper .current').textContent.includes('Supplier Confirmed'), null, { timeout: 10000 });
-  check(`${label}: order statuses can be updated`, true);
 
   // Orders list: select an existing order
   await nav(page, '#/orders', mobile);

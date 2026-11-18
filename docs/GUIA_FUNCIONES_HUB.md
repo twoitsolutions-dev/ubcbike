@@ -73,15 +73,24 @@ Acciones:
 - **Price:** cambia el precio de un artículo. Llega a Shopify en ~2 s si el artículo está emparejado por UPC. No deja poner un precio que rompa el MAP o el margen mínimo.
 - **Publish / Hide** (con varios seleccionados): publica u oculta el producto en Shopify (~2 s). Ojo: en Shopify un producto agrupa varias tallas o colores, así que se publica u oculta **el producto entero**.
 - **Create promotion…:** crea una promoción con los artículos seleccionados.
+- **Create Shopify product…** (nuevo): para productos que Workstand no tiene. Seleccionas los artículos de Lightspeed que son el mismo producto (por ejemplo, los colores de una bici), y el Hub crea en Shopify **un producto en borrador** con una variante por artículo: barcode = UPC, SKU = System ID, y precio y oferta de Lightspeed. Quedan emparejados de una vez y el stock se manda por local. Después solo hay que agregar fotos en Shopify y publicarlo. No deja crear si a algún artículo le falta UPC o ya está emparejado.
 
-### Special Orders ⚠️
-Pedidos de clientes que llegan de Shopify. Separa lo que sale del stock de la tienda de lo que hay que pedir al proveedor, y lleva el flujo: revisión → aprobación → orden de compra → recibido → entregado.
-- **Hoy no recibe pedidos de la tienda de Carlos:** los avisos de pedidos (webhooks) no están registrados en su tienda. Lo que aparece son pedidos de prueba. Activarlo es un paso aparte que hay que decidir con Carlos.
+**Campos de identificación (pedido de Carlos):**
+- **System SKU** = **System ID** de Lightspeed (ej. 210000000283).
+- **UPC / EAN** = UPC de Lightspeed.
+- **Manufacturer Part #** = **Manufact. SKU** de Lightspeed.
+- El **Custom SKU** de Lightspeed **no se usa**.
+- En los cuatro campos siempre gana el valor de Lightspeed.
 
-### Purchase Orders ⚠️
+### Special Orders ✅ (conectado el 18-nov)
+Pedidos de clientes que llegan de la tienda de Carlos. Shopify avisa al Hub cuando un pedido se crea, cambia o se cancela, y el Hub verifica la firma de cada aviso. Separa lo que sale del stock de la tienda de lo que hay que pedir al proveedor, y lleva el flujo: revisión → aprobación → orden de compra → recibido → entregado.
+- Cada línea del pedido se identifica por la **variante emparejada por UPC**.
+- Si se compra algo que solo está en el catálogo de Workstand (no en Lightspeed), el Hub no lo reconoce y la línea aparece como **"unfulfillable"**. Ese pedido lo atiende el flujo de Workstand.
+- Si el cliente cancela antes de que se pida al proveedor, se cancela solo. Si ya se pidió, salta una alerta urgente.
+
+### Purchase Orders ✅
 Órdenes de compra a proveedores (QBP, J&B, Specialized), una por cada pedido especial. Botones para copiar el número de parte y abrir el portal B2B del proveedor.
 - Nunca se manda una orden de compra sin aprobación de una persona.
-- Depende de **Special Orders**, así que hoy no tiene pedidos reales.
 
 ### Vendor Catalogs ⚠️
 Importa catálogos de proveedores (CSV o TSV, más de 40 mil artículos), empareja por UPC o número de parte y deja en revisión lo dudoso.
@@ -118,7 +127,7 @@ Promociones en 3 pasos: elegir artículos, elegir descuento y revisar. Plantilla
 - **Guardrails** ✅: margen mínimo, alerta de margen y reglas de disponibilidad de pedido especial.
 - **Connections** ✅: estado de las conexiones con Lightspeed y Shopify. El botón de importar el catálogo de Shopify está **bloqueado** a propósito: con la tienda de Workstand metería 194 mil variantes al Hub.
 - **Activity & Logs** ✅: trabajos en segundo plano (con reintento), errores y quién cambió qué (auditoría).
-- **Store Simulator** ⛔: simula compras. Solo funciona en modo DEMO.
+- *(El Store Simulator se eliminó el 18-nov.)*
 
 ---
 
@@ -135,7 +144,8 @@ Specialized, Giro, Fox y otras marcas ya vienen con sus colores y tallas armados
 Tres opciones:
 1. **Armarlo a mano en Shopify**, como hizo Carlos con la Jupiter Defiant: un producto, una variante por color o talla, y en cada variante el **UPC exacto** de Lightspeed en el campo "Barcode". En menos de una hora aparece en UPC Matches; Carlos aprueba, y desde ahí precio y stock salen de Lightspeed. *Así funcionó la Jupiter Defiant: los 4 colores se emparejaron por su UPC.*
 2. **Pedirle a Workstand que agregue esa marca a su catálogo** (por ejemplo, Jupiter). Así llega con fotos y descripción, y el Hub la empareja sola.
-3. **Que el Hub lo arme (todavía no existe; se puede construir):** en el Hub, Carlos selecciona los artículos de Lightspeed que son el mismo producto (por ejemplo, los 4 colores), le pone nombre y el Hub crea en Shopify **un producto con esas variantes y sus UPC**, como borrador. Carlos solo agrega fotos y lo publica.
+3. **Que el Hub lo arme (disponible desde el 18-nov):** en **Item Search**, Carlos selecciona los artículos de Lightspeed que son el mismo producto (por ejemplo, los 4 colores) → **Create Shopify product…**. Le pone nombre, el nombre de la opción (Color, Size…) y el valor de cada artículo, y el Hub crea en Shopify **un producto en borrador con esas variantes y sus UPC**, ya emparejado. Carlos solo agrega fotos y lo publica. *Primer caso: "Jupiter Journey E-Bike" (Blue, 12 en stock) quedó creado en borrador.*
+   - Si después Workstand sube ese mismo producto, aparecerá en UPC Matches. Conviene dejar solo uno de los dos.
 
 No hace falta que Carlos empiece a usar matrices en Lightspeed: con el UPC correcto en cada artículo alcanza.
 

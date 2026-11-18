@@ -371,6 +371,7 @@ export function createDemoDriver() {
     async upcReview() { return { proposals: [], counts: [], shop: 'demo.local', mode: 'demo' }; },
     async decideUpc() { throw new Error('UPC review is only available in the live Hub'); },
     async runUpcMatch() { throw new Error('UPC review is only available in the live Hub'); },
+    async createShopifyProduct() { throw new Error('Creating Shopify products is only available in the live Hub'); },
     users: USERS,
     async login(email) {
       const u = USERS.find((x) => x.email === email);

@@ -3,6 +3,7 @@ import { card, confirmDialog, dataTable, loading, pageHead, pager, sectionTabs, 
 import { availabilityBadge, dateTime, margin, money, pct } from '../ui/format.js';
 import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=40';
 import { openPriceEditor } from './pricing.js?v=40';
+import { openCreateProduct } from './create-product.js?v=40';
 
 const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s === 'hidden' ? '' : 'warn' }, s);
 
@@ -140,6 +141,11 @@ export async function renderProducts(ctx) {
       ctx.can('pricing.write') ? h('button.btn.sm', {
         onclick: () => { sessionStorageSafeSet('ubc-promo-selection', JSON.stringify(filter)); ctx.navigate('#/promotions/new?from=selection'); },
       }, 'Create promotion…') : null,
+      // Several Lightspeed items (colors/sizes) → one draft product in Shopify (for products Workstand doesn't have).
+      filter.ids && ctx.api.kind === 'http' ? h('button.btn.sm', {
+        title: 'Create one Shopify product with these items as its colors/sizes',
+        onclick: () => openCreateProduct(ctx, filter.ids, () => { clear(); reload(); }),
+      }, 'Create Shopify product…') : null,
     ] : null,
   });
   const fs = table.state.filter.stock;
@@ -165,7 +171,7 @@ export async function renderProductDetail(ctx) {
     ]),
     h('div.grid.grid-2',
       card('Item Identity & Pricing', h('dl.props',
-        h('dt', 'System SKU (UBC)'), h('dd', h('code', it.sku)),
+        h('dt', 'System SKU (Lightspeed System ID)'), h('dd', h('code', it.sku)),
         h('dt', 'UPC / EAN'), h('dd', it.upc ? h('code', it.upc) : h('span.muted', 'none')),
         h('dt', 'Manufacturer Part #'), h('dd', it.mpn ? h('code', it.mpn) : '—'),
         h('dt', 'Default Price'), h('dd', h('strong', money(it.compareAtCents && it.compareAtCents > it.priceCents ? it.compareAtCents : it.priceCents))),

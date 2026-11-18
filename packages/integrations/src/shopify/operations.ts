@@ -408,7 +408,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
   }
 
   async createDraftProductFromItems(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult> {
-    return this.upsertProduct({ ...input, existingProductId: null, status: 'DRAFT', locationId: null });
+    return this.upsertProduct({ ...input, existingProductId: null, status: input.status ?? 'DRAFT', locationId: null });
   }
 
   async upsertProduct(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult> {

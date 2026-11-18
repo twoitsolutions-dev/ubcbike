@@ -14,7 +14,7 @@ export async function createShopifyProductFromItems(
   ctx: AppContext,
   companyId: string,
   userId: string,
-  input: { variantIds: string[]; title: string; vendor: string; productType: string; optionName: string; values: Record<string, string> },
+  input: { variantIds: string[]; title: string; vendor: string; productType: string; optionName: string; values: Record<string, string>; publishNow?: boolean },
 ) {
   if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') throw new HttpError(409, 'NOT_AVAILABLE', 'Only available with the live Shopify store');
   const shop = shopOf(ctx);
@@ -31,7 +31,6 @@ export async function createShopifyProductFromItems(
   const problems: string[] = [];
   if (rows.rows.length !== input.variantIds.length) problems.push('Some selected items are not Lightspeed items');
   for (const r of rows.rows) {
-    if (!normalizeGtin(r.upc)) problems.push(`${r.title}: no valid UPC in Lightspeed (needed to keep it synced)`);
     if (r.links > 0) problems.push(`${r.title}: already linked to a Shopify variant`);
     if (!(r.price_cents > 0)) problems.push(`${r.title}: no price in Lightspeed`);
     if (!String(input.values[r.id] ?? '').trim()) problems.push(`${r.title}: missing ${input.optionName} value`);
@@ -40,14 +39,15 @@ export async function createShopifyProductFromItems(
   if (new Set(vals).size !== vals.length) problems.push(`Each item needs a different ${input.optionName} value`);
   if (problems.length) throw new HttpError(422, 'CANNOT_CREATE', 'Cannot create the product', { problems });
 
+  const targetStatus = input.publishNow ? 'ACTIVE' : 'DRAFT';
   const created = await ctx.connectors.shopify.createDraftProductFromItems({
     title: input.title.trim(),
     vendor: input.vendor.trim() || 'UBC',
     productType: input.productType.trim() || 'Bikes',
-    status: 'DRAFT',
+    status: targetStatus,
     variants: rows.rows.map((r) => ({
       sku: r.sku,
-      barcode: formatRetailBarcode(r.upc) ?? undefined,
+      barcode: formatRetailBarcode(r.upc) ?? (r.upc?.trim() || r.sku || undefined),
       priceCents: r.price_cents,
       compareAtCents: r.compare_at_cents,
       costCents: r.cost_cents,
@@ -83,6 +83,12 @@ export async function createShopifyProductFromItems(
      ON CONFLICT (company_id, variant_id, stream) DO UPDATE SET decision = 'ready_for_shopify', status = 'pending', last_error = NULL, updated_at = now()`,
     [companyId, linked.map((l) => l.vid)],
   );
+  if (input.publishNow) {
+    await ctx.pool.query(
+      `UPDATE variants SET status = 'published', updated_at = now() WHERE company_id = $1 AND id = ANY($2::uuid[])`,
+      [companyId, linked.map((l) => l.vid)],
+    );
+  }
   await enqueue(ctx.pool, { companyId, type: 'pipeline.flush_shopify', payload: { trigger: 'created_in_hub' } });
   await audit(ctx.pool, { companyId, userId, action: 'shopify.product_created_from_items', detail: { productId: created.productId, title: input.title, variants: linked.length } });
   const numericId = created.productId.split('/').pop();
@@ -129,8 +135,8 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     if (pick) hubByGtin.set(g, pick.id); else dupSkipped++;
   }
 
-  const existing = await ctx.pool.query<{ id: number; variant_id: string; shopify_variant_id: string; shopify_product_id: string; shopify_inventory_item_id: string | null }>(
-    `SELECT id, variant_id, shopify_variant_id, shopify_product_id, shopify_inventory_item_id
+  const existing = await ctx.pool.query<{ id: number; variant_id: string; shopify_variant_id: string; shopify_product_id: string; shopify_inventory_item_id: string | null; match_method: string }>(
+    `SELECT id, variant_id, shopify_variant_id, shopify_product_id, shopify_inventory_item_id, match_method
      FROM shopify_variant_links WHERE company_id = $1 AND shop_domain = $2`,
     [companyId, shop],
   );
@@ -157,7 +163,7 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     if (ex) stillInStore.add(row.variantId);
     const base = { svid: row.variantId, pid: row.productId, inv: row.inventoryItemId, title: row.title, barcode: row.barcode, p: row.priceCents, c: row.compareAtCents };
     if (!vid) {
-      if (ex) unmatched.set(ex.id, { ...base, kind: 'remove', vid: ex.variant_id, old: null, link: ex.id });
+      if (ex && ex.match_method !== 'created_in_hub') unmatched.set(ex.id, { ...base, kind: 'remove', vid: ex.variant_id, old: null, link: ex.id });
       return;
     }
     // manual = product created by hand in Shopify (no workstand.variant_uuid), e.g. Carlos's Jupiter bikes.

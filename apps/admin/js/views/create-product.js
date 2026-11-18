@@ -27,13 +27,14 @@ export async function openCreateProduct(ctx, ids, done) {
   const title = h('input', { value: prefix.replace(/^BIKE\s+/i, ''), placeholder: 'Product name shown online' });
   const vendor = h('input', { value: items[0].brand || '' });
   const type = h('input', { value: items[0].category || '' });
-  const optName = h('input', { value: 'Color', placeholder: 'Color, Size…' });
+  const optName = h('input', { value: items.length === 1 ? 'Title' : 'Color', placeholder: 'Color, Size…' });
+  const publishNowCb = h('input', { type: 'checkbox', checked: true });
   const valueInputs = {};
   const rows = items.map((it) => {
-    const guess = it.title.slice(prefix.length).trim() || it.title;
+    const guess = items.length === 1 ? 'Default Title' : (it.title.slice(prefix.length).trim() || it.title);
     valueInputs[it.id] = h('input', { value: guess, style: { width: '100%' } });
     return h('tr',
-      h('td', h('div', it.title), h('div.sku', 'UPC ' + (it.upc || '— missing') + ' · System SKU ' + it.sku)),
+      h('td', h('div', it.title), h('div.sku', (it.upc ? 'UPC ' + it.upc : 'No UPC (syncs by SKU)') + ' · System SKU ' + it.sku)),
       h('td.num', money(it.priceCents)),
       h('td.num', String(it.physicalQty || 0)),
       h('td', valueInputs[it.id]));
@@ -47,12 +48,22 @@ export async function openCreateProduct(ctx, ids, done) {
     const values = {};
     Object.keys(valueInputs).forEach((k) => { values[k] = valueInputs[k].value; });
     try {
-      const r = await ctx.api.createShopifyProduct({ variantIds: ids, title: title.value, vendor: vendor.value, productType: type.value, optionName: optName.value, values });
+      const r = await ctx.api.createShopifyProduct({
+        variantIds: ids,
+        title: title.value,
+        vendor: vendor.value,
+        productType: type.value,
+        optionName: optName.value,
+        values,
+        publishNow: publishNowCb.checked,
+      });
       m.close();
-      toast('Draft product created in Shopify with ' + r.variants + ' variant(s)');
+      toast((publishNowCb.checked ? 'Published live in Shopify' : 'Draft product created in Shopify') + ' with ' + r.variants + ' variant(s)');
       modal({
-        title: 'Created in Shopify (draft)',
-        body: [h('p', 'Add photos and a description in Shopify, then set it to Active. Price, sale price and stock already sync from Lightspeed.'),
+        title: publishNowCb.checked ? 'Published to Shopify' : 'Created in Shopify (draft)',
+        body: [h('p', publishNowCb.checked
+          ? 'The product is now Active in Shopify (price, sale price, and stock sync from Lightspeed). You can open it in Shopify to add photos or description.'
+          : 'Add photos and a description in Shopify, then set it to Active. Price, sale price and stock already sync from Lightspeed.'),
           h('a.btn.primary', { href: r.adminUrl, target: '_blank', rel: 'noopener' }, 'Open in Shopify ↗')],
         actions: [],
       });
@@ -63,13 +74,14 @@ export async function openCreateProduct(ctx, ids, done) {
       mount(errHost, h('div.notice.bad', h('strong', e.message), problems.length ? h('ul', problems.map((p) => h('li', p))) : null));
     }
   };
-  const createBtn = h('button.btn.primary', { onclick: (ev) => submit(ev.currentTarget) }, 'Create draft in Shopify');
+  const createBtn = h('button.btn.primary', { onclick: (ev) => submit(ev.currentTarget) }, 'Create & sync to Shopify');
   m = modal({
     title: 'Create Shopify product from ' + items.length + ' Lightspeed item' + (items.length === 1 ? '' : 's'),
     wide: true,
     body: [
-      h('p.muted', 'Use this for products Workstand does not have (e.g. Jupiter). Each selected item becomes one variant (color/size) with its Lightspeed UPC as barcode. The product is created as a DRAFT so you can add photos before publishing.'),
+      h('p.muted', 'Creates this product in Shopify and links it to Lightspeed automatically (even if it does not have a UPC — price & stock sync directly by Shopify variant ID).'),
       h('div.form-grid', field('Product name', title), field('Brand / vendor', vendor), field('Product type', type), field('Option name', optName)),
+      h('label.check', publishNowCb, h('strong', 'Publish live in Shopify right away (Active)'), h('span.small.muted', ' — uncheck to save as Draft first')),
       h('table.t', h('thead', h('tr', h('th', 'Lightspeed item'), h('th.num', 'Price'), h('th.num', 'Stock'), h('th', 'Option value'))), h('tbody', rows)),
       errHost,
     ],

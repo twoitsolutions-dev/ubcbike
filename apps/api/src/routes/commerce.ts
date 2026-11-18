@@ -527,6 +527,7 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
       productType: z.string().trim().max(100).default(''),
       optionName: z.string().trim().min(1).max(40).default('Color'),
       values: z.record(z.string(), z.string().max(80)),
+      publishNow: z.boolean().optional(),
     }).parse(req.body);
     return createShopifyProductFromItems(ctx, req.session!.companyId, req.session!.userId, body);
   });

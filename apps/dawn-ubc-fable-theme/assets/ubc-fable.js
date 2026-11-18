@@ -2155,6 +2155,104 @@
     }
   });
 
+  /* ---------- 13b. Spanish dictionary for Shopify / Dawn strings ----------
+     English is the store default. Strings rendered by Shopify/Dawn Liquid (buttons, cart, search,
+     pickup, filters) have no data-es attribute, so in ES mode they are translated here by exact text
+     and restored to the original English when switching back. */
+  var UBC_ES = {
+    'Sale': 'Oferta', 'Sold out': 'Agotado', 'Unavailable': 'No disponible', 'Regular price': 'Precio habitual',
+    'Sale price': 'Precio de oferta', 'Unit price': 'Precio unitario', 'Vendor:': 'Proveedor:',
+    'Add to cart': 'Agregar al carrito', 'Quantity': 'Cantidad', 'Share': 'Compartir',
+    'Tax included.': 'Impuestos incluidos.', 'Shipping calculated at checkout.': 'Envío calculado al pagar.',
+    'Pickup available at': 'Retiro disponible en', 'Pickup currently unavailable at': 'Retiro no disponible por ahora en',
+    'Usually ready in 24 hours': 'Normalmente listo en 24 horas', 'Usually ready in 2 hours': 'Normalmente listo en 2 horas',
+    'Usually ready in 2-4 days': 'Normalmente listo en 2-4 días', 'Usually ready in 5+ days': 'Normalmente listo en 5+ días',
+    'Pickup available, usually ready in 24 hours': 'Retiro disponible, normalmente listo en 24 horas',
+    'Pickup available, usually ready in 2 hours': 'Retiro disponible, normalmente listo en 2 horas',
+    'Pickup available, usually ready in 2-4 days': 'Retiro disponible, normalmente listo en 2-4 días',
+    'Pickup available, usually ready in 5+ days': 'Retiro disponible, normalmente listo en 5+ días',
+    'Check availability at other stores': 'Ver disponibilidad en otras tiendas', 'View store information': 'Ver información de la tienda',
+    'Your cart': 'Tu carrito', 'Your cart is empty': 'Tu carrito está vacío', 'Continue shopping': 'Seguir comprando',
+    'Have an account?': '¿Tienes una cuenta?', 'Log in': 'Inicia sesión', 'to check out faster.': 'para pagar más rápido.',
+    'Estimated total': 'Total estimado', 'Check out': 'Pagar', 'Product': 'Producto', 'Remove': 'Eliminar',
+    'Taxes, discounts and shipping calculated at checkout.': 'Impuestos, descuentos y envío calculados al pagar.',
+    'Taxes and shipping calculated at checkout': 'Impuestos y envío calculados al pagar',
+    'Item added to your cart': 'Artículo agregado a tu carrito', 'View cart': 'Ver carrito',
+    'Order special instructions': 'Instrucciones especiales del pedido',
+    'Search': 'Buscar', 'Search results': 'Resultados de búsqueda', 'Sort by:': 'Ordenar por:', 'Filter:': 'Filtrar:',
+    'Filter': 'Filtrar', 'Filter and sort': 'Filtrar y ordenar', 'Availability': 'Disponibilidad', 'In stock': 'En stock',
+    'Out of stock': 'Agotado', 'Price': 'Precio', 'Remove all': 'Quitar todo', 'Clear': 'Borrar', 'Apply': 'Aplicar',
+    'Relevance': 'Relevancia', 'Best selling': 'Más vendidos', 'Alphabetically, A-Z': 'Alfabético, A-Z',
+    'Alphabetically, Z-A': 'Alfabético, Z-A', 'Price, low to high': 'Precio, menor a mayor',
+    'Price, high to low': 'Precio, mayor a menor', 'Date, old to new': 'Fecha, más antiguos',
+    'Date, new to old': 'Fecha, más nuevos', 'Load more': 'Cargar más',
+    'Shop Location:': 'Tienda:', 'Both Stores': 'Ambas tiendas', 'Brand:': 'Marca:', 'Price:': 'Precio:', 'Sort:': 'Ordenar:',
+    'Any Price': 'Cualquier precio', 'Under $50': 'Menos de $50', 'Featured': 'Destacados',
+    'Price: High to Low': 'Precio: mayor a menor', 'Price: Low to High': 'Precio: menor a mayor',
+    'Alphabetical: A – Z': 'Alfabético: A – Z', 'Newest Arrivals': 'Lo más nuevo', 'Clear all filters ×': 'Quitar filtros ×',
+    'Live Inventory · UBC In-Store (Tampa & Alafia) + Available at Supplier Warehouse': 'Inventario en vivo · UBC en tienda (Tampa y Alafia) + disponible en bodega del proveedor',
+    'In Store Today · UBC Tampa Showroom (2502 E Fletcher Ave)': 'En tienda hoy · UBC Tampa Showroom (2502 E Fletcher Ave)',
+    'In Store Today · UBC Alafia River State Park (Lithia Trailhead)': 'En tienda hoy · UBC Alafia River State Park (Lithia Trailhead)',
+    'All In-Stock': 'Todo en stock', 'All Bikes': 'Todas las bicis', 'Electric Bikes': 'Bicis eléctricas',
+    'Road & Gravel': 'Ruta y gravel', 'Mountain Bikes': 'Bicis de montaña', 'Hybrid & Urban': 'Híbridas y urbanas',
+    'Kids Bikes': 'Bicis para niños', 'Helmets': 'Cascos', 'Apparel': 'Ropa', 'Shoes': 'Zapatos',
+    'Sunglasses': 'Gafas de sol', 'Tires': 'Llantas', 'Tubes': 'Cámaras', 'Parts': 'Repuestos', 'Saddles': 'Sillines',
+    'Pedals': 'Pedales', 'Nutrition': 'Nutrición', 'Bottles & Cages': 'Botellas y portabotellas',
+    'Accessories': 'Accesorios', 'Tools & Care': 'Herramientas y cuidado',
+    'At Warehouse · Available to Order': 'En bodega · Disponible por pedido',
+    'At Warehouse · Available by Order': 'En bodega · Disponible por pedido',
+    'In-store pickup only · Tampa': 'Solo retiro en tienda · Tampa'
+  };
+  var UBC_ES_RX = [
+    [/^([\d,]+) results$/, '$1 resultados'], [/^([\d,]+) result$/, '$1 resultado'],
+    [/^([\d,]+) products$/, '$1 productos'], [/^([\d,]+) product$/, '$1 producto'],
+    [/^All Brands \((\d+)\)$/, 'Todas las marcas ($1)'],
+    [/^At Warehouse · Ready in (\d+) days$/, 'En bodega · Listo en $1 días'],
+    [/^Quantity \((\d+) in cart\)$/, 'Cantidad ($1 en el carrito)']
+  ];
+  var ubcOrigText = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function ubcEsFor(key) {
+    if (Object.prototype.hasOwnProperty.call(UBC_ES, key)) return UBC_ES[key];
+    for (var i = 0; i < UBC_ES_RX.length; i++) {
+      if (UBC_ES_RX[i][0].test(key)) return key.replace(UBC_ES_RX[i][0], UBC_ES_RX[i][1]);
+    }
+    return null;
+  }
+  function ubcTranslateTree(root, toEs) {
+    if (!root || !ubcOrigText || !document.createTreeWalker) return;
+    var walker = document.createTreeWalker(root, 4, null, false); // 4 = SHOW_TEXT
+    var node;
+    while ((node = walker.nextNode())) {
+      var parent = node.parentNode;
+      if (!parent || parent.nodeType !== 1) continue;
+      var tag = parent.nodeName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEXTAREA') continue;
+      if (parent.closest && parent.closest('[data-es]')) continue; // handled by data-es
+      if (toEs) {
+        var raw = ubcOrigText.has(node) ? ubcOrigText.get(node) : node.nodeValue;
+        var key = raw.replace(/\s+/g, ' ').trim();
+        if (key.length < 2) continue;
+        var es = ubcEsFor(key);
+        if (es !== null) {
+          if (!ubcOrigText.has(node)) ubcOrigText.set(node, raw);
+          var want = raw.replace(raw.trim(), es);
+          if (node.nodeValue !== want) node.nodeValue = want;
+        }
+      } else if (ubcOrigText.has(node)) {
+        if (node.nodeValue !== ubcOrigText.get(node)) node.nodeValue = ubcOrigText.get(node);
+      }
+    }
+    if (root.querySelectorAll) {
+      Array.prototype.forEach.call(root.querySelectorAll('input[placeholder]:not([data-es-placeholder])'), function (el) {
+        if (el.getAttribute('data-en-ph') == null) el.setAttribute('data-en-ph', el.getAttribute('placeholder') || '');
+        var enPh = el.getAttribute('data-en-ph');
+        var esPh = ubcEsFor(enPh.trim());
+        var wantPh = toEs && esPh !== null ? esPh : enPh;
+        if (el.getAttribute('placeholder') !== wantPh) el.setAttribute('placeholder', wantPh);
+      });
+    }
+  }
+
   /* ---------- 14. Bilingual EN / ES Switcher ---------- */
   function applyLanguage(nextLang) {
     lang = nextLang === 'es' ? 'es' : 'en';
@@ -2173,6 +2271,8 @@
       if (el.dataset.enPlaceholder == null) el.dataset.enPlaceholder = el.getAttribute('placeholder') || '';
       el.setAttribute('placeholder', lang === 'es' ? el.getAttribute('data-es-placeholder') : el.dataset.enPlaceholder);
     });
+
+    ubcTranslateTree(document.body, lang === 'es');
 
     qsa('.plan-toggle').forEach(function (btn) {
       var card = btn.closest('.plan');
@@ -2258,15 +2358,18 @@
           return n.nodeType === 1 && (n.hasAttribute && n.hasAttribute('data-es') || (n.querySelector && n.querySelector('[data-es]')));
         });
       });
-      if (!hasNew) return;
+      // In ES mode, any new content (filters, cart drawer, variant changes) also gets the dictionary.
+      var hasText = lang === 'es' && muts.some(function (m) { return m.type === 'childList' && m.addedNodes.length > 0; });
+      if (!hasNew && !hasText) return;
       clearTimeout(ubcLangTimer);
       ubcLangTimer = setTimeout(function () {
+        if (lang === 'es') ubcTranslateTree(document.body, true);
         qsa('[data-es]').forEach(function (el) {
           if (el.dataset.en == null) el.dataset.en = el.innerHTML;
           var want = lang === 'es' ? el.getAttribute('data-es') : el.dataset.en;
           if (el.innerHTML !== want) el.innerHTML = want;
         });
-      }, 30);
+      }, 150);
     }).observe(document.body, { childList: true, subtree: true });
   }
 

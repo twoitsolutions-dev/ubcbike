@@ -281,6 +281,8 @@ export async function flushStagedToShopifyJob(
  */
 export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date = new Date()) {
   const companies = await ctx.pool.query<{ id: string }>(`SELECT id FROM companies`);
+  // Housekeeping: sessions expired more than a day ago are useless.
+  await ctx.pool.query(`DELETE FROM sessions WHERE expires_at < now() - interval '1 day'`).catch(() => {});
   let alertsRaised = 0;
   let jobsScheduled = 0;
 
@@ -386,9 +388,10 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
         if (j1.created) jobsScheduled++;
       }
 
-      // update_only store: re-check every 30 min that nobody (e.g. Workstand) overwrote the Lightspeed prices.
+      // update_only store: every 15 min re-check that nobody (e.g. Workstand) overwrote the Lightspeed prices/stock,
+      // and refresh the storefront filter tags (store / brand / price) from Lightspeed stock.
       if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only' && ctx.config.env.SHOPIFY_WRITES_ENABLED) {
-        const rcBucket = Math.floor(now.getTime() / (30 * 60_000));
+        const rcBucket = Math.floor(now.getTime() / (15 * 60_000));
         const j2 = await enqueue(ctx.pool, {
           companyId: comp.id,
           type: 'shopify.reconcile_links',
@@ -396,6 +399,13 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
           idempotencyKey: `sched:shopify:reconcile:${rcBucket}`,
         });
         if (j2.created) jobsScheduled++;
+        const j4 = await enqueue(ctx.pool, {
+          companyId: comp.id,
+          type: 'shopify.sync_tags',
+          payload: {},
+          idempotencyKey: `sched:shopify:sync_tags:${rcBucket}`,
+        });
+        if (j4.created) jobsScheduled++;
         // Every UPC_MATCH_EVERY_MINUTES (default 60): look for new UPC matches (new Lightspeed items / new
         // Workstand products). Only PROPOSES them — Carlos approves in "UPC Matches", so running often is safe.
         const every = Math.max(15, Number(process.env.UPC_MATCH_EVERY_MINUTES) || 60);

@@ -53,7 +53,7 @@ export async function setProgress(pool: Pool, jobId: number, progress: Record<st
  */
 export const SELF_HEALING_JOB_TYPES = new Set([
   'lightspeed.sync_catalog', 'lightspeed.sync_special_orders', 'pipeline.flush_shopify',
-  'shopify.reconcile_links', 'shopify.link_store', 'shopify.sync_catalog', 'pipeline.watchdog',
+  'shopify.reconcile_links', 'shopify.link_store', 'shopify.sync_tags', 'shopify.sync_catalog', 'pipeline.watchdog',
 ]);
 
 export async function completeJob(pool: Pool, jobId: number, result: unknown) {

@@ -8,9 +8,9 @@ const browserGlobals = Object.fromEntries([
 
 export default [
   {
-    files: ['apps/admin/js/**/*.js', 'apps/shopify-theme/assets/*.js'],
+    files: ['apps/admin/js/**/*.js', 'apps/dawn-ubc-fable-theme/assets/ubc-fable.js'],
     languageOptions: { ecmaVersion: 2020, sourceType: 'module', globals: browserGlobals },
     rules: { 'no-undef': 'error', 'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }], 'no-dupe-keys': 'error', 'no-unreachable': 'error' },
   },
-  { files: ['apps/admin/js/boot-check.js', 'apps/shopify-theme/assets/*.js'], languageOptions: { ecmaVersion: 5, sourceType: 'script' } },
+  { files: ['apps/admin/js/boot-check.js'], languageOptions: { ecmaVersion: 5, sourceType: 'script' } },
 ];

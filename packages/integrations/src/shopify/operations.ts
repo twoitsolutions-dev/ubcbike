@@ -84,6 +84,12 @@ export interface ShopifyAdminPort {
    * unlike the automatic `upsertProduct`.
    */
   createDraftProductFromItems(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult>;
+  /** Vendor, tags and lowest variant price of products by GID (read-only, 250 per call). */
+  getProductsTagInfo(productIds: string[]): Promise<{ id: string; vendor: string; tags: string[]; minPriceCents: number }[]>;
+  /** IDs of every product carrying a tag (read-only). */
+  listProductIdsByTag(tag: string): Promise<string[]>;
+  /** Add / remove tags on one product (only the given tags are touched). */
+  updateProductTags(productId: string, add: string[], remove: string[]): Promise<void>;
   /** Read every variant of the store with a Shopify bulk query (read-only; streamed, low memory). */
   bulkReadVariants(onRow: (v: StoreVariantRow) => void): Promise<number>;
   /** Start stocking an inventory item at a location (needed before its quantity can be set there). */
@@ -492,6 +498,47 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     return { productId: prod.id, variants: outVariants };
   }
 
+  async getProductsTagInfo(productIds: string[]) {
+    type N = { id: string; vendor: string; tags: string[]; priceRangeV2: { minVariantPrice: { amount: string } } } | null;
+    const out: { id: string; vendor: string; tags: string[]; minPriceCents: number }[] = [];
+    for (let i = 0; i < productIds.length; i += 250) {
+      const r = await this.client.query<{ nodes: N[] }>(
+        `query($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id vendor tags priceRangeV2 { minVariantPrice { amount } } } } }`,
+        { ids: productIds.slice(i, i + 250) },
+      );
+      for (const n of r.nodes) if (n?.id) out.push({ id: n.id, vendor: n.vendor || '', tags: n.tags || [], minPriceCents: strToCents(n.priceRangeV2.minVariantPrice.amount) });
+    }
+    return out;
+  }
+
+  async listProductIdsByTag(tag: string) {
+    type R = { products: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; nodes: { id: string }[] } };
+    const ids: string[] = [];
+    let after: string | null = null;
+    do {
+      const r: R = await this.client.query<R>(
+        `query($q: String!, $after: String) { products(first: 250, query: $q, after: $after) { pageInfo { hasNextPage endCursor } nodes { id } } }`,
+        { q: `tag:${JSON.stringify(tag)}`, after },
+      );
+      ids.push(...r.products.nodes.map((n) => n.id));
+      after = r.products.pageInfo.hasNextPage ? r.products.pageInfo.endCursor : null;
+    } while (after);
+    return ids;
+  }
+
+  async updateProductTags(productId: string, add: string[], remove: string[]) {
+    type RA = { tagsAdd: { userErrors: { field: string[]; message: string }[] } };
+    type RR = { tagsRemove: { userErrors: { field: string[]; message: string }[] } };
+    if (remove.length) {
+      const r = await this.client.mutate<RR>(`mutation($id: ID!, $tags: [String!]!) { tagsRemove(id: $id, tags: $tags) { userErrors { field message } } }`, { id: productId, tags: remove });
+      assertNoUserErrors(r.tagsRemove.userErrors);
+    }
+    if (add.length) {
+      const r = await this.client.mutate<RA>(`mutation($id: ID!, $tags: [String!]!) { tagsAdd(id: $id, tags: $tags) { userErrors { field message } } }`, { id: productId, tags: add });
+      assertNoUserErrors(r.tagsAdd.userErrors);
+    }
+  }
+
   async activateInventoryAtLocation(inventoryItemId: string, locationId: string) {
     type R = { inventoryActivate: { userErrors: { field: string[]; message: string }[] } };
     // API 2026-10 requires @idempotent on inventoryActivate (INVENTORY_ACTIVATE carries it).
@@ -774,6 +821,9 @@ export class MockShopifyAdmin implements ShopifyAdminPort {
   async updateVariantPrices(productId: string, updates: unknown) { this.calls.push({ op: 'updateVariantPrices', args: { productId, updates } }); }
   async getVariantPrices(variantIds: string[]) { this.calls.push({ op: 'getVariantPrices', args: { count: variantIds.length } }); return []; }
   async bulkReadVariants() { this.calls.push({ op: 'bulkReadVariants', args: null }); return 0; }
+  async getProductsTagInfo(productIds: string[]) { this.calls.push({ op: 'getProductsTagInfo', args: { count: productIds.length } }); return []; }
+  async listProductIdsByTag(tag: string) { this.calls.push({ op: 'listProductIdsByTag', args: tag }); return [] as string[]; }
+  async updateProductTags(productId: string, add: string[], remove: string[]) { this.calls.push({ op: 'updateProductTags', args: { productId, add, remove } }); }
   async activateInventoryAtLocation(inventoryItemId: string, locationId: string) { this.calls.push({ op: 'activateInventoryAtLocation', args: { inventoryItemId, locationId } }); }
   async getInventoryOnHand(inventoryItemIds: string[]) { this.calls.push({ op: 'getInventoryOnHand', args: { count: inventoryItemIds.length } }); return new Map<string, Record<string, number>>(); }
   async createAutomaticDiscount(input: unknown) { this.calls.push({ op: 'createAutomaticDiscount', args: input }); return `gid://shopify/DiscountAutomaticNode/demo-${++this.discountSeq}`; }

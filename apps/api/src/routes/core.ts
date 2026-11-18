@@ -6,7 +6,7 @@ import { ROLE_PERMISSIONS, type ItemFilter } from '@ubc/shared';
 import { withTransaction } from '@ubc/database';
 import { login, logout, requireAuth } from '../middleware/auth.js';
 import { audit } from '../services/audit.js';
-import { getItem, getSettings, itemFilterSchema, listItems, loadAllMatching } from '../services/catalog.js';
+import { buildWhere, getItem, getSettings, itemFilterSchema, listItems, loadAllMatching } from '../services/catalog.js';
 import { conflict, HttpError, notFound, type AppContext } from '../services/context.js';
 import { enqueue } from '../services/jobs.js';
 import { rulesSchema } from '../services/campaigns.js';
@@ -30,6 +30,8 @@ export function filterFromQuery(q: Record<string, unknown>): ItemFilter {
     stock: q.stock || undefined, status: q.status || undefined,
   });
 }
+
+const dashboardCache = new Map<string, { at: number; v: unknown }>();
 
 /** Lightspeed ↔ Shopify (Workstand store) coverage for the dashboard. Cached 60 s per company. */
 const syncStatsCache = new Map<string, { at: number; v: unknown }>();
@@ -108,16 +110,20 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/api/dashboard', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const c = req.session!.companyId;
+    // The dashboard is requested twice on load (page + menu badges): serve the second from a 20 s cache.
+    const cached = dashboardCache.get(c);
+    if (cached && Date.now() - cached.at < 20_000) return cached.v;
     const { availability } = await getSettings(ctx.pool, c);
-    const items = await loadAllMatching(ctx.pool, c, {}, availability);
-    const counts = { published: 0, physical: 0, virtualOnly: 0, unavailable: 0, total: items.length };
-    for (const i of items) {
-      if (i.status === 'published') counts.published++;
-      const st = computeAvailability(i, availability).status;
-      if (st === 'in_stock') counts.physical++;
-      else if (st === 'special_order') counts.virtualOnly++;
-      else counts.unavailable++;
-    }
+    // Count in SQL with the same filters as Item Search instead of loading the whole catalog (~30k rows).
+    const countWhere = async (f: Record<string, unknown>) => {
+      const { sql, params } = buildWhere(c, f as never, availability);
+      return (await ctx.pool.query<{ n: number }>(`SELECT count(*)::int n FROM catalog_items WHERE ${sql}`, params)).rows[0]!.n;
+    };
+    const [total, published, physical, virtualOnly, unavailable] = await Promise.all([
+      countWhere({}), countWhere({ status: 'published' }), countWhere({ stock: 'physical' }),
+      countWhere({ stock: 'virtual_only' }), countWhere({ stock: 'unavailable' }),
+    ]);
+    const counts = { published, physical, virtualOnly, unavailable, total };
     const q = (sql: string) => ctx.pool.query<{ n: number }>(sql, [c]).then((r) => r.rows[0]!.n);
     const [orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, reviews, upcReview] = await Promise.all([
       q(`SELECT count(*)::int n FROM orders WHERE company_id = $1`),
@@ -127,20 +133,22 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       q(`SELECT count(*)::int n FROM error_log WHERE company_id = $1 AND resolved_at IS NULL`),
       // Failed jobs that are still a problem: a dead recurring sync stops counting once a later run of it succeeded.
       q(`SELECT count(*)::int n FROM jobs d WHERE d.company_id = $1 AND d.status = 'dead'
-          AND NOT (d.type = ANY('{lightspeed.sync_catalog,lightspeed.sync_special_orders,pipeline.flush_shopify,shopify.reconcile_links,shopify.link_store,shopify.sync_catalog,pipeline.watchdog}'::text[])
+          AND NOT (d.type = ANY('{lightspeed.sync_catalog,lightspeed.sync_special_orders,pipeline.flush_shopify,shopify.reconcile_links,shopify.link_store,shopify.sync_tags,shopify.sync_catalog,pipeline.watchdog}'::text[])
                    AND EXISTS (SELECT 1 FROM jobs s WHERE s.company_id = d.company_id AND s.type = d.type AND s.status = 'succeeded' AND s.created_at > d.created_at))`),
       q(`SELECT count(*)::int n FROM match_reviews WHERE company_id = $1 AND status = 'pending'`),
       q(`SELECT count(*)::int n FROM upc_link_proposals WHERE company_id = $1 AND status = 'pending'`).catch(() => 0),
     ]);
     const syncs = await ctx.pool.query(`SELECT type, status, finished_at, created_at FROM jobs WHERE company_id = $1 ORDER BY created_at DESC LIMIT 8`, [c]);
     const shopifySync = ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only' ? await shopifySyncStats(ctx, c).catch(() => null) : null;
-    return {
+    const payload = {
       shopifySync,
       storeUrl: ctx.config.env.SHOPIFY_STORE_URL || (ctx.config.env.SHOPIFY_SHOP_DOMAIN ? `https://${ctx.config.env.SHOPIFY_SHOP_DOMAIN}` : null),
       counts: { ...counts, orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, pendingMatchReviews: reviews, upcReview },
       recentJobs: syncs.rows,
       shopifySales: ctx.config.mode === 'demo' ? { available: false, reason: 'Shopify not connected (DEMO)' } : { available: false, reason: 'Requires authorised Shopify connection' },
     };
+    dashboardCache.set(c, { at: Date.now(), v: payload });
+    return payload;
   });
 
   // ---------- Catalog ----------

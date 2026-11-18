@@ -493,9 +493,24 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.post('/api/upc-review/decide', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
-    const body = z.object({ ids: z.array(z.number().int().positive()).min(1).max(5000), decision: z.enum(['approve', 'reject', 'unlink']) }).parse(req.body);
+    const body = z.object({
+      ids: z.array(z.number().int().positive()).max(5000).optional(),
+      // "Approve all": every open proposal (optionally of one kind) instead of a list of ids.
+      all: z.boolean().optional(),
+      kind: z.enum(['add', 'repoint', 'remove']).optional(),
+      decision: z.enum(['approve', 'reject', 'unlink']),
+    }).refine((b) => (b.ids && b.ids.length > 0) || b.all, { message: 'ids or all is required' }).parse(req.body);
     if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') throw new HttpError(409, 'NOT_AVAILABLE', 'UPC review is only used with the Workstand-owned store (update_only mode)');
-    return decideUpcProposals(ctx, req.session!.companyId, req.session!.userId, body.ids, body.decision);
+    let ids = body.ids ?? [];
+    if (body.all) {
+      if (body.decision === 'unlink') throw new HttpError(400, 'VALIDATION', 'Unlink works on selected rows only');
+      ids = (await ctx.pool.query<{ id: string }>(
+        `SELECT id FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending' AND ($3::text IS NULL OR kind = $3)`,
+        [req.session!.companyId, String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase(), body.kind ?? null],
+      )).rows.map((r) => Number(r.id));
+      if (!ids.length) return { updated: 0 };
+    }
+    return decideUpcProposals(ctx, req.session!.companyId, req.session!.userId, ids, body.decision);
   });
 
   app.post('/api/shopify/products/from-items', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {

@@ -57,10 +57,27 @@ export async function renderUpcReview(ctx) {
         draw();
       } catch (e) { toast(e.message, 'bad'); }
     };
+    const pendingHere = count('pending', kind || null);
+    const approveAll = async () => {
+      const label = { add: 'new matches', repoint: 'changed matches', remove: 'removals' }[kind] || 'matches';
+      const ok = await confirmDialog({
+        title: 'Approve all ' + pendingHere.toLocaleString('en-US') + ' ' + label + '?',
+        message: 'Every match in this list (not only the ones on screen) starts syncing price, sale price and stock from Lightspeed to Shopify. It can take a few minutes for large lists.',
+        confirmLabel: 'Approve all',
+      });
+      if (!ok) return;
+      try {
+        const r = await ctx.api.decideAllUpc('approve', kind);
+        toast('Approved ' + r.updated.toLocaleString('en-US'));
+        ctx.refreshBadges();
+        draw();
+      } catch (e) { toast(e.message, 'bad'); }
+    };
     mount(actionsHost,
       canWrite && status === 'pending' ? [
         h('button.btn.primary', { onclick: () => act('approve') }, 'Approve selected'),
         h('button.btn', { onclick: () => act('reject') }, 'Reject selected'),
+        pendingHere > 0 && ctx.api.decideAllUpc ? h('button.btn', { onclick: approveAll }, 'Approve all (' + pendingHere.toLocaleString('en-US') + ')') : null,
       ] : null,
       canWrite && status === 'approved' ? h('button.btn', { onclick: () => act('unlink') }, 'Unlink selected') : null);
 

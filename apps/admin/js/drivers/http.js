@@ -52,6 +52,7 @@ export function createHttpDriver() {
     retryJob: (id) => req('POST', '/api/jobs/' + id + '/retry', {}),
     upcReview: (status, kind) => req('GET', '/api/upc-review' + qs({ status, kind })),
     decideUpc: (ids, decision) => req('POST', '/api/upc-review/decide', { ids, decision }),
+    decideAllUpc: (decision, kind) => req('POST', '/api/upc-review/decide', { all: true, decision, kind: kind || undefined }),
     runUpcMatch: () => req('POST', '/api/upc-review/run', {}),
     createShopifyProduct: (input) => req('POST', '/api/shopify/products/from-items', input),
     errors: () => req('GET', '/api/errors'),

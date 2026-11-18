@@ -39,9 +39,23 @@ function recordFailure(key: string) {
   else a.n++;
 }
 
+/** Failed logins allowed per account (any IP) in the window before the account is locked for the window. */
+const MAX_FAILS_PER_ACCOUNT = 8;
+const FAIL_WINDOW_MIN = 15;
+
 export async function login(ctx: AppContext, req: FastifyRequest, reply: FastifyReply, email: string, password: string) {
   const key = `${req.ip}:${email.toLowerCase()}`;
   throttle(key);
+  // Per-account limit stored in Postgres: shared by every server process and independent of the client IP,
+  // so rotating X-Forwarded-For (the IP a client claims) cannot be used to keep guessing passwords.
+  const fails = await ctx.pool.query<{ n: number }>(
+    `SELECT count(*)::int n FROM audit_log
+     WHERE action = 'auth.login_failed' AND lower(detail->>'email') = lower($1) AND created_at > now() - ($2 || ' minutes')::interval`,
+    [email, String(FAIL_WINDOW_MIN)],
+  );
+  if (fails.rows[0]!.n >= MAX_FAILS_PER_ACCOUNT) {
+    throw new HttpError(429, 'TOO_MANY_ATTEMPTS', `Too many login attempts for this account. Try again in ${FAIL_WINDOW_MIN} minutes.`);
+  }
   const r = await ctx.pool.query<{ id: string; name: string; email: string; password_hash: string; company_id: string; role: Role }>(
     `SELECT u.id, u.name, u.email, u.password_hash, m.company_id, m.role FROM users u JOIN memberships m ON m.user_id = u.id
      WHERE lower(u.email) = lower($1) AND u.is_active ORDER BY m.company_id LIMIT 1`, [email]);

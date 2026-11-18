@@ -178,6 +178,39 @@
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+  /* UBC filters in a left sidebar on desktop so products get the space (phones/tablets: unchanged, on top). */
+  @media screen and (min-width: 990px) {
+    .ubc-col-layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      column-gap: 3.2rem;
+      /* page width + the sidebar, so the product grid keeps its usual width */
+      max-width: calc(var(--page-width) + 28rem);
+      margin: 0 auto;
+      padding: 0 5rem;
+    }
+    .ubc-col-layout > .ubc-dept-wrap { display: contents; }
+    .ubc-col-layout .ubc-dept-head { grid-column: 1 / -1; }
+    .ubc-col-layout .ubc-side {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: start;
+      position: sticky;
+      top: 9rem;
+      max-height: calc(100vh - 11rem);
+      overflow-y: auto;
+      padding-right: 0.6rem;
+    }
+    .ubc-col-layout > :not(.ubc-dept-wrap) { grid-column: 2; grid-row: 2; min-width: 0; }
+    .ubc-col-layout .page-width { padding-left: 0; padding-right: 0; max-width: none; }
+    .ubc-side .ubc-store-bar,
+    .ubc-side .ubc-dept-pills,
+    .ubc-side .ubc-facets-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; margin: 0 0 1.6rem; }
+    .ubc-side .ubc-store-btn,
+    .ubc-side .ubc-dept-pill { justify-content: space-between; text-align: left; width: 100%; }
+    .ubc-side .ubc-facet-ctl { flex-direction: column; align-items: stretch; width: 100%; }
+    .ubc-side .ubc-facet-select { width: 100%; }
+  }
 {%- endstyle -%}
 
 <collection-component
@@ -213,6 +246,7 @@
       assign alafia_total = collections['in-stock-alafia'].products_count | default: 0
       assign cur_sort = collection.sort_by | default: ''
     -%}
+    <div class="ubc-col-layout">
     <div class="page-width ubc-dept-wrap" data-ubc-base-col="{{ base_col_url }}">
       <div class="ubc-dept-head">
         <span class="ubc-dept-kicker">
@@ -226,6 +260,7 @@
         </span>
       </div>
 
+      <div class="ubc-side" aria-label="Filters">
       {%- if collection.handle != 'special-order-catalog' -%}
         {%- liquid
           assign non_store_suffix = ''
@@ -336,6 +371,7 @@
         {%- if active_store_tag != '' or active_brand_tag != '' or active_price_tag != '' -%}
           <a class="ubc-facet-clear" href="{{ base_col_url }}">Clear all filters &times;</a>
         {%- endif -%}
+      </div>
       </div>
       <script>
         (function() {
@@ -525,6 +561,7 @@
         </div>
       </div>
     {%- endpaginate -%}
+    </div>
     {% if section.settings.image_shape == 'arch' %}
       {{ 'mask-arch.svg' | inline_asset_content }}
     {%- endif -%}

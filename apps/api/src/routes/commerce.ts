@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import { REASON_LABELS } from '@ubc/business-rules';
@@ -466,14 +467,92 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { jobId: job.id };
   });
 
+  const lsOAuthSecret = () => ctx.config.env.LIGHTSPEED_R_CLIENT_SECRET || ctx.config.env.DATABASE_URL || 'ubc-hub-oauth';
+  const lsRedirectUri = 'https://ubc-hub.twoitsolutions.com/oauth/lightspeed/callback';
+
+  app.get('/api/lightspeed/oauth/url', { preHandler: requireAuth(ctx, 'integrations.manage') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const tok = await ctx.pool.query<{ client_id: string | null }>(
+      `SELECT client_id FROM integration_oauth_tokens WHERE company_id = $1 AND system = 'lightspeed_r' LIMIT 1`,
+      [companyId],
+    );
+    const clientId = (tok.rows[0]?.client_id || ctx.config.env.LIGHTSPEED_R_CLIENT_ID || '').trim();
+    if (!clientId) throw new HttpError(400, 'NOT_CONFIGURED', 'LIGHTSPEED_R_CLIENT_ID is not configured on the server.');
+    const payload = Buffer.from(JSON.stringify({ companyId, exp: Date.now() + 15 * 60_000 })).toString('base64url');
+    const sig = crypto.createHmac('sha256', lsOAuthSecret()).update(payload).digest('base64url');
+    const url = `https://cloud.lightspeedapp.com/oauth/authorize.php?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent('employee:inventory_read')}&redirect_uri=${encodeURIComponent(lsRedirectUri)}&state=${encodeURIComponent(`${payload}.${sig}`)}`;
+    return { url };
+  });
+
   // Public HTTPS OAuth redirect landing page for Lightspeed Retail R-Series (`register.php` requires https://)
   app.get('/oauth/lightspeed/callback', async (req, reply) => {
-    const q = req.query as { code?: string; error?: string };
-    reply.header('Content-Type', 'text/html; charset=utf-8');
+    const q = req.query as { code?: string; error?: string; state?: string };
     if (q.error) {
-      return `<!doctype html><html><body style="font-family:system-ui,sans-serif;background:#14202D;color:#FEFDF3;display:grid;place-items:center;min-height:100vh;margin:0"><div style="max-width:520px;padding:32px;border-radius:16px;background:#1E2F42;text-align:center"><h2>Authorization Cancelled</h2><p>${String(q.error).replace(/[<>&"]/g, '')}</p></div></body></html>`;
+      reply.header('Content-Type', 'text/html; charset=utf-8');
+      return `<!doctype html><html><body style="font-family:system-ui,sans-serif;background:#14202D;color:#FEFDF3;display:grid;place-items:center;min-height:100vh;margin:0"><div style="max-width:520px;padding:32px;border-radius:16px;background:#1E2F42;text-align:center"><h2>Authorization Cancelled</h2><p>${String(q.error).replace(/[<>&"]/g, '')}</p><p><a href="/#/integrations" style="color:#FDE68A">Back to UBC Commerce Hub</a></p></div></body></html>`;
     }
     const safeCode = String(q.code || '').replace(/[^A-Za-z0-9._~+/-]/g, '');
+    if (safeCode && q.state) {
+      try {
+        const [payload, sig] = String(q.state).split('.');
+        const expected = payload ? crypto.createHmac('sha256', lsOAuthSecret()).update(payload).digest('base64url') : '';
+        if (!payload || !sig || sig !== expected) throw new Error('Invalid or tampered OAuth state.');
+        const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { companyId: string; exp: number };
+        if (!parsed.companyId || Date.now() > parsed.exp) throw new Error('OAuth session expired. Please click Reconnect Lightspeed again.');
+
+        const tok = await ctx.pool.query<{ client_id: string | null; client_secret: string | null; account_id: string | null }>(
+          `SELECT client_id, client_secret, account_id FROM integration_oauth_tokens WHERE company_id = $1 AND system = 'lightspeed_r' LIMIT 1`,
+          [parsed.companyId],
+        );
+        const clientId = (tok.rows[0]?.client_id || ctx.config.env.LIGHTSPEED_R_CLIENT_ID || '').trim();
+        const clientSecret = (tok.rows[0]?.client_secret || ctx.config.env.LIGHTSPEED_R_CLIENT_SECRET || '').trim();
+        const accountId = (tok.rows[0]?.account_id || ctx.config.env.LIGHTSPEED_R_ACCOUNT_ID || '').trim() || null;
+        const tokenUrl = ctx.config.env.LIGHTSPEED_R_TOKEN_URL || 'https://cloud.lightspeedapp.com/auth/oauth/token';
+
+        const tokenRes = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            code: safeCode,
+            grant_type: 'authorization_code',
+            redirect_uri: lsRedirectUri,
+          }).toString(),
+        });
+        if (!tokenRes.ok) {
+          const errBody = await tokenRes.text().catch(() => '');
+          throw new Error(`Token exchange failed (HTTP ${tokenRes.status}): ${errBody.slice(0, 200)}`);
+        }
+        const data = (await tokenRes.json()) as { access_token: string; refresh_token: string; expires_in?: number };
+        const expiresAt = new Date(Date.now() + (data.expires_in || 1800) * 1000).toISOString();
+
+        await ctx.pool.query(
+          `INSERT INTO integration_oauth_tokens (company_id, system, client_id, client_secret, account_id, refresh_token, access_token, expires_at, updated_at)
+           VALUES ($1, 'lightspeed_r', $2, $3, $4, $5, $6, $7, now())
+           ON CONFLICT (company_id, system) DO UPDATE SET
+             refresh_token = EXCLUDED.refresh_token,
+             access_token  = EXCLUDED.access_token,
+             expires_at    = EXCLUDED.expires_at,
+             updated_at    = now()`,
+          [parsed.companyId, clientId, clientSecret, accountId, data.refresh_token, data.access_token, expiresAt],
+        );
+        await ctx.pool.query(
+          `INSERT INTO integration_connections (company_id, system, status, detail, missing, writes_enabled, last_checked_at)
+           VALUES ($1, 'lightspeed_r', 'connected', 'Reconnected via Hub OAuth', '[]'::jsonb, false, now())
+           ON CONFLICT (company_id, system) DO UPDATE SET
+             status = 'connected', detail = 'Reconnected via Hub OAuth', missing = '[]'::jsonb, last_checked_at = now()`,
+          [parsed.companyId],
+        );
+        await enqueue(ctx.pool, { companyId: parsed.companyId, type: 'lightspeed.sync_catalog', payload: {} });
+        return reply.redirect('/#/integrations?ls=reconnected');
+      } catch (err) {
+        reply.header('Content-Type', 'text/html; charset=utf-8');
+        const msg = (err as Error).message.replace(/[<>&"]/g, '');
+        return `<!doctype html><html><body style="font-family:system-ui,sans-serif;background:#14202D;color:#FEFDF3;display:grid;place-items:center;min-height:100vh;margin:0"><div style="max-width:520px;padding:32px;border-radius:16px;background:#3B1B1B;border:1px solid rgba(252,165,165,.35);text-align:center"><h2>Lightspeed Reconnect Failed</h2><p>${msg}</p><p><a href="/#/integrations" style="color:#FDE68A">Back to UBC Commerce Hub</a></p></div></body></html>`;
+      }
+    }
+    reply.header('Content-Type', 'text/html; charset=utf-8');
     return `<!doctype html><html><head><meta charset="utf-8"><title>UBC Commerce Hub · Lightspeed Authorized</title></head><body style="font-family:system-ui,sans-serif;background:#14202D;color:#FEFDF3;display:grid;place-items:center;min-height:100vh;margin:0"><div style="max-width:560px;padding:32px;border-radius:18px;background:#1B3B2B;border:1px solid rgba(253,230,138,.35);text-align:center"><h2 style="margin:0 0 10px;color:#FDE68A">✓ Lightspeed Retail R-Series Authorized</h2><p style="opacity:.9;line-height:1.5">Copy the authorization code below (or copy the full browser URL) and paste it into your <code>npm run lightspeed:connect</code> terminal prompt:</p><input readonly value="${safeCode}" onclick="this.select()" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:0;font-family:monospace;font-size:15px;text-align:center;margin:12px 0;background:#FEFDF3;color:#14202D"><p style="font-size:13px;opacity:.75;margin:8px 0 0">Read-Only Mode Active · Cash registers & POS prices untouched</p></div></body></html>`;
   });
 

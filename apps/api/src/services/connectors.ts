@@ -153,13 +153,18 @@ export function createConnectors(cfg: AppConfig, pool: Pool): Connectors {
       };
     },
     async refreshLock(fn) {
-      // Session-level advisory lock on a dedicated connection, held only while refreshing.
+      // Transaction-scoped advisory lock: works across processes & PgBouncer pools and auto-releases on disconnect.
       const c = await pool.connect();
       try {
-        await c.query(`SELECT pg_advisory_lock(hashtext('ubc:lightspeed_r:token_refresh'))`);
-        return await fn();
+        await c.query('BEGIN');
+        await c.query(`SELECT pg_advisory_xact_lock(hashtext('ubc:lightspeed_r:token_refresh'))`);
+        const res = await fn();
+        await c.query('COMMIT');
+        return res;
+      } catch (err) {
+        await c.query('ROLLBACK').catch(() => {});
+        throw err;
       } finally {
-        await c.query(`SELECT pg_advisory_unlock(hashtext('ubc:lightspeed_r:token_refresh'))`).catch(() => {});
         c.release();
       }
     },

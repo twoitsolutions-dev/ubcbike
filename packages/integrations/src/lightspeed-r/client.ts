@@ -113,6 +113,7 @@ export class LightspeedRClient {
   private currentClientSecret: string | undefined;
   private currentAccountId: string | undefined;
   private vaultHydrated = false;
+  private refreshPromise: Promise<string> | null = null;
   private readonly fetchImpl: typeof fetch;
   private readonly tokenUrl: string;
   private readonly apiBase: string;
@@ -127,11 +128,17 @@ export class LightspeedRClient {
     this.currentAccountId = cfg.accountId;
   }
 
+  private isMissingVaultError(err: unknown): boolean {
+    const code = (err as { code?: string } | null)?.code;
+    const msg = (err as { message?: string } | null)?.message ?? '';
+    return code === '42P01' || /relation .*integration_oauth_tokens.* does not exist/i.test(msg);
+  }
+
   async ensureConfigured(): Promise<void> {
     if (this.vaultHydrated || !this.cfg.loadTokenState) return;
-    this.vaultHydrated = true;
     try {
       const st = await this.cfg.loadTokenState();
+      this.vaultHydrated = true;
       if (st) {
         if (st.clientId) this.currentClientId = st.clientId;
         if (st.clientSecret) this.currentClientSecret = st.clientSecret;
@@ -142,8 +149,12 @@ export class LightspeedRClient {
           this.tokenExpiresAt = new Date(st.expiresAt).getTime();
         }
       }
-    } catch {
-      // Ignore if migration 006 has not run yet
+    } catch (err) {
+      if (this.isMissingVaultError(err)) {
+        this.vaultHydrated = true;
+        return;
+      }
+      throw new RetryableError(`Lightspeed token vault unavailable: ${(err as Error).message}`, 5000);
     }
   }
 
@@ -188,21 +199,35 @@ export class LightspeedRClient {
         this.tokenExpiresAt = new Date(st.expiresAt).getTime();
         return true;
       }
-    } catch {
-      // vault unavailable (migration 006 missing) — fall through to the in-memory token
+    } catch (err) {
+      if (this.isMissingVaultError(err)) return false;
+      throw new RetryableError(`Lightspeed token vault unavailable: ${(err as Error).message}`, 5000);
     }
     return false;
   }
 
-  private async token(): Promise<string> {
+  private async token(forceRefresh = false): Promise<string> {
     await this.ensureConfigured();
-    if (this.accessToken && Date.now() < this.tokenExpiresAt - 60_000) return this.accessToken;
+    if (!forceRefresh && this.accessToken && Date.now() < this.tokenExpiresAt - 60_000) return this.accessToken;
+    if (this.refreshPromise) return this.refreshPromise;
+    this.refreshPromise = this.runTokenRefresh(forceRefresh).finally(() => {
+      this.refreshPromise = null;
+    });
+    return this.refreshPromise;
+  }
+
+  private async runTokenRefresh(forceRefresh: boolean): Promise<string> {
+    const staleAccess = forceRefresh ? this.accessToken : null;
     // Another process may have refreshed already: reuse its token instead of burning a stale refresh token.
-    if (await this.reloadFromVault()) return this.accessToken!;
+    if (await this.reloadFromVault() && (!forceRefresh || (this.accessToken && this.accessToken !== staleAccess))) {
+      return this.accessToken!;
+    }
     if (this.cfg.refreshLock) {
       // Only one process refreshes; the others wait, then pick up the freshly saved token.
       return this.cfg.refreshLock(async () => {
-        if (await this.reloadFromVault()) return this.accessToken!;
+        if (await this.reloadFromVault() && (!forceRefresh || (this.accessToken && this.accessToken !== staleAccess))) {
+          return this.accessToken!;
+        }
         return this.refreshAccessToken();
       });
     }
@@ -217,6 +242,21 @@ export class LightspeedRClient {
       if (this.currentRefreshToken && this.currentRefreshToken !== before) return this.refreshAccessToken();
       throw err;
     }
+  }
+
+  private async persistTokenState(state: LightspeedTokenVaultState): Promise<void> {
+    if (!this.cfg.saveTokenState) return;
+    let lastErr: unknown;
+    for (const waitMs of [0, 250, 750]) {
+      if (waitMs) await sleep(waitMs);
+      try {
+        await this.cfg.saveTokenState(state);
+        return;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    console.error('[lightspeed] CRITICAL: failed to persist rotated refresh_token after 3 attempts:', lastErr);
   }
 
   private async refreshAccessToken(): Promise<string> {
@@ -241,14 +281,14 @@ export class LightspeedRClient {
       this.currentRefreshToken = body.refresh_token;
     }
     if (this.cfg.saveTokenState && this.currentRefreshToken) {
-      await this.cfg.saveTokenState({
+      await this.persistTokenState({
         clientId: this.currentClientId ?? null,
         clientSecret: this.currentClientSecret ?? null,
         refreshToken: this.currentRefreshToken,
         accountId: this.currentAccountId ?? null,
         accessToken: this.accessToken,
         expiresAt: new Date(this.tokenExpiresAt).toISOString(),
-      }).catch(() => {});
+      });
     }
     return this.accessToken;
   }
@@ -262,6 +302,13 @@ export class LightspeedRClient {
         ? `${this.apiBase}/Account.json`
         : `${this.apiBase}/Account/${this.currentAccountId}${pathOrUrl}`;
     const res = await this.fetchImpl(url, { headers: { Authorization: `Bearer ${await this.token()}`, Accept: 'application/json' } });
+    // If access token was invalidated early (or rotated by another process), reload/refresh once and retry.
+    if (res.status === 401 && attempt === 0) {
+      this.accessToken = null;
+      this.tokenExpiresAt = 0;
+      await this.token(true);
+      return this.get<T>(pathOrUrl, attempt + 1);
+    }
     // Leaky-bucket rate limiting: back off on 429 and when the bucket is nearly full.
     if (res.status === 429 || res.status === 503) {
       const retry = Number(res.headers.get('Retry-After') ?? '2') * 1000;

@@ -178,6 +178,11 @@
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+  /* Filter order (all sizes): stores → brand / price / sort → departments. */
+  .ubc-side { display: flex; flex-direction: column; }
+  .ubc-side > .ubc-store-bar { order: 1; }
+  .ubc-side > .ubc-facets-row { order: 2; }
+  .ubc-side > .ubc-dept-pills { order: 3; }
   /* UBC filters in a left sidebar on desktop so products get the space (phones/tablets: unchanged, on top). */
   @media screen and (min-width: 990px) {
     .ubc-col-layout {

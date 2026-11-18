@@ -45,6 +45,7 @@
     "@shopify/theme-check-node": "^4.0.0",
     "@types/node": "^22.20.5",
     "@types/pg": "^8.23.1",
+    "eslint": "^10.1.0",
     "typescript": "5.9",
     "vitest": "^3.2.7"
   }

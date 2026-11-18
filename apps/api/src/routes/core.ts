@@ -71,6 +71,20 @@ async function shopifySyncStats(ctx: AppContext, companyId: string) {
   const fixed24h = (await ctx.pool.query<{ prices: number; stock: number }>(
     `SELECT COALESCE(sum((detail->>'drifted')::int), 0)::int AS prices, COALESCE(sum((detail->>'stockDrifted')::int), 0)::int AS stock
      FROM audit_log WHERE company_id = $1 AND action = 'pipeline.shopify_prices_reconciled' AND created_at > now() - interval '24 hours'`, [companyId])).rows[0];
+  const dups = await ctx.pool.query<{
+    id: string; title: string; sku: string; upc: string | null; variants: number; product_ids: string[];
+  }>(
+    `SELECT v.id, v.title, v.sku, v.upc, count(*)::int AS variants,
+            array_agg(DISTINCT l.shopify_product_id) AS product_ids
+     FROM shopify_variant_links l
+     JOIN variants v ON v.id = l.variant_id
+     WHERE l.company_id = $1 AND l.shop_domain = $2
+     GROUP BY v.id, v.title, v.sku, v.upc
+     HAVING count(*) > 1
+     ORDER BY v.title
+     LIMIT 30`,
+    [companyId, shop],
+  );
   const v = {
     shop,
     ...r.rows[0],
@@ -79,6 +93,7 @@ async function shopifySyncStats(ctx: AppContext, companyId: string) {
     lastReconcileAt: reconcile?.created_at ?? null,
     lastLightspeedSyncAt: lsSync?.created_at ?? null,
     overwrittenFixed24h: fixed24h,
+    duplicate_links: dups.rows,
   };
   syncStatsCache.set(companyId, { at: Date.now(), v });
   return v;

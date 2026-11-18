@@ -55,7 +55,16 @@ function syncCoverageCard(s) {
       row('Prices / stock that Workstand overwrote and the Hub put back (last 24 h)',
         n(s.overwrittenFixed24h && s.overwrittenFixed24h.prices) + ' / ' + n(s.overwrittenFixed24h && s.overwrittenFixed24h.stock), 'Should go to 0 once Workstand stops changing Lightspeed items'),
       row('Last Lightspeed sync · last check · last UPC search',
-        ago(s.lastLightspeedSyncAt) + ' · ' + ago(s.lastReconcileAt) + ' · ' + ago(s.lastMatchAt), null))), { flush: false });
+        ago(s.lastLightspeedSyncAt) + ' · ' + ago(s.lastReconcileAt) + ' · ' + ago(s.lastMatchAt), null)),
+    (s.duplicate_links && s.duplicate_links.length)
+      ? h('details', { style: { marginTop: '6px' } },
+        h('summary', { style: { cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: 'var(--text-2)' } },
+          s.duplicate_links.length + ' Lightspeed item(s) appear in 2+ Shopify products (click to view)'),
+        h('div.stack-sm', { style: { marginTop: '8px' } }, s.duplicate_links.map((dup) => h('div.attn-row',
+          h('span', h('a', { href: '#/products/' + dup.id }, h('strong', dup.title)),
+            h('div.sku', 'SKU ' + dup.sku + (dup.upc ? ' · UPC ' + dup.upc : '') + ' · Shopify Products: ' + (dup.product_ids || []).map((g) => String(g).split('/').pop()).join(', '))),
+          h('strong', dup.variants + ' variants')))))
+      : null), { flush: false });
 }
 
 export async function renderDashboard(ctx) {

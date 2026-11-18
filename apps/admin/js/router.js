@@ -1,4 +1,4 @@
-import { renderDashboard } from './views/dashboard.js?v=40';
+import { renderDashboard } from './views/dashboard.js?v=45';
 import { renderPipeline } from './views/pipeline.js?v=40';
 import { renderProducts, renderProductDetail } from './views/products.js?v=43';
 import { renderInventory } from './views/inventory.js?v=40';

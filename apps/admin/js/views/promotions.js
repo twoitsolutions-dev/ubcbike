@@ -813,11 +813,14 @@ export async function renderPromotionNew(ctx) {
       submit.disabled = true;
       submit.textContent = 'Calculating preview…';
       try {
+        const scopedSelection = scopeMode === 'selected'
+          ? { ids: (selection.ids || []).slice() }
+          : cleanFilter(selection);
         const payload = {
           name: nameInput.value.trim(),
           channel: st.channel,
           posEventType: st.channel === 'online_and_pos' ? st.posEventType : undefined,
-          selection: cleanFilter(selection),
+          selection: scopedSelection,
           adjustment,
           rules: {
             minMarginPct: (Number(minMargin.value) || 0) / 100,

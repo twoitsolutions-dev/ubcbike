@@ -8,6 +8,33 @@
   {%- case section.settings.page_kind -%}
 
     {%- when 'service' -%}
+      {%- liquid
+        assign svc_down = page.content | downcase
+        assign show_l1 = true
+        assign show_l2 = true
+        assign show_oh = true
+        if page.content != blank
+          unless svc_down contains 'level 1 tune' or svc_down contains '100'
+            assign show_l1 = false
+          endunless
+          unless svc_down contains 'level 2' or svc_down contains '160'
+            assign show_l2 = false
+          endunless
+          unless svc_down contains 'overhaul' or svc_down contains '250'
+            assign show_oh = false
+          endunless
+        endif
+        assign svc_cnt = 0
+        if show_l1
+          assign svc_cnt = svc_cnt | plus: 1
+        endif
+        if show_l2
+          assign svc_cnt = svc_cnt | plus: 1
+        endif
+        if show_oh
+          assign svc_cnt = svc_cnt | plus: 1
+        endif
+      -%}
       {%- assign hero_img = images['ubc-service-wheel-truing.jpg'] -%}
       <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
         <div>
@@ -26,9 +53,11 @@
         {%- endif -%}
       </section>
 
+      {%- if svc_cnt > 0 -%}
       <section class="ubc-ws-section">
         <h2 class="ubc-ws-h2">Tune-Up Packages</h2>
-        <div class="ubc-ws-grid">
+        <div class="ubc-ws-grid{% if svc_cnt <= 2 %} ubc-ws-grid--2{% endif %}">
+          {%- if show_l1 -%}
           <article class="ubc-ws-card">
             <div>
               <h3>Level 1 Tune-Up</h3>
@@ -49,7 +78,9 @@
               <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
             </div>
           </article>
+          {%- endif -%}
 
+          {%- if show_l2 -%}
           <article class="ubc-ws-card ubc-ws-card--featured">
             <div>
               <span class="ubc-ws-kicker">Most Popular</span>
@@ -68,7 +99,9 @@
               <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
             </div>
           </article>
+          {%- endif -%}
 
+          {%- if show_oh -%}
           <article class="ubc-ws-card">
             <div>
               <h3>Level 1 Overhaul</h3>
@@ -87,8 +120,10 @@
               <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
             </div>
           </article>
+          {%- endif -%}
         </div>
       </section>
+      {%- endif -%}
 
       <section class="ubc-ws-section">
         <h2 class="ubc-ws-h2">Maintenance Service</h2>
@@ -140,6 +175,19 @@
       </section>
 
     {%- when 'locations' -%}
+      {%- liquid
+        assign loc_down = page.content | downcase
+        assign show_tampa = true
+        assign show_alafia = true
+        if page.content != blank
+          unless loc_down contains 'tampa' or loc_down contains 'fletcher'
+            assign show_tampa = false
+          endunless
+          unless loc_down contains 'alafia' or loc_down contains 'lithia'
+            assign show_alafia = false
+          endunless
+        endif
+      -%}
       <section class="ubc-ws-hero ubc-ws-hero--text-only ubc-ws-hero--compact">
         <div>
           <span class="ubc-ws-kicker" data-es="Tampa y Lithia, Florida">Tampa &amp; Lithia, Florida</span>
@@ -155,6 +203,7 @@
 
       <section class="ubc-ws-section">
         <div class="ubc-ws-grid ubc-ws-grid--2">
+          {%- if show_tampa -%}
           <article class="ubc-ws-card ubc-ws-card--location">
             <div class="ubc-ws-loc-body">
               <div class="ubc-ws-loc-top">
@@ -192,7 +241,9 @@
               <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/in-stock-tampa" data-es="Ver Stock Tampa">Shop Tampa Stock</a>
             </div>
           </article>
+          {%- endif -%}
 
+          {%- if show_alafia -%}
           <article class="ubc-ws-card ubc-ws-card--location">
             <div class="ubc-ws-loc-body">
               <div class="ubc-ws-loc-top">
@@ -230,6 +281,7 @@
               <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/in-stock-alafia" data-es="Ver Stock Alafia">Shop Alafia Stock</a>
             </div>
           </article>
+          {%- endif -%}
         </div>
       </section>
 
@@ -323,6 +375,23 @@
       </section>
 
     {%- when 'about' -%}
+      {%- liquid
+        assign abt_down = page.content | downcase
+        assign show_warranty = true
+        assign show_price_match = true
+        assign show_safety = true
+        if page.content != blank
+          unless abt_down contains 'warranty' or abt_down contains 'complimentary' or abt_down contains 'service'
+            assign show_warranty = false
+          endunless
+          unless abt_down contains 'price' or abt_down contains '110%' or abt_down contains 'guarantee'
+            assign show_price_match = false
+          endunless
+          unless abt_down contains 'safety' or abt_down contains 'helmet' or abt_down contains 'florida'
+            assign show_safety = false
+          endunless
+        endif
+      -%}
       {%- assign hero_img = images['ubc-difference-storefront.jpg'] -%}
       <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
         <div>
@@ -346,6 +415,7 @@
         {%- endif -%}
       </section>
 
+      {%- if show_warranty -%}
       <section class="ubc-ws-section">
         <div class="ubc-ws-section-head">
           <span class="ubc-ws-kicker" data-es="Programa Incluido con Tu Bici">Included With Every New Bike</span>
@@ -369,9 +439,12 @@
           </article>
         </div>
       </section>
+      {%- endif -%}
 
+      {%- if show_warranty or show_price_match or show_safety -%}
       <section class="ubc-ws-section">
         <div class="ubc-ws-grid ubc-ws-grid--2">
+          {%- if show_warranty -%}
           <article class="ubc-ws-card">
             <span class="ubc-ws-kicker" data-es="Qué Incluye Cada Inspección">What Each Inspection Covers</span>
             <h3 data-es="Lista Completa de Taller">Workshop Inspection Checklist</h3>
@@ -382,20 +455,28 @@
               <li data-es="Alineación de sillín y lubricación de puntos de pivote">Seat alignment &amp; pivot-point lubrication</li>
             </ul>
           </article>
+          {%- endif -%}
 
+          {%- if show_price_match or show_safety -%}
           <article class="ubc-ws-card ubc-ws-card--featured">
+            {%- if show_price_match -%}
             <div>
               <span class="ubc-ws-kicker" data-es="Compra con Confianza">Buy With Confidence</span>
               <h3 data-es="Garantía de Precio Más Bajo del 110%">110% Low Price Guarantee</h3>
               <p class="ubc-ws-note" data-es="Garantizamos el precio más bajo en todas las bicis en stock. Si dentro de los 30 días posteriores a tu compra encuentras la misma bici en stock en otro distribuidor local a menor precio, te reembolsamos el 110% de la diferencia.">UBC guarantees the lowest price on all bicycles in stock. If, within thirty (30) days of purchasing a bicycle from UBC, you find the same bicycle in stock at another local dealer at a lower price, we will refund 110% of the price difference.</p>
             </div>
+            {%- endif -%}
+            {%- if show_safety -%}
             <div class="ubc-ws-callout">
               <strong data-es="Consejos de Seguridad en Florida:">Florida Safety Tips:</strong>
               <span data-es="Las luces son obligatorias de noche y menores de 16 años deben usar casco ajustado. Revisa presión de llantas, ejes, frenos y cambios antes de rodar.">Lights are required when riding at night and riders under 16 must wear a properly fitted helmet. Always check tires, skewers, stem/seatpost, brakes, and shifting before riding.</span>
             </div>
+            {%- endif -%}
           </article>
+          {%- endif -%}
         </div>
       </section>
+      {%- endif -%}
 
     {%- when 'reasons' -%}
       {%- assign hero_img = images['ubc-difference-storefront.jpg'] -%}
@@ -493,7 +574,35 @@
 
       <section class="ubc-ws-section" id="financing-options">
         <h2 class="ubc-ws-h2">Your Financing Options</h2>
-        <div class="ubc-ws-grid">
+        {%- liquid
+          assign fin_down = page.content | strip_html | downcase
+          assign show_acima = true
+          assign show_sync = true
+          assign show_snap = true
+          if page.content != blank
+            unless fin_down contains 'acima'
+              assign show_acima = false
+            endunless
+            unless fin_down contains 'synchrony'
+              assign show_sync = false
+            endunless
+            unless fin_down contains 'snap'
+              assign show_snap = false
+            endunless
+          endif
+          assign fin_count = 0
+          if show_acima
+            assign fin_count = fin_count | plus: 1
+          endif
+          if show_sync
+            assign fin_count = fin_count | plus: 1
+          endif
+          if show_snap
+            assign fin_count = fin_count | plus: 1
+          endif
+        -%}
+        <div class="ubc-ws-grid{% if fin_count <= 2 %} ubc-ws-grid--2{% endif %}">
+          {%- if show_acima -%}
           {%- assign acima_logo = images['ubc-financing-acima-logo.png'] -%}
           <article class="ubc-ws-card">
             <div>
@@ -503,7 +612,9 @@
             </div>
             <a class="ubc-ws-btn" href="https://ams.acimacredit.com/discover/new?lang=en.leases&location_guid=loca-703aa24e-31e6-4aec-8f39-c1d5c6147cf6&merchant_guid=merc-4949370c-a29b-41d5-b86a-894e8bd532aa&utm_campaign=merchant&utm_source=web&utm_term=mktg_lp#/about_leasing" target="_blank" rel="noopener">Apply Now</a>
           </article>
+          {%- endif -%}
 
+          {%- if show_sync -%}
           {%- assign sync_logo = images['ubc-financing-synchrony-logo.png'] -%}
           <article class="ubc-ws-card ubc-ws-card--featured" id="synchrony">
             <div>
@@ -516,7 +627,9 @@
               <a class="ubc-ws-btn ubc-ws-btn--ghost" href="https://www.synchrony.com/consumer-resources/payment-calculator/syfhome" target="_blank" rel="noopener">Payment Calculator</a>
             </div>
           </article>
+          {%- endif -%}
 
+          {%- if show_snap -%}
           {%- assign snap_logo = images['ubc-financing-snap-logo.png'] -%}
           <article class="ubc-ws-card">
             <div>
@@ -526,6 +639,7 @@
             </div>
             <a class="ubc-ws-btn" href="https://bk.snapfinance.com/origination?paramId=3w%2FEWVFzVGcQioSdKn1vuqdr2hNr3A1xiMt4CtG%2BqOW6%2FoVDUYR%2B662lEkK1hZ0tog9ZSjNG2GyQln5HQrzShOzYiaK%2FnFnEZXfXtyBXVEw%3D" target="_blank" rel="noopener">Apply Now</a>
           </article>
+          {%- endif -%}
         </div>
       </section>
 

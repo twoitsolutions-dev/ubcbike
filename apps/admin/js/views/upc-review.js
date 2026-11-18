@@ -106,13 +106,38 @@ export async function renderUpcReview(ctx) {
     mount(host, card(null, tableHost, { flush: true }), rows.length >= 1000 ? h('p.muted', 'Showing the first 1,000. Approve or reject these to see the rest.') : null);
   };
 
+  const hideBtn = ctx.can('settings.manage')
+    ? h('button.btn.ghost', {
+      type: 'button',
+      onclick: async () => {
+        try {
+          const cur = await ctx.api.settings();
+          await ctx.api.saveSettings({
+            campaignRules: {
+              minMarginPct: cur.campaignRules.minMarginPct,
+              warnMarginPct: cur.campaignRules.warnMarginPct,
+              clampToMinMargin: !!cur.campaignRules.clampToMinMargin,
+            },
+            availability: Object.assign({}, cur.availability, { showUpcMatches: false }),
+          });
+          if (ctx.refreshNav) await ctx.refreshNav();
+          toast('UPC Matches hidden — re-enable anytime in Settings & Sync', 'ok');
+          ctx.navigate('#/dashboard');
+        } catch (e) { toast(e.message, 'bad'); }
+      },
+    }, 'Hide from menu')
+    : null;
+
   draw();
   return h('div.stack',
     pageHead('UPC Matches (Lightspeed ↔ Shopify)',
-      'Every night the Hub looks for Lightspeed items whose UPC matches a variant in the Shopify store. Nothing changes in Shopify until you approve a match here.',
-      canWrite ? [h('button.btn', { onclick: async () => {
-        try { await ctx.api.runUpcMatch(); toast('Matching started — refresh in about a minute'); } catch (e) { toast(e.message, 'bad'); }
-      } }, 'Find matches now')] : null),
+      'The Hub looks for Lightspeed items whose UPC matches a variant in the Shopify store. Nothing changes in Shopify until you approve a match here.',
+      [
+        canWrite ? h('button.btn', { onclick: async () => {
+          try { await ctx.api.runUpcMatch(); toast('Matching started — refresh in about a minute'); } catch (e) { toast(e.message, 'bad'); }
+        } }, 'Find matches now') : null,
+        hideBtn,
+      ].filter(Boolean)),
     tabsHost,
     actionsHost,
     host);

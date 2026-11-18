@@ -11,7 +11,7 @@ import { renderPurchasing } from './views/purchasing.js?v=40';
 import { renderIntegrations } from './views/integrations.js?v=40';
 import { renderActivity } from './views/activity.js?v=40';
 import { renderSettings } from './views/settings.js?v=46';
-import { renderUpcReview } from './views/upc-review.js?v=40';
+import { renderUpcReview } from './views/upc-review.js?v=48';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },

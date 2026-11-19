@@ -12,6 +12,7 @@ import { renderIntegrations } from './views/integrations.js?v=49';
 import { renderActivity } from './views/activity.js?v=40';
 import { renderSettings } from './views/settings.js?v=54';
 import { renderUpcReview } from './views/upc-review.js?v=51';
+import { renderHelp } from './views/help.js?v=56';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },
@@ -32,6 +33,7 @@ export const routes = [
   { path: '/integrations', title: 'Settings & Sync · Connections', render: renderIntegrations },
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
   { path: '/settings', title: 'Settings & Sync', render: renderSettings },
+  { path: '/help', title: 'Help & Guides', render: renderHelp },
 ];
 
 export function matchRoute(hash) {

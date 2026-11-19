@@ -13,6 +13,113 @@ import type { AppContext } from './context.js';
 export const STORE_TAGS: Record<string, string> = { '1': 'ubc-tampa-stock', '2': 'ubc-alafia-stock' };
 const PRICE_TAGS = ['price-under-50', 'price-50-200', 'price-200-1000', 'price-1000-plus'];
 
+/** Maps Shopify / Workstand productType to the exact UBC Smart Collection `dept-*` tags. */
+const PRODUCT_TYPE_TO_DEPTS: Record<string, string[]> = {
+  // Bikes
+  electric_bikes: ['dept-bikes', 'dept-electric-bikes'],
+  ebikes: ['dept-bikes', 'dept-electric-bikes'],
+  electric_bike: ['dept-bikes', 'dept-electric-bikes'],
+  road_bikes: ['dept-bikes', 'dept-road-bikes'],
+  road_bike: ['dept-bikes', 'dept-road-bikes'],
+  gravel_bikes: ['dept-bikes', 'dept-road-bikes'],
+  gravel_bike: ['dept-bikes', 'dept-road-bikes'],
+  mountain_bikes: ['dept-bikes', 'dept-mountain-bikes'],
+  mountain_bike: ['dept-bikes', 'dept-mountain-bikes'],
+  hybrid_bikes: ['dept-bikes', 'dept-hybrid-bikes'],
+  hybrid_bike: ['dept-bikes', 'dept-hybrid-bikes'],
+  urban_bike: ['dept-bikes', 'dept-hybrid-bikes'],
+  urban_bikes: ['dept-bikes', 'dept-hybrid-bikes'],
+  comfort_bikes: ['dept-bikes', 'dept-hybrid-bikes'],
+  cruiser_bikes: ['dept-bikes', 'dept-hybrid-bikes'],
+  kids_bikes: ['dept-bikes', 'dept-kids-bikes'],
+  childrens_bikes: ['dept-bikes', 'dept-kids-bikes'],
+  bmx_bikes: ['dept-bikes', 'dept-kids-bikes'],
+  // Helmets, Apparel, Shoes, Eyewear
+  helmets: ['dept-helmets'],
+  safety_accessories: ['dept-helmets'],
+  clothing: ['dept-clothing'],
+  apparel: ['dept-clothing'],
+  shoes: ['dept-shoes'],
+  shoes_parts_and_accessories: ['dept-shoes'],
+  eyewear: ['dept-eyewear'],
+  sunglasses: ['dept-eyewear'],
+  // Tires & Tubes
+  tires: ['dept-tires-tubes'],
+  tubes: ['dept-tires-tubes', 'dept-tubes'],
+  tires_and_tubes_accessories: ['dept-tires-tubes'],
+  // Pedals
+  pedals: ['dept-pedals'],
+  pedal_parts_and_accessories: ['dept-pedals'],
+  // Parts, Drivetrain, Cockpit & Wheels
+  parts_other: ['dept-parts'],
+  cassettes_and_freewheels_parts: ['dept-parts'],
+  brake_parts: ['dept-parts'],
+  chain_parts: ['dept-parts'],
+  bottom_brackets_parts: ['dept-parts'],
+  rear_derailleurs_parts: ['dept-parts'],
+  front_derailleurs_parts: ['dept-parts'],
+  cables: ['dept-parts'],
+  crankset_parts: ['dept-parts'],
+  crankset_parts_and_accessories: ['dept-parts'],
+  stems_parts: ['dept-parts'],
+  bike_wheel_parts: ['dept-parts'],
+  bike_wheels: ['dept-parts'],
+  wheel_hubs: ['dept-parts'],
+  seatposts: ['dept-parts'],
+  chainring_parts: ['dept-parts'],
+  handlebar_tape: ['dept-parts'],
+  handlebar_grips: ['dept-parts'],
+  handlebars: ['dept-parts'],
+  shifters: ['dept-parts'],
+  bar_ends: ['dept-parts'],
+  headsets: ['dept-parts'],
+  group_sets: ['dept-parts'],
+  electronic_parts_and_accessories: ['dept-parts'],
+  // Hydration & Bottles
+  bottles_and_cages: ['dept-hydration', 'dept-bottles-cages'],
+  hydration_parts_and_accessories: ['dept-hydration'],
+  nutrition: ['dept-hydration'],
+  // Tools, Pumps & Bike Care
+  lubes_and_cleaners: ['dept-tools'],
+  tools_and_workstands: ['dept-tools'],
+  pumps: ['dept-tools'],
+  // Accessories, Lights, Racks & Locks
+  lighting_accessories: ['dept-accessories'],
+  lighting_parts_accessories: ['dept-accessories'],
+  mirrors: ['dept-accessories'],
+  baskets: ['dept-accessories'],
+  fenders: ['dept-accessories'],
+  bike_locks: ['dept-accessories'],
+  u_locks_sets: ['dept-accessories'],
+  accessories: ['dept-accessories'],
+  racks: ['dept-accessories'],
+  indoor_accessories: ['dept-accessories'],
+  parts_and_accessories_for_packs_racks_and_baskets: ['dept-accessories'],
+  car_rack_parts_and_accessories: ['dept-accessories'],
+  car_racks: ['dept-accessories'],
+  phone_accessories: ['dept-accessories'],
+  electronic_accessories: ['dept-accessories'],
+  childrens_bike_accessories: ['dept-accessories'],
+  storage_accessories: ['dept-accessories'],
+};
+
+export function deptTagsForProductType(productType: string): string[] {
+  const key = String(productType || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (!key) return [];
+  if (PRODUCT_TYPE_TO_DEPTS[key]) return PRODUCT_TYPE_TO_DEPTS[key];
+  if (key.includes('helmet')) return ['dept-helmets'];
+  if (key.includes('tube')) return ['dept-tires-tubes', 'dept-tubes'];
+  if (key.includes('tire')) return ['dept-tires-tubes'];
+  if (key.includes('pedal')) return ['dept-pedals'];
+  if (key.includes('shoe')) return ['dept-shoes'];
+  if (key.includes('eyewear') || key.includes('sunglass')) return ['dept-eyewear'];
+  if (key.includes('lube') || key.includes('clean') || key.includes('tool') || key.includes('pump')) return ['dept-tools'];
+  if (key.includes('bottle') || key.includes('hydrat') || key.includes('nutrit')) return ['dept-hydration'];
+  if (key.includes('part') || key.includes('chain') || key.includes('brake') || key.includes('derailleur') || key.includes('wheel') || key.includes('handlebar')) return ['dept-parts'];
+  if (key.includes('accessor') || key.includes('light') || key.includes('lock') || key.includes('rack') || key.includes('bag')) return ['dept-accessories'];
+  return [];
+}
+
 export function handleize(str: string): string {
   return String(str || '')
     .toLowerCase()
@@ -76,6 +183,9 @@ export async function syncStoreTagsJob(ctx: AppContext, companyId: string) {
       const pt = priceTag(p.minPriceCents);
       if (pt && !have.has(pt)) add.push(pt);
       for (const other of PRICE_TAGS) if (other !== pt && have.has(other)) remove.push(other);
+      for (const dt of deptTagsForProductType(p.productType)) {
+        if (!have.has(dt)) add.push(dt);
+      }
     }
     if (add.length || remove.length) changes.push({ id: p.id, add, remove });
   }

@@ -42,6 +42,8 @@ export function createHttpDriver() {
     system: () => req('GET', '/api/system'),
     dashboard: () => req('GET', '/api/dashboard'),
     reportsCollectionGap: (refresh) => req('GET', '/api/reports/collections-gap' + (refresh ? '?refresh=1' : '')),
+    reportsNoUpc: () => req('GET', '/api/reports/no-upc'),
+    reportsMarginIssues: () => req('GET', '/api/reports/margin-issues'),
     items: (q) => req('GET', '/api/items' + qs(q)),
     facets: () => req('GET', '/api/items/facets'),
     item: (id) => req('GET', '/api/items/' + id),

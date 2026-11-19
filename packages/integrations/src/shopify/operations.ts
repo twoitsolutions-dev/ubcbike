@@ -111,6 +111,7 @@ export interface ShopifyAdminPort {
     vendor: string;
     productType: string;
     totalInventory: number;
+    hasPhoto: boolean;
     tags: string[];
     collections: { handle: string; title: string }[];
   }[]>;
@@ -811,6 +812,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
           vendor: string;
           productType: string;
           totalInventory: number;
+          featuredMedia: { id: string } | null;
           tags: string[];
           collections: { nodes: { handle: string; title: string }[] };
         }[];
@@ -822,6 +824,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
       vendor: string;
       productType: string;
       totalInventory: number;
+      hasPhoto: boolean;
       tags: string[];
       collections: { handle: string; title: string }[];
     }[] = [];
@@ -833,6 +836,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
             pageInfo { hasNextPage endCursor }
             nodes {
               id title vendor productType totalInventory tags
+              featuredMedia { id }
               collections(first: 15) { nodes { handle title } }
             }
           }
@@ -846,6 +850,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
           vendor: p.vendor,
           productType: p.productType,
           totalInventory: p.totalInventory,
+          hasPhoto: Boolean(p.featuredMedia && p.featuredMedia.id),
           tags: p.tags,
           collections: p.collections.nodes,
         });

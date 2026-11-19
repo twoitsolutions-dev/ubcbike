@@ -206,8 +206,31 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const byType = new Map<string, number>();
     let inDeptCount = 0;
     let outsideAllCount = 0;
+    const noPhotoItems: {
+      id: string;
+      numericId: string;
+      adminUrl: string;
+      title: string;
+      vendor: string;
+      productType: string;
+      totalInventory: number;
+    }[] = [];
 
     for (const p of raw) {
+      const numericId = p.id.split('/').pop() || '';
+      const adminUrl = shop ? `https://${shop}/admin/products/${numericId}` : '';
+      const pt = (p.productType || '').trim() || '(empty)';
+      if (!p.hasPhoto) {
+        noPhotoItems.push({
+          id: p.id,
+          numericId,
+          adminUrl,
+          title: p.title,
+          vendor: p.vendor,
+          productType: pt,
+          totalInventory: p.totalInventory,
+        });
+      }
       const deptCols = p.collections.filter((c) => !GENERAL_HANDLES.has(c.handle));
       if (deptCols.length > 0) {
         inDeptCount++;
@@ -216,16 +239,14 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       const gapType = p.collections.length === 0 ? 'no_collections' : 'no_department';
       if (gapType === 'no_collections') outsideAllCount++;
       const deptTags = p.tags.filter((t) => t.startsWith('dept-'));
-      const pt = (p.productType || '').trim() || '(empty)';
       byType.set(pt, (byType.get(pt) ?? 0) + 1);
-      const numericId = p.id.split('/').pop() || '';
       const reason = gapType === 'no_collections'
         ? 'Not in ANY collection (even general/store)'
         : (deptTags.length ? `Has ${deptTags.join(', ')} but not matched to a dept collection` : `No dept-* tag & productType "${pt}" has no collection rule`);
       outsideDept.push({
         id: p.id,
         numericId,
-        adminUrl: shop ? `https://${shop}/admin/products/${numericId}` : '',
+        adminUrl,
         title: p.title,
         vendor: p.vendor,
         productType: pt,
@@ -248,12 +269,106 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         inDeptCollections: inDeptCount,
         outsideDeptCollections: outsideDept.length,
         outsideAllCollections: outsideAllCount,
+        withoutPhotos: noPhotoItems.length,
       },
       typeBreakdown,
       items: outsideDept,
+      noPhotoItems,
     };
     collectionsGapCache.set(companyId, { at: Date.now(), data });
     return data;
+  });
+
+  app.get('/api/reports/no-upc', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const [totals, rows] = await Promise.all([
+      ctx.pool.query<{ total_in_stock: number; missing_upc: number; total_units: number }>(
+        `SELECT count(*)::int AS total_in_stock,
+                count(*) FILTER (WHERE upc IS NULL OR trim(upc) = '')::int AS missing_upc,
+                COALESCE(sum(physical_qty) FILTER (WHERE upc IS NULL OR trim(upc) = ''), 0)::int AS total_units
+         FROM catalog_items
+         WHERE company_id = $1 AND physical_qty > 0`,
+        [companyId],
+      ),
+      ctx.pool.query<{
+        id: string; title: string; brand: string; category: string; sku: string; mpn: string | null; price_cents: number; physical_qty: number;
+      }>(
+        `SELECT id, title, brand, category, sku, mpn, price_cents, physical_qty
+         FROM catalog_items
+         WHERE company_id = $1 AND physical_qty > 0 AND (upc IS NULL OR trim(upc) = '')
+         ORDER BY physical_qty DESC, title ASC
+         LIMIT 1000`,
+        [companyId],
+      ),
+    ]);
+    const t = totals.rows[0] || { total_in_stock: 0, missing_upc: 0, total_units: 0 };
+    return {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalInStock: t.total_in_stock,
+        missingUpc: t.missing_upc,
+        totalUnits: t.total_units,
+      },
+      items: rows.rows.map((r) => ({
+        id: r.id,
+        title: r.title,
+        brand: r.brand,
+        category: r.category,
+        sku: r.sku,
+        mpn: r.mpn || '',
+        priceCents: r.price_cents,
+        physicalQty: r.physical_qty,
+      })),
+    };
+  });
+
+  app.get('/api/reports/margin-issues', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const [totals, rows] = await Promise.all([
+      ctx.pool.query<{ no_cost: number; neg_margin: number }>(
+        `SELECT count(*) FILTER (WHERE cost_cents IS NULL OR cost_cents <= 0)::int AS no_cost,
+                count(*) FILTER (WHERE cost_cents > 0 AND price_cents < cost_cents)::int AS neg_margin
+         FROM catalog_items
+         WHERE company_id = $1 AND physical_qty > 0`,
+        [companyId],
+      ),
+      ctx.pool.query<{
+        id: string; title: string; brand: string; category: string; sku: string; price_cents: number; cost_cents: number | null; physical_qty: number;
+      }>(
+        `SELECT id, title, brand, category, sku, price_cents, cost_cents, physical_qty
+         FROM catalog_items
+         WHERE company_id = $1 AND physical_qty > 0
+           AND (cost_cents IS NULL OR cost_cents <= 0 OR price_cents < cost_cents)
+         ORDER BY (CASE WHEN cost_cents > 0 AND price_cents < cost_cents THEN 0 ELSE 1 END), physical_qty DESC, title ASC
+         LIMIT 1000`,
+        [companyId],
+      ),
+    ]);
+    const t = totals.rows[0] || { no_cost: 0, neg_margin: 0 };
+    return {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalIssues: t.no_cost + t.neg_margin,
+        noCostCount: t.no_cost,
+        negativeMarginCount: t.neg_margin,
+      },
+      items: rows.rows.map((r) => {
+        const hasCost = r.cost_cents !== null && r.cost_cents > 0;
+        const marginPct = hasCost && r.price_cents > 0 ? (r.price_cents - r.cost_cents!) / r.price_cents : null;
+        return {
+          id: r.id,
+          title: r.title,
+          brand: r.brand,
+          category: r.category,
+          sku: r.sku,
+          priceCents: r.price_cents,
+          costCents: r.cost_cents,
+          marginPct,
+          physicalQty: r.physical_qty,
+          issue: hasCost ? 'negative_margin' : 'no_cost',
+        };
+      }),
+    };
   });
 
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {

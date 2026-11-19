@@ -57,7 +57,12 @@ export async function renderHelp(ctx) {
 
       mount(host,
         pageHead('Help & Guides', 'Choose a guide to launch the interactive walkthrough or open the printable PDF'),
-        grid);
+        grid,
+        h('div.small.muted', { style: { textAlign: 'center', paddingTop: '8px' } },
+          'Manuals & platform built by ',
+          h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener' }, h('strong', 'TwoIT Solutions LLC')),
+          ' · ',
+          h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener' }, 'www.twoitsolutions.com')));
       return;
     }
 

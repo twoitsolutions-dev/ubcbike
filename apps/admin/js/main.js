@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { createHttpDriver } from './drivers/http.js?v=62';
+import { createHttpDriver } from './drivers/http.js?v=63';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=62';
+import { matchRoute } from './router.js?v=63';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
@@ -105,7 +105,10 @@ function renderShell() {
     h('div.nav-foot',
       h('div.who', state.me.user.name),
       h('div.role', roleLabel(state.me.user.role) + ' · ' + state.me.user.email),
-      h('button.btn.sm', { onclick: logout }, 'Sign out')));
+      h('button.btn.sm', { onclick: logout }, 'Sign out'),
+      h('div.small', { style: { marginTop: '10px', opacity: '0.78', fontSize: '11px', lineHeight: '1.4' } },
+        'Built by ',
+        h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
   const scrim = h('div.scrim', { onclick: closeNav });
   const crumbs = h('div.crumbs#crumbs');
   const topbar = h('header.topbar',
@@ -202,7 +205,11 @@ function renderLogin(message) {
       h('div.brand',
         h('div.login-title', 'Commerce Hub'),
         h('div.muted.small', 'Online Store, Store POS & B2B Control')),
-      body)))));
+      body)),
+    h('div.small', { style: { textAlign: 'center', marginTop: '14px', color: 'rgba(255,255,255,0.75)' } },
+      'Built by ',
+      h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'),
+      ' · www.twoitsolutions.com'))));
 }
 
 async function afterLogin() {

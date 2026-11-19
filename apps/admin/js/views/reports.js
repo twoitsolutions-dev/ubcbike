@@ -169,18 +169,42 @@ export async function renderReports(ctx) {
         },
         { key: 'inv', label: 'Qty', num: true, render: (it) => String(it.totalInventory || 0) },
         {
+          key: 'tags',
+          label: 'Current Tags',
+          opt: true,
+          render: (it) => (it.tags && it.tags.length
+            ? h('div.chips', it.tags.slice(0, 8).map((t) => h('span.badge', t)))
+            : h('span.badge.warn', 'None')),
+        },
+        {
+          key: 'missing',
+          label: 'Missing Tags',
+          render: (it) => (it.missingTags && it.missingTags.length
+            ? h('div.chips', it.missingTags.map((t) => h('span.badge.bad', t)))
+            : h('span.badge.ok', 'All tags OK')),
+        },
+        {
           key: 'cols',
           label: 'Collections',
           opt: true,
           render: (it) => (it.collections && it.collections.length ? it.collections.map((c) => c.title).join(', ') : h('span.badge.bad', 'None')),
         },
-        { key: 'reason', label: 'Why', opt: true },
       ],
       empty: 'Every active in-stock product is inside a department collection!',
       onCsv: (rows) => downloadCsv(
         'shopify-products-outside-collections.csv',
-        ['Title', 'Brand', 'Product Type', 'Inventory', 'Current Collections', 'Reason', 'Shopify Admin URL'],
-        rows.map((it) => [it.title, it.vendor, it.productType, it.totalInventory, (it.collections || []).map((c) => c.title).join('; ') || 'None', it.reason, it.adminUrl || '']),
+        ['Title', 'Brand', 'Product Type', 'Inventory', 'Current Tags', 'Missing Tags', 'Current Collections', 'Reason', 'Shopify Admin URL'],
+        rows.map((it) => [
+          it.title,
+          it.vendor,
+          it.productType,
+          it.totalInventory,
+          (it.tags || []).join('; ') || 'None',
+          (it.missingTags || []).join('; ') || 'None',
+          (it.collections || []).map((c) => c.title).join('; ') || 'None',
+          it.reason,
+          it.adminUrl || '',
+        ]),
       ),
     });
 

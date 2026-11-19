@@ -197,6 +197,8 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       vendor: string;
       productType: string;
       totalInventory: number;
+      tags: string[];
+      missingTags: string[];
       deptTags: string[];
       collections: { handle: string; title: string }[];
       gapType: 'no_collections' | 'no_department';
@@ -239,6 +241,18 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       const gapType = p.collections.length === 0 ? 'no_collections' : 'no_department';
       if (gapType === 'no_collections') outsideAllCount++;
       const deptTags = p.tags.filter((t) => t.startsWith('dept-'));
+      const missingTags: string[] = [];
+      if (!deptTags.length) missingTags.push('dept-*');
+      if (!p.tags.includes('ubc-tampa-stock') && !p.tags.includes('ubc-alafia-stock')) {
+        missingTags.push('ubc-tampa-stock / ubc-alafia-stock');
+      }
+      const vendorSlug = (p.vendor || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (vendorSlug && !p.tags.some((t) => t.startsWith('brand-'))) {
+        missingTags.push(`brand-${vendorSlug}`);
+      }
+      if (!p.tags.some((t) => t.startsWith('price-'))) {
+        missingTags.push('price-*');
+      }
       byType.set(pt, (byType.get(pt) ?? 0) + 1);
       const reason = gapType === 'no_collections'
         ? 'Not in ANY collection (even general/store)'
@@ -251,6 +265,8 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         vendor: p.vendor,
         productType: pt,
         totalInventory: p.totalInventory,
+        tags: p.tags,
+        missingTags,
         deptTags,
         collections: p.collections,
         gapType,

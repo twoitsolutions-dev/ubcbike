@@ -12,6 +12,12 @@
     "main": {
       "type": "main-product",
       "blocks": {
+        "sku": {
+          "type": "sku",
+          "settings": {
+            "text_style": "body"
+          }
+        },
         "vendor": {
           "type": "text",
           "settings": {
@@ -65,6 +71,7 @@
         }
       },
       "block_order": [
+        "sku",
         "vendor",
         "title",
         "price",

@@ -46,18 +46,20 @@ export async function renderSettings(ctx) {
     },
   }, 'Save settings');
 
-  const demoTools = ctx.api.kind === 'demo' ? card('Demo tools', h('div.stack',
-    h('label.check', h('input', { type: 'checkbox', checked: ctx.api.outageOn(), onchange: (e) => { ctx.api.simulateOutage(e.target.checked); toast(e.target.checked ? 'Supplier outage simulated: approvals and PO submissions will fail and retry' : 'Supplier outage cleared'); } }),
-      'Simulate a supplier connection outage (to see retries, errors and exceptions)'),
-    h('div', h('button.btn.danger', {
-      onclick: async () => {
-        if (!(await confirmDialog({ title: 'Reset demo data?', message: 'All demo changes (prices, promotions, orders, history) in this browser are discarded and the original demo dataset is restored.', confirmLabel: 'Reset demo data', danger: true }))) return;
-        ctx.api.resetDemo();
-        location.hash = '#/dashboard';
-        location.reload();
-      },
-    }, 'Reset demo data')),
-    h('p.small.muted', 'Demo data lives only in this browser. Nothing here touches Shopify, Lightspeed or any supplier.'))) : card('Demo data', h('p.small.muted', 'Server DEMO database: reset with `npm run db:reset-demo` (see docs/DEPLOYMENT.md).'));
+  const demoTools = ctx.system && ctx.system.mode === 'live'
+    ? null
+    : ctx.api.kind === 'demo' ? card('Demo tools', h('div.stack',
+      h('label.check', h('input', { type: 'checkbox', checked: ctx.api.outageOn(), onchange: (e) => { ctx.api.simulateOutage(e.target.checked); toast(e.target.checked ? 'Supplier outage simulated: approvals and PO submissions will fail and retry' : 'Supplier outage cleared'); } }),
+        'Simulate a supplier connection outage (to see retries, errors and exceptions)'),
+      h('div', h('button.btn.danger', {
+        onclick: async () => {
+          if (!(await confirmDialog({ title: 'Reset demo data?', message: 'All demo changes (prices, promotions, orders, history) in this browser are discarded and the original demo dataset is restored.', confirmLabel: 'Reset demo data', danger: true }))) return;
+          ctx.api.resetDemo();
+          location.hash = '#/dashboard';
+          location.reload();
+        },
+      }, 'Reset demo data')),
+      h('p.small.muted', 'Demo data lives only in this browser. Nothing here touches Shopify, Lightspeed or any supplier.'))) : card('Demo data', h('p.small.muted', 'Server DEMO database: reset with `npm run db:reset-demo` (see docs/DEPLOYMENT.md).'));
 
   return h('div.stack',
     pageHead('Settings & Sync', canEdit ? 'Commercial guardrails, system connections & logs' : 'Read-only — changing rules requires an owner/admin'),

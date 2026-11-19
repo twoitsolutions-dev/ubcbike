@@ -10,7 +10,7 @@ import { renderOrders, renderOrderDetail } from './views/orders.js?v=40';
 import { renderPurchasing } from './views/purchasing.js?v=40';
 import { renderIntegrations } from './views/integrations.js?v=49';
 import { renderActivity } from './views/activity.js?v=40';
-import { renderSettings } from './views/settings.js?v=46';
+import { renderSettings } from './views/settings.js?v=54';
 import { renderUpcReview } from './views/upc-review.js?v=51';
 
 export const routes = [

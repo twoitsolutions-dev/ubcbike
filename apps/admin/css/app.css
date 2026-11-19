@@ -982,3 +982,29 @@ dl.props dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 900px) {
   .help-shots-2, .help-split { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Compact Mobile-First Reports (.rep-*) ---------- */
+.rep-root > * + * { margin-top: 12px; }
+.rep-tabs {
+  display: flex; gap: 6px; overflow-x: auto; flex-wrap: nowrap;
+  padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.rep-tabs::-webkit-scrollbar { display: none; }
+.rep-tab {
+  flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
+  cursor: pointer; white-space: nowrap; transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.rep-tab.on { background: var(--accent); border-color: var(--accent); color: #FEFDF3; }
+.rep-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.rep-filters { display: flex; gap: 8px; flex: 1 1 260px; flex-wrap: wrap; min-width: 0; }
+.rep-search { flex: 1 1 180px; min-width: 140px; }
+.rep-select { flex: 0 1 auto; max-width: 220px; }
+.rep-toolbar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+@media (max-width: 760px) {
+  .rep-filters { flex-basis: 100%; }
+  .rep-search, .rep-select { flex: 1 1 100%; max-width: 100%; }
+  .rep-toolbar-actions { width: 100%; justify-content: flex-end; }
+}

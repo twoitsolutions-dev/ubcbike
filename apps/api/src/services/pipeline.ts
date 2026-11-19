@@ -292,10 +292,12 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
       code: string;
       name: string;
       is_active: boolean;
+      has_enabled_schedule: boolean;
       last_report: Date | null;
       max_silence_hours: number | null;
     }>(
       `SELECT s.id, s.code, s.name, s.is_active,
+              COALESCE(bool_or(sss.enabled), false) AS has_enabled_schedule,
               GREATEST(max(so.reported_at), max(sss.last_success_at)) AS last_report,
               max(sss.max_silence_hours) FILTER (WHERE sss.stream = 'full_catalog') AS max_silence_hours
        FROM suppliers s
@@ -310,7 +312,7 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
       supRows.rows.map((r) => ({
         supplierCode: r.code,
         supplierName: r.name,
-        isActive: r.is_active,
+        isActive: r.is_active && r.has_enabled_schedule,
         lastReportAt: r.last_report,
         maxSilenceHours: r.max_silence_hours ?? DEFAULT_SYNC_CADENCES.full_catalog.maxSilenceHours,
       })),

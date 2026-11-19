@@ -281,24 +281,40 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/api/reports/no-upc', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const companyId = req.session!.companyId;
+    const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
     const [totals, rows] = await Promise.all([
       ctx.pool.query<{ total_in_stock: number; missing_upc: number; total_units: number }>(
         `SELECT count(*)::int AS total_in_stock,
-                count(*) FILTER (WHERE upc IS NULL OR trim(upc) = '')::int AS missing_upc,
-                COALESCE(sum(physical_qty) FILTER (WHERE upc IS NULL OR trim(upc) = ''), 0)::int AS total_units
-         FROM catalog_items
-         WHERE company_id = $1 AND physical_qty > 0`,
-        [companyId],
+                count(*) FILTER (WHERE c.upc IS NULL OR trim(c.upc) = '')::int AS missing_upc,
+                COALESCE(sum(c.physical_qty) FILTER (WHERE c.upc IS NULL OR trim(c.upc) = ''), 0)::int AS total_units
+         FROM catalog_items c
+         WHERE c.company_id = $1 AND c.physical_qty > 0
+           AND EXISTS (
+             SELECT 1 FROM shopify_variant_links svl
+             WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
+               AND ($2 = '' OR svl.shop_domain = $2)
+           )`,
+        [companyId, shop],
       ),
       ctx.pool.query<{
-        id: string; title: string; brand: string; category: string; sku: string; mpn: string | null; price_cents: number; physical_qty: number;
+        id: string; title: string; brand: string; category: string; sku: string; mpn: string | null; price_cents: number; physical_qty: number; shopify_product_id: string | null;
       }>(
-        `SELECT id, title, brand, category, sku, mpn, price_cents, physical_qty
-         FROM catalog_items
-         WHERE company_id = $1 AND physical_qty > 0 AND (upc IS NULL OR trim(upc) = '')
-         ORDER BY physical_qty DESC, title ASC
+        `SELECT c.id, c.title, c.brand, c.category, c.sku, c.mpn, c.price_cents, c.physical_qty,
+                (SELECT svl.shopify_product_id FROM shopify_variant_links svl
+                 WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
+                   AND ($2 = '' OR svl.shop_domain = $2)
+                 LIMIT 1) AS shopify_product_id
+         FROM catalog_items c
+         WHERE c.company_id = $1 AND c.physical_qty > 0
+           AND (c.upc IS NULL OR trim(c.upc) = '')
+           AND EXISTS (
+             SELECT 1 FROM shopify_variant_links svl
+             WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
+               AND ($2 = '' OR svl.shop_domain = $2)
+           )
+         ORDER BY c.physical_qty DESC, c.title ASC
          LIMIT 1000`,
-        [companyId],
+        [companyId, shop],
       ),
     ]);
     const t = totals.rows[0] || { total_in_stock: 0, missing_upc: 0, total_units: 0 };
@@ -309,39 +325,58 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         missingUpc: t.missing_upc,
         totalUnits: t.total_units,
       },
-      items: rows.rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        brand: r.brand,
-        category: r.category,
-        sku: r.sku,
-        mpn: r.mpn || '',
-        priceCents: r.price_cents,
-        physicalQty: r.physical_qty,
-      })),
+      items: rows.rows.map((r) => {
+        const numId = r.shopify_product_id ? r.shopify_product_id.split('/').pop() : '';
+        return {
+          id: r.id,
+          title: r.title,
+          brand: r.brand,
+          category: r.category,
+          sku: r.sku,
+          mpn: r.mpn || '',
+          priceCents: r.price_cents,
+          physicalQty: r.physical_qty,
+          adminUrl: shop && numId ? `https://${shop}/admin/products/${numId}` : '',
+        };
+      }),
     };
   });
 
   app.get('/api/reports/margin-issues', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const companyId = req.session!.companyId;
+    const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
     const [totals, rows] = await Promise.all([
       ctx.pool.query<{ no_cost: number; neg_margin: number }>(
-        `SELECT count(*) FILTER (WHERE cost_cents IS NULL OR cost_cents <= 0)::int AS no_cost,
-                count(*) FILTER (WHERE cost_cents > 0 AND price_cents < cost_cents)::int AS neg_margin
-         FROM catalog_items
-         WHERE company_id = $1 AND physical_qty > 0`,
-        [companyId],
+        `SELECT count(*) FILTER (WHERE c.cost_cents IS NULL OR c.cost_cents <= 0)::int AS no_cost,
+                count(*) FILTER (WHERE c.cost_cents > 0 AND c.price_cents < c.cost_cents)::int AS neg_margin
+         FROM catalog_items c
+         WHERE c.company_id = $1 AND c.physical_qty > 0
+           AND EXISTS (
+             SELECT 1 FROM shopify_variant_links svl
+             WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
+               AND ($2 = '' OR svl.shop_domain = $2)
+           )`,
+        [companyId, shop],
       ),
       ctx.pool.query<{
-        id: string; title: string; brand: string; category: string; sku: string; price_cents: number; cost_cents: number | null; physical_qty: number;
+        id: string; title: string; brand: string; category: string; sku: string; price_cents: number; cost_cents: number | null; physical_qty: number; shopify_product_id: string | null;
       }>(
-        `SELECT id, title, brand, category, sku, price_cents, cost_cents, physical_qty
-         FROM catalog_items
-         WHERE company_id = $1 AND physical_qty > 0
-           AND (cost_cents IS NULL OR cost_cents <= 0 OR price_cents < cost_cents)
-         ORDER BY (CASE WHEN cost_cents > 0 AND price_cents < cost_cents THEN 0 ELSE 1 END), physical_qty DESC, title ASC
+        `SELECT c.id, c.title, c.brand, c.category, c.sku, c.price_cents, c.cost_cents, c.physical_qty,
+                (SELECT svl.shopify_product_id FROM shopify_variant_links svl
+                 WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
+                   AND ($2 = '' OR svl.shop_domain = $2)
+                 LIMIT 1) AS shopify_product_id
+         FROM catalog_items c
+         WHERE c.company_id = $1 AND c.physical_qty > 0
+           AND (c.cost_cents IS NULL OR c.cost_cents <= 0 OR c.price_cents < c.cost_cents)
+           AND EXISTS (
+             SELECT 1 FROM shopify_variant_links svl
+             WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
+               AND ($2 = '' OR svl.shop_domain = $2)
+           )
+         ORDER BY (CASE WHEN c.cost_cents > 0 AND c.price_cents < c.cost_cents THEN 0 ELSE 1 END), c.physical_qty DESC, c.title ASC
          LIMIT 1000`,
-        [companyId],
+        [companyId, shop],
       ),
     ]);
     const t = totals.rows[0] || { no_cost: 0, neg_margin: 0 };
@@ -355,6 +390,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       items: rows.rows.map((r) => {
         const hasCost = r.cost_cents !== null && r.cost_cents > 0;
         const marginPct = hasCost && r.price_cents > 0 ? (r.price_cents - r.cost_cents!) / r.price_cents : null;
+        const numId = r.shopify_product_id ? r.shopify_product_id.split('/').pop() : '';
         return {
           id: r.id,
           title: r.title,
@@ -366,6 +402,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
           marginPct,
           physicalQty: r.physical_qty,
           issue: hasCost ? 'negative_margin' : 'no_cost',
+          adminUrl: shop && numId ? `https://${shop}/admin/products/${numId}` : '',
         };
       }),
     };

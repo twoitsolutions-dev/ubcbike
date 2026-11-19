@@ -248,14 +248,14 @@ export async function renderReports(ctx) {
     });
 
     const list = renderPaginatedCard({
-      title: 'In-store stock without UPC (Lightspeed)',
+      title: 'Shopify-matched items without UPC',
       meta: s.missingUpc.toLocaleString('en-US') + ' items',
       toolbar: h('div.rep-filters', searchInput),
       getRows: () => (!q ? items : items.filter((it) => (it.title + ' ' + it.brand + ' ' + it.category + ' ' + it.sku + ' ' + it.mpn).toLowerCase().includes(q))),
       columns: [
         {
           key: 'title',
-          label: 'Lightspeed item',
+          label: 'Matched item',
           cls: 'title-cell',
           render: (it) => h('div',
             h('a', { href: '#/products/' + it.id }, h('strong', it.title)),
@@ -265,17 +265,17 @@ export async function renderReports(ctx) {
         { key: 'price', label: 'Price', num: true, render: (it) => money(it.priceCents) },
         { key: 'qty', label: 'Qty', num: true, render: (it) => String(it.physicalQty || 0) },
       ],
-      empty: 'All in-stock Lightspeed items have a UPC!',
+      empty: 'All Shopify-matched in-stock items have a UPC!',
       onCsv: (rows) => downloadCsv(
-        'lightspeed-in-stock-without-upc.csv',
-        ['Title', 'Brand', 'Category', 'System SKU', 'MPN', 'Price', 'In-Store Qty'],
-        rows.map((it) => [it.title, it.brand, it.category, it.sku, it.mpn, (it.priceCents / 100).toFixed(2), it.physicalQty]),
+        'shopify-matched-without-upc.csv',
+        ['Title', 'Brand', 'Category', 'System SKU', 'MPN', 'Price', 'In-Store Qty', 'Shopify Admin URL'],
+        rows.map((it) => [it.title, it.brand, it.category, it.sku, it.mpn, (it.priceCents / 100).toFixed(2), it.physicalQty, it.adminUrl || '']),
       ),
     });
 
     mount(bodyHost,
       h('div.kpis.dash-kpis',
-        kpiBox('In-stock items', s.totalInStock),
+        kpiBox('Shopify-matched in stock', s.totalInStock),
         kpiBox('Missing UPC', s.missingUpc, s.missingUpc ? 'attn' : ''),
         kpiBox('Units w/o UPC', s.totalUnits)),
       list.el);
@@ -301,7 +301,7 @@ export async function renderReports(ctx) {
     });
 
     const list = renderPaginatedCard({
-      title: 'Missing cost & negative margin',
+      title: 'Shopify-matched: missing cost & negative margin',
       meta: s.totalIssues.toLocaleString('en-US') + ' items',
       toolbar: h('div.rep-filters', searchInput, modeSelect),
       getRows: () => items.filter((it) => {
@@ -313,7 +313,7 @@ export async function renderReports(ctx) {
       columns: [
         {
           key: 'title',
-          label: 'Item',
+          label: 'Matched item',
           cls: 'title-cell',
           render: (it) => h('div',
             h('a', { href: '#/products/' + it.id }, h('strong', it.title)),
@@ -323,11 +323,11 @@ export async function renderReports(ctx) {
         { key: 'cost', label: 'Cost', num: true, opt: true, render: (it) => (it.costCents && it.costCents > 0 ? money(it.costCents) : h('span.badge.warn', 'No cost')) },
         { key: 'margin', label: 'Margin', num: true, render: (it) => (it.marginPct === null ? h('span.badge.warn', 'No cost') : h('span.badge.bad', pct(it.marginPct))) },
       ],
-      empty: 'No missing cost or negative margin items in stock!',
+      empty: 'No missing cost or negative margin items among Shopify-matched stock!',
       onCsv: (rows) => downloadCsv(
-        'lightspeed-margin-and-cost-issues.csv',
-        ['Title', 'Brand', 'SKU', 'In-Store Qty', 'Price', 'Cost', 'Issue'],
-        rows.map((it) => [it.title, it.brand, it.sku, it.physicalQty, (it.priceCents / 100).toFixed(2), it.costCents ? (it.costCents / 100).toFixed(2) : '', it.issue]),
+        'shopify-matched-margin-and-cost-issues.csv',
+        ['Title', 'Brand', 'SKU', 'In-Store Qty', 'Price', 'Cost', 'Issue', 'Shopify Admin URL'],
+        rows.map((it) => [it.title, it.brand, it.sku, it.physicalQty, (it.priceCents / 100).toFixed(2), it.costCents ? (it.costCents / 100).toFixed(2) : '', it.issue, it.adminUrl || '']),
       ),
     });
 
@@ -343,7 +343,7 @@ export async function renderReports(ctx) {
   loadActive(false);
 
   return h('div.stack.rep-root',
-    pageHead('Reports', 'Catalog health — Collections, Photos, UPCs & Margins'),
+    pageHead('Reports', 'Shopify-matched catalog health — Collections, Photos, UPCs & Margins'),
     tabsHost,
     bodyHost);
 }

@@ -3,7 +3,7 @@ import { card, confirmDialog, dataTable, loading, pageHead, pager, sectionTabs, 
 import { availabilityBadge, dateTime, margin, money, pct } from '../ui/format.js';
 import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=40';
 import { openPriceEditor } from './pricing.js?v=40';
-import { openCreateProduct } from './create-product.js?v=43';
+import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=53';
 
 const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s === 'hidden' ? '' : 'warn' }, s);
 
@@ -148,11 +148,19 @@ export async function renderProducts(ctx) {
       ctx.can('pricing.write') ? h('button.btn.sm', {
         onclick: () => { sessionStorageSafeSet('ubc-promo-selection', JSON.stringify(filter)); ctx.navigate('#/promotions/new?from=selection'); },
       }, 'Create promotion…') : null,
-      // Several Lightspeed items (colors/sizes) → one draft product in Shopify (for products Workstand doesn't have).
-      filter.ids && ctx.api.kind === 'http' ? h('button.btn.sm', {
-        title: 'Create one Shopify product with these items as its colors/sizes',
+      // 1 item → Create in Shopify; 2+ items → Create Matrix (1 product with variants) OR Create Separate (1 product each).
+      filter.ids && filter.ids.length === 1 && ctx.api.kind === 'http' ? h('button.btn.sm', {
+        title: 'Create this item in Shopify',
         onclick: () => openCreateProduct(ctx, filter.ids, () => { clear(); reload(); }),
-      }, 'Create Shopify product…') : null,
+      }, 'Create in Shopify…') : null,
+      filter.ids && filter.ids.length > 1 && ctx.api.kind === 'http' ? h('button.btn.sm', {
+        title: 'Combine selected items as color/size variants into ONE Shopify product',
+        onclick: () => openCreateProduct(ctx, filter.ids, () => { clear(); reload(); }),
+      }, 'Create Matrix in Shopify…') : null,
+      filter.ids && filter.ids.length > 1 && ctx.api.kind === 'http' ? h('button.btn.sm', {
+        title: 'Create one separate Shopify product for each selected item',
+        onclick: () => openCreateSeparateProducts(ctx, filter.ids, () => { clear(); reload(); }),
+      }, 'Create Separate in Shopify…') : null,
     ] : null,
   });
   const fs = table.state.filter.stock;

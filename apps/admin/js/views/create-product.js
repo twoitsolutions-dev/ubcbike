@@ -76,7 +76,9 @@ export async function openCreateProduct(ctx, ids, done) {
   };
   const createBtn = h('button.btn.primary', { onclick: (ev) => submit(ev.currentTarget) }, 'Create & sync to Shopify');
   m = modal({
-    title: 'Create Shopify product from ' + items.length + ' Lightspeed item' + (items.length === 1 ? '' : 's'),
+    title: items.length > 1
+      ? 'Create Matrix Shopify product (' + items.length + ' variants)'
+      : 'Create Shopify product from 1 Lightspeed item',
     wide: true,
     body: [
       h('p.muted', 'Creates this product in Shopify and links it to Lightspeed automatically (even if it does not have a UPC — price & stock sync directly by Shopify variant ID).'),
@@ -85,6 +87,98 @@ export async function openCreateProduct(ctx, ids, done) {
       h('table.t', h('thead', h('tr', h('th', 'Lightspeed item'), h('th.num', 'Price'), h('th.num', 'Stock'), h('th', 'Option value'))), h('tbody', rows)),
       errHost,
     ],
+    actions: [h('button.btn', { onclick: () => m.close() }, 'Cancel'), createBtn],
+  });
+}
+
+/**
+ * "Create in Shopify (Separate)": creates ONE separate Shopify product for each selected Lightspeed item.
+ */
+export async function openCreateSeparateProducts(ctx, ids, done) {
+  if (ids.length < 1 || ids.length > 100) { toast('Select between 1 and 100 items', 'bad'); return; }
+  let records;
+  try {
+    records = await Promise.all(ids.map((id) => ctx.api.item(id)));
+  } catch (e) { toast(e.message, 'bad'); return; }
+
+  const alreadyLinked = [];
+  const toCreate = [];
+  records.forEach((r) => {
+    const it = r.item;
+    const linked = !!(it.shopifyVariantId || (r.externalIds || []).some((e) => e.system === 'shopify'));
+    if (linked) alreadyLinked.push(it);
+    else toCreate.push(it);
+  });
+
+  if (!toCreate.length) {
+    toast('All selected items are already linked to Shopify', 'bad');
+    return;
+  }
+
+  const publishNowCb = h('input', { type: 'checkbox', checked: true });
+  const titleInputs = {};
+  const rows = toCreate.map((it) => {
+    titleInputs[it.id] = h('input', { value: (it.title || '').replace(/^BIKE\s+/i, ''), style: { width: '100%' } });
+    return h('tr',
+      h('td', titleInputs[it.id], h('div.sku', (it.upc ? 'UPC ' + it.upc : 'No UPC (syncs by SKU)') + ' · System SKU ' + it.sku)),
+      h('td', it.brand || '—'),
+      h('td.num', money(it.priceCents)),
+      h('td.num', String(it.physicalQty || 0)));
+  });
+
+  const statusHost = h('div');
+  let m;
+  const submit = async (btn) => {
+    btn.disabled = true;
+    const created = [];
+    const failed = [];
+    for (let i = 0; i < toCreate.length; i += 1) {
+      const it = toCreate[i];
+      const name = String(titleInputs[it.id].value || it.title || '').trim();
+      mount(statusHost, h('div.notice.info', 'Creating ' + (i + 1) + ' of ' + toCreate.length + ': ' + name + '…'));
+      try {
+        const r = await ctx.api.createShopifyProduct({
+          variantIds: [it.id],
+          title: name,
+          vendor: it.brand || '',
+          productType: it.category || '',
+          optionName: 'Title',
+          values: { [it.id]: 'Default Title' },
+          publishNow: publishNowCb.checked,
+        });
+        created.push({ title: name, adminUrl: r.adminUrl });
+      } catch (e) {
+        failed.push(name + ': ' + (e.message || 'Failed'));
+      }
+    }
+    m.close();
+    toast('Created ' + created.length + ' separate product' + (created.length === 1 ? '' : 's') + ' in Shopify' + (failed.length ? ' (' + failed.length + ' failed)' : ''), failed.length ? 'warn' : 'ok');
+    modal({
+      title: 'Created ' + created.length + ' separate Shopify product' + (created.length === 1 ? '' : 's'),
+      wide: true,
+      body: [
+        created.length ? h('p', publishNowCb.checked
+          ? 'These products are now Active in Shopify and linked to Lightspeed (price, sale price, and stock sync automatically).'
+          : 'These products were created as Drafts in Shopify and linked to Lightspeed.') : null,
+        created.length ? h('ul', created.map((c) => h('li', h('a', { href: c.adminUrl, target: '_blank', rel: 'noopener' }, c.title + ' ↗')))) : null,
+        failed.length ? h('div.notice.bad', h('strong', failed.length + ' failed:'), h('ul', failed.map((f) => h('li', f)))) : null,
+      ].filter(Boolean),
+      actions: [],
+    });
+    if (done) done();
+  };
+
+  const createBtn = h('button.btn.primary', { onclick: (ev) => submit(ev.currentTarget) }, 'Create ' + toCreate.length + ' separate products');
+  m = modal({
+    title: 'Create ' + toCreate.length + ' separate Shopify product' + (toCreate.length === 1 ? '' : 's'),
+    wide: true,
+    body: [
+      h('p.muted', 'Creates an independent Shopify product for each item below and links each one automatically to Lightspeed.'),
+      alreadyLinked.length ? h('div.notice.warn', alreadyLinked.length + ' selected item' + (alreadyLinked.length === 1 ? ' is' : 's are') + ' already linked to Shopify and will be skipped.') : null,
+      h('label.check', publishNowCb, h('strong', 'Publish live in Shopify right away (Active)'), h('span.small.muted', ' — uncheck to save as Draft first')),
+      h('table.t', h('thead', h('tr', h('th', 'Product title in Shopify'), h('th', 'Brand'), h('th.num', 'Price'), h('th.num', 'Stock'))), h('tbody', rows)),
+      statusHost,
+    ].filter(Boolean),
     actions: [h('button.btn', { onclick: () => m.close() }, 'Cancel'), createBtn],
   });
 }

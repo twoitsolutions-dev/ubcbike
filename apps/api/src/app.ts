@@ -33,13 +33,19 @@ export async function buildApp(opts: { pool: Pool; config: AppConfig; connectors
 
   app.addHook('onSend', async (req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
-    reply.header('X-Frame-Options', 'DENY');
     reply.header('Referrer-Policy', 'same-origin');
     reply.header('X-Robots-Tag', 'noindex, nofollow');
-    if (req.url.startsWith('/api/')) reply.header('Cache-Control', 'no-store');
-    else {
+    if (req.url.startsWith('/api/')) {
+      reply.header('X-Frame-Options', 'DENY');
+      reply.header('Cache-Control', 'no-store');
+    } else if (req.url.startsWith('/docs/')) {
+      reply.header('X-Frame-Options', 'SAMEORIGIN');
       reply.header('Cache-Control', 'no-cache');
-      reply.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+      reply.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'");
+    } else {
+      reply.header('X-Frame-Options', 'DENY');
+      reply.header('Cache-Control', 'no-cache');
+      reply.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
     }
     return payload;
   });

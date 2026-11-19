@@ -268,55 +268,55 @@
             <div class="mega" id="megaBikes">
               <div class="fb-wrap">
                 <div>
-                  <h4 data-es="Bicis y E-Bikes">Bikes &amp; E-Bikes</h4>
+                  <h4 data-es="Bicicletas y Eléctricas">Bikes &amp; Electric</h4>
                   <ul>
+                    <li><a href="{{ road_href }}" data-ride-jump="road" data-es="Bicis de Ruta y Gravel">Road &amp; Gravel Bikes</a></li>
+                    <li><a href="{{ mtb_href }}" data-ride-jump="mtb" data-es="Bicis de Montaña">Mountain Bikes</a></li>
+                    <li><a href="{{ hybrid_href }}" data-ride-jump="fitness" data-es="Híbridas y Urbanas">Hybrid &amp; Urban Bikes</a></li>
+                    <li><a href="{% if collections['kids-bikes'] != blank %}{{ collections['kids-bikes'].url }}{% else %}{{ all_bikes_href }}{% endif %}" data-es="Bicis para Niños y BMX">Children's &amp; BMX Bikes</a></li>
                     <li><a href="{{ ebike_href }}" data-ride-jump="electric" data-es="Bicicletas Eléctricas">Electric Bikes</a></li>
-                    <li><a href="{{ road_href }}" data-ride-jump="road" data-es="Ruta y Gravel">Road &amp; Gravel</a></li>
-                    <li><a href="{{ mtb_href }}" data-ride-jump="mtb" data-es="Montaña y Trail">Mountain &amp; Trail</a></li>
-                    <li><a href="{{ hybrid_href }}" data-ride-jump="fitness" data-es="Híbridas y Paseo">Hybrid, Fitness &amp; Cruisers</a></li>
-                    <li><a href="{{ all_bikes_href }}" data-es="Catálogo Completo de Bicis">All Bikes Collection</a></li>
+                    <li><a href="{{ all_bikes_href }}" data-es="Todas las Bicis">All Bikes</a></li>
                   </ul>
                 </div>
                 <div>
-                  <h4 data-es="Departamentos en Stock">In-Stock Departments</h4>
+                  <h4 data-es="Componentes">Components</h4>
                   <ul>
-                    <li><a href="{% if collections['helmets'] != blank %}{{ collections['helmets'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Cascos y Seguridad">Helmets &amp; Safety</a></li>
-                    <li><a href="{% if collections['clothing'] != blank %}{{ collections['clothing'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Ropa y Jerseys">Apparel &amp; Jerseys</a></li>
-                    <li><a href="{% if collections['cycling-shoes'] != blank %}{{ collections['cycling-shoes'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Zapatillas de Ciclismo">Cycling Shoes</a></li>
                     <li><a href="{% if collections['tires-tubes'] != blank %}{{ collections['tires-tubes'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Llantas y Tubos">Tires &amp; Tubes</a></li>
+                    <li><a href="{% if collections['tubes'] != blank %}{{ collections['tubes'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Cámaras">Inner Tubes</a></li>
                     <li><a href="{% if collections['parts-components'] != blank %}{{ collections['parts-components'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Piezas y Transmisión">Parts &amp; Drivetrain</a></li>
-                    <li><a href="{% if collections['hydration-nutrition'] != blank %}{{ collections['hydration-nutrition'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Nutrición e Hidratación">Hydration &amp; Nutrition</a></li>
-                    <li><a href="{{ routes.collections_url }}/all" data-es="Todo el Inventario en Tienda">All In-Stock Items (Tampa &amp; Alafia)</a></li>
+                    <li><a href="{% if collections['saddles'] != blank %}{{ collections['saddles'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Sillines">Saddles</a></li>
+                    <li><a href="{% if collections['pedals'] != blank %}{{ collections['pedals'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Pedales y Calas">Pedals &amp; Cleats</a></li>
+                    <li><a href="{{ routes.collections_url }}/parts-components" data-es="Todos los Componentes">All Components</a></li>
                   </ul>
                 </div>
                 <div>
-                  <h4 data-es="Taller, Familia y Guías">Workshop, Guides &amp; Store</h4>
+                  <h4 data-es="Accesorios y Ropa">Accessories &amp; Apparel</h4>
                   <ul>
-                    <li><a href="/pages/bike-service-repair" data-es="Servicio y Reparación (Sin Cita)">Bike Service &amp; Repair</a></li>
-                    <li><a href="/pages/buyers-guide" data-es="Guía para Comprar Bicicleta">Buyer's Guide</a></li>
-                    <li><a href="/pages/about-us" data-es="La Diferencia UBC (Desde 1972)">The UBC Difference</a></li>
-                    <li><a href="/pages/why-shop-at-ubc" data-es="5 Razones para Comprar en UBC">5 Reasons to Buy at UBC</a></li>
-                    <li><a href="/pages/financing" data-es="Financiamiento (Acima / Synchrony / Snap)">Financing (0% APR / Acima / Snap)</a></li>
-                    <li><a href="/pages/bike-rentals" data-es="Alquiler en Alafia River">Alafia River Rentals</a></li>
-                    <li><a href="/pages/maps-trails" data-es="Mapas y Senderos (Trails)">Maps &amp; Trails</a></li>
-                    <li><a href="/pages/locations" data-es="Tiendas y Cómo Llegar">How To Find Us (Tampa &amp; Alafia)</a></li>
-                    <li><a href="/pages/contact-us" data-es="Contáctanos">Contact Us</a></li>
+                    <li><a href="{% if collections['helmets'] != blank %}{{ collections['helmets'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Cascos y Seguridad">Helmets</a></li>
+                    <li><a href="{% if collections['eyewear'] != blank %}{{ collections['eyewear'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Gafas de Sol">Eyewear</a></li>
+                    <li><a href="{% if collections['hydration-nutrition'] != blank %}{{ collections['hydration-nutrition'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Hidratación y Nutrición">Hydration &amp; Nutrition</a></li>
+                    <li><a href="{% if collections['tools-workshop'] != blank %}{{ collections['tools-workshop'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Herramientas y Bombas">Tools &amp; Pumps</a></li>
+                    <li><a href="{% if collections['accessories-gear'] != blank %}{{ collections['accessories-gear'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Todos los Accesorios">All Accessories</a></li>
+                    <li><a href="{% if collections['clothing'] != blank %}{{ collections['clothing'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Ropa Ciclista">Apparel</a></li>
+                    <li><a href="{% if collections['cycling-shoes'] != blank %}{{ collections['cycling-shoes'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Zapatillas de Ciclismo">Shoes</a></li>
                   </ul>
                 </div>
-                <a class="mega-card" href="{{ home_anchor }}#service">
+                <a class="mega-card" href="{{ routes.collections_url }}/all">
                   <div class="mega-card-media">
-                    <img src="{{ 'spz-propero-4.png' | asset_url }}" width="180" height="140" alt="UBC Walk-In Workshop &amp; 20,000+ Gear Catalog" loading="lazy">
+                    <img src="{{ 'spz-propero-4.png' | asset_url }}" width="180" height="140" alt="UBC In-Stock Catalog" loading="lazy">
                   </div>
                   <div class="mega-card-body">
-                    <span class="mega-kicker" data-es="Taller Sin Cita + 20,000+ Productos">Walk-In Workshop + 20k+ SKUs</span>
-                    <strong data-es="Reparamos bicis, scooters, e-bikes y carbono — liderado por Manny desde 1972.">We fix everyday bikes, scooters, e-bikes &amp; pro carbon — led by Manny since 1972.</strong>
-                    <span class="mega-cta"><span data-es="Ver el taller">Explore Workshop</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                    <span class="mega-kicker" data-es="Catálogo UBC">UBC Pro-Shop</span>
+                    <strong data-es="Explora bicis, cascos, llantas y repuestos disponibles hoy en Tampa y Alafia.">Browse in-stock bikes, helmets, tires, parts &amp; gear ready for pickup or shipping.</strong>
+                    <span class="mega-cta"><span data-es="Ver catálogo">Shop All Items</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
                   </div>
                 </a>
               </div>
             </div>
           </li>
           <li><a href="/pages/bike-service-repair" data-es="Servicio">Service</a></li>
+          <li><a href="/pages/bike-rentals" data-es="Rentas">Rentals</a></li>
+          <li><a href="/pages/maps-trails" data-es="Mapas y Senderos">Maps &amp; Trails</a></li>
           <li><a href="/pages/buyers-guide" data-es="Guía">Buyer's Guide</a></li>
           <li><a href="/pages/about-us" data-es="Nosotros">About UBC</a></li>
           <li><a href="/pages/financing" data-es="Financiamiento">Financing</a></li>
@@ -435,13 +435,15 @@
             <span data-es="Promos, Eventos y Novedades">Deals, Events &amp; New</span><span data-es="Nuevo">20k+</span>
           {%- endif -%}
         </a>
-        <a href="{{ home_anchor }}#service"><span data-es="Taller Sin Cita (Bicis y Scooters)">Walk-In Repair Workshop</span><span data-es="Manny y Ashton">All Day</span></a>
-        <a href="{{ home_anchor }}#finder"><span data-es="Buscador de Bicis y E-Bikes">Bike &amp; E-Bike Finder</span><span>20s</span></a>
-        <a href="{{ home_anchor }}#family"><span data-es="Conoce a la Familia y Equipo UBC">Meet Manny, Carlos &amp; Crew</span><span>Since 1972</span></a>
-        <a href="{{ story_href }}"><span data-es="Historia Completa y Videos">Full Story &amp; Shop Videos</span><span>8 Videos</span></a>
-        <a href="{{ home_anchor }}#rentals"><span data-es="Alquiler en Alafia River">Alafia Trailhead Rentals</span><span>Park</span></a>
-        <a href="{{ home_anchor }}#financing"><span data-es="Financiamiento 0% APR y Trade-In">0% APR Financing &amp; Trade-In</span><span>0% APR</span></a>
-        <a href="{{ home_anchor }}#stores"><span data-es="Tiendas y Cómo Llegar">Two Shops &amp; Map</span><span>Tampa + Lithia</span></a>
+        <a href="/pages/bike-service-repair"><span data-es="Servicio y Reparación">Bike Service &amp; Repair</span><span data-es="Sin Cita">Walk-In</span></a>
+        <a href="/pages/bike-rentals"><span data-es="Alquiler en Alafia River">Alafia River Rentals</span><span>Park</span></a>
+        <a href="/pages/maps-trails"><span data-es="Mapas y Senderos">Maps &amp; Trails</span><span>Trails</span></a>
+        <a href="/pages/buyers-guide"><span data-es="Guía de Compra">Buyer's Guide</span><span>Sizing</span></a>
+        <a href="/pages/about-us"><span data-es="La Diferencia UBC">The UBC Difference</span><span>1972</span></a>
+        <a href="/pages/why-shop-at-ubc"><span data-es="5 Razones para Comprar en UBC">5 Reasons to Buy at UBC</span><span>50+ yrs</span></a>
+        <a href="/pages/financing"><span data-es="Financiamiento 0% APR">Financing</span><span>0% APR</span></a>
+        <a href="/pages/locations"><span data-es="Tiendas y Cómo Llegar">How To Find Us</span><span>Tampa + Lithia</span></a>
+        <a href="/pages/contact-us"><span data-es="Contáctanos">Contact Us</span><span>Info</span></a>
       {%- endif -%}
     </nav>
 

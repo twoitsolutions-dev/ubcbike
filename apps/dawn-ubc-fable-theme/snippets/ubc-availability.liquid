@@ -49,10 +49,10 @@
         </span>
       {%- endif -%}
     {%- else -%}
-      <span class="availability availability--{{ status }}" data-availability style="{% if status == 'in_stock' or status == 'special_order' %}display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#F3E8D2;color:#5C3D0E;{% endif %}">
+      <span class="availability availability--{{ status }}" data-availability style="{% if status == 'in_stock' %}display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#14202D;color:#FFFFFF;{% elsif status == 'special_order' %}display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#F3E8D2;color:#5C3D0E;{% endif %}">
         {%- case status -%}
           {%- when 'in_stock' -%}
-            At Warehouse &middot; Available to Order
+            In Stock at UBC
           {%- when 'special_order' -%}
             {%- if lead != blank -%}
               At Warehouse &middot; Ready in {{ lead }} days

@@ -1,9 +1,81 @@
+<style>
+  .ubc-ws-prose {
+    padding: clamp(2.2rem, 3.5vw, 3.6rem) !important;
+    background: #FFFFFF !important;
+    border: 1px solid rgba(20, 32, 45, 0.10) !important;
+    border-radius: 18px !important;
+    color: #14202D;
+    font-size: 1.55rem;
+    line-height: 1.72;
+  }
+  .ubc-ws-prose h1, .ubc-ws-prose h2, .ubc-ws-prose h3, .ubc-ws-prose h4 {
+    color: #14202D;
+    font-weight: 800;
+    margin: 2.2rem 0 0.9rem;
+    line-height: 1.25;
+  }
+  .ubc-ws-prose h1:first-child, .ubc-ws-prose h2:first-child, .ubc-ws-prose h3:first-child, .ubc-ws-prose p:first-child {
+    margin-top: 0;
+  }
+  .ubc-ws-prose p {
+    margin: 0 0 1.35rem;
+    color: #2B3A4A;
+  }
+  .ubc-ws-prose p strong:first-child {
+    color: #14202D;
+    font-size: 1.65rem;
+  }
+  .ubc-ws-prose ul, .ubc-ws-prose ol {
+    margin: 0.6rem 0 1.6rem 2rem;
+    padding: 0;
+  }
+  .ubc-ws-prose li {
+    margin-bottom: 0.55rem;
+    color: #2B3A4A;
+  }
+  .ubc-ws-prose a {
+    color: #E04F33;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+</style>
 {%- comment -%}
   UBC Workstand-Mirrored Page Layouts (Service, Contact, Locations, About, Reasons, Financing, Buyer's Guide)
   - Preserves 100% of Carlos's Workstand copy, store photos (`images[...]`), tune-up packages, and financing links.
   - Supports bilingual EN/ES translation via `ubc-fable.js`.
 {%- endcomment -%}
 
+<style>
+  #shopify-section-{{ section.id }} .ubc-ws-page {
+    background-color: {{ section.settings.page_bg | default: '#FFFFFF' }};
+    color: {{ section.settings.text_color | default: '#14202D' }};
+    --ubc-page-card-bg: {{ section.settings.card_bg | default: '#FFFFFF' }};
+    --ubc-page-text: {{ section.settings.text_color | default: '#14202D' }};
+    --ubc-page-accent: {{ section.settings.accent_color | default: '#E04F33' }};
+    --ubc-page-btn-bg: {{ section.settings.button_bg | default: '#14202D' }};
+    --ubc-page-card-radius: {{ section.settings.card_radius | default: 18 }}px;
+    --ubc-page-btn-radius: {{ section.settings.button_radius | default: 99 }}px;
+  }
+  #shopify-section-{{ section.id }} .ubc-ws-card,
+  #shopify-section-{{ section.id }} .ubc-ws-prose {
+    background: var(--ubc-page-card-bg) !important;
+    border-radius: var(--ubc-page-card-radius) !important;
+    color: var(--ubc-page-text);
+  }
+  #shopify-section-{{ section.id }} .ubc-ws-kicker {
+    color: var(--ubc-page-accent);
+  }
+  #shopify-section-{{ section.id }} .ubc-ws-btn:not(.ubc-ws-btn--ghost) {
+    background: var(--ubc-page-btn-bg);
+    border-color: var(--ubc-page-btn-bg);
+    border-radius: var(--ubc-page-btn-radius);
+  }
+  #shopify-section-{{ section.id }} .ubc-ws-btn--ghost {
+    border-radius: var(--ubc-page-btn-radius);
+    color: var(--ubc-page-text);
+    border-color: var(--ubc-page-text);
+  }
+</style>
 <div class="ubc-ws-page" data-ubc-ws-page="{{ section.settings.page_kind }}">
   {%- case section.settings.page_kind -%}
 
@@ -53,7 +125,39 @@
         {%- endif -%}
       </section>
 
-      {%- if svc_cnt > 0 -%}
+      {%- assign meta_pkgs = shop.metaobjects.ubc_service_package.values | sort: 'sort_order' -%}
+      {%- if meta_pkgs.size > 0 -%}
+      <section class="ubc-ws-section">
+        <h2 class="ubc-ws-h2">Tune-Up Packages</h2>
+        <div class="ubc-ws-grid{% if meta_pkgs.size <= 2 %} ubc-ws-grid--2{% endif %}">
+          {%- for pkg in meta_pkgs -%}
+            <article class="ubc-ws-card{% if pkg.featured.value %} ubc-ws-card--featured{% endif %}">
+              <div>
+                {%- if pkg.kicker.value != blank -%}<span class="ubc-ws-kicker">{{ pkg.kicker.value }}</span>{%- endif -%}
+                <h3>{{ pkg.name.value }}</h3>
+                <div class="ubc-ws-price">{{ pkg.price.value }}</div>
+                {%- if pkg.summary.value != blank -%}<p class="ubc-ws-note">{{ pkg.summary.value }}</p>{%- endif -%}
+                {%- if pkg.checklist.value != blank -%}
+                  {%- assign chk_lines = pkg.checklist.value | newline_to_br | split: '<br />' -%}
+                  <ul class="ubc-ws-list">
+                    {%- for line in chk_lines -%}
+                      {%- assign clean_line = line | strip -%}
+                      {%- if clean_line != blank -%}<li>{{ clean_line }}</li>{%- endif -%}
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </div>
+              <div>
+                {%- if pkg.footnote.value != blank -%}<p class="ubc-ws-note">{{ pkg.footnote.value }}</p>{%- endif -%}
+                {%- if pkg.cta_label.value != blank -%}
+                  <a class="ubc-ws-btn" href="{{ pkg.cta_url.value | default: '/pages/contact-us' }}">{{ pkg.cta_label.value }}</a>
+                {%- endif -%}
+              </div>
+            </article>
+          {%- endfor -%}
+        </div>
+      </section>
+      {%- elsif svc_cnt > 0 -%}
       <section class="ubc-ws-section">
         <h2 class="ubc-ws-h2">Tune-Up Packages</h2>
         <div class="ubc-ws-grid{% if svc_cnt <= 2 %} ubc-ws-grid--2{% endif %}">
@@ -201,6 +305,69 @@
         </div>
       </section>
 
+      {%- assign meta_locs = shop.metaobjects.ubc_store_location.values | sort: 'sort_order' -%}
+      {%- if meta_locs.size > 0 -%}
+      <section class="ubc-ws-section">
+        <div class="ubc-ws-grid ubc-ws-grid--2">
+          {%- for loc in meta_locs -%}
+            {%- assign map_q = loc.address.value | url_encode -%}
+            {%- assign tel_clean = loc.phone.value | remove: '(' | remove: ')' | remove: '-' | remove: ' ' | remove: '.' -%}
+            <article class="ubc-ws-card ubc-ws-card--location">
+              <div class="ubc-ws-loc-body">
+                <div class="ubc-ws-loc-top">
+                  {%- if loc.kicker.value != blank -%}<span class="ubc-ws-kicker">{{ loc.kicker.value }}</span>{%- endif -%}
+                  {%- if loc.badge.value != blank -%}<span class="ubc-ws-badge">{{ loc.badge.value }}</span>{%- endif -%}
+                </div>
+                <h2 class="ubc-ws-h2">{{ loc.name.value }}</h2>
+                <p class="ubc-ws-address">
+                  {{ loc.address.value }}<br>
+                  {%- if loc.phone.value != blank -%}<a href="tel:+1{{ tel_clean }}">{{ loc.phone.value }}</a>{%- endif -%}
+                  {%- if loc.phone.value != blank and loc.email.value != blank -%} &middot; {%- endif -%}
+                  {%- if loc.email.value != blank -%}<a href="mailto:{{ loc.email.value }}">{{ loc.email.value }}</a>{%- endif -%}
+                </p>
+                <div class="ubc-ws-map">
+                  <iframe
+                    title="{{ loc.name.value | escape }} Map"
+                    src="https://maps.google.com/maps?q={{ map_q }}&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    allowfullscreen></iframe>
+                </div>
+                {%- if loc.hours.value != blank -%}
+                  {%- assign hr_lines = loc.hours.value | newline_to_br | split: '<br />' -%}
+                  <div class="ubc-ws-hours">
+                    {%- for hl in hr_lines -%}
+                      {%- assign clean_hl = hl | strip -%}
+                      {%- if clean_hl != blank -%}
+                        {%- assign parts = clean_hl | split: '|' -%}
+                        <div class="ubc-ws-hours-row"><span>{{ parts[0] | strip }}</span><strong>{{ parts[1] | strip }}</strong></div>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  </div>
+                {%- endif -%}
+                {%- if loc.highlights.value != blank -%}
+                  {%- assign hi_lines = loc.highlights.value | newline_to_br | split: '<br />' -%}
+                  <ul class="ubc-ws-list">
+                    {%- for hi in hi_lines -%}
+                      {%- assign clean_hi = hi | strip -%}
+                      {%- if clean_hi != blank -%}<li>{{ clean_hi }}</li>{%- endif -%}
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </div>
+              <div class="ubc-ws-actions">
+                {%- if loc.maps_url.value != blank -%}
+                  <a class="ubc-ws-btn" href="{{ loc.maps_url.value }}" target="_blank" rel="noopener">Get Directions</a>
+                {%- endif -%}
+                {%- if loc.stock_url.value != blank -%}
+                  <a class="ubc-ws-btn ubc-ws-btn--ghost" href="{{ loc.stock_url.value }}">{{ loc.stock_label.value | default: 'Shop In-Store Stock' }}</a>
+                {%- endif -%}
+              </div>
+            </article>
+          {%- endfor -%}
+        </div>
+      </section>
+      {%- else -%}
       <section class="ubc-ws-section">
         <div class="ubc-ws-grid ubc-ws-grid--2">
           {%- if show_tampa -%}
@@ -285,17 +452,32 @@
         </div>
       </section>
 
+      {%- endif -%}
+
     {%- when 'contact' -%}
       <section class="ubc-ws-hero ubc-ws-hero--text-only ubc-ws-hero--compact">
         <div>
           <span class="ubc-ws-kicker">University Bicycle Center</span>
           <h1 class="ubc-ws-h1" data-es="Contáctanos">{{ page.title | default: 'Contact Us' }}</h1>
           <p class="ubc-ws-lead" data-es="¿Dudas sobre tallas, inventario en tienda, taller o financiamiento? Escríbenos o llámanos y nuestro equipo de Tampa Bay te responde.">Have a question about bike sizing, live in-store stock, walk-in repairs, or financing? Reach out and our Tampa Bay team will get right back to you.</p>
+          {%- assign c_locs = shop.metaobjects.ubc_store_location.values | sort: 'sort_order' -%}
           <div class="ubc-ws-pills">
-            <a class="ubc-ws-pill ubc-ws-pill--link" href="mailto:ubc@ubcbike.com">ubc@ubcbike.com</a>
-            <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18139712277">Tampa: (813) 971-2277</a>
-            <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18134598293">Alafia: (813) 459-8293</a>
-            <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18008812472">Toll-Free: (800) 881-2472</a>
+            {%- if c_locs.size > 0 -%}
+              {%- assign first_email = c_locs.first.email.value | default: 'ubc@ubcbike.com' -%}
+              <a class="ubc-ws-pill ubc-ws-pill--link" href="mailto:{{ first_email }}">{{ first_email }}</a>
+              {%- for cl in c_locs -%}
+                {%- if cl.phone.value != blank -%}
+                  {%- assign ctel = cl.phone.value | remove: '(' | remove: ')' | remove: '-' | remove: ' ' | remove: '.' -%}
+                  <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+1{{ ctel }}">{{ cl.name.value | replace: 'University Bicycle Center', 'Tampa' | replace: 'UBC at Alafia River State Park', 'Alafia' }}: {{ cl.phone.value }}</a>
+                {%- endif -%}
+              {%- endfor -%}
+              <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18008812472">Toll-Free: (800) 881-2472</a>
+            {%- else -%}
+              <a class="ubc-ws-pill ubc-ws-pill--link" href="mailto:ubc@ubcbike.com">ubc@ubcbike.com</a>
+              <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18139712277">Tampa: (813) 971-2277</a>
+              <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18134598293">Alafia: (813) 459-8293</a>
+              <a class="ubc-ws-pill ubc-ws-pill--link" href="tel:+18008812472">Toll-Free: (800) 881-2472</a>
+            {%- endif -%}
           </div>
         </div>
       </section>
@@ -397,10 +579,10 @@
         <div>
           <span class="ubc-ws-kicker" data-es="Sin Promesas Vacías">No Empty Promises</span>
           <h1 class="ubc-ws-h1" data-es="¿Qué es la Diferencia UBC?">{{ page.title | default: 'What is the UBC Difference?' }}</h1>
-          <p class="ubc-ws-lead" data-es="En University Bicycle Center vamos más allá de vender bicicletas: respaldamos cada producto con servicio real, honestidad, ajustes gratuitos, garantía de precio más bajo del 110% y asesoría experta en Tampa Bay.">At University Bicycle Center, we go beyond just selling bikes — we stand behind every product with service, honesty, and care. "The UBC Difference" means riding with confidence backed by complimentary tune-ups, fair trade-ins, safety-first guidance, and the best price guarantee in town.</p>
+          <p class="ubc-ws-lead" data-es="En University Bicycle Center vamos más allá de vender bicicletas: respaldamos cada producto con servicio real, honestidad, ajustes gratuitos, garantía de igualación de precio y asesoría experta en Tampa Bay.">At University Bicycle Center, we go beyond just selling bikes — we stand behind every product with service, honesty, and care. "The UBC Difference" means riding with confidence backed by complimentary tune-ups, fair trade-ins, safety-first guidance, and the best price guarantee in town.</p>
           <div class="ubc-ws-pills" style="margin-bottom:2rem;">
             <span class="ubc-ws-pill" data-es="50+ Años en Tampa Bay">50+ Years in Tampa Bay</span>
-            <span class="ubc-ws-pill" data-es="Garantía de Precio 110%">110% Price Guarantee</span>
+            <span class="ubc-ws-pill" data-es="Garantía de Precio">Low Price Guarantee</span>
             <span class="ubc-ws-pill" data-es="Ajustes Gratis de por Vida">Complimentary Adjustments</span>
           </div>
           <div class="ubc-ws-actions">
@@ -415,6 +597,13 @@
         {%- endif -%}
       </section>
 
+      {%- if page.content != blank -%}
+      <section class="ubc-ws-section">
+        <article class="ubc-ws-card ubc-ws-prose">
+          {{ page.content }}
+        </article>
+      </section>
+      {%- else -%}
       {%- if show_warranty -%}
       <section class="ubc-ws-section">
         <div class="ubc-ws-section-head">
@@ -462,8 +651,8 @@
             {%- if show_price_match -%}
             <div>
               <span class="ubc-ws-kicker" data-es="Compra con Confianza">Buy With Confidence</span>
-              <h3 data-es="Garantía de Precio Más Bajo del 110%">110% Low Price Guarantee</h3>
-              <p class="ubc-ws-note" data-es="Garantizamos el precio más bajo en todas las bicis en stock. Si dentro de los 30 días posteriores a tu compra encuentras la misma bici en stock en otro distribuidor local a menor precio, te reembolsamos el 110% de la diferencia.">UBC guarantees the lowest price on all bicycles in stock. If, within thirty (30) days of purchasing a bicycle from UBC, you find the same bicycle in stock at another local dealer at a lower price, we will refund 110% of the price difference.</p>
+              <h3 data-es="Garantía de Precio Bajo — Compra con Confianza">Low Price Guarantee &ndash; Buy with Confidence</h3>
+              <p class="ubc-ws-note" data-es="¡En UBC queremos que obtengas un trato justo! Si encuentras el mismo artículo anunciado más barato en otro competidor, siempre que el artículo idéntico esté en stock en la tienda competidora, haremos todo lo posible por igualar su precio.">UBC wants you to get a fair deal! If you find the same item advertised for less at another competitor, as long as the identical item is in stock at a competing retailer, we'll do our best to match their price.</p>
             </div>
             {%- endif -%}
             {%- if show_safety -%}
@@ -476,6 +665,7 @@
           {%- endif -%}
         </div>
       </section>
+      {%- endif -%}
       {%- endif -%}
 
     {%- when 'reasons' -%}
@@ -499,6 +689,31 @@
 
       <section class="ubc-ws-section">
         <div class="ubc-ws-grid">
+          {%- assign reason_cards = shop.metaobjects.ubc_policy_card.values | where: 'page_group', 'reasons' | sort: 'sort_order' -%}
+          {%- if reason_cards.size > 0 -%}
+            {%- assign r_imgs = '5ReasonstoBuyYourNextBikeatUBC.jpg,5ReasonstoBuyYourNextBikeatUBC3.jpg,5ReasonstoBuyYourNextBikeatUBC4.jpg,5ReasonstoBuyYourNextBikeatUBC5.jpg,5ReasonstoBuyYourNextBikeatUBC6.jpg' | split: ',' -%}
+            {%- for rc in reason_cards -%}
+              {%- assign img_key = r_imgs[forloop.index0] -%}
+              {%- assign r_img = images[img_key] -%}
+              <article class="ubc-ws-card{% if rc.featured.value %} ubc-ws-card--featured{% endif %}">
+                {%- if r_img -%}<div class="ubc-ws-card-media">{{ r_img | image_url: width: 700 | image_tag: loading: 'lazy', alt: rc.title.value }}</div>{%- endif -%}
+                <span class="ubc-ws-num">{{ rc.kicker.value | default: forloop.index }}</span>
+                <h3>{{ rc.title.value }}</h3>
+                <p class="ubc-ws-note">{{ rc.body.value }}</p>
+              </article>
+            {%- endfor -%}
+            <article class="ubc-ws-card ubc-ws-card--featured">
+              <div>
+                <span class="ubc-ws-kicker">The UBC Difference</span>
+                <h3>Your Next Bike Awaits</h3>
+                <p class="ubc-ws-note">Visit us in Tampa or at Alafia River State Park, or browse our live in-stock inventory online.</p>
+              </div>
+              <div class="ubc-ws-actions">
+                <a class="ubc-ws-btn" href="/collections/bikes">Shop All Bikes</a>
+                <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/about-us">The UBC Difference</a>
+              </div>
+            </article>
+          {%- else -%}
           {%- assign r1 = images['5ReasonstoBuyYourNextBikeatUBC.jpg'] -%}
           <article class="ubc-ws-card">
             {%- if r1 -%}<div class="ubc-ws-card-media">{{ r1 | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Personalized Experience' }}</div>{%- endif -%}
@@ -550,6 +765,7 @@
               <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/about-us">The UBC Difference</a>
             </div>
           </article>
+        {%- endif -%}
         </div>
       </section>
 
@@ -601,6 +817,34 @@
             assign fin_count = fin_count | plus: 1
           endif
         -%}
+        {%- assign fin_partners = shop.metaobjects.ubc_financing_partner.values | sort: 'sort_order' -%}
+        {%- if fin_partners.size > 0 -%}
+        <div class="ubc-ws-grid{% if fin_partners.size <= 2 %} ubc-ws-grid--2{% endif %}">
+          {%- for fp in fin_partners -%}
+            {%- assign fp_handle = fp.system.handle -%}
+            {%- assign fp_logo = blank -%}
+            {%- if fp_handle contains 'acima' -%}{%- assign fp_logo = images['ubc-financing-acima-logo.png'] -%}
+            {%- elsif fp_handle contains 'synchrony' -%}{%- assign fp_logo = images['ubc-financing-synchrony-logo.png'] -%}
+            {%- elsif fp_handle contains 'snap' -%}{%- assign fp_logo = images['ubc-financing-snap-logo.png'] -%}
+            {%- endif -%}
+            <article class="ubc-ws-card{% if fp.featured.value %} ubc-ws-card--featured{% endif %}">
+              <div>
+                {%- if fp_logo != blank -%}<div class="ubc-ws-card-media ubc-ws-card-media--logo">{{ fp_logo | image_url: width: 420 | image_tag: loading: 'lazy', alt: fp.name.value }}</div>{%- endif -%}
+                <h3>{{ fp.name.value }}</h3>
+                {%- if fp.summary.value != blank -%}<p class="ubc-ws-note">{{ fp.summary.value }}</p>{%- endif -%}
+              </div>
+              <div class="ubc-ws-actions">
+                {%- if fp.apply_url.value != blank -%}
+                  <a class="ubc-ws-btn" href="{{ fp.apply_url.value }}" target="_blank" rel="noopener">{{ fp.apply_label.value | default: 'Apply Now' }}</a>
+                {%- endif -%}
+                {%- if fp.secondary_url.value != blank -%}
+                  <a class="ubc-ws-btn ubc-ws-btn--ghost" href="{{ fp.secondary_url.value }}" target="_blank" rel="noopener">{{ fp.secondary_label.value | default: 'Learn More' }}</a>
+                {%- endif -%}
+              </div>
+            </article>
+          {%- endfor -%}
+        </div>
+        {%- else -%}
         <div class="ubc-ws-grid{% if fin_count <= 2 %} ubc-ws-grid--2{% endif %}">
           {%- if show_acima -%}
           {%- assign acima_logo = images['ubc-financing-acima-logo.png'] -%}
@@ -641,6 +885,7 @@
           </article>
           {%- endif -%}
         </div>
+      {%- endif -%}
       </section>
 
       <section class="ubc-ws-section">
@@ -690,6 +935,21 @@
       <section class="ubc-ws-section">
         <h2 class="ubc-ws-h2">Types of Bicycles</h2>
         <div class="ubc-ws-grid">
+          {%- assign meta_bt = shop.metaobjects.ubc_bike_type_guide.values | sort: 'sort_order' -%}
+          {%- if meta_bt.size > 0 -%}
+            {%- for bt in meta_bt -%}
+              {%- assign bt_img = blank -%}
+              {%- if bt.image_filename.value != blank -%}{%- assign bt_img = images[bt.image_filename.value] -%}{%- endif -%}
+              <article class="ubc-ws-card">
+                {%- if bt_img != blank -%}<div class="ubc-ws-card-media">{{ bt_img | image_url: width: 700 | image_tag: loading: 'lazy', alt: bt.name.value }}</div>{%- endif -%}
+                <h3>{{ bt.name.value }}</h3>
+                {%- if bt.summary.value != blank -%}<p class="ubc-ws-note">{{ bt.summary.value }}</p>{%- endif -%}
+                {%- if bt.cta_url.value != blank -%}
+                  <a class="ubc-ws-btn ubc-ws-btn--ghost" href="{{ bt.cta_url.value }}">{{ bt.cta_label.value | default: 'Explore' }}</a>
+                {%- endif -%}
+              </article>
+            {%- endfor -%}
+          {%- else -%}
           {%- assign img_road = images['Road_Bikes.jpg'] -%}
           <article class="ubc-ws-card">
             {%- if img_road -%}<div class="ubc-ws-card-media">{{ img_road | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Road Bikes' }}</div>{%- endif -%}
@@ -737,6 +997,7 @@
             <p class="ubc-ws-note">Known for ergonomic comfort and impressive aerodynamic speed.</p>
             <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/contact-us">Ask Our Team</a>
           </article>
+        {%- endif -%}
         </div>
       </section>
 
@@ -749,22 +1010,36 @@
               <tr><th>Rider Height</th><th>Frame Size</th><th>Road / Gravel (cm)</th><th>Mountain / Hybrid</th></tr>
             </thead>
             <tbody>
-              <tr><td>4'10" – 5'2"</td><td>XS</td><td>44 – 49 cm</td><td>13" – 14"</td></tr>
-              <tr><td>5'2" – 5'6"</td><td>S</td><td>50 – 52 cm</td><td>15" – 16"</td></tr>
-              <tr><td>5'6" – 5'10"</td><td>M</td><td>54 cm</td><td>17" – 18"</td></tr>
-              <tr><td>5'10" – 6'1"</td><td>L</td><td>56 – 58 cm</td><td>19" – 20"</td></tr>
-              <tr><td>6'1" – 6'5"+</td><td>XL / XXL</td><td>60 – 61+ cm</td><td>21"+</td></tr>
+              {%- assign meta_sizes = shop.metaobjects.ubc_size_chart_row.values | sort: 'sort_order' -%}
+              {%- if meta_sizes.size > 0 -%}
+                {%- for sz in meta_sizes -%}
+                  <tr><td>{{ sz.rider_height.value }}</td><td>{{ sz.frame_size.value }}</td><td>{{ sz.road_gravel_cm.value }}</td><td>{{ sz.mtb_hybrid.value }}</td></tr>
+                {%- endfor -%}
+              {%- else -%}
+                <tr><td>4'10" – 5'2"</td><td>XS</td><td>44 – 49 cm</td><td>13" – 14"</td></tr>
+                <tr><td>5'2" – 5'6"</td><td>S</td><td>50 – 52 cm</td><td>15" – 16"</td></tr>
+                <tr><td>5'6" – 5'10"</td><td>M</td><td>54 cm</td><td>17" – 18"</td></tr>
+                <tr><td>5'10" – 6'1"</td><td>L</td><td>56 – 58 cm</td><td>19" – 20"</td></tr>
+                <tr><td>6'1" – 6'5"+</td><td>XL / XXL</td><td>60 – 61+ cm</td><td>21"+</td></tr>
+              {%- endif -%}
             </tbody>
           </table>
         </div>
       </section>
 
   {%- endcase -%}
+  {%- if section.settings.show_global_page_content and section.settings.page_kind != 'about' and page.content != blank -%}
+    <section class="ubc-ws-section">
+      <article class="ubc-ws-card ubc-ws-prose">
+        {{ page.content }}
+      </article>
+    </section>
+  {%- endif -%}
 </div>
 
 {% schema %}
 {
-  "name": "UBC Workstand Page",
+  "name": "UBC Page Layout",
   "settings": [
     {
       "type": "select",
@@ -780,6 +1055,71 @@
         { "value": "financing", "label": "Financing" },
         { "value": "guide", "label": "Buyer's Guide" }
       ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_global_page_content",
+      "label": "Show global Shopify Page content (editable in Online Store → Pages)",
+      "default": false,
+      "info": "Content saved in Shopify Pages survives any future theme change. Always enabled on About Us."
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "page_bg",
+      "label": "Page background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "card_bg",
+      "label": "Card background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#14202D"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent / kicker color",
+      "default": "#E04F33"
+    },
+    {
+      "type": "color",
+      "id": "button_bg",
+      "label": "Primary button color",
+      "default": "#14202D"
+    },
+    {
+      "type": "header",
+      "content": "Shapes & Corners"
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "min": 0,
+      "max": 28,
+      "step": 2,
+      "unit": "px",
+      "label": "Card corner radius",
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "button_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Button corner radius",
+      "default": 40
     }
   ]
 }

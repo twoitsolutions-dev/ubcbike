@@ -10080,3 +10080,43 @@ iframe[src*="ikeono"] {
   border-bottom: 1px solid rgba(20, 32, 45, 0.1);
   text-align: left;
 }
+
+/* Workstand-Style Breadcrumbs */
+.ubc-breadcrumbs {
+  margin: 0 0 1.4rem;
+  padding: 0.4rem 0;
+}
+
+.ubc-bc-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1.4;
+  color: #586776;
+}
+
+.ubc-bc-item a {
+  color: #364554;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.ubc-bc-item a:hover {
+  color: #E04F33;
+  text-decoration: underline;
+}
+
+.ubc-bc-item[aria-current="page"] span {
+  color: #14202D;
+  font-weight: 700;
+}
+
+.ubc-bc-sep {
+  color: rgba(20, 32, 45, 0.35);
+  font-weight: 700;
+}

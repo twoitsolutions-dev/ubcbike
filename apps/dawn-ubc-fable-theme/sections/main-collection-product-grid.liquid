@@ -272,6 +272,7 @@
     -%}
     <div class="ubc-col-layout">
     <div class="page-width ubc-dept-wrap" data-ubc-base-col="{{ base_col_url }}">
+      {%- render 'ubc-breadcrumbs' -%}
       <div class="ubc-dept-head">
         <span class="ubc-dept-kicker">
           {%- if active_store_tag == 'ubc-tampa-stock' -%}

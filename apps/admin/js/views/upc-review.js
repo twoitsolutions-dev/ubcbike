@@ -22,14 +22,33 @@ export async function renderUpcReview(ctx) {
   let kind = ctx.query.kind || '';
   let search = '';
   const host = h('div', loading('Loading UPC matches…'));
-  const tabsHost = h('div.row');
+  const countBadge = h('span.small.muted', { style: { whiteSpace: 'nowrap' } }, '');
+
   const searchInput = h('input.input', {
     type: 'search',
-    placeholder: 'Filter by title, UPC, SKU or barcode…',
-    style: { maxWidth: '340px' },
+    placeholder: 'Search by product title, UPC, SKU or barcode…',
+    style: { flex: '1 1 260px', minWidth: '200px' },
     oninput: (e) => {
       search = String(e.target.value || '').trim().toLowerCase();
       renderTable();
+    },
+  });
+
+  const statusSelect = h('select.select', {
+    style: { width: 'auto', minWidth: '170px' },
+    onchange: (e) => {
+      status = e.target.value;
+      kind = '';
+      kindSelect.value = '';
+      draw();
+    },
+  });
+
+  const kindSelect = h('select.select', {
+    style: { width: 'auto', minWidth: '160px' },
+    onchange: (e) => {
+      kind = e.target.value;
+      draw();
     },
   });
 
@@ -43,6 +62,10 @@ export async function renderUpcReview(ctx) {
       })
       : currentRows;
 
+    countBadge.textContent = filtered.length.toLocaleString('en-US')
+      + (filtered.length !== currentRows.length ? ' of ' + currentRows.length.toLocaleString('en-US') : '')
+      + ' shown';
+
     const table = dataTable({
       columns: [
         { key: 'kind', label: 'Type', render: (p) => h('span.badge', { class: KIND[p.kind][1], title: KIND[p.kind][2] }, KIND[p.kind][0]) },
@@ -55,12 +78,12 @@ export async function renderUpcReview(ctx) {
         { key: 'who', label: 'Matched', opt: true, render: (p) => (p.decided_at ? dateTime(p.decided_at) : (p.note || '—')) },
       ],
       rows: filtered,
-      empty: search ? 'No matches match "' + search + '".' : 'No matches in this list.',
+      empty: search ? 'No matches found for "' + search + '".' : 'No matches in this list.',
     });
 
     mount(host,
       card(null, table, { flush: true }),
-      currentRows.length >= 1000 ? h('p.muted', 'Showing the first 1,000 matches. Use the search box to filter.') : null);
+      currentRows.length >= 1000 ? h('p.small.muted', 'Showing the first 1,000 matches. Use the search box to narrow down.') : null);
   };
 
   const draw = async () => {
@@ -71,12 +94,13 @@ export async function renderUpcReview(ctx) {
     if (!ctx.isCurrent()) return;
     const count = (st, k) => data.counts.filter((c) => c.status === st && (!k || c.kind === k)).reduce((n, c) => n + c.n, 0);
 
-    mount(tabsHost,
+    mount(statusSelect,
       [['approved', 'Approved'], ['pending', 'Pending'], ['rejected', 'Rejected'], ['unlinked', 'Unlinked']].map(([k, label]) =>
-        h('button.btn', { class: status === k ? 'primary' : '', onclick: () => { status = k; kind = ''; draw(); } }, label + ' (' + count(k) + ')')),
-      h('span', { style: { width: '12px' } }),
-      [['', 'All'], ['add', 'Matched'], ['repoint', 'Updated'], ['remove', 'Unmatched']].map(([k, label]) =>
-        h('button.btn.sm', { class: kind === k ? 'primary' : '', onclick: () => { kind = k; draw(); } }, label + (k ? ' (' + count(status, k) + ')' : ''))));
+        h('option', { value: k, selected: status === k }, label + ' (' + count(k).toLocaleString('en-US') + ')')));
+
+    mount(kindSelect,
+      [['', 'All types'], ['add', 'Matched'], ['repoint', 'Updated'], ['remove', 'Unmatched']].map(([k, label]) =>
+        h('option', { value: k, selected: kind === k }, label + (k ? ' (' + count(status, k).toLocaleString('en-US') + ')' : ''))));
 
     currentRows = data.proposals || [];
     renderTable();
@@ -85,14 +109,16 @@ export async function renderUpcReview(ctx) {
   draw();
   return h('div.stack',
     pageHead('UPC Matches (Lightspeed ↔ Shopify)',
-      'All Lightspeed ↔ Shopify UPC matches are approved automatically. Use this view to search and filter matched items.',
+      'All Lightspeed ↔ Shopify UPC matches are approved automatically. Use the filters below to search and inspect matched items.',
       canWrite ? [
         h('button.btn', { onclick: async () => {
           try { await ctx.api.runUpcMatch(); toast('Matching started — refresh in about a minute'); } catch (e) { toast(e.message, 'bad'); }
         } }, 'Find matches now'),
       ] : []),
-    h('div.row', { style: { justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' } },
-      tabsHost,
-      searchInput),
+    card(null, h('div.row', { style: { gap: '10px', alignItems: 'center', flexWrap: 'wrap' } },
+      searchInput,
+      statusSelect,
+      kindSelect,
+      countBadge)),
     host);
 }

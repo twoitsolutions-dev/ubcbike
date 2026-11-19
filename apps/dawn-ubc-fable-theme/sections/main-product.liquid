@@ -694,6 +694,13 @@
         </div>
       </div>
 
+      {%- if product.description != blank -%}
+        <div class="ubc-pdp-description rte">
+          <h2 class="ubc-pdp-desc-title">Product Details</h2>
+          {{ product.description }}
+        </div>
+      {%- endif -%}
+
       {% render 'product-media-modal', variant_images: variant_images %}
 
       {% assign popups = section.blocks | where: 'type', 'popup' %}

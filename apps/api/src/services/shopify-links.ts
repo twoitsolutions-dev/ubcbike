@@ -220,23 +220,18 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     [companyId, shop, runStart],
   );
 
-  // Auto-approve NEW matches of products Carlos created by hand in Shopify (not Workstand) whose
-  // barcode is exactly the Lightspeed UPC: he already decided by typing the UPC. Everything from
-  // Workstand, changed matches and removals still wait for him in "UPC Matches".
-  const manualSvids = fresh.filter((p) => p.kind === 'add' && p.manual).map((p) => p.svid);
+  // Auto-approve ALL new & repointed UPC matches so Lightspeed ↔ Shopify links never get stuck waiting in "pending".
+  const autoIds = (await ctx.pool.query<{ id: number }>(
+    `SELECT id FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending' AND kind IN ('add', 'repoint')`,
+    [companyId, shop],
+  )).rows.map((r) => Number(r.id));
   let autoApproved = 0;
-  if (manualSvids.length) {
-    const ids = (await ctx.pool.query<{ id: number }>(
-      `SELECT id FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending' AND kind = 'add' AND shopify_variant_id = ANY($3::text[])`,
-      [companyId, shop, manualSvids],
-    )).rows.map((r) => Number(r.id));
-    if (ids.length) {
-      autoApproved = (await decideUpcProposals(ctx, companyId, null, ids, 'approve')).updated;
-      await ctx.pool.query(
-        `UPDATE upc_link_proposals SET note = 'Auto-approved: product created by hand in Shopify and its barcode is the Lightspeed UPC' WHERE id = ANY($1::bigint[])`,
-        [ids],
-      );
-    }
+  if (autoIds.length) {
+    autoApproved = (await decideUpcProposals(ctx, companyId, null, autoIds, 'approve')).updated;
+    await ctx.pool.query(
+      `UPDATE upc_link_proposals SET note = 'Auto-approved: UPC matched between Lightspeed and Shopify' WHERE id = ANY($1::bigint[])`,
+      [autoIds],
+    );
   }
 
   const count = (k: string) => fresh.filter((p) => p.kind === k).length;

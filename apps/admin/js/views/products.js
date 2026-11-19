@@ -171,11 +171,15 @@ export async function renderProductDetail(ctx) {
   const it = d.item;
   const av = d.availability;
   const m = margin(it.priceCents, it.costCents);
+  const linkedToShopify = !!(it.shopifyVariantId || (d.externalIds || []).some((e) => e.system === 'shopify'));
   return h('div.stack',
     pageHead(it.title, it.brand + ' · ' + it.category + ' · SKU ' + it.sku, [
       h('a.btn', { href: '#/products' }, '← Item Search'),
+      !linkedToShopify && ctx.can('catalog.write') && ctx.api.kind === 'http'
+        ? h('button.btn', { onclick: () => openCreateProduct(ctx, [it.id], () => ctx.navigate('#/products/' + it.id + '?r=' + Date.now())) }, 'Create in Shopify…')
+        : null,
       ctx.can('pricing.write') ? h('button.btn.primary', { onclick: () => openPriceEditor(ctx, it, () => ctx.navigate('#/products/' + it.id + '?r=' + Date.now())) }, 'Change price') : null,
-    ]),
+    ].filter(Boolean)),
     h('div.grid.grid-2',
       card('Item Identity & Pricing', h('dl.props',
         h('dt', 'System SKU (Lightspeed System ID)'), h('dd', h('code', it.sku)),

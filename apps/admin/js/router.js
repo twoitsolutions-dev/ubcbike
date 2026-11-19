@@ -1,7 +1,7 @@
 import { renderDashboard } from './views/dashboard.js?v=46';
 import { renderReports } from './views/reports.js?v=47';
 import { renderPipeline } from './views/pipeline.js?v=40';
-import { renderProducts, renderProductDetail } from './views/products.js?v=43';
+import { renderProducts, renderProductDetail } from './views/products.js?v=52';
 import { renderInventory } from './views/inventory.js?v=40';
 import { renderSuppliers } from './views/suppliers.js?v=40';
 import { renderPricing } from './views/pricing.js?v=40';

@@ -398,9 +398,10 @@ if (typeof L === "undefined") { setTimeout(initUbcAlafiaMap, 120); return; }
     // Key Interactive Park Pins (matching Carlos's official Alafia map!)
     const POIS = [
       {
-        coords: [27.7742, -82.1476],
+        coords: [27.78477, -82.13726],
         cls: 'shop',
         label: '&#128690; UBC Bike Shop',
+        anchor: [10, 14],
         popup:
           '<div style="min-width:215px;">' +
           '<strong style="font-size:14px;color:#14202D;">UBC at Alafia River State Park</strong><br>' +
@@ -410,42 +411,52 @@ if (typeof L === "undefined") { setTimeout(initUbcAlafiaMap, 120); return; }
           '<b>Mon&ndash;Tue:</b> Closed / Appointment<br>' +
           'Phone: <a href="tel:+18134598293">(813) 459-8293</a>' +
           '</div>' +
-          '<a href="https://ubcbike.myshopify.com/pages/bike-rentals" target="_blank" style="display:inline-block;background:#E04F33;color:#fff;font-weight:700;font-size:12px;padding:6px 12px;border-radius:999px;text-decoration:none;">Book Bike Rental &rarr;</a>' +
+          '<a href="/pages/bike-rentals" style="display:inline-block;background:#E04F33;color:#fff;font-weight:700;font-size:12px;padding:6px 12px;border-radius:999px;text-decoration:none;">Book Bike Rental &rarr;</a>' +
           '</div>',
       },
       {
-        coords: [27.7695, -82.1508],
+        coords: [27.78519, -82.13821],
         cls: 'parking',
         label: '&#127359; Trailhead Parking',
+        anchor: [130, 22],
         popup:
           '<strong>Main MTB Trailhead &amp; Parking</strong><br>' +
-          '<span style="font-size:12px;color:#475569;">Parking, restrooms, water station &amp; bike wash.<br>Direct start for <b>Sand Pine</b> (Easy), <b>North Creek</b> (Blue) &amp; <b>Rollercoaster</b> (Blue).</span>',
+          '<span style="font-size:12px;color:#475569;">Main day-use parking lot, restrooms, water fountain &amp; bike wash.<br>Direct start for <b>Turtle Two Track</b>, <b>Sand Pine</b>, <b>North Creek</b> &amp; <b>Rollercoaster</b>.</span>',
       },
       {
-        coords: [27.7642, -82.1620],
+        coords: [27.78011, -82.14403],
         cls: 'entrance',
         label: '&#128679; Park Entrance',
+        anchor: [62, 15],
         popup:
-          '<strong>Alafia River State Park Entrance (CR-39)</strong><br>' +
-          '<span style="font-size:12px;color:#475569;">Main entrance off S County Rd 39.<br>Ranger Station: <a href="tel:+18136725320">(813) 672-5320</a><br>State Park entry fee applies at gate.</span>',
+          '<strong>Alafia River State Park Entrance &amp; Toll Booth (CR-39)</strong><br>' +
+          '<span style="font-size:12px;color:#475569;">Main entrance off S County Rd 39 (14326 S CR 39).<br>Ranger Station: <a href="tel:+18136725320">(813) 672-5320</a><br>State Park entry fee applies at gate.</span>',
       },
       {
-        coords: [27.7585, -82.1545],
+        coords: [27.77834, -82.13891],
         cls: 'camp',
         label: '&#9978; Campground',
+        anchor: [58, 15],
         popup:
-          '<strong>Alafia River Campground</strong><br>' +
-          '<span style="font-size:12px;color:#475569;">Direct ride-in trail access via <b>Campground Connector</b> (0.70 mi, Easy).</span>',
+          '<strong>Alafia River State Park Campground</strong><br>' +
+          '<span style="font-size:12px;color:#475569;">Restrooms, picnic area &amp; direct ride-in trail access via <b>Campground Connector</b> (0.70 mi, Easy).</span>',
       },
     ];
 
     const poiGroup = L.featureGroup().addTo(map);
     POIS.forEach((p) => {
+      L.circleMarker(p.coords, {
+        radius: 5,
+        color: '#FFFFFF',
+        weight: 2,
+        fillColor: p.cls === 'shop' ? '#E04F33' : p.cls === 'parking' ? '#2563EB' : p.cls === 'camp' ? '#15803D' : '#14202D',
+        fillOpacity: 1,
+      }).addTo(poiGroup);
       const icon = L.divIcon({
         className: '',
         html: '<div class="poi-pin ' + p.cls + '">' + p.label + '</div>',
         iconSize: null,
-        iconAnchor: [58, 15],
+        iconAnchor: p.anchor || [58, 15],
       });
       L.marker(p.coords, { icon }).addTo(poiGroup).bindPopup(p.popup);
     });

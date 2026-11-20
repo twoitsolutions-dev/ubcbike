@@ -31,32 +31,56 @@
   <section class="fb-sec rent-sec" id="rentals">
     <div class="rent-ghost" aria-hidden="true">ALAFIA</div>
     <div class="fb-wrap rent-grid">
-      <div class="rent-stage reveal" style="padding:0;">
-        <div style="position:relative;width:100%;border-radius:22px;overflow:hidden;border:1.5px solid rgba(20,32,45,0.12);box-shadow:0 18px 36px -22px rgba(20,32,45,0.35);background:#14202D;">
+      <div class="rent-stage reveal" style="padding:0;display:flex;flex-direction:column;gap:14px;width:100%;align-self:stretch;justify-content:center;">
+        <div style="position:relative;width:100%;border-radius:22px;overflow:hidden;border:1.5px solid rgba(20,32,45,0.12);box-shadow:0 18px 36px -22px rgba(20,32,45,0.32);background:#14202D;">
           {%- if section.settings.rental_bike_image != blank -%}
             {{
               section.settings.rental_bike_image
               | image_url: width: 1080
               | image_tag:
                 width: 960,
-                height: 600,
+                height: 680,
                 loading: 'lazy',
-                style: 'width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;display:block;',
-                alt: 'Mountain biker riding singletrack trails at Alafia River State Park'
+                style: 'width:100%;height:auto;aspect-ratio:16/11;object-fit:cover;display:block;',
+                alt: 'Mountain biker riding the iconic wooden bowl at Alafia River State Park'
             }}
           {%- else -%}
             <img
               src="{{ 'alafia-mtb-action.jpg' | asset_url }}"
               width="960"
-              height="600"
-              alt="Mountain biker carving sunlit Florida singletrack at Alafia River State Park"
+              height="680"
+              alt="Mountain biker carving the iconic wooden bowl at Alafia River State Park"
               loading="lazy"
-              style="width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;display:block;"
+              style="width:100%;height:auto;aspect-ratio:16/11;object-fit:cover;display:block;"
             >
           {%- endif -%}
-          <div style="position:absolute;left:16px;right:16px;bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(20,32,45,0.88);backdrop-filter:blur(6px);color:#FEFDF3;padding:10px 14px;border-radius:14px;border:1px solid rgba(254,253,243,0.14);">
-            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#CCBB8D;">Peak Riding Season &middot; Alafia Trailhead</span>
-            <span style="font-size:12.5px;font-weight:600;color:#FEFDF3;">MTB &amp; e-MTB Rentals &middot; 20+ Miles of Trails</span>
+          <span style="position:absolute;top:14px;left:14px;background:#E04F33;color:#FFFFFF;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:0.09em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 6px 16px rgba(20,32,45,0.28);">Alafia River State Park &middot; Iconic Wooden Bowl</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.15fr 0.85fr;gap:14px;width:100%;">
+          <a href="/pages/alafia-interactive-map" style="position:relative;border-radius:18px;overflow:hidden;border:1.5px solid rgba(20,32,45,0.12);display:block;min-height:152px;text-decoration:none;background:#14202D;">
+            <img
+              src="{{ 'alafia-trails-hero.jpg' | asset_url }}"
+              width="520"
+              height="320"
+              alt="Alafia singletrack wooden boardwalk and concrete grid trail"
+              loading="lazy"
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+            >
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,32,45,0.05) 35%,rgba(20,32,45,0.84) 100%);display:flex;align-items:flex-end;padding:12px 14px;">
+              <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:#FEFDF3;">28 Official Trails &middot; Live GPS &rarr;</span>
+            </div>
+          </a>
+
+          <div style="background:#14202D;color:#FEFDF3;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;border:1.5px solid #14202D;">
+            <div>
+              <span style="display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:0.09em;text-transform:uppercase;color:#CCBB8D;margin-bottom:4px;">Peak Riding Season</span>
+              <strong style="display:block;font-family:'Anton',sans-serif;font-weight:400;font-size:24px;line-height:1.05;letter-spacing:0.01em;color:#FEFDF3;text-transform:uppercase;">MTB &amp; E-MTB</strong>
+            </div>
+            <div style="font-size:12.5px;line-height:1.4;color:rgba(254,253,243,0.84);">
+              Tuned full-suspension fleet, helmet included &amp; trailside mechanic support.
+            </div>
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:0.07em;text-transform:uppercase;color:#CCBB8D;">Wed&ndash;Sun &middot; No Rack Needed</span>
           </div>
         </div>
       </div>

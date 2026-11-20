@@ -4,22 +4,7 @@
 {%- endcomment -%}
 {%- liquid
   assign edition = settings.ubc_edition | default: 'classic'
-  assign p_giant = all_products['contend-sl-0']
-  assign p_jupiter = all_products['jupiter-defiant-e-bike']
-  assign p_tarmac = all_products['specialized-tarmac-sl7-sport-56cm']
-  assign p_fox = all_products['proframe-rs']
-  if p_fox == blank
-    assign p_fox = all_products['youth-mainframe-helmet']
-  endif
-  assign p_shimano = all_products['sh-rc302-cycling-shoes']
-  assign p_garmin = all_products['edge-1040']
-
-  assign tarmac_price = 2799.99
-  assign tarmac_url = routes.collections_url | append: '/bikes'
-  if p_tarmac != blank
-    assign tarmac_price = p_tarmac.price | divided_by: 100.0
-    assign tarmac_url = p_tarmac.url
-  endif
+  assign hero_handles = 'contend-sl-0,jupiter-defiant-e-bike,proframe-rs,tarmac-sl8-comp,sh-rc502-bicycle-shoes,turbo-levo-r-expert,talon-1' | split: ','
 -%}
 
 <div class="fb-scope">
@@ -153,71 +138,35 @@
 
     <script type="application/json" id="FableHeroData">
       [
-        {
-          "b": "Cannondale",
-          "g": "CANNONDALE",
-          "c": "#ccbb8d",
-          "n": "Synapse Neo Electric Road",
-          "p": 3799.99,
-          "u": {{ routes.collections_url | append: '/electric-bikes' | json }},
-          "img": {{ 'ebike-synapse-neo.png' | asset_url | json }},
-          "availability": "in_stock",
-          "cta": ["Shop Electric Bikes", "Ver Bicis Eléctricas"],
-          "cat": ["Electric Road · Cannondale", "Ruta Eléctrica · Cannondale"],
-          "d": ["Lightweight Bosch pedal-assist road endurance built, fitted and torque-checked by UBC mechanics in Tampa.", "Bicicleta eléctrica de ruta con asistencia Bosch, armada y ajustada en nuestro taller de Tampa."]
-        },
-        {
-          "b": "Giro",
-          "g": "HELMETS",
-          "c": "#e6d8b4",
-          "n": "Agilis MIPS Road & Trail Helmet",
-          "p": 119.99,
-          "u": {{ routes.collections_url | append: '/helmets' | json }},
-          "img": {{ 'fable-gear-agilis.png' | asset_url | json }},
-          "availability": "in_stock",
-          "cta": ["Shop Helmets", "Ver Cascos"],
-          "cat": ["Helmets & Safety · Giro", "Cascos y Seguridad · Giro"],
-          "d": ["Deep coverage, Roc Loc 5.5 fit and MIPS protection engineered for Florida heat — in stock in Tampa & online.", "Cobertura profunda, ajuste Roc Loc 5.5 y protección MIPS para el calor de Florida — en stock en Tampa."]
-        },
-        {
-          "b": "Electra",
-          "g": "CRUISER",
-          "c": "#d9cfb2",
-          "n": "Townie Go! Electric Cruiser",
-          "p": 1999.99,
-          "u": {{ routes.collections_url | append: '/electric-bikes' | json }},
-          "img": {{ 'ebike-townie-go.png' | asset_url | json }},
-          "availability": "in_stock",
-          "cta": ["Shop E-Bikes & Cruisers", "Ver E-Bikes y Urbanas"],
-          "cat": ["Comfort & E-Cruisers · Electra", "Urbanas y Eléctricas · Electra"],
-          "d": ["Flat Foot Technology comfort with smooth pedal assist — effortless riding on Tampa Bay trails and neighborhoods.", "Comodidad Flat Foot Technology con asistencia suave al pedaleo para paseos por Tampa Bay."]
-        },
-        {
-          "b": "Specialized",
-          "g": "TARMAC",
-          "c": "#ccbb8d",
-          "n": {% if p_tarmac != blank %}{{ p_tarmac.title | json }}{% else %}"Tarmac SL7 Sport — 56cm"{% endif %},
-          "p": {{ tarmac_price | json }},
-          "u": {{ tarmac_url | json }},
-          "img": {{ 'fable-bike-tarmac.png' | asset_url | json }},
-          "availability": "in_stock",
-          "cta": ["View Road Bike", "Ver Bici de Ruta"],
-          "cat": ["Carbon Race · Specialized", "Ruta Carbono · Specialized"],
-          "d": ["Light, aerodynamic FACT carbon frameset, built, fitted and torque-checked by UBC mechanics in Tampa.", "Cuadro ligero y aerodinámico de carbono FACT, armado y ajustado a tu medida en nuestro taller de Tampa."]
-        },
-        {
-          "b": "SRAM",
-          "g": "PARTS",
-          "c": "#f2bfb3",
-          "n": "SRAM Drivetrain & Pro Parts",
-          "p": 139.99,
-          "u": {{ routes.collections_url | append: '/parts-components' | json }},
-          "img": {{ 'cat-sram-s200.png' | asset_url | json }},
-          "availability": "in_stock",
-          "cta": ["Shop Parts & Components", "Ver Piezas y Componentes"],
-          "cat": ["Components & Upgrades · SRAM", "Componentes y Mejoras · SRAM"],
-          "d": ["Genuine drivetrains, cassettes, chains, brakes, and upgrades installed by UBC mechanics in Tampa.", "Transmisiones, cassettes, cadenas, frenos y mejoras originales instalados en nuestro taller de Tampa."]
-        }
+        {%- assign hero_out = 0 -%}
+        {%- assign hero_colors = '#ccbb8d,#d9cfb2,#e6d8b4,#ccbb8d,#f2bfb3' | split: ',' -%}
+        {%- for hh in hero_handles -%}
+          {%- if hero_out >= 5 -%}{%- break -%}{%- endif -%}
+          {%- assign hp = all_products[hh] -%}
+          {%- if hp != blank and hp.available and hp.featured_image != blank and hp.tags contains 'ubc-tampa-stock' -%}
+            {%- if hero_out > 0 -%},{%- endif -%}
+            {%- assign hc = hero_colors[hero_out] | default: '#ccbb8d' -%}
+            {%- assign hv = hp.vendor | default: 'UBC' -%}
+            {%- assign hg = hv | upcase | split: ' ' | first -%}
+            {%- assign hdesc = hp.description | strip_html | strip | truncate: 135 -%}
+            {%- if hdesc == blank -%}{%- assign hdesc = 'In stock today at University Bicycle Center Tampa — built, fitted and ready to ride.' -%}{%- endif -%}
+            {
+              "b": {{ hv | json }},
+              "g": {{ hg | json }},
+              "c": {{ hc | json }},
+              "n": {{ hp.title | json }},
+              "p": {{ hp.price | divided_by: 100.0 | json }},
+              "compareAt": {{ hp.compare_at_price | default: 0 | divided_by: 100.0 | json }},
+              "u": {{ hp.url | json }},
+              "img": {{ hp.featured_image | image_url: width: 1200 | json }},
+              "availability": "in_stock",
+              "cta": ["View Product", "Ver Producto"],
+              "cat": [{{ hv | append: ' · In Stock at UBC Tampa' | json }}, {{ hv | append: ' · En Stock en UBC Tampa' | json }}],
+              "d": [{{ hdesc | json }}, {{ hdesc | json }}]
+            }
+            {%- assign hero_out = hero_out | plus: 1 -%}
+          {%- endif -%}
+        {%- endfor -%}
       ]
     </script>
   </section>

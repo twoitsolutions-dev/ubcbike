@@ -108,7 +108,7 @@ function renderShell() {
       h('button.btn.sm', { onclick: logout }, 'Sign out'),
       h('div.small', { style: { marginTop: '10px', opacity: '0.78', fontSize: '11px', lineHeight: '1.4' } },
         'Built by ',
-        h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
+        h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC')))));
   const scrim = h('div.scrim', { onclick: closeNav });
   const crumbs = h('div.crumbs#crumbs');
   const topbar = h('header.topbar',
@@ -208,7 +208,7 @@ function renderLogin(message) {
       body)),
     h('div.small', { style: { textAlign: 'center', marginTop: '14px', color: 'rgba(255,255,255,0.75)' } },
       'Built by ',
-      h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
+      h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC')))));
 }
 
 async function afterLogin() {

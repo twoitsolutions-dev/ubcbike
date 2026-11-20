@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "main": {
+      "type": "ubc-alafia-interactive-map",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

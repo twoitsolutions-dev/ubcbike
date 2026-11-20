@@ -259,52 +259,31 @@
     right: 0;
     height: 5px;
   }
-  .ubc-fin-card--sync {
-    background: #14202D;
-    color: #FEFDF3;
-    border-color: #14202D;
-  }
-  .ubc-fin-card--sync::before { background: linear-gradient(90deg, #CCBB8D, #E04F33); }
-  .ubc-fin-card--acima::before { background: #E04F33; }
+  .ubc-fin-card--sync::before { background: #F4B400; }
+  .ubc-fin-card--acima::before { background: #0062B8; }
   .ubc-fin-card--snap::before { background: #1F6E43; }
-  .ubc-fin-card--trade {
-    background: #FEFDF3;
-    border-color: rgba(204, 187, 141, 0.85);
-  }
-  .ubc-fin-card--trade::before { background: #CCBB8D; }
+  .ubc-fin-card--trade::before { background: #0072CE; }
 
   .ubc-fin-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    min-height: 44px;
+    gap: 10px;
+    min-height: 40px;
   }
-  .ubc-fin-logo-box {
-    background: #FFFFFF;
-    border-radius: 10px;
-    padding: 6px 10px;
-    height: 38px;
+  .ubc-fin-logo {
+    height: 30px;
+    max-width: 140px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(20, 32, 45, 0.08);
-    max-width: 132px;
   }
-  .ubc-fin-logo-box img {
-    max-height: 24px;
-    max-width: 112px;
+  .ubc-fin-logo img {
+    max-height: 28px;
+    max-width: 136px;
     width: auto;
     height: auto;
     object-fit: contain;
     display: block;
-  }
-  .ubc-fin-brand-txt {
-    font-family: var(--ubc-font-display, 'Anton', sans-serif);
-    font-size: 16px;
-    letter-spacing: 0.03em;
-    color: #14202D;
-    text-transform: uppercase;
   }
   .ubc-fin-badge {
     font-family: 'Barlow Condensed', sans-serif;
@@ -312,14 +291,14 @@
     font-size: 11.5px;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    padding: 4px 9px;
+    padding: 4px 10px;
     border-radius: 999px;
     white-space: nowrap;
   }
-  .ubc-fin-card--sync .ubc-fin-badge { background: #CCBB8D; color: #14202D; }
-  .ubc-fin-card--acima .ubc-fin-badge { background: rgba(224, 79, 51, 0.12); color: #C73E23; }
+  .ubc-fin-card--sync .ubc-fin-badge { background: rgba(244, 180, 0, 0.16); color: #8A6200; }
+  .ubc-fin-card--acima .ubc-fin-badge { background: rgba(0, 98, 184, 0.11); color: #00529B; }
   .ubc-fin-card--snap .ubc-fin-badge { background: rgba(31, 110, 67, 0.12); color: #1F6E43; }
-  .ubc-fin-card--trade .ubc-fin-badge { background: #E04F33; color: #FFFFFF; }
+  .ubc-fin-card--trade .ubc-fin-badge { background: rgba(0, 114, 206, 0.11); color: #005AA3; }
 
   .ubc-fin-highlight {
     font-family: var(--ubc-font-display, 'Anton', sans-serif);
@@ -327,12 +306,9 @@
     font-size: 28px;
     line-height: 1.04;
     text-transform: uppercase;
+    color: #14202D;
     margin: 0;
   }
-  .ubc-fin-card--sync .ubc-fin-highlight { color: #CCBB8D; }
-  .ubc-fin-card--acima .ubc-fin-highlight { color: #14202D; }
-  .ubc-fin-card--snap .ubc-fin-highlight { color: #14202D; }
-  .ubc-fin-card--trade .ubc-fin-highlight { color: #14202D; }
 
   .ubc-fin-sub {
     font-family: 'Barlow Condensed', sans-serif;
@@ -342,10 +318,10 @@
     text-transform: uppercase;
     margin: -8px 0 0;
   }
-  .ubc-fin-card--sync .ubc-fin-sub { color: #FEFDF3; }
-  .ubc-fin-card--acima .ubc-fin-sub { color: #E04F33; }
+  .ubc-fin-card--sync .ubc-fin-sub { color: #9A6B00; }
+  .ubc-fin-card--acima .ubc-fin-sub { color: #0062B8; }
   .ubc-fin-card--snap .ubc-fin-sub { color: #1F6E43; }
-  .ubc-fin-card--trade .ubc-fin-sub { color: #8A7548; }
+  .ubc-fin-card--trade .ubc-fin-sub { color: #0072CE; }
 
   .ubc-fin-copy {
     margin: 0;
@@ -354,7 +330,6 @@
     color: #4A5A6A;
     flex: 1 1 auto;
   }
-  .ubc-fin-card--sync .ubc-fin-copy { color: rgba(254, 253, 243, 0.84); }
 
   .ubc-fin-btn {
     display: inline-flex;
@@ -368,16 +343,14 @@
     letter-spacing: 0.07em;
     text-transform: uppercase;
     text-decoration: none;
+    background: #14202D !important;
+    color: #FEFDF3 !important;
     transition: background-color 0.16s ease, transform 0.16s ease;
   }
-  .ubc-fin-card--sync .ubc-fin-btn { background: #E04F33 !important; color: #FFFFFF !important; }
-  .ubc-fin-card--sync .ubc-fin-btn:hover { background: #C73E23 !important; }
-  .ubc-fin-card--acima .ubc-fin-btn { background: #14202D !important; color: #FEFDF3 !important; }
-  .ubc-fin-card--acima .ubc-fin-btn:hover { background: #E04F33 !important; }
-  .ubc-fin-card--snap .ubc-fin-btn { background: #14202D !important; color: #FEFDF3 !important; }
-  .ubc-fin-card--snap .ubc-fin-btn:hover { background: #1F6E43 !important; }
-  .ubc-fin-card--trade .ubc-fin-btn { background: #14202D !important; color: #FEFDF3 !important; }
-  .ubc-fin-card--trade .ubc-fin-btn:hover { background: #213549 !important; }
+  .ubc-fin-card--sync .ubc-fin-btn:hover { background: #D99E00 !important; color: #14202D !important; }
+  .ubc-fin-card--acima .ubc-fin-btn:hover { background: #0062B8 !important; color: #FFFFFF !important; }
+  .ubc-fin-card--snap .ubc-fin-btn:hover { background: #1F6E43 !important; color: #FFFFFF !important; }
+  .ubc-fin-card--trade .ubc-fin-btn:hover { background: #0072CE !important; color: #FFFFFF !important; }
 
   @media (max-width: 1080px) {
     .ubc-fin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -469,14 +442,14 @@
       </div>
 
       <div class="ubc-fin-grid">
-        <!-- Card 1: Synchrony (Featured Navy) -->
+        <!-- Card 1: Synchrony (Yellow Brand Bar) -->
         <article class="ubc-fin-card ubc-fin-card--sync">
           <div class="ubc-fin-top">
-            <div class="ubc-fin-logo-box">
+            <div class="ubc-fin-logo">
               {%- if sync_logo != blank -%}
-                {{ sync_logo | image_url: width: 240 | image_tag: alt: 'Synchrony Freedom to Ride', loading: 'lazy' }}
+                {{ sync_logo | image_url: width: 260 | image_tag: alt: 'Synchrony Freedom to Ride', loading: 'lazy' }}
               {%- else -%}
-                <span class="ubc-fin-brand-txt">Synchrony</span>
+                <strong style="font-size:17px;color:#14202D;">synchrony</strong>
               {%- endif -%}
             </div>
             <span class="ubc-fin-badge">Most Popular</span>
@@ -492,14 +465,14 @@
           </a>
         </article>
 
-        <!-- Card 2: Acima (Coral Accent) -->
+        <!-- Card 2: Acima (Acima Blue Brand Bar) -->
         <article class="ubc-fin-card ubc-fin-card--acima">
           <div class="ubc-fin-top">
-            <div class="ubc-fin-logo-box">
+            <div class="ubc-fin-logo">
               {%- if acima_logo != blank -%}
-                {{ acima_logo | image_url: width: 240 | image_tag: alt: 'Acima Leasing', loading: 'lazy' }}
+                {{ acima_logo | image_url: width: 260 | image_tag: alt: 'Acima Leasing', loading: 'lazy' }}
               {%- else -%}
-                <span class="ubc-fin-brand-txt">Acima</span>
+                <strong style="font-size:17px;color:#0062B8;">acima</strong>
               {%- endif -%}
             </div>
             <span class="ubc-fin-badge">No Credit Needed</span>
@@ -515,14 +488,14 @@
           </a>
         </article>
 
-        <!-- Card 3: Snap Finance (Emerald Accent) -->
+        <!-- Card 3: Snap Finance (Snap Green Brand Bar) -->
         <article class="ubc-fin-card ubc-fin-card--snap">
           <div class="ubc-fin-top">
-            <div class="ubc-fin-logo-box">
+            <div class="ubc-fin-logo">
               {%- if snap_logo != blank -%}
-                {{ snap_logo | image_url: width: 240 | image_tag: alt: 'Snap Finance', loading: 'lazy' }}
+                {{ snap_logo | image_url: width: 260 | image_tag: alt: 'Snap Finance', loading: 'lazy' }}
               {%- else -%}
-                <span class="ubc-fin-brand-txt">Snap Finance</span>
+                <strong style="font-size:17px;color:#1F6E43;">snap finance</strong>
               {%- endif -%}
             </div>
             <span class="ubc-fin-badge">Instant Decision</span>
@@ -538,11 +511,16 @@
           </a>
         </article>
 
-        <!-- Card 4: Bicycle Blue Book Trade-In (Warm Gold Accent) -->
+        <!-- Card 4: Bicycle Blue Book (Official Blue Wordmark, No Box) -->
         <article class="ubc-fin-card ubc-fin-card--trade">
           <div class="ubc-fin-top">
-            <div class="ubc-fin-logo-box">
-              <span class="ubc-fin-brand-txt">Bicycle Blue Book</span>
+            <div class="ubc-fin-logo" aria-label="BicycleBlueBook">
+              <svg viewBox="0 0 185 28" width="145" height="22" role="img" aria-label="BicycleBlueBook">
+                <circle cx="11" cy="14" r="9" fill="none" stroke="#0072CE" stroke-width="2.4"/>
+                <circle cx="11" cy="14" r="2.2" fill="#0072CE"/>
+                <path d="M11 5v18M2 14h18M4.6 7.6l12.8 12.8M17.4 7.6L4.6 20.4" stroke="#0072CE" stroke-width="1.1"/>
+                <text x="26" y="19" font-family="Barlow, -apple-system, sans-serif" font-size="14.5" font-weight="800" fill="#14202D">Bicycle<tspan fill="#0072CE">BlueBook</tspan></text>
+              </svg>
             </div>
             <span class="ubc-fin-badge">Instant Credit</span>
           </div>

@@ -38,10 +38,15 @@
 
   var edition = (document.body && document.body.getAttribute('data-ubc-edition')) || 'classic';
   var htmlLang = ((document.documentElement && document.documentElement.getAttribute('lang')) || '').toLowerCase();
-  var lang = htmlLang.indexOf('es') === 0 ? 'es' : 'en';
+  var ubcLoc = window.__ubcLocale || {};
+  var nativeIsEs = htmlLang.indexOf('es') === 0 || (ubcLoc.current || '').toLowerCase().indexOf('es') === 0;
+  var lang = nativeIsEs ? 'es' : 'en';
   try {
     var savedLang = localStorage.getItem('ubc-lang');
-    if (htmlLang.indexOf('es') === 0) {
+    if (ubcLoc.hasEs) {
+      lang = nativeIsEs ? 'es' : 'en';
+      localStorage.setItem('ubc-lang', lang);
+    } else if (nativeIsEs) {
       lang = 'es';
     } else if (savedLang === 'es' || savedLang === 'en') {
       lang = savedLang;
@@ -2491,7 +2496,24 @@
 
   qsa('.fb-lang button').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      applyLanguage(btn.getAttribute('data-lang') || 'en');
+      var target = btn.getAttribute('data-lang') === 'es' ? 'es' : 'en';
+      try { localStorage.setItem('ubc-lang', target); } catch (e) {}
+      var loc = window.__ubcLocale;
+      if (loc && loc.hasEs) {
+        var curIsEs = (loc.current || '').toLowerCase().indexOf('es') === 0;
+        var p = window.location.pathname || '/';
+        if (target === 'es' && !curIsEs) {
+          var esPath = p === '/' ? '/es' : (p === '/es' || p.indexOf('/es/') === 0 ? p : '/es' + p);
+          window.location.href = esPath + window.location.search + window.location.hash;
+          return;
+        }
+        if (target === 'en' && curIsEs) {
+          var enPath = (p === '/es' || p === '/es/') ? '/' : p.replace(/^\/es(?=\/)/, '');
+          window.location.href = (enPath || '/') + window.location.search + window.location.hash;
+          return;
+        }
+      }
+      applyLanguage(target);
     });
   });
 

@@ -3,6 +3,11 @@
   Loads the on-demand Instagram Reel modal and UBC storefront controller.
   (Edition switcher & placeholder Ikeono widget removed.)
 {%- endcomment -%}
+{%- assign _ubc_has_es = false -%}
+{%- for _l in localization.available_languages -%}
+  {%- if _l.iso_code == 'es' -%}{%- assign _ubc_has_es = true -%}{%- endif -%}
+{%- endfor -%}
+<script>window.__ubcLocale={current:{{ localization.language.iso_code | json }},hasEs:{{ _ubc_has_es | json }},rootUrl:{{ routes.root_url | json }}};</script>
 {%- render 'ubc-reel-modal' -%}
 {%- render 'ubc-seasonal-popup' -%}
 <script src="{{ 'ubc-fable.js' | asset_url }}" defer="defer"></script>

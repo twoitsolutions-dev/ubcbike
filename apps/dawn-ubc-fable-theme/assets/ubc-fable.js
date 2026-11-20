@@ -827,9 +827,10 @@
 
     var canQuickAdd = b.variantId && !b.pickupOnly;
     var viewLabel = b.isGear ? t.shopGear : t.viewBike;
+    var cardHref = b.u || '/collections/all';
     var ctaHtml = canQuickAdd
       ? '<button type="button" class="pcard-cta is-add" data-quick-vid="' + esc(b.variantId) + '" data-quick-name="' + esc(b.n) + '"><span>' + esc(t.addBag) + '</span></button>'
-      : '<span class="pcard-cta"><span>' + esc(viewLabel) + '</span> <svg><use href="#i-arrow"/></svg></span>';
+      : '<a class="pcard-cta" href="' + esc(cardHref) + '"><span>' + esc(viewLabel) + '</span> <svg><use href="#i-arrow"/></svg></a>';
 
     var pricing = resolveItemPricing(b);
     var activePrice = pricing.active;
@@ -840,14 +841,14 @@
 
     return '<article class="' + cls + '">' +
       '<div class="pcard-tags">' + tags.join('') + '</div>' +
-      '<div class="pcard-img"><img src="' + esc(b.img) + '" alt="' + esc(b.b + ' ' + b.n) + '" loading="lazy"></div>' +
+      '<a class="pcard-img" href="' + esc(cardHref) + '"><img src="' + esc(b.img) + '" alt="' + esc(b.b + ' ' + b.n) + '" loading="lazy"></a>' +
       '<span class="pcard-vendor">' + esc(b.b) + '</span>' +
-      '<h3 class="pcard-title">' + esc(b.n) + '</h3>' +
+      '<h3 class="pcard-title"><a href="' + esc(cardHref) + '" style="color:inherit;text-decoration:none;">' + esc(b.n) + '</a></h3>' +
       '<div class="pcard-foot">' +
         '<span class="pcard-price">' + money(activePrice) + cmpHtml + '</span>' +
         ctaHtml +
       '</div>' +
-      '<a class="cover" href="' + esc(b.u || '#new-arrivals') + '" aria-label="' + esc(b.b + ' ' + b.n) + '"></a>' +
+      '<a class="cover" href="' + esc(cardHref) + '" aria-label="' + esc(b.b + ' ' + b.n) + '"><span class="visually-hidden">' + esc(b.b + ' ' + b.n) + '</span></a>' +
     '</article>';
   }
 

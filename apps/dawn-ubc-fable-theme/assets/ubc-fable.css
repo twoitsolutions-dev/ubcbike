@@ -2310,7 +2310,6 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
   max-height: 86%;
   object-fit: contain;
   object-position: center center;
-  filter: drop-shadow(0 12px 12px rgba(20, 32, 45, 0.16));
   transition: transform 280ms var(--ease-out);
 }
 
@@ -2368,17 +2367,24 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
 .pcard-price {
   font-family: var(--display);
   font-weight: 400;
-  font-size: 22px;
+  font-size: 21px;
+  line-height: 1.08;
   letter-spacing: 0.01em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .pcard-price del {
   font-family: var(--body);
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1.2;
   color: var(--muted);
-  margin-left: 6px;
+  margin-left: 0;
+  margin-top: 2px;
 }
 
 .pcard-cta {
@@ -2391,10 +2397,12 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
   padding: 8px 14px;
   border-radius: 999px;
   font-family: var(--label);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
   background-color: var(--navy);
   color: var(--paper);
   transition:
@@ -3184,7 +3192,7 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
   width: 88%;
   height: 88%;
   object-fit: contain;
-  filter: drop-shadow(0 12px 14px rgba(20, 32, 45, 0.16));
+  filter: none;
   transition: transform 260ms var(--ease-out);
 }
 
@@ -9989,30 +9997,34 @@ iframe[src*="ikeono"] {
 }
 
 .ubc-ws-card--dark {
-  background: #14202D;
-  color: #FEFDF3;
-  border-color: #14202D;
+  background: #14202D !important;
+  color: #FEFDF3 !important;
+  border-color: #14202D !important;
+}
+
+.ubc-ws-card--dark .ubc-ws-kicker {
+  color: #FF8E77 !important;
 }
 
 .ubc-ws-card--dark h3 {
-  color: #FEFDF3;
+  color: #FFFFFF !important;
   margin: 0;
 }
 
 .ubc-ws-card--dark .ubc-ws-note {
-  color: rgba(254, 253, 243, 0.82);
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .ubc-ws-btn--light {
-  background: #FEFDF3;
-  border-color: #FEFDF3;
-  color: #14202D;
+  background: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+  color: #14202D !important;
 }
 
 .ubc-ws-btn--light:hover {
-  background: #E04F33;
-  border-color: #E04F33;
-  color: #FFFFFF;
+  background: #E04F33 !important;
+  border-color: #E04F33 !important;
+  color: #FFFFFF !important;
 }
 
 .ubc-ws-callout {

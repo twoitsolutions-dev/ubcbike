@@ -10198,3 +10198,66 @@ iframe[src*="ikeono"] {
   color: rgba(20, 32, 45, 0.35);
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Seasonal Editions: High-Contrast Studio Spotlight Circle & Dark-Header Logo
+   ========================================================================== */
+body[data-ubc-edition="christmas"] .show .show-blob,
+body[data-ubc-edition="july_4"] .show .show-blob,
+body[data-ubc-edition="spring"] .show .show-blob,
+body[data-ubc-edition="campus"] .show .show-blob,
+body[data-ubc-edition="veterans"] .show .show-blob {
+  background: radial-gradient(circle at 50% 44%, #ffffff 0%, #f7f5eb 68%, #ebe7d8 100%) !important;
+  opacity: 0.98 !important;
+}
+
+body[data-ubc-edition="christmas"] .show .show-blob {
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34), 0 0 0 8px rgba(234, 208, 138, 0.28) !important;
+}
+body[data-ubc-edition="july_4"] .show .show-blob {
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34), 0 0 0 8px rgba(214, 40, 40, 0.24) !important;
+}
+body[data-ubc-edition="spring"] .show .show-blob {
+  box-shadow: 0 20px 44px rgba(20, 32, 45, 0.1), 0 0 0 8px rgba(35, 122, 75, 0.14) !important;
+}
+body[data-ubc-edition="campus"] .show .show-blob {
+  box-shadow: 0 22px 54px rgba(0, 20, 14, 0.38), 0 0 0 8px rgba(245, 196, 62, 0.32) !important;
+}
+body[data-ubc-edition="veterans"] .show .show-blob {
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.38), 0 0 0 8px rgba(216, 174, 86, 0.28) !important;
+}
+
+body[data-ubc-edition="christmas"] .show .show-stage #showImg,
+body[data-ubc-edition="july_4"] .show .show-stage #showImg,
+body[data-ubc-edition="campus"] .show .show-stage #showImg,
+body[data-ubc-edition="veterans"] .show .show-stage #showImg {
+  filter: drop-shadow(0 18px 22px rgba(20, 32, 45, 0.28)) !important;
+}
+
+/* Ensure uploaded UBC dark logo turns crisp white on dark seasonal headers */
+body[data-ubc-edition="black_friday"] .fb-header .fb-logo img,
+body[data-ubc-edition="christmas"] .fb-header .fb-logo img,
+body[data-ubc-edition="july_4"] .fb-header .fb-logo img,
+body[data-ubc-edition="campus"] .fb-header .fb-logo img,
+body[data-ubc-edition="veterans"] .fb-header .fb-logo img {
+  filter: brightness(0) invert(1) !important;
+}
+
+/* Keep partner badge compact so nav + search/account/cart fit comfortably at 1440px */
+body[data-ubc-edition="campus"] .fb-partner-pill--campus,
+body[data-ubc-edition="veterans"] .fb-partner-pill--vet {
+  padding: 3px 8px !important;
+  font-size: 10px !important;
+  letter-spacing: 0.05em !important;
+}
+body[data-ubc-edition="campus"] .fb-nav,
+body[data-ubc-edition="veterans"] .fb-nav {
+  gap: 2px !important;
+}
+body[data-ubc-edition="campus"] .fb-nav > li > a,
+body[data-ubc-edition="campus"] .fb-nav > li > button,
+body[data-ubc-edition="veterans"] .fb-nav > li > a,
+body[data-ubc-edition="veterans"] .fb-nav > li > button {
+  padding: 7px 8px !important;
+  font-size: 14px !important;
+}

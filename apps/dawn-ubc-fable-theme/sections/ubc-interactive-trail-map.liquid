@@ -181,7 +181,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
       var poiGroup = L.featureGroup().addTo(map);
       (DATA.pois || []).forEach(function (p) {
-        var ic = L.divIcon({ className: '', html: '<div class="poi-pin ' + p.cls + '">' + p.label + '</div>', iconSize: null, iconAnchor: [58, 15] });
+        L.circleMarker(p.coords, {
+          radius: 5,
+          color: '#FFFFFF',
+          weight: 2,
+          fillColor: p.cls === 'parking' ? '#2563EB' : p.cls === 'camp' ? '#15803D' : '#14202D',
+          fillOpacity: 1,
+        }).addTo(poiGroup);
+        var ic = L.divIcon({ className: '', html: '<div class="poi-pin ' + p.cls + '">' + p.label + '</div>', iconSize: null, iconAnchor: p.anchor || [58, 22] });
         L.marker(p.coords, { icon: ic }).addTo(poiGroup).bindPopup(p.popup);
       });
 

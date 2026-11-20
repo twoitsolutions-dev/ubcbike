@@ -46,6 +46,25 @@
     .ubc-amap .head p { font-size: 13.5px; color: #64748B; margin-top: 3px; }
 
     .ubc-amap .head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .ubc-amap .rent-cta-top {
+      background: var(--accent);
+      color: #FFFFFF;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(224, 79, 51, 0.28);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+    .ubc-amap .rent-cta-top:hover {
+      background: #c94025;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(224, 79, 51, 0.36);
+    }
     .ubc-amap .gps-btn {
       border: 1px solid var(--border);
       background: #FFFFFF;
@@ -258,6 +277,7 @@
         <p>Tap any pin or trail to see official distances &amp; ratings. <strong>Helmets required &middot; No foot traffic on bike trails.</strong></p>
       </div>
       <div class="head-right">
+        <a class="rent-cta-top" href="https://ubcbike.myshopify.com/pages/bike-rentals">&#128690; Book Bike Rental &rarr;</a>
         <button id="gpsBtn" class="gps-btn" title="Show my location on the map">&#128205; My Location</button>
         <div class="toggle-group" role="group" aria-label="Map style">
           <button class="toggle-btn active" data-style="clean">Map</button>

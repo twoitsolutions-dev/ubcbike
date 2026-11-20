@@ -5,21 +5,142 @@
     padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
     padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
   }
-
   @media screen and (min-width: 750px) {
     .section-{{ section.id }}-padding {
       padding-top: {{ section.settings.padding_top }}px;
       padding-bottom: {{ section.settings.padding_bottom }}px;
     }
   }
+  .ubc-std-page {
+    background: #FEFDF3;
+    color: #14202D;
+    font-family: var(--ubc-font-body, "Barlow", sans-serif);
+  }
+  .ubc-std-page__wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .ubc-std-page .ubc-ws-hero {
+    margin-bottom: 2.8rem;
+  }
+  .ubc-std-page .ubc-ws-title {
+    font-family: var(--ubc-font-display, "Anton", sans-serif) !important;
+    font-weight: 400 !important;
+    font-size: clamp(3.4rem, 5vw, 5.2rem) !important;
+    line-height: 1.04 !important;
+    color: #14202D !important;
+    margin: 0 0 1.2rem !important;
+    letter-spacing: 0.01em !important;
+  }
+  .ubc-std-page .ubc-ws-lead {
+    font-family: var(--ubc-font-body, "Barlow", sans-serif) !important;
+    font-size: 1.65rem;
+    line-height: 1.62;
+    color: #4A5A6A;
+    margin: 0 0 2rem;
+    max-width: 64ch;
+  }
+  .ubc-std-page .ubc-ws-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .ubc-std-page .ubc-ws-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 1.1rem 2.2rem;
+    border-radius: 999px;
+    font-family: var(--ubc-font-body, "Barlow", sans-serif);
+    font-size: 1.45rem;
+    font-weight: 700;
+    text-decoration: none;
+    background: #14202D;
+    color: #FFFFFF;
+    border: 1.5px solid #14202D;
+    transition: transform 0.16s ease, background-color 0.16s ease;
+  }
+  .ubc-std-page .ubc-ws-btn:hover {
+    background: #213549;
+    border-color: #213549;
+    color: #FFFFFF;
+    transform: translateY(-1px);
+  }
+  .ubc-std-page .ubc-ws-btn--ghost {
+    background: #FFFFFF;
+    color: #14202D;
+    border: 1.5px solid rgba(20, 32, 45, 0.28);
+  }
+  .ubc-std-page .ubc-ws-btn--ghost:hover {
+    background: #F3F1E7;
+    border-color: #14202D;
+    color: #14202D;
+  }
+  .ubc-std-page__content {
+    background: #FFFFFF;
+    border: 1px solid rgba(20, 32, 45, 0.1);
+    border-radius: 20px;
+    padding: clamp(2rem, 3.2vw, 3.4rem);
+    box-shadow: 0 12px 30px -24px rgba(20, 32, 45, 0.22);
+  }
+  .ubc-std-page__content .rte {
+    font-family: var(--ubc-font-body, "Barlow", sans-serif);
+    color: #14202D;
+  }
 {%- endstyle -%}
 
-<div class="page-width page-width--narrow section-{{ section.id }}-padding">
-  <h1 class="main-page-title page-title h0{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--fade-in{% endif %}">
-    {{ page.title | escape }}
-  </h1>
-  <div class="rte{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}">
-    {{ page.content }}
+{%- liquid
+  assign is_rentals = false
+  if page.handle == 'bike-rentals' or page.handle contains 'rental'
+    assign is_rentals = true
+  endif
+  assign rentals_img = images['ubc-difference-storefront.jpg']
+-%}
+
+<div class="ubc-std-page section-{{ section.id }}-padding">
+  <div class="ubc-std-page__wrap">
+    {%- if is_rentals -%}
+      <header class="ubc-ws-hero{% if rentals_img == blank %} ubc-ws-hero--text-only{% endif %}">
+        <div>
+          <span class="ubc-ws-kicker">ALAFIA RIVER STATE PARK / TRAILHEAD MTB &amp; E-MTB RENTALS / WALK-INS &amp; BOOKINGS</span>
+          <h1 class="ubc-ws-title">{{ page.title | escape }}</h1>
+          <p class="ubc-ws-lead">
+            Roll straight from our trailhead shop inside Alafia River State Park onto 20+ miles of Florida's best singletrack. Full-suspension mountain bikes, e-MTBs, and helmets prepped daily by UBC mechanics — no bike rack needed.
+          </p>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="tel:+18137374600">Call Alafia (813) 737-4600</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/alafia-interactive-map">Alafia Interactive Map</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">Hours &amp; Directions</a>
+          </div>
+        </div>
+        {%- if rentals_img != blank -%}
+          <div class="ubc-ws-hero-media">
+            {{ rentals_img | image_url: width: 960 | image_tag: alt: 'University Bicycle Center Bike Rentals', loading: 'eager' }}
+          </div>
+        {%- endif -%}
+      </header>
+    {%- else -%}
+      <header class="ubc-ws-hero ubc-ws-hero--text-only ubc-ws-hero--compact">
+        <div>
+          <span class="ubc-ws-kicker">UNIVERSITY BICYCLE CENTER / TAMPA &amp; ALAFIA SINCE 1972</span>
+          <h1 class="ubc-ws-title">{{ page.title | escape }}</h1>
+          <div class="ubc-ws-actions">
+            <a class="ubc-ws-btn" href="tel:+18139712277">Call (813) 971-2277</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">How To Find Us</a>
+          </div>
+        </div>
+      </header>
+    {%- endif -%}
+
+    {%- if page.content != blank -%}
+      <div class="ubc-std-page__content">
+        <div class="rte{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}">
+          {{ page.content }}
+        </div>
+      </div>
+    {%- endif -%}
   </div>
 </div>
 

@@ -2,7 +2,7 @@
   .ubc-mt {
     font-family: var(--body, "Barlow", -apple-system, BlinkMacSystemFont, sans-serif);
     color: #14202D;
-    background: #FFFFFF;
+    background: #FEFDF3;
     line-height: 1.45;
   }
   .ubc-mt, .ubc-mt * { box-sizing: border-box; }
@@ -10,42 +10,72 @@
 
   /* Mobile-first container */
   .ubc-mt-wrap {
-    max-width: 1240px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 20px 16px 48px;
+    padding: 24px 20px 56px;
   }
 
-  /* Single clean header — no redundant second title */
+  /* Unified UBC Page Hero Card (matches Bike Service & Repair) */
   .ubc-mt-hero {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding-bottom: 18px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid rgba(20, 32, 45, 0.1);
+    gap: 16px;
+    padding: clamp(22px, 3.5vw, 38px);
+    margin-bottom: 24px;
+    background: #FFFFFF;
+    border: 1px solid rgba(20, 32, 45, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 18px 40px -28px rgba(20, 32, 45, 0.25);
   }
   .ubc-mt-kicker {
     font-family: var(--label, "Barlow Condensed", sans-serif);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: #E04F33;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
   .ubc-mt-hero h1 {
     font-family: var(--display, "Anton", sans-serif);
     font-weight: 400;
-    font-size: clamp(32px, 6vw, 48px);
-    letter-spacing: 0.015em;
+    font-size: clamp(34px, 5vw, 52px);
+    letter-spacing: 0.01em;
     color: #14202D;
-    line-height: 1.05;
+    line-height: 1.04;
   }
   .ubc-mt-hero p {
-    font-size: 15px;
-    color: #475569;
-    margin-top: 6px;
-    max-width: 600px;
+    font-size: 16px;
+    color: #4A5A6A;
+    margin-top: 10px;
+    max-width: 62ch;
+    line-height: 1.55;
+  }
+  .ubc-mt-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .ubc-mt-btn--navy {
+    background: #14202D;
+    color: #FFFFFF;
+    border: 1.5px solid #14202D;
+  }
+  .ubc-mt-btn--navy:hover {
+    background: #213549;
+    border-color: #213549;
+    color: #FFFFFF;
+  }
+  .ubc-mt-btn--ghost {
+    background: #FFFFFF;
+    color: #14202D;
+    border: 1.5px solid rgba(20, 32, 45, 0.28);
+  }
+  .ubc-mt-btn--ghost:hover {
+    background: #F3F1E7;
+    border-color: #14202D;
+    color: #14202D;
   }
 
   /* Controls row: 2 clean tabs + Book Bike Rental CTA */
@@ -310,11 +340,14 @@
   <div class="ubc-mt-wrap">
     <header class="ubc-mt-hero">
       <div>
-        <div class="ubc-mt-kicker">Tampa Bay Ride Guide &middot; Since 1972</div>
+        <div class="ubc-mt-kicker">TAMPA BAY RIDE GUIDE / LIVE GPS &amp; PRINTABLE MAPS / SINCE 1972</div>
         <h1>Maps &amp; Trails</h1>
-        <p>Explore live GPS trail maps with difficulty filters, or download printable maps before you ride.</p>
+        <p>Explore Tampa Bay's best mountain bike parks and paved greenways with live interactive GPS trail maps and difficulty filters, or save printable maps before you ride.</p>
+        <div class="ubc-mt-hero-actions">
+          <a class="ubc-mt-btn ubc-mt-btn--navy" href="/pages/bike-rentals">Book Bike Rental</a>
+          <a class="ubc-mt-btn ubc-mt-btn--ghost" href="/pages/alafia-interactive-map">Alafia Interactive Map</a>
+        </div>
       </div>
-      <a class="ubc-mt-btn ubc-mt-btn--accent" href="/pages/bike-rentals">Book Bike Rental &rarr;</a>
     </header>
 
     <div class="ubc-mt-bar">

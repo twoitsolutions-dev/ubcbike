@@ -1,0 +1,509 @@
+<style>
+  .ubc-mt {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #14202D;
+    background: #FFFFFF;
+    line-height: 1.45;
+  }
+  .ubc-mt, .ubc-mt * { box-sizing: border-box; }
+  .ubc-mt h1, .ubc-mt h2, .ubc-mt h3, .ubc-mt p { margin: 0; }
+
+  .ubc-mt-wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 36px 24px 64px;
+  }
+
+  /* Editorial Hero */
+  .ubc-mt-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-bottom: 26px;
+    border-bottom: 1px solid rgba(20, 32, 45, 0.1);
+    margin-bottom: 36px;
+  }
+  .ubc-mt-kicker {
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #E04F33;
+    margin-bottom: 6px;
+  }
+  .ubc-mt-hero h1 {
+    font-size: clamp(28px, 3.6vw, 40px);
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    color: #14202D;
+    line-height: 1.08;
+  }
+  .ubc-mt-hero p {
+    font-size: 15px;
+    color: #475569;
+    margin-top: 8px;
+    max-width: 620px;
+  }
+  .ubc-mt-hero-cta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ubc-mt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ubc-mt-btn:hover { transform: translateY(-1px); }
+  .ubc-mt-btn--accent {
+    background: #E04F33;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(224, 79, 51, 0.28);
+  }
+  .ubc-mt-btn--accent:hover { background: #c94025; }
+  .ubc-mt-btn--dark {
+    background: #14202D;
+    color: #FFFFFF !important;
+  }
+  .ubc-mt-btn--dark:hover { background: #1e3144; }
+  .ubc-mt-btn--outline {
+    background: #FFFFFF;
+    color: #14202D !important;
+    border: 1.5px solid rgba(20, 32, 45, 0.16);
+  }
+  .ubc-mt-btn--outline:hover { border-color: #14202D; }
+  .ubc-mt-btn--sm { padding: 7px 14px; font-size: 12.5px; }
+
+  /* Section Header */
+  .ubc-mt-sec-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .ubc-mt-sec-head h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: #14202D;
+  }
+  .ubc-mt-sec-head p {
+    font-size: 13.5px;
+    color: #64748B;
+    margin-top: 3px;
+  }
+  .ubc-mt-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748B;
+    background: #F1F5F9;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+
+  /* Featured Alafia Spotlight Card */
+  .ubc-mt-featured {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 24px;
+    padding: 26px 28px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #14202D 0%, #1D3145 100%);
+    color: #FFFFFF;
+    margin-bottom: 18px;
+    align-items: center;
+    box-shadow: 0 14px 36px rgba(20, 32, 45, 0.14);
+  }
+  .ubc-mt-feat-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(224, 79, 51, 0.2);
+    color: #FF8E77;
+    border: 1px solid rgba(224, 79, 51, 0.45);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .ubc-mt-featured h3 {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #FFFFFF;
+    margin-bottom: 8px;
+  }
+  .ubc-mt-featured p {
+    font-size: 14px;
+    color: #CBD5E1;
+    margin-bottom: 16px;
+    max-width: 540px;
+  }
+  .ubc-mt-feat-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .ubc-mt-stat {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .ubc-mt-stat strong { display: block; font-size: 19px; font-weight: 800; color: #FFFFFF; }
+  .ubc-mt-stat span { font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+
+  /* Interactive 3-Column Grid */
+  .ubc-mt-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .ubc-mt-card {
+    border: 1px solid rgba(20, 32, 45, 0.11);
+    border-radius: 16px;
+    padding: 20px;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .ubc-mt-card:hover {
+    border-color: rgba(20, 32, 45, 0.3);
+    box-shadow: 0 10px 26px rgba(20, 32, 45, 0.07);
+    transform: translateY(-2px);
+  }
+  .ubc-mt-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .ubc-mt-loc {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748B;
+  }
+  .ubc-mt-dots { display: inline-flex; gap: 4px; align-items: center; }
+  .ubc-mt-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .ubc-mt-dot.g { background: #16A34A; }
+  .ubc-mt-dot.b { background: #2563EB; }
+  .ubc-mt-dot.k { background: #111827; }
+  .ubc-mt-dot.r { background: #DC2626; }
+  .ubc-mt-card h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: #14202D;
+    margin-bottom: 5px;
+  }
+  .ubc-mt-card p {
+    font-size: 13px;
+    color: #475569;
+  }
+
+  /* Printable / Downloadable Section — Visually Distinct 2-Column Thumbnail Shelf */
+  .ubc-mt-dl-wrap {
+    background: #F8FAFC;
+    border: 1px solid rgba(20, 32, 45, 0.09);
+    border-radius: 22px;
+    padding: 28px;
+  }
+  .ubc-mt-dl-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .ubc-mt-dl-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #FFFFFF;
+    border: 1px solid rgba(20, 32, 45, 0.1);
+    border-radius: 14px;
+    padding: 12px 14px;
+    transition: border-color 0.14s ease, box-shadow 0.14s ease;
+  }
+  .ubc-mt-dl-item:hover {
+    border-color: rgba(20, 32, 45, 0.28);
+    box-shadow: 0 6px 18px rgba(20, 32, 45, 0.06);
+  }
+  .ubc-mt-thumb {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(20, 32, 45, 0.1);
+    background: #E2E8F0;
+  }
+  .ubc-mt-dl-info { flex: 1; min-width: 0; }
+  .ubc-mt-dl-info h3 {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #14202D;
+    margin-bottom: 2px;
+  }
+  .ubc-mt-dl-info p {
+    font-size: 12px;
+    color: #64748B;
+    margin-bottom: 8px;
+  }
+  .ubc-mt-dl-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  @media (max-width: 960px) {
+    .ubc-mt-featured { grid-template-columns: 1fr; }
+    .ubc-mt-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ubc-mt-dl-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px) {
+    .ubc-mt-grid-3 { grid-template-columns: 1fr; }
+    .ubc-mt-wrap { padding: 24px 16px 48px; }
+    .ubc-mt-dl-wrap { padding: 18px; }
+  }
+</style>
+
+<section class="ubc-mt">
+  <div class="ubc-mt-wrap">
+    <header class="ubc-mt-hero">
+      <div>
+        <div class="ubc-mt-kicker">Tampa Bay Ride Guide &middot; Since 1972</div>
+        <h1>Maps &amp; Trails</h1>
+        <p>Explore Tampa Bay&rsquo;s best mountain bike parks and paved greenways with live interactive GPS maps, or save printable maps offline before you ride.</p>
+      </div>
+      <div class="ubc-mt-hero-cta">
+        <a class="ubc-mt-btn ubc-mt-btn--accent" href="/pages/bike-rentals">Book Bike Rental &rarr;</a>
+        <a class="ubc-mt-btn ubc-mt-btn--outline" href="#printable-maps">Downloadable Maps &darr;</a>
+      </div>
+    </header>
+
+    <!-- SECTION 1: INTERACTIVE MAPS -->
+    <div class="ubc-mt-sec-head">
+      <div>
+        <div class="ubc-mt-kicker">Live GPS &middot; Difficulty Filters &middot; Satellite View</div>
+        <h2>Interactive Trail Maps</h2>
+        <p>Tap any park to zoom into singletracks, filter by riding level, and check trailhead parking.</p>
+      </div>
+      <span class="ubc-mt-count">7 Interactive Parks</span>
+    </div>
+
+    <!-- Alafia Spotlight -->
+    <article class="ubc-mt-featured">
+      <div>
+        <span class="ubc-mt-feat-badge">UBC Trailhead Shop On-Site</span>
+        <h3>Alafia River State Park</h3>
+        <p>Florida&rsquo;s premier mountain bike destination in Lithia, FL &mdash; with UBC&rsquo;s trailhead shop, MTB &amp; e-MTB rentals, tubes, and quick repairs steps from the trails.</p>
+        <div class="ubc-mt-hero-cta">
+          <a class="ubc-mt-btn ubc-mt-btn--accent" href="/pages/alafia-interactive-map">Open Alafia Interactive Map &rarr;</a>
+          <a class="ubc-mt-btn" style="background:rgba(255,255,255,0.12);color:#fff !important;" href="/pages/bike-rentals">Rent a Bike at Alafia</a>
+        </div>
+      </div>
+      <div class="ubc-mt-feat-stats">
+        <div class="ubc-mt-stat"><strong>28</strong><span>Official Trails</span></div>
+        <div class="ubc-mt-stat"><strong>5</strong><span>Skill Levels</span></div>
+        <div class="ubc-mt-stat"><strong>Live</strong><span>GPS &amp; Pins</span></div>
+      </div>
+    </article>
+
+    <!-- Other 6 Interactive Parks -->
+    <div class="ubc-mt-grid-3">
+      <article class="ubc-mt-card">
+        <div>
+          <div class="ubc-mt-card-top">
+            <span class="ubc-mt-loc">Wimauma, FL</span>
+            <span class="ubc-mt-dots" title="Easy to Expert"><span class="ubc-mt-dot g"></span><span class="ubc-mt-dot b"></span><span class="ubc-mt-dot k"></span><span class="ubc-mt-dot r"></span></span>
+          </div>
+          <h3>Balm-Boyette Scrub Preserve</h3>
+          <p>39 SWAMP singletracks including The Abyss, Ridgeline, Canyon, and Spider Berm.</p>
+        </div>
+        <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="/pages/balm-boyette-interactive-map">Open Interactive Map &rarr;</a>
+      </article>
+
+      <article class="ubc-mt-card">
+        <div>
+          <div class="ubc-mt-card-top">
+            <span class="ubc-mt-loc">Brooksville, FL</span>
+            <span class="ubc-mt-dots" title="Easy to Expert"><span class="ubc-mt-dot g"></span><span class="ubc-mt-dot b"></span><span class="ubc-mt-dot k"></span><span class="ubc-mt-dot r"></span></span>
+          </div>
+          <h3>Croom Mountain Bike Trails</h3>
+          <p>Withlacoochee State Forest &mdash; Yellow Loop (12 mi), Blue Loop (24 mi) &amp; Drunken Monkey.</p>
+        </div>
+        <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="/pages/croom-interactive-map">Open Interactive Map &rarr;</a>
+      </article>
+
+      <article class="ubc-mt-card">
+        <div>
+          <div class="ubc-mt-card-top">
+            <span class="ubc-mt-loc">Ocala, FL</span>
+            <span class="ubc-mt-dots" title="Easy to Expert"><span class="ubc-mt-dot g"></span><span class="ubc-mt-dot b"></span><span class="ubc-mt-dot k"></span><span class="ubc-mt-dot r"></span></span>
+          </div>
+          <h3>Santos &amp; Vortex Trails</h3>
+          <p>IMBA Ride Center with 32+ OMBA trails plus the Vortex freeride &amp; skills park.</p>
+        </div>
+        <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="/pages/santos-vortex-interactive-map">Open Interactive Map &rarr;</a>
+      </article>
+
+      <article class="ubc-mt-card">
+        <div>
+          <div class="ubc-mt-card-top">
+            <span class="ubc-mt-loc">Tampa, FL &middot; 15 min from UBC</span>
+            <span class="ubc-mt-dots" title="Easy to Advanced"><span class="ubc-mt-dot g"></span><span class="ubc-mt-dot b"></span><span class="ubc-mt-dot k"></span></span>
+          </div>
+          <h3>Flatwoods &amp; Wilderness Park</h3>
+          <p>7-mile paved Flatwoods Loop plus Trout Creek &amp; Morris Bridge wooded singletracks.</p>
+        </div>
+        <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="/pages/wilderness-interactive-map">Open Interactive Map &rarr;</a>
+      </article>
+
+      <article class="ubc-mt-card">
+        <div>
+          <div class="ubc-mt-card-top">
+            <span class="ubc-mt-loc">Mount Dora, FL</span>
+            <span class="ubc-mt-dots" title="Intermediate"><span class="ubc-mt-dot g"></span><span class="ubc-mt-dot b"></span></span>
+          </div>
+          <h3>Mount Dora Bike Trails</h3>
+          <p>Flowy, shaded Central Florida singletrack loops with fun elevation changes.</p>
+        </div>
+        <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="/pages/mount-dora-interactive-map">Open Interactive Map &rarr;</a>
+      </article>
+
+      <article class="ubc-mt-card">
+        <div>
+          <div class="ubc-mt-card-top">
+            <span class="ubc-mt-loc">Tampa, FL &middot; Paved Greenway</span>
+            <span class="ubc-mt-dots" title="Easy / Paved"><span class="ubc-mt-dot g"></span></span>
+          </div>
+          <h3>Upper Tampa Bay Trail</h3>
+          <p>Smooth, car-free paved trail ideal for road bikes, hybrids, e-bikes, and family rides.</p>
+        </div>
+        <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="/pages/upper-tampa-bay-interactive-map">Open Interactive Map &rarr;</a>
+      </article>
+    </div>
+
+    <!-- SECTION 2: PRINTABLE & DOWNLOADABLE STATIC MAPS -->
+    <div id="printable-maps" class="ubc-mt-dl-wrap">
+      <div class="ubc-mt-sec-head">
+        <div>
+          <div class="ubc-mt-kicker">Save Offline &middot; Print Ready</div>
+          <h2>Downloadable &amp; Printable Trail Maps</h2>
+          <p>Classic full-size static maps to save to your phone before riding in low-signal areas.</p>
+        </div>
+        <span class="ubc-mt-count">7 Printable Maps</span>
+      </div>
+
+      <div class="ubc-mt-dl-grid">
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://cdn.shopify.com/s/files/1/0958/5646/0093/files/Alafia_River_Bike_Rental_Trail_Map.png?v=1793919688" alt="Alafia Trail Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Alafia River State Park</h3>
+            <p>Official Alafia Trail Crew map &middot; Distances &amp; emergency numbers</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/alafia-trails">View Full Map</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://cdn.shopify.com/s/files/1/0958/5646/0093/files/Alafia_River_Bike_Rental_Trail_Map.png?v=1793919688" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://www.sefiles.net/merchant/2904/images/site/Balm-BoyetteMountainBikeTrails2.jpg" alt="Balm-Boyette Trail Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Balm-Boyette Scrub Preserve</h3>
+            <p>SWAMP / Balm-Boyette Build Crew printable trail map</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/balm-boyette-trails">View Full Map</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://www.sefiles.net/merchant/2904/images/site/Balm-BoyetteMountainBikeTrails2.jpg" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://cdn.shopify.com/s/files/1/0958/5646/0093/files/Croom_Mountain_Bike_Trails_Map_618f9441-9ecb-4f09-8e1c-430937f42565.png?v=1793917706" alt="Croom Trail Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Croom Mountain Bike Trails</h3>
+            <p>SWAMP Withlacoochee State Forest color loop map</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/croom-trails">View Full Map</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://cdn.shopify.com/s/files/1/0958/5646/0093/files/Croom_Mountain_Bike_Trails_Map_618f9441-9ecb-4f09-8e1c-430937f42565.png?v=1793917706" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://www.sefiles.net/merchant/2904/images/site/SantosVortexQuickMap.JPG" alt="Santos and Vortex Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Santos &amp; Vortex Trails</h3>
+            <p>OMBA Quick Map for Santos &amp; Vortex trailheads</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/santos-vortex-trails">View Full Map</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://www.sefiles.net/merchant/2904/images/site/SantosVortexQuickMap.JPG" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://www.sefiles.net/merchant/2904/images/site/Capture.JPG" alt="Wilderness Park Trail Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Flatwoods / Wilderness Park</h3>
+            <p>Flatwoods, Trout Creek &amp; Morris Bridge SWAMP maps</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/wilderness-trails">View All Maps</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://www.sefiles.net/merchant/2904/images/site/Capture.JPG" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://www.sefiles.net/merchant/2904/images/site/MountDoraBikeTrails-21.JPG" alt="Mount Dora Trail Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Mount Dora Bike Trails</h3>
+            <p>City of Mount Dora MTB trail guide &amp; location overview</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/mount-dora-trails">View Full Map</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://www.sefiles.net/merchant/2904/images/site/MountDoraBikeTrails-21.JPG" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="ubc-mt-dl-item">
+          <img class="ubc-mt-thumb" src="https://www.sefiles.net/merchant/2904/images/site/Upper-Tampa-Bay-Trail-Map.jpg" alt="Upper Tampa Bay Trail Map" loading="lazy" />
+          <div class="ubc-mt-dl-info">
+            <h3>Road Maps &amp; Upper Tampa Bay Trail</h3>
+            <p>Printable paved greenway trailhead &amp; parking overview</p>
+            <div class="ubc-mt-dl-btns">
+              <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/road-maps">View Full Map</a>
+              <a class="ubc-mt-btn ubc-mt-btn--dark ubc-mt-btn--sm" href="https://www.sefiles.net/merchant/2904/images/site/Upper-Tampa-Bay-Trail-Map.jpg" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "UBC Maps & Trails Hub",
+  "settings": [],
+  "presets": [{ "name": "UBC Maps & Trails Hub" }]
+}
+{% endschema %}

@@ -294,14 +294,25 @@
   .ubc-mt-card p { font-size: 14px; color: #475569; }
 
   .ubc-mt-card--featured {
+    grid-column: 1 / -1;
     background: linear-gradient(145deg, #14202D 0%, #1E3347 100%);
     border-color: #14202D;
     color: #FFFFFF;
     box-shadow: 0 10px 26px rgba(20, 32, 45, 0.14);
+    padding: 22px 24px;
   }
   .ubc-mt-card--featured .ubc-mt-loc { color: #FF8E77; }
-  .ubc-mt-card--featured h3 { color: #FFFFFF; }
-  .ubc-mt-card--featured p { color: #CBD5E1; }
+  .ubc-mt-card--featured h3 { color: #FFFFFF; font-size: clamp(22px, 2.4vw, 28px); }
+  .ubc-mt-card--featured p { color: #CBD5E1; max-width: 66ch; }
+  .ubc-mt-feat-actions { display: flex; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+  @media (min-width: 760px) {
+    .ubc-mt-card--featured {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+  }
 
   /* Downloadable / Printable Grid — 1 col mobile -> 2 col desktop */
   .ubc-mt-dl-grid {
@@ -391,7 +402,10 @@
             <h3>Alafia River State Park</h3>
             <p>28 official trails, live GPS &amp; pins, plus UBC bike rentals and repairs right at the trailhead.</p>
           </div>
-          <a class="ubc-mt-btn ubc-mt-btn--accent ubc-mt-btn--sm" href="/pages/alafia-interactive-map">Open Alafia Map &rarr;</a>
+          <div class="ubc-mt-feat-actions">
+            <a class="ubc-mt-btn ubc-mt-btn--accent ubc-mt-btn--sm" href="/pages/alafia-interactive-map">Open Alafia Map &rarr;</a>
+            <a class="ubc-mt-btn ubc-mt-btn--outline ubc-mt-btn--sm" href="/pages/bike-rentals">Book Bike Rental</a>
+          </div>
         </article>
         <article class="ubc-mt-card">
           <div>

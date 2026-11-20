@@ -75,6 +75,16 @@
     .ubc-tmap .trail-panel { order: 2; max-height: 240px; border-right: none; border-top: 1px solid rgba(20,32,45,0.11); }
     .ubc-tmap .bottom-grid { grid-template-columns: 1fr; }
   }
+
+.ubc-tmap { font-family: var(--body, "Barlow", -apple-system, sans-serif) !important; }
+.ubc-tmap h1, .ubc-tmap h2 { font-family: var(--display, "Anton", sans-serif) !important; font-weight: 400 !important; letter-spacing: 0.015em !important; }
+.ubc-tmap .kicker, .ubc-tmap .rent-cta-top, .ubc-tmap .pill, .ubc-tmap .btn, .ubc-tmap .toggle-btn, .ubc-tmap .gps-btn { font-family: var(--label, "Barlow Condensed", sans-serif) !important; letter-spacing: 0.04em; }
+@media (max-width: 820px) {
+  .ubc-tmap .wrap { padding: 18px 14px 32px !important; gap: 10px !important; }
+  .ubc-tmap .pills { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .ubc-tmap .pill { flex-shrink: 0 !important; }
+  .ubc-tmap .map-stage { height: 390px !important; }
+}
 </style>
 
 <div class="ubc-tmap" id="ubc-tmap-{{ section.id }}" data-json-url="{{ asset_file | asset_url }}">

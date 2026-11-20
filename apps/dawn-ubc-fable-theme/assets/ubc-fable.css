@@ -10045,6 +10045,24 @@ iframe[src*="ikeono"] {
   margin-bottom: 1.4rem;
 }
 
+/* Global UBC Typography Unification across ALL standard Dawn pages (Bike Rentals, Policies, Static Maps, etc.) */
+.main-page-title,
+.page-title,
+.collection-hero__title,
+.template-page .rte h1,
+.template-page .rte h2 {
+  font-family: var(--display) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.015em;
+  color: #14202D;
+}
+
+.template-page .rte,
+.template-page .rte p,
+.template-page .rte li {
+  font-family: var(--body) !important;
+}
+
 .ubc-ws-alert--ok {
   background: #E6F4EA;
   color: #1B4332;

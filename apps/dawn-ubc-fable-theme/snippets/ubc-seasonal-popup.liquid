@@ -1,0 +1,709 @@
+{%- comment -%}
+  [UBC-MOD] Seasonal & Edition-Aware Promotional Popup
+  Adapts automatically to all 7 UBC editions (classic, black_friday, christmas,
+  july_4, spring, campus, veterans), uses real UBC Tampa & Alafia photos,
+  supports live EN / ES switching, and auto-applies accessory-only Shopify
+  discount codes via /discount/CODE?redirect=/collections/...
+{%- endcomment -%}
+
+{%- assign img_storefront = images['ubc-difference-storefront.jpg'] | image_url: width: 900 -%}
+{%- if img_storefront == blank or img_storefront contains 'no-image' -%}
+  {%- assign img_storefront = 'ubc-reel-carlos-story.jpg' | asset_url -%}
+{%- endif -%}
+{%- assign img_carlos = 'ubc-reel-carlos-story.jpg' | asset_url -%}
+{%- assign img_alafia_mtb = 'alafia-mtb-action.jpg' | asset_url -%}
+{%- assign img_alafia_trail = 'alafia-trails-hero.jpg' | asset_url -%}
+{%- assign img_campus = 'ubc-reel-alec-ebike.jpg' | asset_url -%}
+{%- assign img_manny = 'ubc-reel-manny-47yrs.jpg' | asset_url -%}
+
+<style>
+  .ubc-pop-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99990;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(14, 23, 34, 0.62);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+  }
+  .ubc-pop-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .ubc-pop-card {
+    position: relative;
+    width: 100%;
+    max-width: 780px;
+    display: grid;
+    grid-template-columns: 44% 56%;
+    background: #FEFDF3;
+    color: #14202D;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 28px 70px rgba(10, 18, 28, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.14);
+    transform: translateY(18px) scale(0.97);
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .ubc-pop-backdrop.is-open .ubc-pop-card {
+    transform: translateY(0) scale(1);
+  }
+  .ubc-pop-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 4;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(20, 32, 45, 0.14);
+    background: rgba(254, 253, 243, 0.94);
+    color: #14202D;
+    font-size: 20px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.18s ease;
+  }
+  .ubc-pop-close:hover {
+    background: #14202D;
+    color: #FEFDF3;
+    transform: scale(1.06);
+  }
+  .ubc-pop-media {
+    position: relative;
+    min-height: 390px;
+    background: #14202D;
+    overflow: hidden;
+  }
+  .ubc-pop-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .ubc-pop-media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20, 32, 45, 0.18) 0%, rgba(20, 32, 45, 0.08) 50%, rgba(20, 32, 45, 0.72) 100%);
+    pointer-events: none;
+  }
+  .ubc-pop-offer-pill {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 2;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--ubc-pop-accent, #E04F33);
+    color: #FFFFFF;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+  .ubc-pop-offer-pill strong {
+    font-family: 'Anton', 'Barlow Condensed', sans-serif;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    font-weight: 400;
+  }
+  .ubc-pop-offer-pill span {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.94;
+  }
+  .ubc-pop-body {
+    padding: 28px 30px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    border-top: 4px solid var(--ubc-pop-accent, #E04F33);
+  }
+  .ubc-pop-eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ubc-pop-accent, #E04F33);
+    padding-right: 32px;
+  }
+  .ubc-pop-title {
+    margin: 0;
+    font-family: 'Anton', 'Barlow Condensed', sans-serif;
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.06;
+    letter-spacing: 0.01em;
+    color: #14202D;
+    font-weight: 400;
+  }
+  .ubc-pop-desc {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.48;
+    color: #364759;
+  }
+  .ubc-pop-codebox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px 10px 14px;
+    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1.5px dashed var(--ubc-pop-accent, #E04F33);
+    margin-top: 2px;
+  }
+  .ubc-pop-code-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .ubc-pop-code-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5D6D7E;
+  }
+  .ubc-pop-code-val {
+    font-family: 'Barlow Condensed', monospace;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #14202D;
+  }
+  .ubc-pop-copy {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: #14202D;
+    color: #FEFDF3;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.16s ease, transform 0.16s ease;
+  }
+  .ubc-pop-copy:hover {
+    background: var(--ubc-pop-accent, #E04F33);
+    transform: translateY(-1px);
+  }
+  .ubc-pop-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .ubc-pop-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: 999px;
+    background: var(--ubc-pop-accent, #E04F33);
+    color: #FFFFFF !important;
+    text-decoration: none;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: filter 0.16s ease, transform 0.16s ease;
+  }
+  .ubc-pop-cta:hover {
+    filter: brightness(0.92);
+    transform: translateY(-1px);
+    color: #FFFFFF !important;
+  }
+  .ubc-pop-subrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .ubc-pop-secondary {
+    font-size: 13px;
+    font-weight: 600;
+    color: #14202D !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .ubc-pop-dismiss {
+    background: none;
+    border: none;
+    padding: 4px 0;
+    font-size: 12.5px;
+    color: #64748B;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .ubc-pop-dismiss:hover {
+    color: #14202D;
+  }
+  .ubc-pop-fine {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: #64748B;
+    border-top: 1px solid rgba(20, 32, 45, 0.1);
+    padding-top: 10px;
+  }
+
+  @media (max-width: 720px) {
+    .ubc-pop-card {
+      grid-template-columns: 1fr;
+      max-width: 400px;
+      border-radius: 18px;
+    }
+    .ubc-pop-media {
+      min-height: 165px;
+      max-height: 180px;
+    }
+    .ubc-pop-body {
+      padding: 18px 18px 16px;
+      gap: 10px;
+      border-top: none;
+    }
+    .ubc-pop-title {
+      font-size: 24px;
+    }
+    .ubc-pop-desc {
+      font-size: 13.5px;
+    }
+    .ubc-pop-offer-pill {
+      left: 12px;
+      bottom: 12px;
+      padding: 7px 11px;
+    }
+    .ubc-pop-offer-pill strong {
+      font-size: 20px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ubc-pop-backdrop,
+    .ubc-pop-card {
+      transition: none !important;
+    }
+  }
+</style>
+
+<div
+  id="ubcSeasonalPopup"
+  class="ubc-pop-backdrop"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="ubcPopTitle"
+  aria-hidden="true"
+>
+  <div class="ubc-pop-card" id="ubcPopCard">
+    <button type="button" class="ubc-pop-close" id="ubcPopClose" aria-label="Close popup">&times;</button>
+    <div class="ubc-pop-media">
+      <img id="ubcPopImg" src="{{ img_storefront }}" alt="University Bicycle Center Tampa" loading="lazy" width="600" height="500">
+      <div class="ubc-pop-offer-pill">
+        <strong id="ubcPopBadgeBig">10% OFF</strong>
+        <span id="ubcPopBadgeSub">Accessories &amp; Gear</span>
+      </div>
+    </div>
+    <div class="ubc-pop-body">
+      <div class="ubc-pop-eyebrow" id="ubcPopEyebrow">WELCOME TO UBC TAMPA · SINCE 1972</div>
+      <h2 class="ubc-pop-title" id="ubcPopTitle">10% Off Accessories &amp; Gear</h2>
+      <p class="ubc-pop-desc" id="ubcPopDesc"></p>
+
+      <div class="ubc-pop-codebox">
+        <div class="ubc-pop-code-meta">
+          <span class="ubc-pop-code-label" id="ubcPopCodeLabel">Accessory Promo Code</span>
+          <span class="ubc-pop-code-val" id="ubcPopCodeVal">UBC10GEAR</span>
+        </div>
+        <button type="button" class="ubc-pop-copy" id="ubcPopCopy">Copy Code</button>
+      </div>
+
+      <div class="ubc-pop-actions">
+        <a href="/discount/UBC10GEAR?redirect=/collections/accessories-gear" class="ubc-pop-cta" id="ubcPopCta">
+          Apply Code &amp; Shop Accessories &rarr;
+        </a>
+        <div class="ubc-pop-subrow">
+          <a href="/collections/accessories-gear" class="ubc-pop-secondary" id="ubcPopSecondary" style="display:none;"></a>
+          <button type="button" class="ubc-pop-dismiss" id="ubcPopDismiss">No thanks, continue browsing</button>
+        </div>
+      </div>
+
+      <p class="ubc-pop-fine" id="ubcPopFine"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var backdrop = document.getElementById('ubcSeasonalPopup');
+  var card = document.getElementById('ubcPopCard');
+  if (!backdrop || !card) return;
+
+  var POPUPS = {
+    classic: {
+      accent: '#E04F33',
+      img: {{ img_storefront | json }},
+      code: 'UBC10GEAR',
+      redirect: '/collections/accessories-gear',
+      en: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Accessories & Gear',
+        eyebrow: 'Welcome to UBC Tampa · Since 1972',
+        title: '10% Off Accessories & Gear',
+        desc: 'Save on lights, locks, bottles, bags, pumps & tools — in stock in Tampa or shipped fast. Backed by our 110% Price Guarantee.',
+        cta: 'Apply 10% & Shop Accessories →',
+        secLabel: '',
+        secHref: ''
+      },
+      es: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Accesorios y Equipo',
+        eyebrow: 'Bienvenido a UBC Tampa · Desde 1972',
+        title: '10% Off en Accesorios y Equipo',
+        desc: 'Ahorra en luces, candados, botellas, bolsos, bombas y herramientas — en stock en Tampa o envío rápido con 110% Precio Garantizado.',
+        cta: 'Aplicar 10% y Ver Accesorios →',
+        secLabel: '',
+        secHref: ''
+      }
+    },
+    black_friday: {
+      accent: '#E04F33',
+      img: {{ img_storefront | json }},
+      code: 'BF15GEAR',
+      redirect: '/collections/accessories-gear',
+      en: {
+        badgeBig: '15% OFF',
+        badgeSub: 'Accessories Bonus',
+        eyebrow: 'Black Friday 2026 · Tampa Showroom & Online',
+        title: '15% Off Accessories + Up to $3,500 Off Bikes',
+        desc: 'Unlock 15% off lights, locks, bottles, bags & tools — plus lock in Black Friday bike deals with free holiday hold until Dec 24.',
+        cta: 'Apply 15% & Shop Accessories →',
+        secLabel: 'Jump to Bike Deals',
+        secHref: '/collections/black-friday-deals'
+      },
+      es: {
+        badgeBig: '15% OFF',
+        badgeSub: 'Bono en Accesorios',
+        eyebrow: 'Black Friday 2026 · Tienda Tampa y Online',
+        title: '15% Off en Accesorios + Hasta $3,500 Off en Bicis',
+        desc: 'Activa 15% off en luces, candados, botellas, bolsos y herramientas — además asegura ofertas Black Friday en bicis con apartado gratis hasta el 24 de dic.',
+        cta: 'Aplicar 15% y Ver Accesorios →',
+        secLabel: 'Ver Bicis Black Friday',
+        secHref: '/collections/black-friday-deals'
+      }
+    },
+    christmas: {
+      accent: '#C81E2B',
+      img: {{ img_carlos | json }},
+      code: 'HOLIDAY10GEAR',
+      redirect: '/collections/accessories-gear',
+      en: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Rider Gifts & Gear',
+        eyebrow: 'Holiday Gift Event · Free Hold Until Dec 24',
+        title: '10% Off Stocking Stuffers & Rider Gifts',
+        desc: 'Save on lights, locks, bottles, tools & bags ready to wrap — plus free holiday bike assembly & hidden warehouse hold until Christmas Eve.',
+        cta: 'Apply 10% & Shop Rider Gifts →',
+        secLabel: '',
+        secHref: ''
+      },
+      es: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Regalos Ciclistas',
+        eyebrow: 'Especial de Navidad · Apartado Gratis hasta Dic 24',
+        title: '10% Off en Regalos y Accesorios Ciclistas',
+        desc: 'Ahorra en luces, candados, botellas, herramientas y bolsos listos para regalar — más armado profesional y apartado gratis en bicis hasta Nochebuena.',
+        cta: 'Aplicar 10% y Ver Regalos →',
+        secLabel: '',
+        secHref: ''
+      }
+    },
+    july_4: {
+      accent: '#1D4ED8',
+      img: {{ img_alafia_trail | json }},
+      code: 'JULY4GEAR',
+      redirect: '/collections/hydration-nutrition',
+      en: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Summer Gear & Fuel',
+        eyebrow: 'July 4th Summer Event · Honoring Veterans & Police',
+        title: '10% Off Summer Hydration, Lights & Accessories',
+        desc: 'Beat the Florida heat with bottles, hydration, tools & gear — plus everyday in-store discounts for U.S. Veterans & Police.',
+        cta: 'Apply 10% & Shop Summer Gear →',
+        secLabel: 'All Eligible Accessories',
+        secHref: '/collections/accessories-gear'
+      },
+      es: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Verano e Hidratación',
+        eyebrow: 'Especial 4 de Julio · Honor a Veteranos y Policías',
+        title: '10% Off en Hidratación, Luces y Accesorios',
+        desc: 'Vence el calor de Florida con botellas, hidratación y accesorios — más descuentos permanentes en tienda para Veteranos y Policías.',
+        cta: 'Aplicar 10% y Ver Verano →',
+        secLabel: 'Todos los Accesorios',
+        secHref: '/collections/accessories-gear'
+      }
+    },
+    spring: {
+      accent: '#0F766E',
+      img: {{ img_alafia_mtb | json }},
+      code: 'SPRING10GEAR',
+      redirect: '/collections/accessories-gear',
+      en: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Trail & Spring Gear',
+        eyebrow: 'Spring Riding Season · Alafia & Bayshore',
+        title: '10% Off Trail Accessories, Tools & Hydration',
+        desc: 'Dial in your kit for peak Florida trail weather — lights, bags, bottles, pumps & tools. Plus full-suspension rentals inside Alafia.',
+        cta: 'Apply 10% & Shop Spring Gear →',
+        secLabel: 'Alafia Rentals',
+        secHref: '/pages/bike-rentals'
+      },
+      es: {
+        badgeBig: '10% OFF',
+        badgeSub: 'Equipo de Sendero',
+        eyebrow: 'Temporada de Primavera · Alafia y Bayshore',
+        title: '10% Off en Accesorios, Herramientas e Hidratación',
+        desc: 'Prepara tu equipo para la mejor temporada de senderos en Florida — luces, bolsos, botellas y bombas. Más rentas MTB dentro de Alafia.',
+        cta: 'Aplicar 10% y Ver Equipo →',
+        secLabel: 'Rentas en Alafia',
+        secHref: '/pages/bike-rentals'
+      }
+    },
+    campus: {
+      accent: '#006747',
+      img: {{ img_campus | json }},
+      code: 'USF15GEAR',
+      redirect: '/collections/lights-locks',
+      en: {
+        badgeBig: '15% OFF',
+        badgeSub: 'USF Campus Perks',
+        eyebrow: 'Go Bulls · 5 Min From USF on E Fletcher Ave',
+        title: '15% Off Campus Locks, Lights & Accessories',
+        desc: 'Protect your campus ride with U-locks, USB lights, racks & bags — or show your USF Student ID in-store for same-day service perks.',
+        cta: 'Apply 15% & Shop Locks & Lights →',
+        secLabel: 'All Accessories',
+        secHref: '/collections/accessories-gear'
+      },
+      es: {
+        badgeBig: '15% OFF',
+        badgeSub: 'Beneficio USF',
+        eyebrow: 'Go Bulls · A 5 Min de USF en E Fletcher Ave',
+        title: '15% Off en Candados, Luces y Accesorios Campus',
+        desc: 'Protege tu bici en el campus con candados en U, luces USB, parrillas y bolsos — o presenta tu carnet USF en tienda para descuentos.',
+        cta: 'Aplicar 15% y Ver Candados y Luces →',
+        secLabel: 'Todos los Accesorios',
+        secHref: '/collections/accessories-gear'
+      }
+    },
+    veterans: {
+      accent: '#B8862D',
+      img: {{ img_manny | json }},
+      code: 'HONOR15GEAR',
+      redirect: '/collections/accessories-gear',
+      en: {
+        badgeBig: '15% OFF',
+        badgeSub: 'Veterans & Police',
+        eyebrow: 'Veteran-Founded by Manny · Since 1972',
+        title: '15% Off Accessories · Honoring Veterans & Police',
+        desc: 'Thank you for your service. Enjoy 15% off accessories, lights, locks, hydration & tools online — or show military/police ID in Tampa.',
+        cta: 'Apply 15% & Shop Accessories →',
+        secLabel: '',
+        secHref: ''
+      },
+      es: {
+        badgeBig: '15% OFF',
+        badgeSub: 'Veteranos y Policías',
+        eyebrow: 'Fundada por Manny (Veterano) · Desde 1972',
+        title: '15% Off en Accesorios · Honor a Veteranos y Policías',
+        desc: 'Gracias por tu servicio. Disfruta 15% off en accesorios, luces, candados, hidratación y herramientas online — o muestra tu ID militar/policial en Tampa.',
+        cta: 'Aplicar 15% y Ver Accesorios →',
+        secLabel: '',
+        secHref: ''
+      }
+    }
+  };
+
+  var currentEd = 'classic';
+
+  function getLang() {
+    var pressed = document.querySelector('.fb-lang button[aria-pressed="true"]');
+    if (pressed) return pressed.getAttribute('data-lang') === 'es' ? 'es' : 'en';
+    try {
+      if (localStorage.getItem('ubc-lang') === 'es') return 'es';
+    } catch (e) {}
+    return 'en';
+  }
+
+  function detectEdition() {
+    try {
+      var m = window.location.search.match(/[?&]edition=([a-z0-9_]+)/i);
+      if (m && POPUPS[m[1]]) return m[1];
+    } catch (e) {}
+    if (document.getElementById('bf-deals')) return 'black_friday';
+    var attr = document.body ? document.body.getAttribute('data-ubc-edition') : '';
+    if (attr && POPUPS[attr]) return attr;
+    return 'classic';
+  }
+
+  function renderPopup(edKey) {
+    var key = POPUPS[edKey] ? edKey : 'classic';
+    currentEd = key;
+    var cfg = POPUPS[key];
+    var lang = getLang();
+    var copy = cfg[lang] || cfg.en;
+
+    card.style.setProperty('--ubc-pop-accent', cfg.accent);
+    var imgEl = document.getElementById('ubcPopImg');
+    if (imgEl && imgEl.getAttribute('src') !== cfg.img) imgEl.setAttribute('src', cfg.img);
+
+    document.getElementById('ubcPopBadgeBig').textContent = copy.badgeBig;
+    document.getElementById('ubcPopBadgeSub').textContent = copy.badgeSub;
+    document.getElementById('ubcPopEyebrow').textContent = copy.eyebrow;
+    document.getElementById('ubcPopTitle').textContent = copy.title;
+    document.getElementById('ubcPopDesc').textContent = copy.desc;
+    document.getElementById('ubcPopCodeLabel').textContent = lang === 'es' ? 'Código para Accesorios' : 'Accessory Promo Code';
+    document.getElementById('ubcPopCodeVal').textContent = cfg.code;
+    document.getElementById('ubcPopCopy').textContent = lang === 'es' ? 'Copiar Código' : 'Copy Code';
+
+    var ctaEl = document.getElementById('ubcPopCta');
+    ctaEl.textContent = copy.cta;
+    ctaEl.setAttribute('href', '/discount/' + encodeURIComponent(cfg.code) + '?redirect=' + encodeURIComponent(cfg.redirect));
+
+    var secEl = document.getElementById('ubcPopSecondary');
+    if (copy.secLabel && copy.secHref) {
+      secEl.textContent = copy.secLabel;
+      secEl.setAttribute('href', copy.secHref);
+      secEl.style.display = 'inline';
+    } else {
+      secEl.style.display = 'none';
+    }
+
+    document.getElementById('ubcPopDismiss').textContent = lang === 'es'
+      ? 'No gracias, seguir viendo'
+      : 'No thanks, continue browsing';
+
+    document.getElementById('ubcPopFine').textContent = lang === 'es'
+      ? 'Aplica solo en Accesorios, Luces, Candados, Hidratación y Herramientas. No aplica a bicicletas, e-bikes ni artículos con precio MAP. 1 uso por cliente.'
+      : 'Valid on Accessories, Lights, Locks, Hydration & Tools only. Excludes bikes, e-bikes & MAP-protected items. Limit 1 use per customer.';
+  }
+
+  function markSeen(edKey) {
+    try {
+      localStorage.setItem('ubc_popup_seen_' + edKey, String(Date.now()));
+    } catch (e) {}
+  }
+
+  function wasSeenRecently(edKey) {
+    try {
+      var ts = Number(localStorage.getItem('ubc_popup_seen_' + edKey) || '0');
+      if (!ts) return false;
+      var sevenDays = 7 * 24 * 60 * 60 * 1000;
+      return (Date.now() - ts) < sevenDays;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function openPopup(edKey) {
+    renderPopup(edKey || detectEdition());
+    backdrop.classList.add('is-open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    if (document.body) document.body.style.overflow = 'hidden';
+  }
+
+  function closePopup() {
+    backdrop.classList.remove('is-open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    if (document.body) document.body.style.overflow = '';
+    markSeen(currentEd);
+  }
+
+  document.getElementById('ubcPopClose').addEventListener('click', closePopup);
+  document.getElementById('ubcPopDismiss').addEventListener('click', closePopup);
+  document.getElementById('ubcPopCta').addEventListener('click', function () {
+    markSeen(currentEd);
+  });
+  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closePopup();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop.classList.contains('is-open')) closePopup();
+  });
+
+  var copyBtn = document.getElementById('ubcPopCopy');
+  copyBtn.addEventListener('click', function () {
+    var code = document.getElementById('ubcPopCodeVal').textContent;
+    var isEs = getLang() === 'es';
+    function done() {
+      copyBtn.textContent = isEs ? '¡Copiado! ✓' : 'Copied! ✓';
+      setTimeout(function () {
+        copyBtn.textContent = isEs ? 'Copiar Código' : 'Copy Code';
+      }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done).catch(done);
+    } else {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) {}
+      done();
+    }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.fb-lang button'), function (btn) {
+    btn.addEventListener('click', function () {
+      setTimeout(function () {
+        if (backdrop.classList.contains('is-open')) renderPopup(currentEd);
+      }, 40);
+    });
+  });
+
+  window.ubcOpenPopup = openPopup;
+
+  var path = window.location.pathname || '';
+  if (path.indexOf('/cart') === 0 || path.indexOf('/checkouts') === 0) return;
+
+  var forcePopup = /[?&]popup=1\b/i.test(window.location.search || '');
+  var ed = detectEdition();
+  if (forcePopup) {
+    setTimeout(function () { openPopup(ed); }, 450);
+  } else if (!wasSeenRecently(ed)) {
+    setTimeout(function () {
+      if (!wasSeenRecently(ed)) openPopup(ed);
+    }, 4500);
+  }
+})();
+</script>

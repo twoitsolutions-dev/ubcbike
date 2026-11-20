@@ -657,7 +657,7 @@
           <span class="ubc-ws-kicker" data-es="Antes y Hoy · Tres Generaciones en Tampa">Then &amp; Now &middot; Three Generations in Tampa</span>
           <h2 class="ubc-ws-h2" data-es="Más de 50 Años Rodando con Tampa Bay">Over 50 Years Rolling With Tampa Bay</h2>
         </div>
-        <div class="ubc-ws-grid">
+        <div class="ubc-ws-grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr));">
           <article class="ubc-ws-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
             <div style="aspect-ratio:16/10;overflow:hidden;background:#14202D;">
               <img src="{{ 'ubc-archive-1972.jpg' | asset_url }}" alt="Original University Bicycle Center storefront in Tampa, 1972" loading="lazy" width="1056" height="708" style="width:100%;height:100%;object-fit:cover;display:block;">
@@ -679,6 +679,19 @@
               <p class="ubc-ws-note" style="margin:0;" data-es="Nuestro icónico edificio junto a USF se convirtió en el punto de encuentro para estudiantes, familias y ciclistas de toda la Bahía de Tampa.">Our landmark storefront near USF became the go-to hub for students, families, and lifelong Tampa Bay riders.</p>
             </div>
           </article>
+
+          {%- if hero_img -%}
+          <article class="ubc-ws-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="aspect-ratio:16/10;overflow:hidden;background:#14202D;">
+              {{ hero_img | image_url: width: 1100 | image_tag: loading: 'lazy', alt: 'University Bicycle Center 1220 E Fletcher Ave storefront in the 2000s', style: 'width:100%;height:100%;object-fit:cover;display:block;' }}
+            </div>
+            <div style="padding:20px 22px 22px;display:flex;flex-direction:column;gap:6px;">
+              <span class="ubc-ws-kicker" style="margin:0;color:#E04F33;" data-es="Años 2000–2010 · Renovación">2000s&ndash;2010s &middot; New Era</span>
+              <h3 style="margin:0;" data-es="Evolución en Fletcher Ave">Expanding Our Tampa Hub</h3>
+              <p class="ubc-ws-note" style="margin:0;" data-es="La tienda evolucionó con nueva fachada azul y gris, pantalla digital y un inventario cada vez más amplio para toda la comunidad.">Our 1220 E Fletcher Ave landmark evolved with a refreshed storefront, digital marquee, and an expanding lineup for Tampa Bay riders.</p>
+            </div>
+          </article>
+          {%- endif -%}
 
           <article class="ubc-ws-card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
             <div style="aspect-ratio:16/10;overflow:hidden;background:#14202D;">

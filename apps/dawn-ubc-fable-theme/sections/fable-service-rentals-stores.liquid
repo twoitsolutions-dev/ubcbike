@@ -262,7 +262,7 @@
   .ubc-fin-card--sync::before { background: #F4B400; }
   .ubc-fin-card--acima::before { background: #0062B8; }
   .ubc-fin-card--snap::before { background: #1F6E43; }
-  .ubc-fin-card--trade::before { background: #0072CE; }
+  .ubc-fin-card--trade::before { background: #2AA8DF; }
 
   .ubc-fin-top {
     display: flex;
@@ -511,16 +511,11 @@
           </a>
         </article>
 
-        <!-- Card 4: Bicycle Blue Book (Official Blue Wordmark, No Box) -->
+        <!-- Card 4: Bicycle Blue Book (Official Logo PNG, No Box) -->
         <article class="ubc-fin-card ubc-fin-card--trade">
           <div class="ubc-fin-top">
-            <div class="ubc-fin-logo" aria-label="BicycleBlueBook">
-              <svg viewBox="0 0 185 28" width="145" height="22" role="img" aria-label="BicycleBlueBook">
-                <circle cx="11" cy="14" r="9" fill="none" stroke="#0072CE" stroke-width="2.4"/>
-                <circle cx="11" cy="14" r="2.2" fill="#0072CE"/>
-                <path d="M11 5v18M2 14h18M4.6 7.6l12.8 12.8M17.4 7.6L4.6 20.4" stroke="#0072CE" stroke-width="1.1"/>
-                <text x="26" y="19" font-family="Barlow, -apple-system, sans-serif" font-size="14.5" font-weight="800" fill="#14202D">Bicycle<tspan fill="#0072CE">BlueBook</tspan></text>
-              </svg>
+            <div class="ubc-fin-logo">
+              <img src="{{ 'logo-bicycle-blue-book.png' | asset_url }}" alt="BicycleBlueBook.com" loading="lazy" style="max-height:32px;max-width:155px;width:auto;height:auto;object-fit:contain;display:block;">
             </div>
             <span class="ubc-fin-badge">Instant Credit</span>
           </div>

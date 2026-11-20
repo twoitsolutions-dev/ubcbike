@@ -2020,25 +2020,18 @@
     });
   });
 
-  function openLiveIkeonoWidget() {
+  function openLiveIkeonoWidget(messageBody) {
+    if (document.getElementById('ikeono-wrapper') || document.getElementById('ikeono_webchat_widget')) {
+      window.postMessage({
+        type: 'OPEN_WIDGET',
+        message_body: messageBody || '',
+        location_id: '7412421b-e943-4ffc-842b-8400cf0a0adb',
+      }, '*');
+      return true;
+    }
     if (window.Ikeono && typeof window.Ikeono.open === 'function') {
       window.Ikeono.open();
       return true;
-    }
-    // Search Ikeono v2 widget launcher button in regular DOM or Shadow DOM
-    var hosts = document.querySelectorAll('[id*="ikeono" i], [class*="ikeono" i], ikeono-webchat, ikeono-widget');
-    for (var i = 0; i < hosts.length; i++) {
-      var h = hosts[i];
-      var root = h.shadowRoot || h;
-      var trigger = root.querySelector('button, [role="button"], .launcher, .chat-launcher');
-      if (trigger && typeof trigger.click === 'function') {
-        trigger.click();
-        return true;
-      }
-      if (typeof h.click === 'function' && h.tagName !== 'SCRIPT') {
-        h.click();
-        return true;
-      }
     }
     return false;
   }
@@ -2047,10 +2040,10 @@
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      if (openLiveIkeonoWidget()) return;
       var promptTxt = lang === 'es'
         ? (btn.getAttribute('data-ws-ikeono-es') || btn.getAttribute('data-ws-ikeono'))
         : btn.getAttribute('data-ws-ikeono');
+      if (openLiveIkeonoWidget(promptTxt)) return;
       if (ikPanel && ikFab) {
         ikPanel.removeAttribute('hidden');
         ikFab.setAttribute('aria-expanded', 'true');

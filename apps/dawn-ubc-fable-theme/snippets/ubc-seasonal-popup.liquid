@@ -6,13 +6,11 @@
   discount codes via /discount/CODE?redirect=/collections/...
 {%- endcomment -%}
 
-{%- assign img_storefront = images['ubc-difference-storefront.jpg'] | image_url: width: 900 -%}
-{%- if img_storefront == blank or img_storefront contains 'no-image' -%}
-  {%- assign img_storefront = 'ubc-reel-carlos-story.jpg' | asset_url -%}
-{%- endif -%}
+{%- assign img_storefront = 'ubc-tampa-exterior.jpg' | asset_url -%}
+{%- assign img_showroom = 'ubc-showroom-wide.jpg' | asset_url -%}
 {%- assign img_carlos = 'ubc-reel-carlos-story.jpg' | asset_url -%}
 {%- assign img_alafia_mtb = 'alafia-mtb-action.jpg' | asset_url -%}
-{%- assign img_alafia_trail = 'alafia-trails-hero.jpg' | asset_url -%}
+{%- assign img_alafia_trail = 'ubc-alafia-container.jpg' | asset_url -%}
 {%- assign img_campus = 'ubc-reel-alec-ebike.jpg' | asset_url -%}
 {%- assign img_manny = 'ubc-reel-manny-47yrs.jpg' | asset_url -%}
 
@@ -394,7 +392,7 @@
     },
     black_friday: {
       accent: '#E04F33',
-      img: {{ img_storefront | json }},
+      img: {{ img_showroom | json }},
       code: 'BF15GEAR',
       redirect: '/collections/accessories-gear',
       en: {

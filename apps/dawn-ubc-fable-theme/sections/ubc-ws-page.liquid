@@ -647,11 +647,9 @@
             <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/why-shop-at-ubc" data-es="5 Razones UBC">5 Reasons to Buy at UBC</a>
           </div>
         </div>
-        {%- if hero_img -%}
-          <div class="ubc-ws-hero-media">
-            {{ hero_img | image_url: width: 1100 | image_tag: loading: 'eager', alt: 'University Bicycle Center Storefront' }}
-          </div>
-        {%- endif -%}
+        <div class="ubc-ws-hero-media">
+          <img src="{{ 'ubc-tampa-exterior.jpg' | asset_url }}" alt="University Bicycle Center Tampa — 1220 E Fletcher Ave" loading="eager" width="1100" height="1182">
+        </div>
       </section>
 
       {%- if page.content != blank -%}

@@ -10051,7 +10051,7 @@ iframe[src*="ikeono"] {
 .collection-hero__title,
 .template-page .rte h1,
 .template-page .rte h2 {
-  font-family: var(--display) !important;
+  font-family: var(--ubc-font-display, "Anton", "Impact", sans-serif) !important;
   font-weight: 400 !important;
   letter-spacing: 0.015em;
   color: #14202D;
@@ -10060,7 +10060,7 @@ iframe[src*="ikeono"] {
 .template-page .rte,
 .template-page .rte p,
 .template-page .rte li {
-  font-family: var(--body) !important;
+  font-family: var(--ubc-font-body, "Barlow", -apple-system, BlinkMacSystemFont, sans-serif) !important;
 }
 
 .ubc-ws-alert--ok {

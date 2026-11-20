@@ -154,43 +154,43 @@
     <script type="application/json" id="FableHeroData">
       [
         {
-          "b": "Giant",
-          "g": "GIANT",
+          "b": "Cannondale",
+          "g": "CANNONDALE",
           "c": "#ccbb8d",
-          "n": {% if p_giant != blank %}{{ p_giant.title | json }}{% else %}"Contend SL 0"{% endif %},
-          "p": {% if p_giant != blank %}{{ p_giant.price | divided_by: 100.0 | json }}{% else %}1700.00{% endif %},
-          "u": {% if p_giant != blank %}{{ p_giant.url | json }}{% else %}{{ routes.collections_url | append: '/road-bikes' | json }}{% endif %},
-          "img": {% if p_giant != blank and p_giant.featured_image != blank %}{{ p_giant.featured_image | image_url: width: 1200 | json }}{% else %}{{ 'fable-bike-tarmac.png' | asset_url | json }}{% endif %},
+          "n": "Synapse Neo Electric Road",
+          "p": 3799.99,
+          "u": {{ routes.collections_url | append: '/electric-bikes' | json }},
+          "img": {{ 'ebike-synapse-neo.png' | asset_url | json }},
           "availability": "in_stock",
-          "cta": ["View Road Bike", "Ver Bici de Ruta"],
-          "cat": ["Road & Endurance · Giant", "Ruta y Resistencia · Giant"],
-          "d": ["Responsive ALUXX SL aluminum endurance road bike — built, fitted and torque-checked by UBC mechanics in Tampa.", "Bicicleta de ruta ligera en aluminio ALUXX SL, armada y ajustada en nuestro taller de Tampa."]
+          "cta": ["Shop Electric Bikes", "Ver Bicis Eléctricas"],
+          "cat": ["Electric Road · Cannondale", "Ruta Eléctrica · Cannondale"],
+          "d": ["Lightweight Bosch pedal-assist road endurance built, fitted and torque-checked by UBC mechanics in Tampa.", "Bicicleta eléctrica de ruta con asistencia Bosch, armada y ajustada en nuestro taller de Tampa."]
         },
         {
-          "b": "Jupiter Bikes",
-          "g": "E-BIKE",
-          "c": "#d9cfb2",
-          "n": {% if p_jupiter != blank %}{{ p_jupiter.title | json }}{% else %}"Jupiter Defiant E-Bike"{% endif %},
-          "p": {% if p_jupiter != blank %}{{ p_jupiter.price | divided_by: 100.0 | json }}{% else %}1099.99{% endif %},
-          "u": {% if p_jupiter != blank %}{{ p_jupiter.url | json }}{% else %}{{ routes.collections_url | append: '/electric-bikes' | json }}{% endif %},
-          "img": {% if p_jupiter != blank and p_jupiter.featured_image != blank %}{{ p_jupiter.featured_image | image_url: width: 1200 | json }}{% else %}{{ 'spz-turbo-vado-4.png' | asset_url | json }}{% endif %},
-          "availability": "in_stock",
-          "cta": ["View E-Bike", "Ver E-Bike"],
-          "cat": ["Electric Bikes · Jupiter", "Bicicletas Eléctricas · Jupiter"],
-          "d": ["All-terrain folding fat-tire e-bike built for Tampa Bay paths, beaches, and daily cruising — in stock ready to ride.", "E-bike plegable todoterreno ideal para paseos en Tampa Bay y playa, lista para rodar hoy."]
-        },
-        {
-          "b": "Fox Racing",
+          "b": "Giro",
           "g": "HELMETS",
           "c": "#e6d8b4",
-          "n": {% if p_fox != blank %}{{ p_fox.title | json }}{% else %}"Proframe RS Helmet"{% endif %},
-          "p": {% if p_fox != blank %}{{ p_fox.price | divided_by: 100.0 | json }}{% else %}399.99{% endif %},
-          "u": {% if p_fox != blank %}{{ p_fox.url | json }}{% else %}{{ routes.collections_url | append: '/helmets' | json }}{% endif %},
-          "img": {% if p_fox != blank and p_fox.featured_image != blank %}{{ p_fox.featured_image | image_url: width: 1000 | json }}{% else %}{{ 'spz-propero-4.png' | asset_url | json }}{% endif %},
+          "n": "Agilis MIPS Road & Trail Helmet",
+          "p": 119.99,
+          "u": {{ routes.collections_url | append: '/helmets' | json }},
+          "img": {{ 'fable-gear-agilis.png' | asset_url | json }},
           "availability": "in_stock",
           "cta": ["Shop Helmets", "Ver Cascos"],
-          "cat": ["Trail & MTB Safety · Fox Racing", "Cascos y Seguridad · Fox Racing"],
-          "d": ["Breathable trail and enduro protection built for Alafia River and Balm-Boyette singletrack — in stock in Tampa.", "Protección ventilada de trail y enduro ideal para Alafia River y Balm-Boyette, en stock en Tampa."]
+          "cat": ["Helmets & Safety · Giro", "Cascos y Seguridad · Giro"],
+          "d": ["Deep coverage, Roc Loc 5.5 fit and MIPS protection engineered for Florida heat — in stock in Tampa & online.", "Cobertura profunda, ajuste Roc Loc 5.5 y protección MIPS para el calor de Florida — en stock en Tampa."]
+        },
+        {
+          "b": "Electra",
+          "g": "CRUISER",
+          "c": "#d9cfb2",
+          "n": "Townie Go! Electric Cruiser",
+          "p": 1999.99,
+          "u": {{ routes.collections_url | append: '/electric-bikes' | json }},
+          "img": {{ 'ebike-townie-go.png' | asset_url | json }},
+          "availability": "in_stock",
+          "cta": ["Shop E-Bikes & Cruisers", "Ver E-Bikes y Urbanas"],
+          "cat": ["Comfort & E-Cruisers · Electra", "Urbanas y Eléctricas · Electra"],
+          "d": ["Flat Foot Technology comfort with smooth pedal assist — effortless riding on Tampa Bay trails and neighborhoods.", "Comodidad Flat Foot Technology con asistencia suave al pedaleo para paseos por Tampa Bay."]
         },
         {
           "b": "Specialized",

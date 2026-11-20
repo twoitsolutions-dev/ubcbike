@@ -244,6 +244,16 @@
   }
   .ubc-mt-card p { font-size: 14px; color: #475569; }
 
+  .ubc-mt-card--featured {
+    background: linear-gradient(145deg, #14202D 0%, #1E3347 100%);
+    border-color: #14202D;
+    color: #FFFFFF;
+    box-shadow: 0 10px 26px rgba(20, 32, 45, 0.14);
+  }
+  .ubc-mt-card--featured .ubc-mt-loc { color: #FF8E77; }
+  .ubc-mt-card--featured h3 { color: #FFFFFF; }
+  .ubc-mt-card--featured p { color: #CBD5E1; }
+
   /* Downloadable / Printable Grid — 1 col mobile -> 2 col desktop */
   .ubc-mt-dl-grid {
     display: grid;
@@ -309,31 +319,25 @@
 
     <div class="ubc-mt-bar">
       <div class="ubc-mt-tabs" role="tablist" aria-label="Map views">
-        <button class="ubc-mt-tab is-active" role="tab" aria-selected="true" data-tab="interactive">Interactive Maps (6)</button>
-        <button class="ubc-mt-tab" role="tab" aria-selected="false" data-tab="printable">Downloadable Maps (7)</button>
+        <button class="ubc-mt-tab is-active" role="tab" aria-selected="true" data-tab="interactive">Interactive Maps</button>
+        <button class="ubc-mt-tab" role="tab" aria-selected="false" data-tab="printable">Downloadable Maps</button>
       </div>
     </div>
 
     <!-- PANE 1: INTERACTIVE MAPS -->
     <div class="ubc-mt-pane is-active" data-pane="interactive">
-      <article class="ubc-mt-featured">
-        <div>
-          <span class="ubc-mt-feat-badge">UBC Trailhead Shop On-Site</span>
-          <h2>Alafia River State Park</h2>
-          <p>Florida&rsquo;s premier mountain bike destination in Lithia, FL &mdash; with UBC&rsquo;s trailhead shop, MTB &amp; e-MTB rentals, tubes, and quick repairs steps from the trails.</p>
-          <div class="ubc-mt-actions">
-            <a class="ubc-mt-btn ubc-mt-btn--accent" href="/pages/alafia-interactive-map">Open Alafia Map &rarr;</a>
-            <a class="ubc-mt-btn" style="background:rgba(255,255,255,0.12);color:#fff !important;" href="/pages/bike-rentals">Rent a Bike</a>
-          </div>
-        </div>
-        <div class="ubc-mt-feat-stats">
-          <div class="ubc-mt-stat"><strong>28</strong><span>Official Trails</span></div>
-          <div class="ubc-mt-stat"><strong>5</strong><span>Skill Levels</span></div>
-          <div class="ubc-mt-stat"><strong>Live</strong><span>GPS &amp; Pins</span></div>
-        </div>
-      </article>
-
       <div class="ubc-mt-grid">
+        <article class="ubc-mt-card ubc-mt-card--featured">
+          <div>
+            <div class="ubc-mt-card-top">
+              <span class="ubc-mt-loc">Lithia, FL &middot; UBC Shop On-Site</span>
+              <span class="ubc-mt-dots"><span class="ubc-mt-dot g"></span><span class="ubc-mt-dot b"></span><span class="ubc-mt-dot k"></span><span class="ubc-mt-dot r"></span></span>
+            </div>
+            <h3>Alafia River State Park</h3>
+            <p>28 official trails, live GPS &amp; pins, plus UBC bike rentals and repairs right at the trailhead.</p>
+          </div>
+          <a class="ubc-mt-btn ubc-mt-btn--accent ubc-mt-btn--sm" href="/pages/alafia-interactive-map">Open Alafia Map &rarr;</a>
+        </article>
         <article class="ubc-mt-card">
           <div>
             <div class="ubc-mt-card-top">

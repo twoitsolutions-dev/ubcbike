@@ -2434,11 +2434,13 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
   text-decoration: none;
 }
 
+#showImg,
+.show-thumbs img,
 .show-bike img,
-.show-stage img,
+.show-stage img:not(.show-usf-stage-logo),
 .show-thumb img {
   filter: none !important;
-  mix-blend-mode: multiply;
+  mix-blend-mode: multiply !important;
 }
 
 @media (hover: hover) and (pointer: fine) {

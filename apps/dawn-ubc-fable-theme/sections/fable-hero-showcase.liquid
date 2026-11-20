@@ -206,17 +206,17 @@
           "d": ["Light, aerodynamic FACT carbon frameset, built, fitted and torque-checked by UBC mechanics in Tampa.", "Cuadro ligero y aerodinámico de carbono FACT, armado y ajustado a tu medida en nuestro taller de Tampa."]
         },
         {
-          "b": "Shimano",
-          "g": "SHOES",
+          "b": "SRAM",
+          "g": "PARTS",
           "c": "#f2bfb3",
-          "n": {% if p_shimano != blank %}{{ p_shimano.title | json }}{% else %}"SH-RC302 Cycling Shoes"{% endif %},
-          "p": {% if p_shimano != blank %}{{ p_shimano.price | divided_by: 100.0 | json }}{% else %}130.00{% endif %},
-          "u": {% if p_shimano != blank %}{{ p_shimano.url | json }}{% else %}{{ routes.collections_url | append: '/cycling-shoes' | json }}{% endif %},
-          "img": {% if p_shimano != blank and p_shimano.featured_image != blank %}{{ p_shimano.featured_image | image_url: width: 1000 | json }}{% else %}{{ 'spz-power-saddle.png' | asset_url | json }}{% endif %},
+          "n": "SRAM Drivetrain & Pro Parts",
+          "p": 139.99,
+          "u": {{ routes.collections_url | append: '/parts-components' | json }},
+          "img": {{ 'cat-sram-s200.png' | asset_url | json }},
           "availability": "in_stock",
-          "cta": ["Shop Shoes & Gear", "Ver Zapatillas"],
-          "cat": ["Cycling Shoes & Fit · Shimano", "Zapatillas y Equipo · Shimano"],
-          "d": ["BOA dial precision fit and stiff fiberglass-reinforced sole for efficient power transfer on every ride.", "Ajuste preciso con dial BOA y suela rígida para máxima transferencia de potencia en cada salida."]
+          "cta": ["Shop Parts & Components", "Ver Piezas y Componentes"],
+          "cat": ["Components & Upgrades · SRAM", "Componentes y Mejoras · SRAM"],
+          "d": ["Genuine drivetrains, cassettes, chains, brakes, and upgrades installed by UBC mechanics in Tampa.", "Transmisiones, cassettes, cadenas, frenos y mejoras originales instalados en nuestro taller de Tampa."]
         }
       ]
     </script>

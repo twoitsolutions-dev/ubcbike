@@ -2361,7 +2361,23 @@
     'Pro Assembly': 'Armado Profesional',
     'Lifetime Adjustments': 'Ajustes de por Vida',
     'Ready Today': 'Listo Hoy Mismo',
-    'Same-Day Pickup': 'Retiro el Mismo Día'
+    'Same-Day Pickup': 'Retiro el Mismo Día',
+    'In-Stock': 'En Stock ·',
+    'Black Friday Deals': 'Ofertas Black Friday',
+    'DEC 24': 'DIC 24',
+    'Up to $3,500 OFF Black Friday 2026 Bikes · Up to 60% OFF Gear · Free Hold Until Dec 24 · Peak-Season Alafia Rentals': 'Hasta $3,500 OFF en Bicis Black Friday 2026 · Hasta 60% OFF en Equipo · Apartado Gratis hasta Dic 24 · Rentas Alafia',
+    'Up to $3,500 OFF Black Friday 2026 Bikes': 'Hasta $3,500 OFF en Bicis Black Friday 2026',
+    'Up to 60% OFF Gear · Free Hold Until Dec 24 · Peak-Season': 'Hasta 60% OFF en Equipo · Apartado Gratis hasta Dic 24 · Temporada Alta',
+    'Ready-to-wrap rider gifts in stock at UBC Tampa': 'Regalos ciclistas listos para envolver en UBC Tampa',
+    'SRAM AXS, Troy Lee Designs, Supacaz & tires': 'SRAM AXS, Troy Lee Designs, Supacaz y llantas',
+    "Reserve any in-stock Black Friday 2026 bike or e-bike today at Black Friday markdowns up to $3,500 off. Manny & Ashton's mechanics assemble, safety-check, and store it hidden in our Tampa warehouse until you're ready.": 'Reserva hoy cualquier bici o e-bike Black Friday 2026 en stock con descuentos de hasta $3,500. Los mecánicos de Manny y Ashton la arman, revisan y guardan en nuestra bodega de Tampa hasta que estés listo.',
+    'Pair 40%–60% off MIPS helmets, Sidi/Shimano shoes, and Troy Lee apparel with our Black Friday Workshop Bonus: $25 off Level 3 Overhauls, free drivetrain wash on Level 2, plus Alafia Trailhead Rental Passes.': 'Combina 40%–60% de descuento en cascos MIPS, zapatos Sidi/Shimano y ropa Troy Lee con nuestro Bono de Taller Black Friday: $25 de descuento en Overhaul Nivel 3, lavado de transmisión gratis en Nivel 2 y pases de renta en Alafia.',
+    'Find an identical in-stock bike or gear item for less at an authorized dealer and we beat the difference by 10%.': 'Si encuentras una bici o accesorio idéntico en stock a menor precio en un distribuidor autorizado, mejoramos la diferencia en un 10%.',
+    'Split your Black Friday bike or e-bike purchase into easy monthly payments with promotional 0% APR options.': 'Divide tu compra de bici o e-bike Black Friday en cómodos pagos mensuales con opciones promocionales 0% APR.',
+    'Every bike bought at UBC Tampa is built by certified mechanics and includes free lifetime adjustments for the original owner.': 'Cada bici comprada en UBC Tampa es armada por mecánicos certificados e incluye ajustes gratis de por vida para el dueño original.',
+    'Skip shipping delays — test ride and pick up in-stock Black Friday deals at 1220 E Fletcher Ave in Tampa.': 'Evita demoras de envío — pruébala y retira hoy tus ofertas Black Friday en stock en 1220 E Fletcher Ave, Tampa.',
+    'Ashton · MTB & Road': 'Ashton · MTB y Ruta',
+    'Manny · 47½+ Yrs': 'Manny · 47½+ Años'
   };
   var UBC_ES_RX = [
     [/^([\d,]+) results$/, '$1 resultados'], [/^([\d,]+) result$/, '$1 resultado'],
@@ -2369,15 +2385,15 @@
     [/^All Brands \((\d+)\)$/, 'Todas las marcas ($1)'],
     [/^At Warehouse · Ready in (\d+) days$/, 'En bodega · Listo en $1 días'],
     [/^Quantity \((\d+) in cart\)$/, 'Cantidad ($1 en el carrito)'],
-    [/^SAVE \$(\d[\d,]*)$/, 'AHORRA $$1'],
-    [/^Save \$(\d[\d,]*)$/, 'Ahorra $$1'],
+    [/^SAVE \$(\d[\d,]*)$/, function (_, n) { return 'AHORRA $' + n; }],
+    [/^Save \$(\d[\d,]*)$/, function (_, n) { return 'Ahorra $' + n; }],
     [/^Deal (\d+) of (\d+)$/, 'Oferta $1 de $2'],
     [/^Showing (\d+) of (\d+) In-Stock Deals$/, 'Mostrando $1 de $2 ofertas en stock'],
     [/^Shop All (\d+) Deals →$/, 'Ver las $1 Ofertas →'],
     [/^All (\d+) Deals$/, 'Las $1 Ofertas'],
     [/^Browse All (\d+) Black Friday Deals →$/, 'Ver Todas las $1 Ofertas Black Friday →'],
     [/^Black Friday 2026 Deal · (.+)$/, 'Oferta Black Friday 2026 · $1'],
-    [/^-(\d+)% OFF · Save \$(\d[\d,]*)$/, '-$1% OFF · Ahorra $$2'],
+    [/^-(\d+)% OFF · Save \$(\d[\d,]*)$/, function (_, p, n) { return '-' + p + '% OFF · Ahorra $' + n; }],
     [/^Call (.+)$/, 'Llamar $1']
   ];
   var ubcOrigText = typeof WeakMap === 'function' ? new WeakMap() : null;
@@ -2405,7 +2421,7 @@
         var es = ubcEsFor(key);
         if (es !== null) {
           if (!ubcOrigText.has(node)) ubcOrigText.set(node, raw);
-          var want = raw.replace(raw.trim(), es);
+          var want = raw.replace(raw.trim(), function () { return es; });
           if (node.nodeValue !== want) node.nodeValue = want;
         }
       } else if (ubcOrigText.has(node)) {

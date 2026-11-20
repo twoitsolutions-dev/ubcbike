@@ -1,8 +1,7 @@
 {%- comment -%}
-  UBC Dawn Ecommerce v21 — Protagonist Walk-In Repair Workshop (#service)
-  Led by Founder Manny Mirabal (47.5+ yrs) & Grandson Ashton (Lead MTB & Road Mechanic) + Veteran Crew (13–28+ yrs).
-  All-day walk-in energy: Everyday/Kids Bikes, Electric Scooters & E-Bikes, Pro Carbon MTB/Road & Tough Mechanical Challenges.
-  Includes Zero-Bloat Instagram Reel Story Pills (`DadS0QdvEyv` & `Dew1Zk6vFfg`) + Ikeono SMS Photo Trigger + Compact Tune-Up Strip.
+  UBC Dawn V34 — Visual Walk-In Repair Workshop Showcase (#service)
+  Features real UBC Tampa workshop photography (`ubc-service-wheel-truing.jpg`), compact 2x2 capability cards,
+  4-tier tune-up pricing bar, collapsible checklist, and direct Ikeono SMS trigger.
 {%- endcomment -%}
 {%- liquid
   assign edition = settings.ubc_edition | default: 'classic'
@@ -18,87 +17,184 @@
   assign p_lvl1 = section.settings.level1_price | default: '$100'
   assign p_lvl2 = section.settings.level2_price | default: '$160'
   assign p_lvl3 = section.settings.level3_price | default: '$250'
+  assign ws_photo = images['ubc-service-wheel-truing.jpg']
 -%}
+
+<style>
+  .ubc-wsp-split {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: clamp(22px, 3.2vw, 40px);
+    align-items: stretch;
+    margin-bottom: 24px;
+  }
+  .ubc-wsp-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+  }
+  .ubc-wsp-caps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .ubc-wsp-cap {
+    background: #FFFFFF;
+    border: 1px solid rgba(20, 32, 45, 0.1);
+    border-radius: 14px;
+    padding: 13px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .ubc-wsp-cap--dark {
+    background: #14202D;
+    border-color: #14202D;
+    color: #FEFDF3;
+  }
+  .ubc-wsp-cap__k {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #E04F33;
+  }
+  .ubc-wsp-cap--dark .ubc-wsp-cap__k { color: #CCBB8D; }
+  .ubc-wsp-cap strong {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #14202D;
+    line-height: 1.2;
+  }
+  .ubc-wsp-cap--dark strong { color: #FEFDF3; }
+  .ubc-wsp-cap span.ubc-wsp-cap__s {
+    font-size: 12.5px;
+    color: #4A5A6A;
+    line-height: 1.35;
+  }
+  .ubc-wsp-cap--dark span.ubc-wsp-cap__s { color: rgba(254, 253, 243, 0.78); }
+
+  .ubc-wsp-photo {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    background: #14202D;
+    border: 1px solid rgba(20, 32, 45, 0.12);
+    box-shadow: 0 18px 36px -22px rgba(20, 32, 45, 0.35);
+    min-height: 340px;
+  }
+  .ubc-wsp-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+  }
+  .ubc-wsp-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20, 32, 45, 0.05) 45%, rgba(20, 32, 45, 0.84) 100%);
+    pointer-events: none;
+  }
+  .ubc-wsp-photo-bar {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ubc-wsp-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(20, 32, 45, 0.84);
+    border: 1px solid rgba(254, 253, 243, 0.22);
+    color: #FEFDF3;
+  }
+  .ubc-wsp-pill--gold {
+    background: #CCBB8D;
+    border-color: #CCBB8D;
+    color: #14202D;
+  }
+  @media (max-width: 900px) {
+    .ubc-wsp-split { grid-template-columns: 1fr; }
+    .ubc-wsp-photo { min-height: 250px; }
+  }
+  @media (max-width: 540px) {
+    .ubc-wsp-caps { grid-template-columns: 1fr; }
+  }
+</style>
+
 <div class="fb-scope">
   <section class="fb-sec ws-sec" id="service">
     <div class="fb-wrap">
-      <div class="fb-sec-head split">
-        <div class="ws-copy">
+      <div class="ubc-wsp-split">
+        <div class="ubc-wsp-left">
           <div class="ws-live-row reveal">
             <span class="ws-live-pill">
               <i aria-hidden="true"></i>
               <span data-es="Taller Sin Cita Todo el Día &middot; Entrega Estándar ~24h">{{ section.settings.live_status | escape }}</span>
             </span>
-            {%- if edition == 'black_friday' -%}
-              <span class="ws-promo-tag" data-es="Promo BF: Lavado Pro Gratis en Nivel 2">BF Bonus: Free Detail Wash w/ Level 2</span>
-            {%- elsif edition == 'christmas' -%}
-              <span class="ws-promo-tag" data-es="Armado Navideño y Revisión Gratis">Holiday Bike Assembly &amp; Free Safety Check</span>
-            {%- elsif edition == 'july_4' -%}
-              <span class="ws-promo-tag" data-es="Revisión de Verano Sin Cita">Summer Heat &amp; Trail Prep Check</span>
-            {%- endif -%}
           </div>
 
           <h2 class="h2 reveal" data-es="De una bici diaria o scooter a carbono pro: <em>reparamos lo que sea.</em>">
             From a flat or scooter to pro carbon: <em>we fix anything.</em>
           </h2>
-          <p class="lead reveal" data-es="Liderado personalmente por nuestro fundador Manny (47 &frac12;+ años de oficio) junto a su nieto Ashton (mecánico principal MTB y Ruta) y técnicos con hasta 28 años de experiencia. Nos encantan los retos mecánicos.">
-            Personally led by founder <strong>Manny</strong> (47 &frac12;+ years at the bench) alongside grandson <strong>Ashton</strong> (Lead MTB &amp; Road Mechanic) and veteran techs with 13–28+ years of experience. Bring us your toughest mechanical challenge.
+          <p class="lead reveal" data-es="Liderado por Manny (47 &frac12;+ años) y su nieto Ashton (MTB &amp; Ruta) junto a técnicos con 13–28+ años de oficio. Trae cualquier reto mecánico sin cita.">
+            Led by founder <strong>Manny</strong> (47&frac12;+ yrs at the bench) &amp; grandson <strong>Ashton</strong> (Lead MTB &amp; Road Tech) with a veteran crew of 13&ndash;28+ yrs experience.
           </p>
+
+          <div class="ubc-wsp-caps reveal">
+            <div class="ubc-wsp-cap">
+              <span class="ubc-wsp-cap__k">Quick Turnaround</span>
+              <strong data-es="Bicis Diarias y Niños">Everyday &amp; Campus Bikes</strong>
+              <span class="ubc-wsp-cap__s">Flats, brakes, chains &amp; safety checks.</span>
+            </div>
+            <div class="ubc-wsp-cap">
+              <span class="ubc-wsp-cap__k">Multi-Brand Bay</span>
+              <strong data-es="E-Bikes y Scooters">E-Bikes &amp; Scooters</strong>
+              <span class="ubc-wsp-cap__s">Tires, hydraulic bleeds &amp; diagnostics.</span>
+            </div>
+            <div class="ubc-wsp-cap">
+              <span class="ubc-wsp-cap__k">Ashton &middot; MTB &amp; Road</span>
+              <strong data-es="Carbono Pro y MTB">Pro Carbon &amp; Full MTB</strong>
+              <span class="ubc-wsp-cap__s">AXS, Di2, suspension &amp; tubeless builds.</span>
+            </div>
+            <div class="ubc-wsp-cap ubc-wsp-cap--dark">
+              <span class="ubc-wsp-cap__k">Manny &middot; 47&frac12;+ Yrs</span>
+              <strong data-es="Retos y Restauración">Tough &amp; Custom Fixes</strong>
+              <span class="ubc-wsp-cap__s">Hand-built wheels &amp; vintage restorations.</span>
+            </div>
+          </div>
         </div>
 
-        <div class="ws-head-cta reveal">
-          <a class="link-arrow" href="#family">
-            <span data-es="Conoce a Manny y Ashton">Meet Manny &amp; Ashton</span>
-            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
+        <div class="ubc-wsp-photo reveal">
+          {%- if ws_photo != blank -%}
+            {{ ws_photo | image_url: width: 1100 | image_tag: alt: 'University Bicycle Center Tampa mechanic truing a bicycle wheel', loading: 'lazy' }}
+          {%- else -%}
+            <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="University Bicycle Center Workshop" loading="lazy">
+          {%- endif -%}
+          <div class="ubc-wsp-photo-bar">
+            <span class="ubc-wsp-pill">Tampa Pro Workshop &middot; Since 1972</span>
+            <span class="ubc-wsp-pill ubc-wsp-pill--gold">13&ndash;28+ Yrs Techs</span>
+          </div>
         </div>
-      </div>
-
-      {%- comment -%} 4-Column Capability Grid: Everything That Rolls Through UBC All Day {%- endcomment -%}
-      <div class="ws-grid">
-        <article class="ws-card reveal">
-          <div class="ws-card-head">
-            <span class="ws-num">01</span>
-            <span class="ws-tag" data-es="Al Instante / 24h">Quick Turnaround</span>
-          </div>
-          <h3 data-es="Bicis Diarias, Campus y Niños">Everyday, Campus &amp; Kids' Bikes</h3>
-          <p data-es="Ponchaduras, frenos, cadenas, llantas y ajustes de seguridad para Cruisers, BMX y bicis estudiantiles USF.">
-            Flat tires, brake pads, chains, training wheels &amp; safety checks for cruisers, commuters and USF campus rides.
-          </p>
-        </article>
-
-        <article class="ws-card reveal">
-          <div class="ws-card-head">
-            <span class="ws-num">02</span>
-            <span class="ws-tag ws-tag--coral" data-es="Todas las Marcas">Multi-Brand Bay</span>
-          </div>
-          <h3 data-es="Scooters Eléctricos y E-Bikes">Electric Scooters &amp; E-Bikes</h3>
-          <p data-es="Cambio de llantas sólidas o neumáticas en scooters, frenos hidráulicos y diagnóstico eléctrico en E-Bikes de múltiples marcas.">
-            Scooter tire &amp; brake replacements, hub/mid-drive e-bike diagnostics, firmware updates and hydraulic bleed service.
-          </p>
-        </article>
-
-        <article class="ws-card reveal">
-          <div class="ws-card-head">
-            <span class="ws-num">03</span>
-            <span class="ws-tag ws-tag--gold" data-es="Esp. Ashton">Ashton · MTB &amp; Road</span>
-          </div>
-          <h3 data-es="Carbono Pro: Ruta, Gravel y MTB">Pro Carbon Road &amp; Full MTB</h3>
-          <p data-es="Transmisiones electrónicas SRAM AXS y Shimano Di2, centrado lateral/vertical, suspensión, tubeless y torque exacto en carbono.">
-            SRAM AXS &amp; Shimano Di2 setup, lateral/vertical wheel truing, suspension service, tubeless builds &amp; carbon torque spec.
-          </p>
-        </article>
-
-        <article class="ws-card ws-card--dark reveal">
-          <div class="ws-card-head">
-            <span class="ws-num">04</span>
-            <span class="ws-tag ws-tag--gold" data-es="Esp. Manny &middot; 47.5 Años">Manny · 47 &frac12;+ Yrs</span>
-          </div>
-          <h3 data-es="Retos Mecánicos y Restauración">Tough Challenges &amp; Custom Work</h3>
-          <p data-es="¿Otra tienda te dijo que no tiene arreglo? Roscas, piezas difíciles, armado de ruedas a mano y bicis clásicas. Nos gustan los retos.">
-            Told elsewhere it can't be fixed? Seized components, vintage restorations, custom hand-built wheels &amp; tricky repairs welcome.
-          </p>
-        </article>
       </div>
 
       {%- comment -%} Compact Tune-Up Pricing + Collapsible Checklist + Direct Ikeono SMS Workshop Action {%- endcomment -%}

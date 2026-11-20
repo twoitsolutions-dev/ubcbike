@@ -60,9 +60,7 @@ export async function renderHelp(ctx) {
         grid,
         h('div.small.muted', { style: { textAlign: 'center', paddingTop: '8px' } },
           'Manuals & platform built by ',
-          h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener' }, h('strong', 'TwoIT Solutions LLC')),
-          ' · ',
-          h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener' }, 'www.twoitsolutions.com')));
+          h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener' }, h('strong', 'TwoIT Solutions LLC'))));
       return;
     }
 

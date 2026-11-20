@@ -12,7 +12,7 @@ import { renderIntegrations } from './views/integrations.js?v=49';
 import { renderActivity } from './views/activity.js?v=40';
 import { renderSettings } from './views/settings.js?v=54';
 import { renderUpcReview } from './views/upc-review.js?v=51';
-import { renderHelp } from './views/help.js?v=64';
+import { renderHelp } from './views/help.js?v=65';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },

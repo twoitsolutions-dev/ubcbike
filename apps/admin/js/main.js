@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { createHttpDriver } from './drivers/http.js?v=64';
+import { createHttpDriver } from './drivers/http.js?v=65';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=64';
+import { matchRoute } from './router.js?v=65';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
@@ -208,8 +208,7 @@ function renderLogin(message) {
       body)),
     h('div.small', { style: { textAlign: 'center', marginTop: '14px', color: 'rgba(255,255,255,0.75)' } },
       'Built by ',
-      h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'),
-      ' · www.twoitsolutions.com'))));
+      h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
 }
 
 async function afterLogin() {

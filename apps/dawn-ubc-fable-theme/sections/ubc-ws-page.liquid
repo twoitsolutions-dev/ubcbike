@@ -943,6 +943,36 @@
           {%- endif -%}
         </div>
       {%- endif -%}
+
+      <section class="ubc-ws-section" id="trade-in" style="margin-top:3.2rem;">
+        <div class="ubc-ws-card" style="padding:clamp(2.2rem,3.5vw,3.6rem);">
+          <div style="margin-bottom:1.6rem;">
+            <img src="{{ 'logo-bicycle-blue-book.png' | asset_url }}" alt="BicycleBlueBook.com" loading="lazy" style="max-height:36px;width:auto;display:block;margin-bottom:1rem;">
+            <span class="ubc-ws-kicker">OFFICIAL BICYCLEBLUEBOOK.COM PARTNER / INSTANT IN-STORE CREDIT</span>
+            <h2 class="ubc-ws-h2" style="margin-top:0.3rem;">Trade-In Your Used Bike</h2>
+            <p class="ubc-ws-note" style="max-width:66ch;">
+              Estimate your bike's trade-in value right below using the official BicycleBlueBook.com calculator, then bring it to University Bicycle Center Tampa (1220 E Fletcher Ave) to apply instant credit toward your next bike or e-bike.
+            </p>
+          </div>
+          <link href="https://tradein-widget.bicyclebluebook.com/content/widgets/tradein/v2/select2/css/select2.min.css" rel="stylesheet" />
+          <script type="text/javascript" src="https://tradein-widget.bicyclebluebook.com/content/widgets/tradein/v2/jquery/jquery-3.3.1.min.js"></script>
+          <script src="https://tradein-widget.bicyclebluebook.com/content/widgets/tradein/v2/select2/js/select2.min.js"></script>
+          <div class="bbb-widget" data-api-key="72DB47A4-6480-4CBA-8B48-59FB8BF88BF2"></div>
+          <script type="text/javascript">
+            (function () {
+              function loadBbb() {
+                if (document.getElementById('ubc-bbb-eval-js')) return;
+                var s = document.createElement('script');
+                s.id = 'ubc-bbb-eval-js';
+                s.type = 'text/javascript';
+                s.src = 'https://tradein-widget.bicyclebluebook.com/content/widgets/tradein/v2/bbb.trade-in-eval.js';
+                document.body.appendChild(s);
+              }
+              if (document.readyState === 'complete') { loadBbb(); } else { window.addEventListener('load', loadBbb); }
+            })();
+          </script>
+        </div>
+      </section>
       </section>
 
       <section class="ubc-ws-section">

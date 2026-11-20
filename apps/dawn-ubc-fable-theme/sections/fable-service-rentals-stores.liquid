@@ -26,53 +26,160 @@
   assign acima_href = section.settings.acima_url | default: 'https://ams.acimacredit.com/discover/new?lang=en.leases&location_guid=loca-703aa24e-31e6-4aec-8f39-c1d5c6147cf6&merchant_guid=merc-4949370c-a29b-41d5-b86a-894e8bd532aa'
   assign snap_href = section.settings.snap_url | default: 'https://bk.snapfinance.com/origination?paramId=3w%2FEWVFzVGcQioSdKn1vuqdr2hNr3A1xiMt4CtG%2BqOW6%2FoVDUYR%2B662lEkK1hZ0tog9ZSjNG2GyQln5HQrzShOzYiaK%2FnFnEZXfXtyBXVEw%3D'
 -%}
+<style>
+  .ubc-rent-collage {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+  }
+  .ubc-rent-collage__hero {
+    position: relative;
+    width: 100%;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1.5px solid rgba(20, 32, 45, 0.12);
+    box-shadow: 0 18px 36px -22px rgba(20, 32, 45, 0.32);
+    background: #14202D;
+    aspect-ratio: 16 / 10;
+  }
+  .ubc-rent-collage__hero img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+  .ubc-rent-collage__hero:hover img {
+    transform: scale(1.025);
+  }
+  .ubc-rent-collage__badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: #E04F33;
+    color: #FFFFFF;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 999px;
+    box-shadow: 0 6px 16px rgba(20, 32, 45, 0.28);
+    z-index: 2;
+  }
+  .ubc-rent-collage__sub {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 14px;
+    width: 100%;
+  }
+  .ubc-rent-collage__mini-photo {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1.5px solid rgba(20, 32, 45, 0.12);
+    display: block;
+    min-height: 156px;
+    text-decoration: none;
+    background: #14202D;
+  }
+  .ubc-rent-collage__mini-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+  .ubc-rent-collage__mini-photo:hover img {
+    transform: scale(1.04);
+  }
+  .ubc-rent-collage__mini-cap {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20, 32, 45, 0.05) 35%, rgba(20, 32, 45, 0.86) 100%);
+    display: flex;
+    align-items: flex-end;
+    padding: 12px 14px;
+    z-index: 2;
+  }
+  .ubc-rent-collage__mini-cap span {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #FEFDF3;
+  }
+  .ubc-rent-collage__stat {
+    background: #14202D;
+    color: #FEFDF3;
+    border-radius: 18px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1.5px solid #14202D;
+  }
+  @media (max-width: 600px) {
+    .ubc-rent-collage__sub {
+      grid-template-columns: 1fr;
+    }
+    .ubc-rent-collage__mini-photo {
+      min-height: 145px;
+    }
+  }
+</style>
+
 <div class="fb-scope">
-  {%- comment -%} 1. Alafia River State Park Rentals — Hero-Style Ghost Stage + Authorized Trail Policy {%- endcomment -%}
+  {%- comment -%} 1. Alafia River State Park Rentals — Editorial Alafia Collage + Authorized Trail Policy {%- endcomment -%}
   <section class="fb-sec rent-sec" id="rentals">
     <div class="rent-ghost" aria-hidden="true">ALAFIA</div>
     <div class="fb-wrap rent-grid">
-      <div class="rent-stage reveal" style="padding:0;display:flex;flex-direction:column;gap:14px;width:100%;align-self:stretch;justify-content:center;">
-        <div style="position:relative;width:100%;border-radius:22px;overflow:hidden;border:1.5px solid rgba(20,32,45,0.12);box-shadow:0 18px 36px -22px rgba(20,32,45,0.32);background:#14202D;">
+      <div class="ubc-rent-collage reveal">
+        <div class="ubc-rent-collage__hero">
           {%- if section.settings.rental_bike_image != blank -%}
             {{
               section.settings.rental_bike_image
               | image_url: width: 1080
               | image_tag:
                 width: 960,
-                height: 680,
+                height: 600,
                 loading: 'lazy',
-                style: 'width:100%;height:auto;aspect-ratio:16/11;object-fit:cover;display:block;',
                 alt: 'Mountain biker riding the iconic wooden bowl at Alafia River State Park'
             }}
           {%- else -%}
             <img
               src="{{ 'alafia-mtb-action.jpg' | asset_url }}"
               width="960"
-              height="680"
+              height="600"
               alt="Mountain biker carving the iconic wooden bowl at Alafia River State Park"
               loading="lazy"
-              style="width:100%;height:auto;aspect-ratio:16/11;object-fit:cover;display:block;"
             >
           {%- endif -%}
-          <span style="position:absolute;top:14px;left:14px;background:#E04F33;color:#FFFFFF;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:0.09em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 6px 16px rgba(20,32,45,0.28);">Alafia River State Park &middot; Iconic Wooden Bowl</span>
+          <span class="ubc-rent-collage__badge">Alafia River State Park &middot; Iconic Wooden Bowl</span>
         </div>
 
-        <div style="display:grid;grid-template-columns:1.15fr 0.85fr;gap:14px;width:100%;">
-          <a href="/pages/alafia-interactive-map" style="position:relative;border-radius:18px;overflow:hidden;border:1.5px solid rgba(20,32,45,0.12);display:block;min-height:152px;text-decoration:none;background:#14202D;">
+        <div class="ubc-rent-collage__sub">
+          <a class="ubc-rent-collage__mini-photo" href="/pages/alafia-interactive-map">
             <img
               src="{{ 'alafia-trails-hero.jpg' | asset_url }}"
               width="520"
               height="320"
               alt="Alafia singletrack wooden boardwalk and concrete grid trail"
               loading="lazy"
-              style="width:100%;height:100%;object-fit:cover;display:block;"
             >
-            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,32,45,0.05) 35%,rgba(20,32,45,0.84) 100%);display:flex;align-items:flex-end;padding:12px 14px;">
-              <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:#FEFDF3;">28 Official Trails &middot; Live GPS &rarr;</span>
+            <div class="ubc-rent-collage__mini-cap">
+              <span>28 Official Trails &middot; Live GPS &rarr;</span>
             </div>
           </a>
 
-          <div style="background:#14202D;color:#FEFDF3;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;border:1.5px solid #14202D;">
+          <div class="ubc-rent-collage__stat">
             <div>
               <span style="display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:0.09em;text-transform:uppercase;color:#CCBB8D;margin-bottom:4px;">Peak Riding Season</span>
               <strong style="display:block;font-family:'Anton',sans-serif;font-weight:400;font-size:24px;line-height:1.05;letter-spacing:0.01em;color:#FEFDF3;text-transform:uppercase;">MTB &amp; E-MTB</strong>

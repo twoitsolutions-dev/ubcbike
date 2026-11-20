@@ -871,13 +871,26 @@
     var pool = [];
 
     if (activeNaCat === 'all' && !q) {
-      pool = NA_FEATURED_IDS.map(function (id) {
-        for (var i = 0; i < newArrivalsData.length; i++) {
-          if (newArrivalsData[i].id === id) return newArrivalsData[i];
+      // Build a balanced multi-category, multi-brand showcase (1 Helmet, 1 Bike, 1 Tire/Part, 1 Hydration/Fuel...)
+      var buckets = {};
+      var catOrder = [];
+      newArrivalsData.forEach(function (item) {
+        var c = item.cat || 'other';
+        if (!buckets[c]) { buckets[c] = []; catOrder.push(c); }
+        buckets[c].push(item);
+      });
+      var seenIds = {};
+      var round = 0;
+      while (pool.length < Math.min(12, newArrivalsData.length) && round < 10) {
+        for (var ci = 0; ci < catOrder.length; ci++) {
+          var arr = buckets[catOrder[ci]];
+          if (arr && arr[round] && !seenIds[arr[round].id]) {
+            seenIds[arr[round].id] = true;
+            pool.push(arr[round]);
+          }
         }
-        return null;
-      }).filter(Boolean);
-      if (pool.length < 4) pool = newArrivalsData.slice(0, 8);
+        round++;
+      }
     } else if (activeNaCat === 'deals') {
       pool = newArrivalsData.filter(function (item) {
         if (edition === 'black_friday' || edition === 'christmas' || edition === 'july_4') return true;
@@ -2007,30 +2020,56 @@
     });
   });
 
+  function openLiveIkeonoWidget() {
+    if (window.Ikeono && typeof window.Ikeono.open === 'function') {
+      window.Ikeono.open();
+      return true;
+    }
+    // Search Ikeono v2 widget launcher button in regular DOM or Shadow DOM
+    var hosts = document.querySelectorAll('[id*="ikeono" i], [class*="ikeono" i], ikeono-webchat, ikeono-widget');
+    for (var i = 0; i < hosts.length; i++) {
+      var h = hosts[i];
+      var root = h.shadowRoot || h;
+      var trigger = root.querySelector('button, [role="button"], .launcher, .chat-launcher');
+      if (trigger && typeof trigger.click === 'function') {
+        trigger.click();
+        return true;
+      }
+      if (typeof h.click === 'function' && h.tagName !== 'SCRIPT') {
+        h.click();
+        return true;
+      }
+    }
+    return false;
+  }
+
   qsa('[data-ws-ikeono]').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
+      e.preventDefault();
       e.stopPropagation();
-      if (window.Ikeono && typeof window.Ikeono.open === 'function') {
-        window.Ikeono.open();
-        return;
-      }
-      if (!ikPanel || !ikFab) return;
-      ikPanel.removeAttribute('hidden');
-      ikFab.setAttribute('aria-expanded', 'true');
+      if (openLiveIkeonoWidget()) return;
       var promptTxt = lang === 'es'
         ? (btn.getAttribute('data-ws-ikeono-es') || btn.getAttribute('data-ws-ikeono'))
         : btn.getAttribute('data-ws-ikeono');
-      if (ikTopicsWrap) {
-        qsa('.ik-topic', ikTopicsWrap).forEach(function (tBtn, idx) {
-          tBtn.setAttribute('aria-pressed', idx === 2 ? 'true' : 'false');
-        });
+      if (ikPanel && ikFab) {
+        ikPanel.removeAttribute('hidden');
+        ikFab.setAttribute('aria-expanded', 'true');
+        if (ikTopicsWrap) {
+          qsa('.ik-topic', ikTopicsWrap).forEach(function (tBtn, idx) {
+            tBtn.setAttribute('aria-pressed', idx === 2 ? 'true' : 'false');
+          });
+        }
+        if (ikMsg && promptTxt) {
+          ikMsg.value = promptTxt;
+          ikUserTyped = true;
+          syncIkeonoSmsHref();
+          setTimeout(function () { ikMsg.focus(); }, 50);
+        }
+        return;
       }
-      if (ikMsg && promptTxt) {
-        ikMsg.value = promptTxt;
-        ikUserTyped = true;
-        syncIkeonoSmsHref();
-        setTimeout(function () { ikMsg.focus(); }, 50);
-      }
+      // Fallback: open SMS directly to UBC Tampa text line
+      var smsUrl = 'sms:+18139712277' + (promptTxt ? '?&body=' + encodeURIComponent(promptTxt) : '');
+      window.location.href = smsUrl;
     });
   });
 

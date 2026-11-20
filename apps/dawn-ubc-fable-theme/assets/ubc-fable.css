@@ -2429,9 +2429,16 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
   border-radius: inherit;
 }
 
-.pcard-cta {
+.pcard-cta,
+a.pcard-cta {
   z-index: 4;
   text-decoration: none;
+  color: #FEFDF3 !important;
+}
+
+.pcard:hover .pcard-cta,
+a.pcard-cta:hover {
+  color: #FFFFFF !important;
 }
 
 #showImg,

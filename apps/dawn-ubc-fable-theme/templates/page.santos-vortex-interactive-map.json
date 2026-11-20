@@ -1,0 +1,13 @@
+{
+  "sections": {
+    "main": {
+      "type": "ubc-interactive-trail-map",
+      "settings": {
+        "park_key": "santos-vortex"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

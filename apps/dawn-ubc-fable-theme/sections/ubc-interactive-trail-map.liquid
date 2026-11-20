@@ -1,0 +1,306 @@
+{{ 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' | stylesheet_tag }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer="defer"></script>
+
+{%- assign pk = section.settings.park_key | default: 'balm-boyette' -%}
+{%- assign asset_file = 'ubc-map-' | append: pk | append: '.json' -%}
+
+<style>
+  .ubc-tmap { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #14202D; background: #FFFFFF; line-height: 1.4; }
+  .ubc-tmap, .ubc-tmap * { box-sizing: border-box; }
+  .ubc-tmap h1, .ubc-tmap h2, .ubc-tmap p { margin: 0; }
+  .ubc-tmap .wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px 20px 44px; display: flex; flex-direction: column; gap: 14px; }
+  .ubc-tmap .head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+  .ubc-tmap .kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #E04F33; margin-bottom: 3px; }
+  .ubc-tmap h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .ubc-tmap .sub { font-size: 13.5px; color: #64748B; margin-top: 4px; }
+  .ubc-tmap .head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ubc-tmap .rent-cta-top { background: #E04F33; color: #FFFFFF; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 4px 12px rgba(224,79,51,0.28); }
+  .ubc-tmap .rent-cta-top:hover { background: #c94025; }
+  .ubc-tmap .gps-btn { border: 1px solid rgba(20,32,45,0.14); background: #FFFFFF; color: #14202D; padding: 7px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .ubc-tmap .toggle-group { display: inline-flex; background: #F1F5F9; padding: 3px; border-radius: 999px; border: 1px solid rgba(20,32,45,0.11); }
+  .ubc-tmap .toggle-btn { border: none; background: transparent; color: #475569; padding: 5px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .ubc-tmap .toggle-btn.active { background: #FFFFFF; color: #14202D; box-shadow: 0 1px 4px rgba(15,23,42,0.12); }
+  .ubc-tmap .pills { display: flex; flex-wrap: wrap; gap: 7px; }
+  .ubc-tmap .pill { border: 1px solid rgba(20,32,45,0.12); background: #FFFFFF; color: #14202D; padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .ubc-tmap .pill.active { background: #14202D; color: #FFFFFF; border-color: #14202D; }
+  .ubc-tmap .sym { display: inline-block; flex-shrink: 0; }
+  .ubc-tmap .sym.easy { width: 9px; height: 9px; border-radius: 50%; background: #16A34A; }
+  .ubc-tmap .sym.intermediate { width: 9px; height: 9px; border-radius: 2px; background: #2563EB; }
+  .ubc-tmap .sym.advanced { width: 8px; height: 8px; background: #111827; transform: rotate(45deg); }
+  .ubc-tmap .sym.expert { width: 8px; height: 8px; background: #DC2626; transform: rotate(45deg); box-shadow: 0 0 0 1.5px #fff, 0 0 0 3px #DC2626; }
+  .ubc-tmap .map-card { display: grid; grid-template-columns: 290px 1fr; border: 1px solid rgba(20,32,45,0.11); border-radius: 18px; overflow: hidden; background: #FFFFFF; box-shadow: 0 8px 28px rgba(20,32,45,0.06); height: 590px; }
+  .ubc-tmap .trail-panel { border-right: 1px solid rgba(20,32,45,0.11); display: flex; flex-direction: column; min-height: 0; }
+  .ubc-tmap .panel-top { padding: 12px; border-bottom: 1px solid rgba(20,32,45,0.11); }
+  .ubc-tmap .search { width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(20,32,45,0.14); background: #F8FAFC; font-size: 13px; outline: none; }
+  .ubc-tmap .list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 3px; }
+  .ubc-tmap .row { padding: 8.5px 11px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ubc-tmap .row:hover { background: #F8FAFC; }
+  .ubc-tmap .row.active { background: #FFF4F1; }
+  .ubc-tmap .row-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ubc-tmap .row-name { font-size: 13px; font-weight: 700; color: #14202D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ubc-tmap .row-mi { font-size: 11.5px; color: #64748B; font-weight: 600; flex-shrink: 0; }
+  .ubc-tmap .map-stage { position: relative; width: 100%; height: 100%; }
+  .ubc-tmap .leaflet-host { width: 100%; height: 100%; }
+  .ubc-tmap .poi-pin { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 800; color: #fff; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.28); white-space: nowrap; }
+  .ubc-tmap .poi-pin.parking { background: #2563EB; }
+  .ubc-tmap .poi-pin.entrance { background: #14202D; }
+  .ubc-tmap .poi-pin.camp { background: #15803D; }
+  .ubc-tmap .trail-toast { position: absolute; left: 16px; bottom: 16px; z-index: 450; background: rgba(255,255,255,0.97); border: 1px solid rgba(20,32,45,0.12); border-radius: 14px; padding: 13px 15px; max-width: 310px; box-shadow: 0 10px 28px rgba(20,32,45,0.16); display: none; }
+  .ubc-tmap .trail-toast.show { display: block; }
+  .ubc-tmap .toast-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+  .ubc-tmap .toast-title { font-size: 15px; font-weight: 800; }
+  .ubc-tmap .toast-close { border: none; background: none; font-size: 18px; color: #94A3B8; cursor: pointer; }
+  .ubc-tmap .toast-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #475569; }
+  .ubc-tmap .tag { font-size: 10.5px; font-weight: 800; color: #fff; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+  .ubc-tmap .tag.easy { background: #16A34A; }
+  .ubc-tmap .tag.intermediate { background: #2563EB; }
+  .ubc-tmap .tag.advanced { background: #111827; }
+  .ubc-tmap .tag.expert { background: #DC2626; }
+  .ubc-tmap .bottom-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+  .ubc-tmap .info-card { padding: 15px 18px; border: 1px solid rgba(20,32,45,0.11); border-radius: 14px; background: #F8FAFC; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+  .ubc-tmap .info-card h2 { font-size: 15px; font-weight: 800; }
+  .ubc-tmap .info-card p { font-size: 12.8px; color: #475569; line-height: 1.45; }
+  .ubc-tmap .shop-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ubc-tmap .btn { padding: 8px 15px; border-radius: 999px; font-size: 12.5px; font-weight: 700; text-decoration: none; display: inline-block; }
+  .ubc-tmap .btn-accent { background: #E04F33; color: #fff; }
+  .ubc-tmap .btn-outline { background: #fff; color: #14202D; border: 1px solid rgba(20,32,45,0.14); }
+  .ubc-tmap .safety-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ubc-tmap .s-pill { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #fff; border: 1px solid rgba(20,32,45,0.14); color: #14202D; text-decoration: none; }
+  .ubc-tmap .s-pill.alert { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
+  .ubc-tmap .foot { text-align: center; font-size: 11.5px; color: #94A3B8; padding-top: 4px; }
+  .ubc-tmap .foot a { color: #475569; font-weight: 700; text-decoration: none; }
+  @media (max-width: 820px) {
+    .ubc-tmap .map-card { grid-template-columns: 1fr; height: auto; }
+    .ubc-tmap .map-stage { height: 420px; order: 1; }
+    .ubc-tmap .trail-panel { order: 2; max-height: 240px; border-right: none; border-top: 1px solid rgba(20,32,45,0.11); }
+    .ubc-tmap .bottom-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="ubc-tmap" id="ubc-tmap-{{ section.id }}" data-json-url="{{ asset_file | asset_url }}">
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <div class="kicker" data-kicker>Tampa Bay Trail Guide</div>
+        <h1 data-heading>{{ page.title }}</h1>
+        <p class="sub" data-sub>Tap any trail or pin to explore routes, distances, and trailhead parking.</p>
+      </div>
+      <div class="head-right">
+        <a class="rent-cta-top" href="/pages/bike-rentals">Book Bike Rental &rarr;</a>
+        <button class="gps-btn" data-gps>My Location</button>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-style="clean">Map</button>
+          <button class="toggle-btn" data-style="sat">Satellite</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pills" data-pills></div>
+
+    <div class="map-card">
+      <aside class="trail-panel">
+        <div class="panel-top"><input class="search" type="search" placeholder="Search trails..." data-search /></div>
+        <div class="list" data-list></div>
+      </aside>
+      <div class="map-stage">
+        <div class="leaflet-host" data-map></div>
+        <div class="trail-toast" data-toast>
+          <div class="toast-head"><span class="toast-title" data-toast-title></span><button class="toast-close" data-toast-close>&times;</button></div>
+          <div class="toast-meta" data-toast-meta></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="info-card">
+        <div>
+          <h2>Trailhead &amp; UBC Bike Rentals</h2>
+          <p data-address></p>
+        </div>
+        <div class="shop-btns">
+          <a class="btn btn-accent" href="/pages/bike-rentals">Book Bike Rental</a>
+          <a class="btn btn-outline" href="#" target="_blank" rel="noopener" data-directions>Get Directions</a>
+          <a class="btn btn-outline" href="/pages/maps-trails">&larr; All Maps &amp; Trails</a>
+        </div>
+      </div>
+      <div class="info-card">
+        <div>
+          <h2>Trail Safety &amp; Contacts</h2>
+          <p data-safety></p>
+        </div>
+        <div class="safety-badges" data-contacts></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      Map data: OpenStreetMap &amp; Esri World Topo &middot; Built by <strong>TwoIT Solutions LLC</strong> &middot; <a href="https://www.twoitsolutions.com" target="_blank" rel="noopener">www.twoitsolutions.com</a>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var root = document.getElementById('ubc-tmap-{{ section.id }}');
+  if (!root) return;
+  function boot() {
+    if (typeof L === 'undefined') { setTimeout(boot, 120); return; }
+    fetch(root.dataset.jsonUrl).then(function (r) { return r.json(); }).then(function (DATA) {
+      root.querySelector('[data-kicker]').textContent = DATA.kicker;
+      root.querySelector('[data-heading]').textContent = DATA.heading;
+      root.querySelector('[data-sub]').textContent = DATA.subtitle;
+      root.querySelector('[data-address]').textContent = DATA.address;
+      root.querySelector('[data-directions]').href = DATA.mapsUrl;
+      root.querySelector('[data-safety]').textContent = DATA.safetyNote;
+      var cWrap = root.querySelector('[data-contacts]');
+      (DATA.contacts || []).forEach(function (c) {
+        var a = document.createElement('a');
+        a.className = 's-pill' + (c.alert ? ' alert' : '');
+        a.href = c.href;
+        a.textContent = c.label;
+        cWrap.appendChild(a);
+      });
+
+      var COLORS = { easy: '#16A34A', intermediate: '#2563EB', advanced: '#111827', expert: '#DC2626' };
+      var LABELS = { easy: 'Easy', intermediate: 'Intermediate', advanced: 'Advanced', expert: 'Expert' };
+      var map = L.map(root.querySelector('[data-map]'), { zoomControl: true }).setView([28.0, -82.3], 13);
+      var styles = {
+        clean: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; OpenStreetMap' }),
+        sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri Satellite' }),
+      };
+      var activeTile = styles.clean.addTo(map);
+
+      var poiGroup = L.featureGroup().addTo(map);
+      (DATA.pois || []).forEach(function (p) {
+        var ic = L.divIcon({ className: '', html: '<div class="poi-pin ' + p.cls + '">' + p.label + '</div>', iconSize: null, iconAnchor: [58, 15] });
+        L.marker(p.coords, { icon: ic }).addTo(poiGroup).bindPopup(p.popup);
+      });
+
+      var allGroup = L.featureGroup().addTo(map);
+      var layers = new Map();
+      var selected = null;
+      var activeDiff = 'all';
+      var presentDiffs = new Set();
+
+      (DATA.trails || []).forEach(function (t) {
+        presentDiffs.add(t.difficulty);
+        var grp = L.featureGroup();
+        t.segments.forEach(function (seg) {
+          var l = L.polyline(seg, { color: COLORS[t.difficulty] || '#2563EB', weight: 4, opacity: 0.9, lineCap: 'round' });
+          l.on('click', function () { pick(t.name, false); });
+          l.on('mouseover', function () { if (selected !== t.name) grp.setStyle({ weight: 6.5, opacity: 1 }); });
+          l.on('mouseout', function () { if (selected !== t.name) grp.setStyle({ weight: 4, opacity: 0.9 }); });
+          l.addTo(grp);
+        });
+        grp.addTo(allGroup);
+        layers.set(t.name, grp);
+      });
+
+      var bounds = allGroup.getBounds();
+      if (poiGroup.getBounds().isValid()) bounds = bounds.isValid() ? bounds.extend(poiGroup.getBounds()) : poiGroup.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+
+      var pillsEl = root.querySelector('[data-pills]');
+      var diffs = ['all', 'easy', 'intermediate', 'advanced', 'expert'].filter(function (d) { return d === 'all' || presentDiffs.has(d); });
+      diffs.forEach(function (d) {
+        var b = document.createElement('button');
+        b.className = 'pill' + (d === 'all' ? ' active' : '');
+        b.dataset.diff = d;
+        b.innerHTML = d === 'all' ? 'All Trails' : '<span class="sym ' + d + '"></span>' + LABELS[d];
+        b.addEventListener('click', function () {
+          pillsEl.querySelectorAll('.pill').forEach(function (x) { x.classList.remove('active'); });
+          b.classList.add('active');
+          activeDiff = d;
+          clearSel();
+          render();
+        });
+        pillsEl.appendChild(b);
+      });
+
+      var toast = root.querySelector('[data-toast]');
+      function clearSel() {
+        if (selected && layers.has(selected)) {
+          var prev = DATA.trails.find(function (x) { return x.name === selected; });
+          layers.get(selected).setStyle({ color: COLORS[prev.difficulty] || '#2563EB', weight: 4, opacity: 0.9 });
+        }
+        selected = null;
+        toast.classList.remove('show');
+        root.querySelectorAll('.row').forEach(function (r) { r.classList.remove('active'); });
+      }
+      function pick(name, zoom) {
+        clearSel();
+        var t = DATA.trails.find(function (x) { return x.name === name; });
+        var grp = layers.get(name);
+        if (!t || !grp) return;
+        selected = name;
+        grp.setStyle({ color: '#F97316', weight: 7, opacity: 1 });
+        grp.bringToFront();
+        if (zoom) map.fitBounds(grp.getBounds().pad(0.35), { maxZoom: 16 });
+        root.querySelector('[data-toast-title]').textContent = t.name;
+        root.querySelector('[data-toast-meta]').innerHTML = '<span class="tag ' + t.difficulty + '">' + (LABELS[t.difficulty] || 'Trail') + '</span><span>' + t.miles.toFixed(2) + ' mi</span>';
+        toast.classList.add('show');
+        root.querySelectorAll('.row').forEach(function (r) {
+          var hit = r.dataset.name === name;
+          r.classList.toggle('active', hit);
+          if (hit) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      }
+      root.querySelector('[data-toast-close]').addEventListener('click', clearSel);
+
+      var listEl = root.querySelector('[data-list]');
+      var searchEl = root.querySelector('[data-search]');
+      function render() {
+        var q = (searchEl.value || '').trim().toLowerCase();
+        listEl.innerHTML = '';
+        (DATA.trails || []).forEach(function (t) {
+          var ok = (activeDiff === 'all' || t.difficulty === activeDiff) && (!q || t.name.toLowerCase().includes(q));
+          var grp = layers.get(t.name);
+          if (ok) {
+            if (!allGroup.hasLayer(grp)) allGroup.addLayer(grp);
+            var row = document.createElement('div');
+            row.className = 'row' + (selected === t.name ? ' active' : '');
+            row.dataset.name = t.name;
+            row.innerHTML = '<div class="row-left"><span class="sym ' + t.difficulty + '"></span><span class="row-name">' + t.name + '</span></div><span class="row-mi">' + t.miles.toFixed(2) + ' mi</span>';
+            row.addEventListener('click', function () { pick(t.name, true); });
+            listEl.appendChild(row);
+          } else {
+            if (allGroup.hasLayer(grp)) allGroup.removeLayer(grp);
+          }
+        });
+      }
+      render();
+      searchEl.addEventListener('input', render);
+
+      root.querySelectorAll('.toggle-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          root.querySelectorAll('.toggle-btn').forEach(function (x) { x.classList.remove('active'); });
+          b.classList.add('active');
+          map.removeLayer(activeTile);
+          activeTile = styles[b.dataset.style].addTo(map);
+        });
+      });
+
+      var userPin = null;
+      root.querySelector('[data-gps]').addEventListener('click', function () {
+        if (!navigator.geolocation) return alert('GPS is not supported on this browser.');
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          var ll = [pos.coords.latitude, pos.coords.longitude];
+          if (userPin) map.removeLayer(userPin);
+          userPin = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#2563EB', fillOpacity: 1 }).addTo(map).bindPopup('<strong>You are here</strong>').openPopup();
+          map.setView(ll, 15);
+        }, function () { alert('Please allow location access to see your position.'); }, { enableHighAccuracy: true });
+      });
+    });
+  }
+  boot();
+});
+</script>
+
+{% schema %}
+{
+  "name": "UBC Interactive Trail Map",
+  "settings": [
+    { "type": "text", "id": "park_key", "label": "Park Key", "default": "balm-boyette" }
+  ],
+  "presets": [{ "name": "UBC Interactive Trail Map" }]
+}
+{% endschema %}

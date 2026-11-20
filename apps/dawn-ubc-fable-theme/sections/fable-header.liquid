@@ -294,7 +294,8 @@
                   <ul>
                     <li><a href="{% if collections['helmets'] != blank %}{{ collections['helmets'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Cascos y Seguridad">Helmets</a></li>
                     <li><a href="{% if collections['eyewear'] != blank %}{{ collections['eyewear'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Gafas de Sol">Eyewear</a></li>
-                    <li><a href="{% if collections['hydration-nutrition'] != blank %}{{ collections['hydration-nutrition'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Hidratación y Nutrición">Hydration &amp; Nutrition</a></li>
+                    <li><a href="{% if collections['hydration-nutrition'] != blank %}{{ collections['hydration-nutrition'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Hidratación y Botellas">Hydration &amp; Bottles</a></li>
+                    <li><a href="{% if collections['nutrition'] != blank %}{{ collections['nutrition'].url }}{% else %}{{ home_anchor }}#new-arrivals{% endif %}" data-es="Nutrición">Nutrition</a></li>
                     <li><a href="{% if collections['tools-workshop'] != blank %}{{ collections['tools-workshop'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Herramientas y Bombas">Tools &amp; Pumps</a></li>
                     <li><a href="{% if collections['accessories-gear'] != blank %}{{ collections['accessories-gear'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Todos los Accesorios">All Accessories</a></li>
                     <li><a href="{% if collections['clothing'] != blank %}{{ collections['clothing'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}" data-es="Ropa Ciclista">Apparel</a></li>

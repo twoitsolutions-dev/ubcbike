@@ -197,7 +197,7 @@ export async function renderProductDetail(ctx) {
         h('dt', 'Sale Price'), h('dd', it.compareAtCents && it.compareAtCents > it.priceCents
           ? h('span', h('strong', money(it.priceCents)), ' ', h('span.badge.ok', 'Active Sale'))
           : h('span.muted', 'None')),
-        h('dt', 'Default Cost'), h('dd', it.costCents === null ? h('span.badge.warn', 'No cost on file') : money(it.costCents)),
+        h('dt', 'Average Cost'), h('dd', it.costCents === null ? h('span.badge.warn', 'No cost on file') : money(it.costCents)),
         h('dt', 'Margin'), h('dd', pct(m)),
         h('dt', 'MAP Floor'), h('dd', it.mapPolicy === 'none' ? 'No MAP policy' : money(it.mapCents) + ' (' + it.mapPolicy.toUpperCase() + ')'),
         h('dt', 'Web Status'), h('dd', statusBadge(it.status)),

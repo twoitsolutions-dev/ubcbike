@@ -195,10 +195,11 @@
       padding: 0 5rem;
     }
     .ubc-col-layout > .ubc-dept-wrap { display: contents; }
-    .ubc-col-layout .ubc-dept-head { grid-column: 1 / -1; }
+    .ubc-col-layout .ubc-breadcrumbs { grid-column: 1 / -1; grid-row: 1; margin-bottom: 0.6rem; }
+    .ubc-col-layout .ubc-dept-head { grid-column: 1 / -1; grid-row: 2; }
     .ubc-col-layout .ubc-side {
       grid-column: 1;
-      grid-row: 2;
+      grid-row: 3;
       align-self: start;
       position: sticky;
       top: 9rem;
@@ -206,7 +207,7 @@
       overflow-y: auto;
       padding-right: 0.6rem;
     }
-    .ubc-col-layout > :not(.ubc-dept-wrap) { grid-column: 2; grid-row: 2; min-width: 0; }
+    .ubc-col-layout > :not(.ubc-dept-wrap) { grid-column: 2; grid-row: 3; min-width: 0; }
     .ubc-col-layout .page-width { padding-left: 0; padding-right: 0; max-width: none; }
     .ubc-side .ubc-store-bar,
     .ubc-side .ubc-dept-pills,
@@ -227,7 +228,7 @@
       assign h_cur = collection.handle
       assign show_back_all = false
       if h_cur == 'all' or h_cur == 'in-stock-tampa' or h_cur == 'in-stock-alafia'
-        assign ubc_dept_handles = 'all:All In-Stock,bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes,helmets:Helmets,clothing:Apparel,cycling-shoes:Shoes,eyewear:Sunglasses,tires-tubes:Tires & Tubes,parts-components:Parts,hydration-nutrition:Nutrition,accessories-gear:Accessories,tools-workshop:Tools & Care' | split: ','
+        assign ubc_dept_handles = 'all:All In-Stock,bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes,helmets:Helmets,clothing:Apparel,cycling-shoes:Shoes,eyewear:Sunglasses,tires-tubes:Tires & Tubes,parts-components:Parts,hydration-nutrition:Hydration & Bottles,nutrition:Nutrition,accessories-gear:Accessories,tools-workshop:Tools & Care' | split: ','
       elsif h_cur == 'bikes' or h_cur == 'electric-bikes' or h_cur == 'road-bikes' or h_cur == 'mountain-bikes' or h_cur == 'hybrid-bikes' or h_cur == 'kids-bikes'
         assign ubc_dept_handles = 'bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes' | split: ','
         assign show_back_all = true
@@ -237,8 +238,11 @@
       elsif h_cur == 'tires-tubes' or h_cur == 'tubes' or h_cur == 'bicycle-tires'
         assign ubc_dept_handles = 'tires-tubes:All Tires & Tubes,bicycle-tires:Tires,tubes:Inner Tubes' | split: ','
         assign show_back_all = true
-      elsif h_cur == 'hydration-nutrition' or h_cur == 'bottles-cages'
-        assign ubc_dept_handles = 'hydration-nutrition:All Hydration & Nutrition,bottles-cages:Bottles & Cages' | split: ','
+      elsif h_cur == 'accessories-gear' or h_cur == 'helmets' or h_cur == 'eyewear' or h_cur == 'hydration-nutrition' or h_cur == 'bottles-cages' or h_cur == 'lights-locks' or h_cur == 'tools-workshop'
+        assign ubc_dept_handles = 'accessories-gear:All Accessories,helmets:Helmets,eyewear:Sunglasses,hydration-nutrition:Hydration & Bottles,bottles-cages:Bottles & Cages,lights-locks:Lights, Bags & Locks,tools-workshop:Tools & Care' | split: ','
+        assign show_back_all = true
+      elsif h_cur == 'nutrition'
+        assign ubc_dept_handles = 'nutrition:Nutrition,hydration-nutrition:Hydration & Bottles,bottles-cages:Bottles & Cages' | split: ','
         assign show_back_all = true
       else
         assign ubc_dept_handles = '' | split: ','

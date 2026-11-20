@@ -322,7 +322,7 @@
                 <p class="ubc-ws-address">
                   {{ loc.address.value }}<br>
                   {%- if loc.phone.value != blank -%}<a href="tel:+1{{ tel_clean }}">{{ loc.phone.value }}</a>{%- endif -%}
-                  {%- if loc.phone.value != blank and loc.email.value != blank -%} &middot; {%- endif -%}
+                  {%- if loc.phone.value != blank and loc.email.value != blank -%}<span class="ubc-ws-sep" aria-hidden="true" style="margin:0 0.55rem;opacity:0.45;">&middot;</span>{%- endif -%}
                   {%- if loc.email.value != blank -%}<a href="mailto:{{ loc.email.value }}">{{ loc.email.value }}</a>{%- endif -%}
                 </p>
                 <div class="ubc-ws-map">
@@ -380,7 +380,7 @@
               <h2 class="ubc-ws-h2">University Bicycle Center</h2>
               <p class="ubc-ws-address">
                 1220 E Fletcher Ave, Tampa, FL 33612<br>
-                <a href="tel:+18139712277">(813) 971-2277</a> &middot; <a href="mailto:ubc@ubcbike.com">ubc@ubcbike.com</a>
+                <a href="tel:+18139712277">(813) 971-2277</a><span class="ubc-ws-sep" aria-hidden="true" style="margin:0 0.55rem;opacity:0.45;">&middot;</span><a href="mailto:ubc@ubcbike.com">ubc@ubcbike.com</a>
               </p>
 
               <div class="ubc-ws-map">
@@ -524,25 +524,45 @@
           </div>
 
           <div class="ubc-ws-contact-side">
-            <article class="ubc-ws-card">
-              <span class="ubc-ws-kicker" data-es="Tienda Principal · Tampa">Tampa Showroom</span>
-              <h3>1220 E Fletcher Ave</h3>
-              <p class="ubc-ws-note">Tampa, FL 33612 &middot; <a href="tel:+18139712277"><strong>(813) 971-2277</strong></a></p>
-              <p class="ubc-ws-note" data-es="Lun–Vie: 10am–6pm &middot; Sáb: 9am–5pm &middot; Dom: Cerrado">Mon–Fri: 10am–6pm &middot; Sat: 9am–5pm &middot; Sun: Closed</p>
-              <div class="ubc-ws-actions">
-                <a class="ubc-ws-btn ubc-ws-btn--ghost" href="https://www.google.com/maps/dir/?api=1&destination=1220+E+Fletcher+Ave+Tampa+FL+33612" target="_blank" rel="noopener" data-es="Cómo Llegar">Get Directions</a>
-              </div>
-            </article>
-
-            <article class="ubc-ws-card">
-              <span class="ubc-ws-kicker" data-es="Sendero y Rentas · Alafia">Alafia River Trailhead</span>
-              <h3>14326 S County Road 39</h3>
-              <p class="ubc-ws-note">Lithia, FL 33547 &middot; <a href="tel:+18134598293"><strong>(813) 459-8293</strong></a></p>
-              <p class="ubc-ws-note" data-es="Mié–Vie: 10am–5pm &middot; Sáb–Dom: 8am–5pm">Wed–Fri: 10am–5pm &middot; Sat–Sun: 8am–5pm</p>
-              <div class="ubc-ws-actions">
-                <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations" data-es="Ver Horarios y Mapas">Hours &amp; Maps</a>
-              </div>
-            </article>
+            {%- if c_locs.size > 0 -%}
+              {%- for loc in c_locs -%}
+                {%- assign map_q = loc.address.value | url_encode -%}
+                {%- assign ctel = loc.phone.value | remove: '(' | remove: ')' | remove: '-' | remove: ' ' | remove: '.' -%}
+                <article class="ubc-ws-card">
+                  <span class="ubc-ws-kicker">{{ loc.kicker.value | default: loc.name.value }}</span>
+                  <h3>{{ loc.name.value }}</h3>
+                  <p class="ubc-ws-note">
+                    {{ loc.address.value }}
+                    {%- if loc.phone.value != blank -%}<span class="ubc-ws-sep" aria-hidden="true" style="margin:0 0.45rem;opacity:0.45;">&middot;</span><a href="tel:+1{{ ctel }}"><strong>{{ loc.phone.value }}</strong></a>{%- endif -%}
+                  </p>
+                  <div class="ubc-ws-map ubc-ws-map--compact">
+                    <iframe
+                      title="{{ loc.name.value | escape }} Map"
+                      src="https://maps.google.com/maps?q={{ map_q }}&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                      loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"
+                      allowfullscreen></iframe>
+                  </div>
+                  {%- if loc.hours.value != blank -%}
+                    {%- assign hr_lines = loc.hours.value | newline_to_br | split: '<br />' -%}
+                    <div class="ubc-ws-hours ubc-ws-hours--compact">
+                      {%- for hl in hr_lines -%}
+                        {%- assign clean_hl = hl | strip -%}
+                        {%- if clean_hl != blank -%}
+                          {%- assign parts = clean_hl | split: '|' -%}
+                          <div class="ubc-ws-hours-row"><span>{{ parts[0] | strip }}</span><strong>{{ parts[1] | strip }}</strong></div>
+                        {%- endif -%}
+                      {%- endfor -%}
+                    </div>
+                  {%- endif -%}
+                  <div class="ubc-ws-actions">
+                    {%- if loc.maps_url.value != blank -%}
+                      <a class="ubc-ws-btn ubc-ws-btn--ghost" href="{{ loc.maps_url.value }}" target="_blank" rel="noopener" data-es="Cómo Llegar">Get Directions</a>
+                    {%- endif -%}
+                  </div>
+                </article>
+              {%- endfor -%}
+            {%- endif -%}
 
             <article class="ubc-ws-card ubc-ws-card--dark">
               <span class="ubc-ws-kicker" data-es="Taller Sin Cita">Walk-In Workshop</span>

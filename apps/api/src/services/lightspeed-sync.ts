@@ -291,6 +291,11 @@ export async function ingestLightspeedItemsBatch(
       const existingUpdates: {
         vid: string;
         lsId: string;
+        title: string | null;
+        base_title: string | null;
+        brand: string | null;
+        category: string | null;
+        is_matrix: boolean;
         price: number | null;
         compare_at: number | null;
         cost: number | null;
@@ -320,9 +325,23 @@ export async function ingestLightspeedItemsBatch(
 
         if (matchedVid) {
           claimedVids.add(matchedVid);
+          const rawTitle = (it.title || '').trim();
+          const itOpts = lsOptionValues(it.itemAttributes ?? undefined, attrSetNames);
+          const baseTitle = rawTitle
+            ? (it.matrixId
+              ? (Object.keys(itOpts).length
+                ? lsMatrixBaseTitle(rawTitle, itOpts)
+                : rawTitle.replace(/\s+[-–—/]\s*(XS|S|M|L|XL|XXL|S\d|\d{2}(?:\.\d)?(?:\s*cm|\s*in|c)?)\s*$/i, '').trim() || rawTitle)
+              : rawTitle)
+            : null;
           existingUpdates.push({
             vid: matchedVid,
             lsId: it.lightspeedItemId,
+            title: rawTitle || null,
+            base_title: baseTitle,
+            brand: baseTitle ? formatPosBrand(it.brand, baseTitle) : null,
+            category: baseTitle ? normalizeCyclingCategory(it.rawCategory, baseTitle) : null,
+            is_matrix: Boolean(it.matrixId),
             price: it.priceCents !== null && it.priceCents > 0 ? it.priceCents : null,
             compare_at: it.compareAtCents !== null && it.compareAtCents > 0 ? it.compareAtCents : null,
             cost: it.costCents !== null && it.costCents > 0 ? it.costCents : null,
@@ -330,7 +349,7 @@ export async function ingestLightspeedItemsBatch(
             mpn: it.mpn?.trim() || null,
             qty: it.physicalQty,
             shopQuantities: it.shopQuantities,
-            options: lsOptionValues(it.itemAttributes ?? undefined, attrSetNames),
+            options: itOpts,
             sku: it.sku?.trim() || null,
           });
         } else {
@@ -365,14 +384,15 @@ export async function ingestLightspeedItemsBatch(
         }
       }
 
-      // 2. Bulk update existing variants with Lightspeed Default / SALE PRICE & cost/UPC/MPN.
+      // 2. Bulk update existing variants with Lightspeed Default / SALE PRICE, avgCost, description/title, UPC & MPN.
       if (existingUpdates.length > 0) {
         await c.query(
           `UPDATE variants v
-           SET price_cents = COALESCE(r.price, v.price_cents),
+           SET title = COALESCE(NULLIF(r.title, ''), v.title),
+               price_cents = COALESCE(r.price, v.price_cents),
                compare_at_cents = CASE WHEN r.price IS NOT NULL THEN r.compare_at ELSE v.compare_at_cents END,
                cost_cents = COALESCE(r.cost, v.cost_cents),
-               -- Lightspeed is the source of truth: its UPC, Manufact. SKU and System ID win.
+               -- Lightspeed is the source of truth: its description, avgCost, UPC, Manufact. SKU and System ID win.
                upc = COALESCE(r.upc, v.upc),
                mpn = COALESCE(r.mpn, v.mpn),
                sku = CASE WHEN r.sku IS NOT NULL AND r.sku <> v.sku
@@ -381,8 +401,25 @@ export async function ingestLightspeedItemsBatch(
                -- Matrix options (Color/Size) from Lightspeed fill in only when the variant has none yet.
                option_values = CASE WHEN v.option_values = '{}'::jsonb AND r.options IS NOT NULL THEN r.options ELSE v.option_values END,
                updated_at = now()
-           FROM jsonb_to_recordset($2::jsonb) AS r(vid uuid, price int, compare_at int, cost int, upc text, mpn text, options jsonb, sku text)
+           FROM jsonb_to_recordset($2::jsonb) AS r(vid uuid, title text, price int, compare_at int, cost int, upc text, mpn text, options jsonb, sku text)
            WHERE v.company_id = $1 AND v.id = r.vid`,
+          [companyId, JSON.stringify(existingUpdates)],
+        );
+        // Keep parent product title/brand/category synced with Lightspeed description & category too.
+        await c.query(
+          `UPDATE products p
+           SET title = COALESCE(NULLIF(r.base_title, ''), p.title),
+               model = COALESCE(NULLIF(LEFT(r.base_title, 120), ''), p.model),
+               brand = COALESCE(NULLIF(r.brand, ''), p.brand),
+               category = COALESCE(NULLIF(r.category, ''), p.category),
+               updated_at = now()
+           FROM variants v
+           JOIN jsonb_to_recordset($2::jsonb) AS r(vid uuid, base_title text, brand text, category text, is_matrix boolean)
+             ON r.vid = v.id
+           WHERE p.company_id = $1
+             AND v.company_id = $1
+             AND p.id = v.product_id
+             AND (NOT r.is_matrix OR p.ref LIKE 'ls-i-%')`,
           [companyId, JSON.stringify(existingUpdates)],
         );
         updatedVariants += existingUpdates.length;

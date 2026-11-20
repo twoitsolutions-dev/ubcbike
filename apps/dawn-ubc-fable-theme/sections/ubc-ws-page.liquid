@@ -507,43 +507,66 @@
 
       <section class="ubc-ws-section">
         <div class="ubc-ws-contact-grid">
-          <div class="ubc-ws-card ubc-ws-card--form">
-            <div>
-              <span class="ubc-ws-kicker" data-es="Respuesta Rápida">Direct Message</span>
-              <h2 class="ubc-ws-h2" data-es="Envíanos un Mensaje">Send Us a Message</h2>
+          <div style="display:flex;flex-direction:column;gap:2.2rem;">
+            <div class="ubc-ws-card ubc-ws-card--form">
+              <div>
+                <span class="ubc-ws-kicker" data-es="Respuesta Rápida">Direct Message</span>
+                <h2 class="ubc-ws-h2" data-es="Envíanos un Mensaje">Send Us a Message</h2>
+              </div>
+              {%- form 'contact', id: 'UbcContactForm' -%}
+                {%- if form.posted_successfully? -%}
+                  <div class="ubc-ws-alert ubc-ws-alert--ok" data-es="¡Gracias! Tu mensaje fue enviado a University Bicycle Center.">
+                    Thank you! Your message has been sent to University Bicycle Center.
+                  </div>
+                {%- elsif form.errors -%}
+                  <div class="ubc-ws-alert ubc-ws-alert--bad">
+                    {{ form.errors | default_errors }}
+                  </div>
+                {%- endif -%}
+                <div class="ubc-ws-form-grid">
+                  <label class="ubc-ws-field">
+                    <span data-es="Nombre">Name</span>
+                    <input type="text" name="contact[name]" autocomplete="name" placeholder="Your full name" value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.name }}{% endif %}">
+                  </label>
+                  <label class="ubc-ws-field">
+                    <span data-es="Teléfono">Phone</span>
+                    <input type="tel" name="contact[phone]" autocomplete="tel" placeholder="(813) 555-0199" value="{{ form.phone }}">
+                  </label>
+                  <label class="ubc-ws-field ubc-ws-field--full">
+                    <span data-es="Correo electrónico *">Email *</span>
+                    <input type="email" name="contact[email]" required autocomplete="email" placeholder="you@example.com" value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}">
+                  </label>
+                  <label class="ubc-ws-field ubc-ws-field--full">
+                    <span data-es="Mensaje">Message</span>
+                    <textarea name="contact[body]" rows="5" placeholder="Tell us which bike, size, or service you're looking for...">{{ form.body }}</textarea>
+                  </label>
+                </div>
+                <div class="ubc-ws-actions" style="margin-top: 1.6rem;">
+                  <button type="submit" class="ubc-ws-btn" data-es="Enviar Mensaje">Send Message</button>
+                  <button type="button" class="ubc-ws-btn ubc-ws-btn--ghost" data-ws-ikeono="Hi UBC! I have a quick question for the shop." data-es="Texto Rápido (Ikeono)">Text Us (Ikeono)</button>
+                </div>
+              {%- endform -%}
             </div>
-            {%- form 'contact', id: 'UbcContactForm' -%}
-              {%- if form.posted_successfully? -%}
-                <div class="ubc-ws-alert ubc-ws-alert--ok" data-es="¡Gracias! Tu mensaje fue enviado a University Bicycle Center.">
-                  Thank you! Your message has been sent to University Bicycle Center.
-                </div>
-              {%- elsif form.errors -%}
-                <div class="ubc-ws-alert ubc-ws-alert--bad">
-                  {{ form.errors | default_errors }}
-                </div>
-              {%- endif -%}
-              <div class="ubc-ws-form-grid">
-                <label class="ubc-ws-field">
-                  <span data-es="Nombre">Name</span>
-                  <input type="text" name="contact[name]" autocomplete="name" placeholder="Your full name" value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.name }}{% endif %}">
-                </label>
-                <label class="ubc-ws-field">
-                  <span data-es="Teléfono">Phone</span>
-                  <input type="tel" name="contact[phone]" autocomplete="tel" placeholder="(813) 555-0199" value="{{ form.phone }}">
-                </label>
-                <label class="ubc-ws-field ubc-ws-field--full">
-                  <span data-es="Correo electrónico *">Email *</span>
-                  <input type="email" name="contact[email]" required autocomplete="email" placeholder="you@example.com" value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}">
-                </label>
-                <label class="ubc-ws-field ubc-ws-field--full">
-                  <span data-es="Mensaje">Message</span>
-                  <textarea name="contact[body]" rows="5" placeholder="Tell us which bike, size, or service you're looking for...">{{ form.body }}</textarea>
-                </label>
+
+            <article class="ubc-ws-card ubc-ws-card--dark">
+              <span class="ubc-ws-kicker" data-es="Taller Sin Cita">Walk-In Workshop</span>
+              <h3 data-es="¿Necesitas servicio hoy?">Need Bike Service Today?</h3>
+              <p class="ubc-ws-note" data-es="Pasa sin cita en Tampa para pinchazos, ajustes de frenos/cambios o tune-up completo.">Walk right in during business hours for flat fixes, brake/gear adjustments, or full tune-ups — most repairs completed within 24 hours.</p>
+              <div class="ubc-ws-actions">
+                <a class="ubc-ws-btn ubc-ws-btn--light" href="/pages/bike-service-repair" data-es="Ver Servicio y Precios">Service &amp; Pricing</a>
+                <button type="button" class="ubc-ws-btn ubc-ws-btn--light" data-ws-ikeono="Hi UBC Workshop! I need bike service." data-es="Texto al Taller (Ikeono)">Text Workshop (Ikeono)</button>
               </div>
-              <div class="ubc-ws-actions" style="margin-top: 1.6rem;">
-                <button type="submit" class="ubc-ws-btn" data-es="Enviar Mensaje">Send Message</button>
+            </article>
+
+            <article class="ubc-ws-card">
+              <span class="ubc-ws-kicker" data-es="Rentas en Alafia River State Park">Alafia Trailhead Rentals</span>
+              <h3 data-es="Reserva tu MTB o e-MTB directo en el parque">Ride 20+ Miles of Florida Singletrack</h3>
+              <p class="ubc-ws-note" data-es="Nuestra tienda dentro de Alafia River State Park ofrece rentas de MTB, e-MTB, cascos y servicio mecánico al instante.">Our shop inside Alafia River State Park has tuned full-suspension MTB &amp; e-MTB rentals ready steps from the trails — reserve online or call (813) 459-8293.</p>
+              <div class="ubc-ws-actions">
+                <a class="ubc-ws-btn" href="/pages/bike-rentals" data-es="Reservar Bicicleta">Book Bike Rental</a>
+                <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/alafia-interactive-map" data-es="Ver Mapa Interactivo">Alafia Trail Map</a>
               </div>
-            {%- endform -%}
+            </article>
           </div>
 
           <div class="ubc-ws-contact-side">
@@ -586,15 +609,6 @@
                 </article>
               {%- endfor -%}
             {%- endif -%}
-
-            <article class="ubc-ws-card ubc-ws-card--dark">
-              <span class="ubc-ws-kicker" data-es="Taller Sin Cita">Walk-In Workshop</span>
-              <h3 data-es="¿Necesitas servicio hoy?">Need Bike Service Today?</h3>
-              <p class="ubc-ws-note" data-es="Pasa sin cita en Tampa para pinchazos, ajustes de frenos/cambios o tune-up completo.">Walk right in during business hours for flat fixes, brake/gear adjustments, or full tune-ups.</p>
-              <div class="ubc-ws-actions">
-                <a class="ubc-ws-btn ubc-ws-btn--light" href="/pages/bike-service-repair" data-es="Ver Servicio y Precios">Service &amp; Pricing</a>
-              </div>
-            </article>
           </div>
         </div>
       </section>

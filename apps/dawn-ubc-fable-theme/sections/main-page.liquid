@@ -102,7 +102,7 @@
 <div class="ubc-std-page section-{{ section.id }}-padding">
   <div class="ubc-std-page__wrap">
     {%- if is_rentals -%}
-      <header class="ubc-ws-hero{% if rentals_img == blank %} ubc-ws-hero--text-only{% endif %}">
+      <header class="ubc-ws-hero">
         <div>
           <span class="ubc-ws-kicker">ALAFIA RIVER STATE PARK / TRAILHEAD MTB &amp; E-MTB RENTALS / WALK-INS &amp; BOOKINGS</span>
           <h1 class="ubc-ws-title">{{ page.title | escape }}</h1>
@@ -110,16 +110,14 @@
             Roll straight from our trailhead shop inside Alafia River State Park onto 20+ miles of Florida's best singletrack. Full-suspension mountain bikes, e-MTBs, and helmets prepped daily by UBC mechanics — no bike rack needed.
           </p>
           <div class="ubc-ws-actions">
-            <a class="ubc-ws-btn" href="tel:+18137374600">Call Alafia (813) 737-4600</a>
+            <a class="ubc-ws-btn" href="tel:+18134598293">Call Alafia (813) 459-8293</a>
             <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/alafia-interactive-map">Alafia Interactive Map</a>
             <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/locations">Hours &amp; Directions</a>
           </div>
         </div>
-        {%- if rentals_img != blank -%}
-          <div class="ubc-ws-hero-media">
-            {{ rentals_img | image_url: width: 960 | image_tag: alt: 'University Bicycle Center Bike Rentals', loading: 'eager' }}
-          </div>
-        {%- endif -%}
+        <div class="ubc-ws-hero-media">
+          <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="Mountain biker riding Florida singletrack at Alafia River State Park" loading="eager" width="960" height="540" style="width:100%;height:100%;object-fit:cover;border-radius:14px;display:block;">
+        </div>
       </header>
     {%- else -%}
       <header class="ubc-ws-hero ubc-ws-hero--text-only ubc-ws-hero--compact">

@@ -10296,6 +10296,10 @@ body[data-ubc-edition="christmas"] .fb-scope .show .show-count,
 body[data-ubc-edition="july_4"] .fb-scope .show .show-count,
 body[data-ubc-edition="campus"] .fb-scope .show .show-count,
 body[data-ubc-edition="veterans"] .fb-scope .show .show-count,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-count span,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-count span,
+body[data-ubc-edition="campus"] .fb-scope .show .show-count span,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-count span,
 body[data-ubc-edition="christmas"] .fb-scope .show .apr-note,
 body[data-ubc-edition="july_4"] .fb-scope .show .apr-note,
 body[data-ubc-edition="campus"] .fb-scope .show .apr-note,
@@ -10303,26 +10307,34 @@ body[data-ubc-edition="veterans"] .fb-scope .show .apr-note {
   color: #425263 !important;
 }
 
+body[data-ubc-edition="christmas"] .fb-scope .show .show-side,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-side,
+body[data-ubc-edition="campus"] .fb-scope .show .show-side,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-side,
 body[data-ubc-edition="christmas"] .fb-scope .show .show-rail,
 body[data-ubc-edition="july_4"] .fb-scope .show .show-rail,
 body[data-ubc-edition="campus"] .fb-scope .show .show-rail,
 body[data-ubc-edition="veterans"] .fb-scope .show .show-rail {
-  color: rgba(20, 32, 45, 0.55) !important;
+  color: rgba(20, 32, 45, 0.58) !important;
 }
 
-body[data-ubc-edition="christmas"] .fb-scope .show .show-arrows button,
-body[data-ubc-edition="july_4"] .fb-scope .show .show-arrows button,
-body[data-ubc-edition="campus"] .fb-scope .show .show-arrows button,
-body[data-ubc-edition="veterans"] .fb-scope .show .show-arrows button {
+body[data-ubc-edition="christmas"] .fb-scope .show .rail-nav button,
+body[data-ubc-edition="july_4"] .fb-scope .show .rail-nav button,
+body[data-ubc-edition="campus"] .fb-scope .show .rail-nav button,
+body[data-ubc-edition="veterans"] .fb-scope .show .rail-nav button {
   background: #ffffff !important;
   color: #14202d !important;
-  border-color: rgba(20, 32, 45, 0.22) !important;
+  border-color: rgba(20, 32, 45, 0.24) !important;
 }
 
-body[data-ubc-edition="christmas"] .fb-scope .show .show-badge,
-body[data-ubc-edition="july_4"] .fb-scope .show .show-badge,
-body[data-ubc-edition="campus"] .fb-scope .show .show-badge,
-body[data-ubc-edition="veterans"] .fb-scope .show .show-badge {
+body[data-ubc-edition="christmas"] .fb-scope .show .show-cat,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-cat,
+body[data-ubc-edition="campus"] .fb-scope .show .show-cat,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-cat,
+body[data-ubc-edition="christmas"] .fb-scope .show .stock-pill,
+body[data-ubc-edition="july_4"] .fb-scope .show .stock-pill,
+body[data-ubc-edition="campus"] .fb-scope .show .stock-pill,
+body[data-ubc-edition="veterans"] .fb-scope .show .stock-pill {
   background: #ffffff !important;
   color: #14202d !important;
   border: 1px solid rgba(20, 32, 45, 0.16) !important;
@@ -10333,13 +10345,13 @@ body[data-ubc-edition="july_4"] .fb-scope .show .eyebrow { color: #1d4ed8 !impor
 body[data-ubc-edition="campus"] .fb-scope .show .eyebrow { color: #006747 !important; }
 body[data-ubc-edition="veterans"] .fb-scope .show .eyebrow { color: #8c651c !important; }
 
-body[data-ubc-edition="christmas"] .fb-scope .show .btn.btn-ghost,
-body[data-ubc-edition="july_4"] .fb-scope .show .btn.btn-ghost,
-body[data-ubc-edition="campus"] .fb-scope .show .btn.btn-ghost,
-body[data-ubc-edition="veterans"] .fb-scope .show .btn.btn-ghost {
+body[data-ubc-edition="christmas"] .fb-scope .show .fb-btn.outline,
+body[data-ubc-edition="july_4"] .fb-scope .show .fb-btn.outline,
+body[data-ubc-edition="campus"] .fb-scope .show .fb-btn.outline,
+body[data-ubc-edition="veterans"] .fb-scope .show .fb-btn.outline {
   background: #ffffff !important;
   color: #14202d !important;
-  border: 1.5px solid rgba(20, 32, 45, 0.24) !important;
+  border: 1.5px solid rgba(20, 32, 45, 0.28) !important;
 }
 
 body[data-ubc-edition="christmas"] .show .show-thumbs button,

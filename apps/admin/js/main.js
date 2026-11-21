@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { createHttpDriver } from './drivers/http.js?v=66';
+import { createHttpDriver } from './drivers/http.js?v=67';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=66';
+import { matchRoute } from './router.js?v=67';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };

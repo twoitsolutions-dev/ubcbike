@@ -42,7 +42,6 @@ function downloadCsv(filename, rows) {
 
 export async function renderLightspeedSheet(ctx) {
   const root = h('div');
-  mount(ctx.outlet, root);
 
   const facets = await ctx.api.facets();
   const st = {
@@ -219,10 +218,11 @@ export async function renderLightspeedSheet(ctx) {
       onClick: async () => {
         const changes = Array.from(st.dirty.entries()).map(([id, patch]) => Object.assign({ id }, patch));
         if (!changes.length) return;
-        const ok = await confirmDialog(
-          'Push ' + changes.length + ' item updates?',
-          'This will submit ' + changes.length + ' modified row(s) to the Lightspeed bulk-update endpoint.',
-        );
+        const ok = await confirmDialog({
+          title: 'Push ' + changes.length + ' item updates?',
+          message: 'This will submit ' + changes.length + ' modified row(s) to the Lightspeed bulk-update endpoint.',
+          confirmLabel: 'Push Changes',
+        });
         if (!ok) return;
         try {
           const res = await ctx.api.lightspeedBulkUpdate(changes);
@@ -371,4 +371,5 @@ export async function renderLightspeedSheet(ctx) {
 
   buildControls();
   await load();
+  return root;
 }

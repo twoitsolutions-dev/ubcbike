@@ -180,7 +180,8 @@ class PredictiveSearch extends SearchForm {
 
     const searchDeferred = this.dispatchSearchUpdateEvent(searchTerm);
 
-    fetch(`${routes.predictive_search_url}?q=${encodeURIComponent(searchTerm)}&section_id=predictive-search`, {
+    const fieldsParam = 'resources[type]=product,page,article,collection&resources[options][fields]=title,product_type,variants.title,variants.sku,variants.barcode,vendor';
+    fetch(`${routes.predictive_search_url}?q=${encodeURIComponent(searchTerm)}&${fieldsParam}&section_id=predictive-search`, {
       signal: this.abortController.signal,
     })
       .then((response) => {
@@ -192,7 +193,7 @@ class PredictiveSearch extends SearchForm {
 
         return response.text();
       })
-      .then((text) => {
+      .then(async (text) => {
         const resultsMarkup = new DOMParser()
           .parseFromString(text, 'text/html')
           .querySelector('#shopify-section-predictive-search').innerHTML;
@@ -201,6 +202,7 @@ class PredictiveSearch extends SearchForm {
           predictiveSearchInstance.cachedResults[queryKey] = resultsMarkup;
         });
         this.renderSearchResults(resultsMarkup);
+        await this.injectMpnMatches(searchTerm);
 
         searchDeferred?.resolve({ totalCount: this.getTotalResultCount() });
       })
@@ -277,6 +279,84 @@ class PredictiveSearch extends SearchForm {
     this.isOpen = true;
   }
 
+  async injectMpnMatches(searchTerm) {
+    if (typeof window.__findUbcMpnMatches !== 'function') return;
+    const matches = await window.__findUbcMpnMatches(searchTerm);
+    if (!matches.length || !this.predictiveSearchResults) return;
+
+    let list = this.predictiveSearchResults.querySelector('#predictive-search-results-products-list');
+    if (!list) {
+      const wrapper = this.predictiveSearchResults.querySelector('#predictive-search-results-groups-wrapper')
+        || this.predictiveSearchResults.querySelector('.predictive-search__results-groups-wrapper')
+        || this.predictiveSearchResults;
+      const group = document.createElement('div');
+      group.className = 'predictive-search__result-group';
+      const heading = document.createElement('h2');
+      heading.className = 'predictive-search__heading text-body caption-with-letter-spacing';
+      heading.textContent = 'Products (SKU Match)';
+      list = document.createElement('ul');
+      list.id = 'predictive-search-results-products-list';
+      list.className = 'predictive-search__results-list list-unstyled';
+      list.setAttribute('role', 'group');
+      group.appendChild(heading);
+      group.appendChild(list);
+      wrapper.prepend(group);
+    }
+
+    const existingHrefs = new Set(Array.from(list.querySelectorAll('a[href]')).map((a) => a.getAttribute('href').split('?')[0]));
+    for (const m of matches) {
+      const baseHref = `/products/${m.handle}`;
+      if (existingHrefs.has(baseHref)) continue;
+      existingHrefs.add(baseHref);
+
+      const li = document.createElement('li');
+      li.className = 'predictive-search__list-item';
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+
+      const a = document.createElement('a');
+      a.href = m.vid ? `${baseHref}?variant=${m.vid}` : baseHref;
+      a.className = 'predictive-search__item predictive-search__item--link-with-thumbnail link link--text';
+      a.setAttribute('tabindex', '-1');
+
+      if (m.image) {
+        const img = document.createElement('img');
+        img.className = 'predictive-search__image';
+        img.src = m.image;
+        img.alt = m.title;
+        img.width = 50;
+        img.height = 50;
+        a.appendChild(img);
+      }
+
+      const content = document.createElement('div');
+      content.className = 'predictive-search__item-content';
+
+      const vendor = document.createElement('div');
+      vendor.className = 'predictive-search__item-vendor caption-with-letter-spacing';
+      vendor.textContent = `${m.vendor || 'UBC'} · SKU: ${m.mpn}`;
+      content.appendChild(vendor);
+
+      const title = document.createElement('p');
+      title.className = 'predictive-search__item-heading h5';
+      title.textContent = m.title;
+      content.appendChild(title);
+
+      if (m.priceFormatted) {
+        const price = document.createElement('span');
+        price.className = 'price';
+        price.textContent = m.priceFormatted;
+        content.appendChild(price);
+      }
+
+      a.appendChild(content);
+      li.appendChild(a);
+      list.prepend(li);
+    }
+    this.setAttribute('results', 'true');
+    this.open();
+  }
+
   close(clearSearchTerm = false) {
     this.closeResults(clearSearchTerm);
     this.isOpen = false;
@@ -299,5 +379,57 @@ class PredictiveSearch extends SearchForm {
     this.predictiveSearchResults.removeAttribute('style');
   }
 }
+
+window.__findUbcMpnMatches = async function (rawTerm) {
+  const q = String(rawTerm || '').trim().toLowerCase();
+  if (q.length < 3) return [];
+  const url = window.routes && window.routes.ubc_sku_index_url;
+  if (!url) return [];
+  try {
+    if (!window.__ubcSkuIndexPromise) {
+      window.__ubcSkuIndexPromise = fetch(url).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+    }
+    const rows = await window.__ubcSkuIndexPromise;
+    const exact = [];
+    const partial = [];
+    const seenHandles = new Set();
+    for (let i = 0; i < rows.length; i++) {
+      const [mpn, handle, vid] = rows[i];
+      const m = String(mpn || '').toLowerCase();
+      if (!m || seenHandles.has(handle)) continue;
+      if (m === q) {
+        seenHandles.add(handle);
+        exact.push({ mpn, handle, vid });
+      } else if (m.includes(q) && partial.length < 6) {
+        seenHandles.add(handle);
+        partial.push({ mpn, handle, vid });
+      }
+      if (exact.length >= 6) break;
+    }
+    const picked = exact.concat(partial).slice(0, 6);
+    const products = await Promise.all(
+      picked.map(async (item) => {
+        try {
+          const p = await fetch(`/products/${encodeURIComponent(item.handle)}.js`).then((r) => (r.ok ? r.json() : null));
+          if (!p) return null;
+          return {
+            mpn: item.mpn,
+            handle: item.handle,
+            vid: item.vid,
+            title: p.title,
+            vendor: p.vendor,
+            image: p.featured_image || (p.images && p.images[0]) || '',
+            priceFormatted: typeof p.price === 'number' ? `$${(p.price / 100).toFixed(2)}` : '',
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+    return products.filter(Boolean);
+  } catch {
+    return [];
+  }
+};
 
 customElements.define('predictive-search', PredictiveSearch);

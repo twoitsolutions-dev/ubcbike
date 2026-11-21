@@ -141,8 +141,50 @@
           {%- endif -%}
         {%- endunless -%}
         {%- if search.results_count == 0 and search.filters == empty -%}
-          <p role="status">{{ 'templates.search.no_results' | t: terms: search.terms }}</p>
+          <p role="status" id="ubcSearchEmptyMsg">{{ 'templates.search.no_results' | t: terms: search.terms }}</p>
         {%- endif -%}
+        <div id="ubcSkuSearchFallback" data-terms="{{ search.terms | escape }}" style="display:none;margin-top:2rem;"></div>
+        <script>
+          (function () {
+            var box = document.getElementById('ubcSkuSearchFallback');
+            if (!box || typeof window.__findUbcMpnMatches !== 'function') return;
+            var terms = box.getAttribute('data-terms') || '';
+            if (terms.trim().length < 3) return;
+            window.__findUbcMpnMatches(terms).then(function (items) {
+              if (!items || !items.length) return;
+              var emptyMsg = document.getElementById('ubcSearchEmptyMsg');
+              if (emptyMsg) emptyMsg.textContent = items.length + ' SKU match' + (items.length === 1 ? '' : 'es') + ' found for "' + terms + '"';
+              box.style.display = 'grid';
+              box.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
+              box.style.gap = '1.6rem';
+              items.forEach(function (m) {
+                var card = document.createElement('a');
+                card.href = m.vid ? '/products/' + m.handle + '?variant=' + m.vid : '/products/' + m.handle;
+                card.style.cssText = 'display:flex;flex-direction:column;gap:.8rem;padding:1.4rem;border:1px solid rgba(20,32,45,.12);border-radius:12px;background:#fff;text-decoration:none;color:#14202D;';
+                if (m.image) {
+                  var img = document.createElement('img');
+                  img.src = m.image;
+                  img.alt = m.title;
+                  img.style.cssText = 'width:100%;aspect-ratio:1/1;object-fit:contain;background:#fff;border-radius:8px;';
+                  card.appendChild(img);
+                }
+                var meta = document.createElement('div');
+                meta.style.cssText = 'font-size:1.2rem;color:#64748B;text-transform:uppercase;font-weight:700;';
+                meta.textContent = (m.vendor || 'UBC') + ' · SKU: ' + m.mpn;
+                var ttl = document.createElement('div');
+                ttl.style.cssText = 'font-size:1.5rem;font-weight:700;line-height:1.3;';
+                ttl.textContent = m.title;
+                var pr = document.createElement('div');
+                pr.style.cssText = 'font-size:1.4rem;font-weight:700;color:#E04F33;';
+                pr.textContent = m.priceFormatted || '';
+                card.appendChild(meta);
+                card.appendChild(ttl);
+                if (m.priceFormatted) card.appendChild(pr);
+                box.appendChild(card);
+              });
+            });
+          })();
+        </script>
       {%- endif -%}
     </div>
     {%- if search.performed -%}

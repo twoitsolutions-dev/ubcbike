@@ -331,20 +331,12 @@
     </div>
     <div class="ubc-pop-body">
       <div class="ubc-pop-eyebrow" id="ubcPopEyebrow">WELCOME TO UBC TAMPA · SINCE 1972</div>
-      <h2 class="ubc-pop-title" id="ubcPopTitle">10% Off Accessories &amp; Gear</h2>
+      <h2 class="ubc-pop-title" id="ubcPopTitle">In-Stock Bikes, Gear &amp; Walk-In Workshop</h2>
       <p class="ubc-pop-desc" id="ubcPopDesc"></p>
 
-      <div class="ubc-pop-codebox">
-        <div class="ubc-pop-code-meta">
-          <span class="ubc-pop-code-label" id="ubcPopCodeLabel">Accessory Promo Code</span>
-          <span class="ubc-pop-code-val" id="ubcPopCodeVal">UBC10GEAR</span>
-        </div>
-        <button type="button" class="ubc-pop-copy" id="ubcPopCopy">Copy Code</button>
-      </div>
-
       <div class="ubc-pop-actions">
-        <a href="/discount/UBC10GEAR?redirect=/collections/accessories-gear" class="ubc-pop-cta" id="ubcPopCta">
-          Apply Code &amp; Shop Accessories &rarr;
+        <a href="/collections/all" class="ubc-pop-cta" id="ubcPopCta">
+          Browse In-Stock Catalog &rarr;
         </a>
         <div class="ubc-pop-subrow">
           <a href="/collections/accessories-gear" class="ubc-pop-secondary" id="ubcPopSecondary" style="display:none;"></a>
@@ -367,183 +359,176 @@
     classic: {
       accent: '#E04F33',
       img: {{ img_storefront | json }},
-      code: 'UBC10GEAR',
-      redirect: '/collections/accessories-gear',
+      redirect: '/collections/all',
       en: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Accessories & Gear',
+        badgeBig: '20,000+',
+        badgeSub: 'Items In Stock',
         eyebrow: 'Welcome to UBC Tampa · Since 1972',
-        title: '10% Off Accessories & Gear',
-        desc: 'Save on lights, locks, bottles, bags, pumps & tools — in stock in Tampa or shipped fast. Backed by our 110% Price Guarantee.',
-        cta: 'Apply 10% & Shop Accessories →',
-        secLabel: '',
-        secHref: ''
+        title: 'In-Stock Bikes, Gear & Walk-In Workshop',
+        desc: 'Explore assembled bikes, helmets, lights, locks, hydration & parts ready today in Tampa — plus 0% APR financing and walk-in repair service.',
+        cta: 'Browse Full Catalog →',
+        secLabel: 'Walk-In Workshop',
+        secHref: '/pages/bike-service-repair'
       },
       es: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Accesorios y Equipo',
+        badgeBig: '20,000+',
+        badgeSub: 'Artículos en Stock',
         eyebrow: 'Bienvenido a UBC Tampa · Desde 1972',
-        title: '10% Off en Accesorios y Equipo',
-        desc: 'Ahorra en luces, candados, botellas, bolsos, bombas y herramientas — en stock en Tampa o envío rápido con 110% Precio Garantizado.',
-        cta: 'Aplicar 10% y Ver Accesorios →',
-        secLabel: '',
-        secHref: ''
+        title: 'Bicis, Equipo y Taller Sin Cita en Tampa',
+        desc: 'Explora bicicletas armadas, cascos, luces, candados, hidratación y repuestos listos hoy en tienda — además de financiamiento 0% APR.',
+        cta: 'Ver Catálogo Completo →',
+        secLabel: 'Taller Sin Cita',
+        secHref: '/pages/bike-service-repair'
       }
     },
     black_friday: {
       accent: '#E04F33',
       img: {{ img_showroom | json }},
-      code: 'BF15GEAR',
-      redirect: '/collections/accessories-gear',
+      redirect: '/collections/black-friday-deals',
       en: {
-        badgeBig: '15% OFF',
-        badgeSub: 'Accessories Bonus',
+        badgeBig: 'UP TO 60%',
+        badgeSub: 'Black Friday 2026',
         eyebrow: 'Black Friday 2026 · Tampa Showroom & Online',
-        title: '15% Off Accessories + Up to $3,500 Off Bikes',
-        desc: 'Unlock 15% off lights, locks, bottles, bags & tools — plus lock in Black Friday bike deals with free holiday hold until Dec 24.',
-        cta: 'Apply 15% & Shop Accessories →',
-        secLabel: 'Jump to Bike Deals',
-        secHref: '/collections/black-friday-deals'
+        title: 'Up to $3,500 Off Bikes & Up to 60% Off Gear',
+        desc: 'Shop direct showroom markdowns on in-stock bikes, e-bikes, MIPS helmets, shoes, and pro parts — plus free holiday hold until Dec 24.',
+        cta: 'Shop Black Friday Deals →',
+        secLabel: 'Full Store Catalog',
+        secHref: '/collections/all'
       },
       es: {
-        badgeBig: '15% OFF',
-        badgeSub: 'Bono en Accesorios',
+        badgeBig: 'HASTA 60%',
+        badgeSub: 'Black Friday 2026',
         eyebrow: 'Black Friday 2026 · Tienda Tampa y Online',
-        title: '15% Off en Accesorios + Hasta $3,500 Off en Bicis',
-        desc: 'Activa 15% off en luces, candados, botellas, bolsos y herramientas — además asegura ofertas Black Friday en bicis con apartado gratis hasta el 24 de dic.',
-        cta: 'Aplicar 15% y Ver Accesorios →',
-        secLabel: 'Ver Bicis Black Friday',
-        secHref: '/collections/black-friday-deals'
+        title: 'Hasta $3,500 Off en Bicis y 60% Off en Equipo',
+        desc: 'Descuentos directos en bicis, e-bikes, cascos MIPS, zapatos y repuestos en stock — más apartado navideño gratis hasta el 24 de dic.',
+        cta: 'Ver Ofertas Black Friday →',
+        secLabel: 'Toda la Tienda',
+        secHref: '/collections/all'
       }
     },
     christmas: {
       accent: '#C81E2B',
       img: {{ img_carlos | json }},
-      code: 'HOLIDAY10GEAR',
-      redirect: '/collections/accessories-gear',
+      redirect: '/collections/bikes',
       en: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Rider Gifts & Gear',
-        eyebrow: 'Holiday Gift Event · Free Hold Until Dec 24',
-        title: '10% Off Stocking Stuffers & Rider Gifts',
-        desc: 'Save on lights, locks, bottles, tools & bags ready to wrap — plus free holiday bike assembly & hidden warehouse hold until Christmas Eve.',
-        cta: 'Apply 10% & Shop Rider Gifts →',
-        secLabel: '',
-        secHref: ''
+        badgeBig: 'DEC 24',
+        badgeSub: 'Free Holiday Hold',
+        eyebrow: 'Holiday Gift Event · Tampa Showroom',
+        title: 'Free Holiday Bike Assembly & Warehouse Hold',
+        desc: 'Pick their dream bike today; Manny & Ashton’s mechanics assemble, safety-check, and store it hidden in our Tampa warehouse until Christmas Eve.',
+        cta: 'Browse Gift Bikes →',
+        secLabel: 'Helmets & Gifts',
+        secHref: '/collections/accessories-gear'
       },
       es: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Regalos Ciclistas',
-        eyebrow: 'Especial de Navidad · Apartado Gratis hasta Dic 24',
-        title: '10% Off en Regalos y Accesorios Ciclistas',
-        desc: 'Ahorra en luces, candados, botellas, herramientas y bolsos listos para regalar — más armado profesional y apartado gratis en bicis hasta Nochebuena.',
-        cta: 'Aplicar 10% y Ver Regalos →',
-        secLabel: '',
-        secHref: ''
+        badgeBig: 'DIC 24',
+        badgeSub: 'Apartado Gratis',
+        eyebrow: 'Especial de Navidad · Tienda Tampa',
+        title: 'Armado Profesional y Apartado Gratis hasta Dic 24',
+        desc: 'Elige hoy la bici perfecta; nuestro equipo la arma, revisa y guarda en bodega hasta Nochebuena.',
+        cta: 'Ver Bicicletas →',
+        secLabel: 'Cascos y Regalos',
+        secHref: '/collections/accessories-gear'
       }
     },
     july_4: {
       accent: '#1D4ED8',
       img: {{ img_alafia_trail | json }},
-      code: 'JULY4GEAR',
       redirect: '/collections/hydration-nutrition',
       en: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Summer Gear & Fuel',
+        badgeBig: 'SINCE 1972',
+        badgeSub: 'Summer & Honor',
         eyebrow: 'July 4th Summer Event · Honoring Veterans & Police',
-        title: '10% Off Summer Hydration, Lights & Accessories',
-        desc: 'Beat the Florida heat with bottles, hydration, tools & gear — plus everyday in-store discounts for U.S. Veterans & Police.',
-        cta: 'Apply 10% & Shop Summer Gear →',
-        secLabel: 'All Eligible Accessories',
-        secHref: '/collections/accessories-gear'
+        title: 'Summer Hydration, Gear & In-Store Service Perks',
+        desc: 'Stock up on summer hydration, lights & trail essentials — plus everyday in-store appreciation savings for U.S. Veterans & Police.',
+        cta: 'Shop Summer Gear →',
+        secLabel: 'Locations & Hours',
+        secHref: '/pages/locations'
       },
       es: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Verano e Hidratación',
+        badgeBig: 'DESDE 1972',
+        badgeSub: 'Verano y Honor',
         eyebrow: 'Especial 4 de Julio · Honor a Veteranos y Policías',
-        title: '10% Off en Hidratación, Luces y Accesorios',
-        desc: 'Vence el calor de Florida con botellas, hidratación y accesorios — más descuentos permanentes en tienda para Veteranos y Policías.',
-        cta: 'Aplicar 10% y Ver Verano →',
-        secLabel: 'Todos los Accesorios',
-        secHref: '/collections/accessories-gear'
+        title: 'Hidratación de Verano y Beneficios en Tienda',
+        desc: 'Equípate con botellas, luces y accesorios de verano — más descuentos en tienda para Veteranos y Policías.',
+        cta: 'Ver Equipo de Verano →',
+        secLabel: 'Horarios y Sedes',
+        secHref: '/pages/locations'
       }
     },
     spring: {
       accent: '#0F766E',
       img: {{ img_alafia_mtb | json }},
-      code: 'SPRING10GEAR',
-      redirect: '/collections/accessories-gear',
+      redirect: '/pages/bike-rentals',
       en: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Trail & Spring Gear',
+        badgeBig: '28 TRAILS',
+        badgeSub: 'Alafia Peak Season',
         eyebrow: 'Spring Riding Season · Alafia & Bayshore',
-        title: '10% Off Trail Accessories, Tools & Hydration',
-        desc: 'Dial in your kit for peak Florida trail weather — lights, bags, bottles, pumps & tools. Plus full-suspension rentals inside Alafia.',
-        cta: 'Apply 10% & Shop Spring Gear →',
-        secLabel: 'Alafia Rentals',
-        secHref: '/pages/bike-rentals'
+        title: 'Alafia Trailhead MTB Rentals & Spring Gear',
+        desc: 'Roll straight onto Alafia’s 28 trails from our on-site park shop — or gear up in Tampa with tires, hydration, and walk-in tune-ups.',
+        cta: 'Explore Alafia Rentals →',
+        secLabel: 'Trail Maps',
+        secHref: '/pages/maps-trails'
       },
       es: {
-        badgeBig: '10% OFF',
-        badgeSub: 'Equipo de Sendero',
+        badgeBig: '28 SENDEROS',
+        badgeSub: 'Temporada Alafia',
         eyebrow: 'Temporada de Primavera · Alafia y Bayshore',
-        title: '10% Off en Accesorios, Herramientas e Hidratación',
-        desc: 'Prepara tu equipo para la mejor temporada de senderos en Florida — luces, bolsos, botellas y bombas. Más rentas MTB dentro de Alafia.',
-        cta: 'Aplicar 10% y Ver Equipo →',
-        secLabel: 'Rentas en Alafia',
-        secHref: '/pages/bike-rentals'
+        title: 'Rentas MTB en Alafia y Equipo de Primavera',
+        desc: 'Sal directo a los 28 senderos desde nuestra sede dentro del parque — o equípate en Tampa con llantas, hidratación y taller sin cita.',
+        cta: 'Ver Rentas Alafia →',
+        secLabel: 'Mapas de Senderos',
+        secHref: '/pages/maps-trails'
       }
     },
     campus: {
       accent: '#006747',
       img: {{ img_campus | json }},
-      code: 'USF15GEAR',
       redirect: '/collections/lights-locks',
       en: {
-        badgeBig: '15% OFF',
-        badgeSub: 'USF Campus Perks',
-        eyebrow: 'Go Bulls · 5 Min From USF on E Fletcher Ave',
-        title: '15% Off Campus Locks, Lights & Accessories',
-        desc: 'Protect your campus ride with U-locks, USB lights, racks & bags — or show your USF Student ID in-store for same-day service perks.',
-        cta: 'Apply 15% & Shop Locks & Lights →',
-        secLabel: 'All Accessories',
-        secHref: '/collections/accessories-gear'
+        badgeBig: '5 MIN',
+        badgeSub: 'From USF Campus',
+        eyebrow: 'Go Bulls · 1220 E Fletcher Ave',
+        title: 'USF Campus Commuter Gear & Student Perks',
+        desc: 'Show your valid USF Student ID in-store for student discounts on U-locks, USB lights, helmets, and same-day flat & scooter repairs.',
+        cta: 'Shop Locks & Lights →',
+        secLabel: 'Walk-In Repairs',
+        secHref: '/pages/bike-service-repair'
       },
       es: {
-        badgeBig: '15% OFF',
-        badgeSub: 'Beneficio USF',
-        eyebrow: 'Go Bulls · A 5 Min de USF en E Fletcher Ave',
-        title: '15% Off en Candados, Luces y Accesorios Campus',
-        desc: 'Protege tu bici en el campus con candados en U, luces USB, parrillas y bolsos — o presenta tu carnet USF en tienda para descuentos.',
-        cta: 'Aplicar 15% y Ver Candados y Luces →',
-        secLabel: 'Todos los Accesorios',
-        secHref: '/collections/accessories-gear'
+        badgeBig: '5 MIN',
+        badgeSub: 'De USF Campus',
+        eyebrow: 'Go Bulls · 1220 E Fletcher Ave',
+        title: 'Equipo Campus USF y Descuento Estudiantil',
+        desc: 'Presenta tu carnet USF en tienda para descuento estudiantil en candados, luces USB, cascos y reparación el mismo día.',
+        cta: 'Ver Candados y Luces →',
+        secLabel: 'Taller Sin Cita',
+        secHref: '/pages/bike-service-repair'
       }
     },
     veterans: {
       accent: '#B8862D',
       img: {{ img_manny | json }},
-      code: 'HONOR15GEAR',
-      redirect: '/collections/accessories-gear',
+      redirect: '/pages/about-us',
       en: {
-        badgeBig: '15% OFF',
-        badgeSub: 'Veterans & Police',
+        badgeBig: '1972',
+        badgeSub: 'Veteran-Founded',
         eyebrow: 'Veteran-Founded by Manny · Since 1972',
-        title: '15% Off Accessories · Honoring Veterans & Police',
-        desc: 'Thank you for your service. Enjoy 15% off accessories, lights, locks, hydration & tools online — or show military/police ID in Tampa.',
-        cta: 'Apply 15% & Shop Accessories →',
-        secLabel: '',
-        secHref: ''
+        title: 'Honoring U.S. Veterans & Law Enforcement',
+        desc: 'Show your military, veteran, or police ID in our Tampa showroom for everyday in-store appreciation savings on bikes, gear & service.',
+        cta: 'Our 1972 Story →',
+        secLabel: 'Visit Tampa Showroom',
+        secHref: '/pages/locations'
       },
       es: {
-        badgeBig: '15% OFF',
-        badgeSub: 'Veteranos y Policías',
+        badgeBig: '1972',
+        badgeSub: 'Fundada por Veterano',
         eyebrow: 'Fundada por Manny (Veterano) · Desde 1972',
-        title: '15% Off en Accesorios · Honor a Veteranos y Policías',
-        desc: 'Gracias por tu servicio. Disfruta 15% off en accesorios, luces, candados, hidratación y herramientas online — o muestra tu ID militar/policial en Tampa.',
-        cta: 'Aplicar 15% y Ver Accesorios →',
-        secLabel: '',
-        secHref: ''
+        title: 'Honor a Veteranos y Fuerzas del Orden',
+        desc: 'Presenta tu identificación militar, de veterano o policial en nuestra tienda de Tampa para descuentos permanentes en bicis, equipo y taller.',
+        cta: 'Nuestra Historia →',
+        secLabel: 'Visitar Tienda Tampa',
+        secHref: '/pages/locations'
       }
     }
   };
@@ -586,13 +571,10 @@
     document.getElementById('ubcPopEyebrow').textContent = copy.eyebrow;
     document.getElementById('ubcPopTitle').textContent = copy.title;
     document.getElementById('ubcPopDesc').textContent = copy.desc;
-    document.getElementById('ubcPopCodeLabel').textContent = lang === 'es' ? 'Código para Accesorios' : 'Accessory Promo Code';
-    document.getElementById('ubcPopCodeVal').textContent = cfg.code;
-    document.getElementById('ubcPopCopy').textContent = lang === 'es' ? 'Copiar Código' : 'Copy Code';
 
     var ctaEl = document.getElementById('ubcPopCta');
     ctaEl.textContent = copy.cta;
-    ctaEl.setAttribute('href', '/discount/' + encodeURIComponent(cfg.code) + '?redirect=' + encodeURIComponent(cfg.redirect));
+    ctaEl.setAttribute('href', cfg.redirect);
 
     var secEl = document.getElementById('ubcPopSecondary');
     if (copy.secLabel && copy.secHref) {
@@ -608,8 +590,8 @@
       : 'No thanks, continue browsing';
 
     document.getElementById('ubcPopFine').textContent = lang === 'es'
-      ? 'Aplica solo en Accesorios, Luces, Candados, Hidratación y Herramientas. No aplica a bicicletas, e-bikes ni artículos con precio MAP. 1 uso por cliente.'
-      : 'Valid on Accessories, Lights, Locks, Hydration & Tools only. Excludes bikes, e-bikes & MAP-protected items. Limit 1 use per customer.';
+      ? 'University Bicycle Center · 1220 E Fletcher Ave, Tampa FL y Alafia River State Park.'
+      : 'University Bicycle Center · 1220 E Fletcher Ave, Tampa FL & Alafia River State Park.';
   }
 
   function markSeen(edKey) {
@@ -653,41 +635,6 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && backdrop.classList.contains('is-open')) closePopup();
-  });
-
-  var copyBtn = document.getElementById('ubcPopCopy');
-  copyBtn.addEventListener('click', function () {
-    var code = document.getElementById('ubcPopCodeVal').textContent;
-    var isEs = getLang() === 'es';
-    function done() {
-      copyBtn.textContent = isEs ? '¡Copiado! ✓' : 'Copied! ✓';
-      setTimeout(function () {
-        copyBtn.textContent = isEs ? 'Copiar Código' : 'Copy Code';
-      }, 2000);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(done).catch(done);
-    } else {
-      try {
-        var ta = document.createElement('textarea');
-        ta.value = code;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      } catch (e) {}
-      done();
-    }
-  });
-
-  Array.prototype.forEach.call(document.querySelectorAll('.fb-lang button'), function (btn) {
-    btn.addEventListener('click', function () {
-      setTimeout(function () {
-        if (backdrop.classList.contains('is-open')) renderPopup(currentEd);
-      }, 40);
-    });
   });
 
   window.ubcOpenPopup = openPopup;

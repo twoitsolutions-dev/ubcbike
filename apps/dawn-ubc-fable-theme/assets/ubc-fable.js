@@ -2360,8 +2360,9 @@
     'Workshop Bonus & Rider Gifts': 'Bono de Taller y Regalos Ciclistas',
     '$25 Off Overhauls & Up to 60% Off Gifts': '$25 Off en Overhauls y Hasta 60% Off en Regalos',
     'Text the Shop (Ikeono)': 'Escribir a la Tienda (Ikeono)',
-    'Price Protection': 'Protección de Precio',
-    '110% Price Match': '110% Precio Garantizado',
+    'Authorized Dealer': 'Distribuidor Autorizado',
+    'Full Factory Warranty': 'Garantía de Fábrica',
+    'Every bike and part is 100% factory-authorized and backed by full manufacturer warranty support at UBC Tampa.': 'Cada bici y repuesto es 100% autorizado de fábrica y cuenta con garantía oficial del fabricante en UBC Tampa.',
     'Flexible Payments': 'Pagos Flexibles',
     '0% APR Financing': 'Financiamiento 0% APR',
     'Pro Assembly': 'Armado Profesional',
@@ -2603,7 +2604,7 @@
       naH2En: 'More than bikes. <em>Active promos &amp; fresh gear.</em>',
       naH2Es: 'Mucho más que bicis. <em>Promos y equipo hoy.</em>',
       promos: [
-        { pill: ['110% Guarantee', '110% Garantía'], kicker: ['Floor Stock', 'En Piso Hoy'], h3: ['Assembled Bikes & E-Bikes Ready Today', 'Bicis y E-Bikes Armadas Hoy'], p: ['Built and safety-checked by senior Tampa mechanics.', 'Armadas y ajustadas por mecánicos senior en Tampa.'], cta: ['Find Your Bike', 'Buscar Bici'] },
+        { pill: ['Factory Warranty', 'Garantía Oficial'], kicker: ['Floor Stock', 'En Piso Hoy'], h3: ['Assembled Bikes & E-Bikes Ready Today', 'Bicis y E-Bikes Armadas Hoy'], p: ['Built and safety-checked by senior Tampa mechanics.', 'Armadas y ajustadas por mecánicos senior en Tampa.'], cta: ['Find Your Bike', 'Buscar Bici'] },
         { pill: ['Weekly Promos', 'Promos Activas'], kicker: ['Helmets & Fuel', 'Cascos y Nutrición'], h3: ['15% Off Road Helmets & Skratch Fuel', '15% Off Cascos MIPS e Hidratación'], p: ['5-star Virginia Tech helmets, GP5000 tires & hydration.', 'Cascos 5 estrellas, llantas GP5000 e hidratación real.'], cta: ['Shop Active Promos', 'Ver Ofertas'] },
         { pill: ['0% APR · Trade-In', '0% APR · Retoma'], kicker: ['Since 1972', 'Desde 1972'], h3: ['0% Promotional Financing & Bike Trade-In', 'Financiamiento 0% APR y Retoma'], p: ['Upgrade your ride today with instant BicycleBlueBook credit.', 'Estrena hoy aplicando tu bici actual como parte de pago.'], cta: ['See Financing', 'Ver Financiamiento'] }
       ]
@@ -2616,8 +2617,8 @@
       topEs: '<b>BLACK FRIDAY UBC</b> &middot; Hasta $500 Off en bicis + 20% Off equipo',
       navEn: 'Black Friday',
       navEs: 'Black Friday',
-      heroEyeEn: 'Black Friday Event · Storewide Deals + 110% Price Guarantee',
-      heroEyeEs: 'Black Friday UBC · Hasta $500 Off + 110% Precio Garantizado',
+      heroEyeEn: 'Black Friday Event · Storewide Deals + Free Assembly',
+      heroEyeEs: 'Black Friday UBC · Hasta $500 Off + Armado Gratis',
       aprEn: 'Black Friday Price · 0% APR',
       aprEs: 'Precio Black Friday · 0% APR',
       cta2En: 'See Black Friday Promos',
@@ -2627,7 +2628,7 @@
       naH2En: 'Black Friday deals. <em>Every department live.</em>',
       naH2Es: 'Ofertas Black Friday. <em>Toda la tienda activa.</em>',
       promos: [
-        { pill: ['Up to $500 OFF', 'Hasta $500 Off'], kicker: ['Bikes & E-Bikes', 'Bicis y E-Bikes'], h3: ['In-Stock Turbo, Carbon & MTB Deals', 'Doorbusters en Ruta, Trail y Turbo'], p: ['Direct showroom markdowns + 0% APR financing & 110% Price Guarantee.', 'Descuentos directos en piso + 0% APR y respaldo 110%.'], cta: ['See Bike Deals', 'Ver Bicis en Oferta'] },
+        { pill: ['Up to $500 OFF', 'Hasta $500 Off'], kicker: ['Bikes & E-Bikes', 'Bicis y E-Bikes'], h3: ['In-Stock Turbo, Carbon & MTB Deals', 'Doorbusters en Ruta, Trail y Turbo'], p: ['Direct showroom markdowns + 0% APR financing & pro assembly.', 'Descuentos directos en piso + financiamiento 0% APR y armado pro.'], cta: ['See Bike Deals', 'Ver Bicis en Oferta'] },
         { pill: ['20% – 30% OFF', '20% – 30% Off'], kicker: ['Gear, Tires & Parts', 'Cascos, Llantas y Piezas'], h3: ['MIPS Helmets, GP5000 & Pro Saddles', 'Cascos MIPS, GP5000 y Accesorios'], p: ['Black Friday pricing on 5-star helmets, lights, fuel & OEM parts.', 'Precios Black Friday en cascos 5 estrellas, luces y nutrición.'], cta: ['Filter BF Deals', 'Filtrar Ofertas'] },
         { pill: ['$25 Workshop Bonus', 'Bono de Taller'], kicker: ['Walk-In Service', 'Sin Cita · Tampa'], h3: ['Free Drivetrain Wash or $25 Off Overhaul', 'Lavado Pro Gratis o $25 Off Overhaul'], p: ['Drop off any bike, scooter or e-bike this week — no appointment needed.', 'Trae tu bici, scooter o e-bike sin cita esta semana al taller.'], cta: ['Visit Workshop', 'Ir al Taller'] }
       ]
@@ -2749,7 +2750,7 @@
       promos: [
         { pill: ['U.S. Veterans', 'Veteranos EE.UU.'], kicker: ['Founded by Manny · 1972', 'Fundada por Manny'], h3: ['Military & Veteran In-Store Appreciation', 'Descuento Permanente a Veteranos y Militares'], p: ['As a Veteran-founded Tampa shop since 1972, Manny & our family proudly honor all U.S. Veterans & active-duty service members.', 'Como tienda fundada en 1972 por Manny (Veterano), honramos a todos los veteranos y militares activos con descuento en tienda.'], cta: ['Browse Bikes', 'Ver Bicis'] },
         { pill: ['Police & Officers', 'Policías'], kicker: ['Law Enforcement', 'Fuerzas del Orden'], h3: ['Everyday Police & Law Enforcement Discounts', 'Descuento Permanente a Policías en Tienda'], p: ['Special everyday in-store savings on gear, helmets, parts, accessories & priority walk-in repair bay service in Tampa.', 'Descuentos permanentes en tienda sobre cascos, accesorios, repuestos y atención prioritaria sin cita en nuestro taller.'], cta: ['Shop Pro-Shop', 'Ver Tienda'] },
-        { pill: ['Walk-In Workshop', 'Taller Sin Cita'], kicker: ['Tampa & Alafia', 'Todas las Marcas'], h3: ['Assembled Floor Bikes & Same-Day Tune-Ups', 'Bicis Armadas Hoy y Taller Sin Cita'], p: ['Built and torque-checked by senior Tampa mechanics — backed by our 110% Price Guarantee & 0% APR financing.', 'Armadas y ajustadas por mecánicos expertos en Tampa con garantía 110% de precio y financiamiento 0% APR.'], cta: ['Visit Workshop', 'Ver Taller'] }
+        { pill: ['Walk-In Workshop', 'Taller Sin Cita'], kicker: ['Tampa & Alafia', 'Todas las Marcas'], h3: ['Assembled Floor Bikes & Same-Day Tune-Ups', 'Bicis Armadas Hoy y Taller Sin Cita'], p: ['Built and torque-checked by senior Tampa mechanics — backed by full factory warranty & 0% APR financing.', 'Armadas y ajustadas por mecánicos expertos en Tampa con garantía oficial de fábrica y financiamiento 0% APR.'], cta: ['Visit Workshop', 'Ver Taller'] }
       ]
     }
   };

@@ -71,10 +71,10 @@
         }
       },
       "block_order": [
-        "sku",
         "vendor",
         "title",
         "price",
+        "sku",
         "variant_picker",
         "inventory_KWkByr",
         "quantity_selector",

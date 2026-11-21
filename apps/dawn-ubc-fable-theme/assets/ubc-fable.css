@@ -10200,19 +10200,25 @@ iframe[src*="ikeono"] {
 }
 
 /* ==========================================================================
-   Seasonal Editions: Light Clean Hero Canvas + Seasonal Colors & Effects
+   All Editions (Including Classic): Clean Floating Product Stage (No Circle / No Box)
    ========================================================================== */
-body[data-ubc-edition="christmas"] .show .show-blob,
-body[data-ubc-edition="july_4"] .show .show-blob,
-body[data-ubc-edition="spring"] .show .show-blob,
-body[data-ubc-edition="campus"] .show .show-blob,
-body[data-ubc-edition="veterans"] .show .show-blob,
-body[data-ubc-edition="christmas"] .show .show-ring,
-body[data-ubc-edition="july_4"] .show .show-ring,
-body[data-ubc-edition="spring"] .show .show-ring,
-body[data-ubc-edition="campus"] .show .show-ring,
-body[data-ubc-edition="veterans"] .show .show-ring {
+.fb-scope .show .show-blob,
+.fb-scope .show .show-ring {
   display: none !important;
+}
+
+.fb-scope .show .show-stage {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.fb-scope .show .show-stage #showImg {
+  width: 98% !important;
+  max-height: 100% !important;
+  filter: drop-shadow(0 18px 20px rgba(20, 32, 45, 0.14)) !important;
 }
 
 body[data-ubc-edition="christmas"] .show {
@@ -10234,29 +10240,6 @@ body[data-ubc-edition="campus"] .show {
 body[data-ubc-edition="veterans"] .show {
   background: radial-gradient(circle at 76% 42%, rgba(184, 134, 45, 0.08) 0%, transparent 48%),
               linear-gradient(135deg, #fefdf3 0%, #f7f4ea 55%, #f0ebdc 100%) !important;
-}
-
-/* Open floating stage with soft ground shadow (no heavy box or clipped circle) */
-body[data-ubc-edition="christmas"] .show .show-stage,
-body[data-ubc-edition="july_4"] .show .show-stage,
-body[data-ubc-edition="spring"] .show .show-stage,
-body[data-ubc-edition="campus"] .show .show-stage,
-body[data-ubc-edition="veterans"] .show .show-stage {
-  background: radial-gradient(ellipse at 50% 88%, rgba(20, 32, 45, 0.11) 0%, rgba(20, 32, 45, 0) 56%) !important;
-  border: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-
-body[data-ubc-edition="christmas"] .show .show-stage #showImg,
-body[data-ubc-edition="july_4"] .show .show-stage #showImg,
-body[data-ubc-edition="spring"] .show .show-stage #showImg,
-body[data-ubc-edition="campus"] .show .show-stage #showImg,
-body[data-ubc-edition="veterans"] .show .show-stage #showImg {
-  width: 98% !important;
-  max-height: 100% !important;
-  filter: drop-shadow(0 18px 20px rgba(20, 32, 45, 0.16)) !important;
 }
 
 /* Dark crisp typography & ghost text on light seasonal Hero backgrounds */

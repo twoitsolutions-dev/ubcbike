@@ -154,7 +154,13 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!root) return;
   function boot() {
     if (typeof L === 'undefined') { setTimeout(boot, 120); return; }
-    fetch(root.dataset.jsonUrl).then(function (r) { return r.json(); }).then(function (DATA) {
+    var pMatch = (window.location.search || '').match(/[?&]park=(suncoast|courtney-campbell)/i);
+    var jsonUrl = pMatch
+      ? (pMatch[1].toLowerCase() === 'suncoast'
+          ? {{ 'ubc-map-suncoast.json' | asset_url | json }}
+          : {{ 'ubc-map-courtney-campbell.json' | asset_url | json }})
+      : root.dataset.jsonUrl;
+    fetch(jsonUrl).then(function (r) { return r.json(); }).then(function (DATA) {
       root.querySelector('[data-kicker]').textContent = DATA.kicker;
       root.querySelector('[data-heading]').textContent = DATA.heading;
       root.querySelector('[data-sub]').textContent = DATA.subtitle;

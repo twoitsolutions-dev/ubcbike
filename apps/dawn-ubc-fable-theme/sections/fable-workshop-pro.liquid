@@ -188,7 +188,7 @@
           {%- if ws_photo != blank -%}
             {{ ws_photo | image_url: width: 1100 | image_tag: alt: 'University Bicycle Center Tampa mechanic truing a bicycle wheel', loading: 'lazy' }}
           {%- else -%}
-            <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="University Bicycle Center Workshop" loading="lazy">
+            <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="University Bicycle Center Workshop" loading="lazy" width="1200" height="800">
           {%- endif -%}
           <div class="ubc-wsp-photo-bar">
             <span class="ubc-wsp-pill">Tampa Pro Workshop &middot; Since 1972</span>

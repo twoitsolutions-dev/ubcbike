@@ -356,7 +356,12 @@
   /* ---------- 4. Native Shopify Dawn Cart Drawer AJAX Integration ---------- */
   function syncFableCartBadge() {
     fetch((window.routes && window.routes.cart_url ? window.routes.cart_url : '/cart') + '.js')
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok) throw new Error((data && (data.description || data.message)) || 'Cart add failed');
+          return data;
+        });
+      })
       .then(function (cart) {
         var badge = document.getElementById('fable-cart-count');
         if (!badge || !cart || typeof cart.item_count !== 'number') return;
@@ -421,7 +426,12 @@
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(payload)
     })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok) throw new Error((data && (data.description || data.message)) || 'Cart add failed');
+          return data;
+        });
+      })
       .then(function (res) {
         btnEl.innerHTML = '<span>' + esc(t.added) + '</span>';
         if (typeof window.__addPreviewBag === 'function') {

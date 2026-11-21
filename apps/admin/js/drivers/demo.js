@@ -932,6 +932,29 @@ export function createDemoDriver() {
     async setupShopifyMetafields() { return { created: [], existing: ['ubc.availability', 'ubc.lead_time_days', 'ubc.click_and_collect_only'] }; },
     async setupShopifyCollections() { return { created: [], existing: ['electric-bikes', 'road-bikes', 'mountain-bikes', 'hybrid-bikes', 'helmets', 'tires-tubes', 'hydration-nutrition', 'parts-components'] }; },
     async syncLightspeed() { const job = startJob('lightspeed.sync_catalog', {}, async () => ({ status: 'awaiting_oauth_credentials', seen: 0 })); return { jobId: job.id }; },
+    async lightspeedOAuthUrl() { return { url: 'https://cloud.lightspeedapp.com/oauth/authorize.php?demo=1', demo: true }; },
+    async updateCampaign(id, input) {
+      can('promotions.write');
+      const c = state.campaigns.find((x) => x.id === id);
+      if (!c) fail(404, 'NOT_FOUND', 'Campaign not found');
+      Object.assign(c, input || {});
+      audit('campaign.updated', 'campaign', id, input || {});
+      save();
+      return { ok: true, campaign: clone(c) };
+    },
+    async reportsCollectionGap() {
+      can('catalog.read');
+      return { totalActiveStock: ds.items.length, inDepartment: ds.items.length, outsideDepartment: [], noPhotoItems: [], byType: [] };
+    },
+    async reportsNoUpc() {
+      can('catalog.read');
+      const missing = ds.items.filter((i) => !i.upc);
+      return { total: missing.length, items: missing.slice(0, 100) };
+    },
+    async reportsMarginIssues() {
+      can('catalog.read');
+      return { underMap: [], lowMargin: [], missingCost: ds.items.filter((i) => !i.costCents).slice(0, 50) };
+    },
 
     // Demo-only controls
     simulateOutage(on) { state.simulateOutage = !!on; save(); },

@@ -1,0 +1,215 @@
+{%- comment -%}
+  UBC SEO & GEO (Generative Engine Optimization) Layer
+  - Geographic meta tags (Tampa Bay & Alafia River State Park, FL)
+  - Dual-location BikeStore / LocalBusiness JSON-LD with OfferCatalog & ServiceArea
+  - Contextual FAQPage JSON-LD for AI Overviews, ChatGPT, and Perplexity citations
+  - Product MPN / UPC / System ID structured enrichment
+{%- endcomment -%}
+
+<meta name="geo.region" content="US-FL">
+<meta name="geo.placename" content="Tampa, Florida">
+<meta name="geo.position" content="28.0695;-82.4468">
+<meta name="ICBM" content="28.0695, -82.4468">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BikeStore",
+      "@id": "{{ shop.url }}/#tampa-store",
+      "name": "University Bicycle Center — Tampa Showroom & Workshop",
+      "url": "{{ shop.url }}",
+      "telephone": "+1-813-971-2277",
+      "foundingDate": "1972",
+      "priceRange": "$$",
+      "image": "{{ 'ubc-tampa-exterior.jpg' | asset_url | prepend: 'https:' }}",
+      "description": "Family-owned bicycle shop in Tampa, FL since 1972 near USF. Authorized dealer for Specialized, Giant, Santa Cruz, Cannondale, Trek, and Liv with walk-in bike repair, complimentary new-bike check-overs, Low Price Guarantee, and BicycleBlueBook trade-ins.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "1220 E Fletcher Ave",
+        "addressLocality": "Tampa",
+        "addressRegion": "FL",
+        "postalCode": "33612",
+        "addressCountry": "US"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 28.0695,
+        "longitude": -82.4468
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "10:00",
+          "closes": "18:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Saturday"],
+          "opens": "10:00",
+          "closes": "17:00"
+        }
+      ],
+      "areaServed": [
+        "Tampa, FL",
+        "University of South Florida (USF)",
+        "Temple Terrace, FL",
+        "Carrollwood, FL",
+        "New Tampa, FL",
+        "Lutz, FL",
+        "Wesley Chapel, FL",
+        "Brandon, FL",
+        "Riverview, FL",
+        "Lithia, FL"
+      ],
+      "sameAs": [
+        "https://www.instagram.com/ubcbike.tampa/"
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Bicycle Sales, Service & Tune-Up Packages",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Level 1 Tune-Up",
+              "description": "Cable lube/trim, headset, bottom bracket, hub, derailleur and brake adjustments, lateral wheel true, chain oil, tire air, and safety inspection."
+            },
+            "price": "100.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Level 2 Tune-Up",
+              "description": "Everything in Level 1 Tune-Up plus full removal and detail cleaning of drivetrain components, full wheel true, and safety inspection."
+            },
+            "price": "160.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Complete Overhaul",
+              "description": "Full bike disassembly, ultrasonic drivetrain cleaning, bearing overhaul and grease for headset, bottom bracket and hubs, cable/housing replacement, and full wheel true."
+            },
+            "price": "250.00",
+            "priceCurrency": "USD"
+          }
+        ]
+      }
+    },
+    {
+      "@type": "BikeStore",
+      "@id": "{{ shop.url }}/#alafia-outpost",
+      "name": "University Bicycle Center at Alafia River State Park",
+      "url": "{{ shop.url }}/pages/bike-rentals",
+      "telephone": "+1-813-459-8293",
+      "priceRange": "$$",
+      "image": "{{ 'alafia-mtb-action.jpg' | asset_url | prepend: 'https:' }}",
+      "description": "Trailhead MTB and e-MTB rental shop and mechanic outpost located directly inside Alafia River State Park in Lithia, FL.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "14326 S County Rd 39",
+        "addressLocality": "Lithia",
+        "addressRegion": "FL",
+        "postalCode": "33547",
+        "addressCountry": "US"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 27.7689,
+        "longitude": -82.1489
+      },
+      "parentOrganization": {
+        "@id": "{{ shop.url }}/#tampa-store"
+      }
+    }
+  ]
+}
+</script>
+
+{%- if request.page_type == 'index' or page.handle == 'about-us' or page.handle == 'bike-service-repair' or page.handle == 'bike-rentals' or page.handle == 'locations' -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Where is University Bicycle Center located in Tampa and at Alafia?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Our Tampa Showroom & Walk-In Workshop is at 1220 E Fletcher Ave, Tampa, FL 33612 (near USF), reachable at (813) 971-2277. Our trailhead MTB & e-MTB rental shop is inside Alafia River State Park at 14326 S County Rd 39, Lithia, FL 33547, reachable at (813) 459-8293."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What bike tune-up packages and repair services does UBC Tampa offer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "UBC Tampa offers walk-in bike repair with most repairs completed within 24 hours, including Level 1 Tune-Up ($100), Level 2 Tune-Up ($160), and Complete Overhaul ($250), plus e-bike diagnostics, suspension service, and wheel truing."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What complimentary service and warranty comes with a new bike from University Bicycle Center?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Every new bicycle includes road-ready professional assembly, complimentary check-overs at 30-90 days, 6 months, and 1 year, ongoing basic brake, gear, and bearing adjustments for the original owner, and a 1-year warranty covering parts and labor (used bikes include a 30-day warranty)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I rent a mountain bike or e-MTB inside Alafia River State Park?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. UBC at Alafia River State Park rents tuned full-suspension mountain bikes and e-MTBs directly at the trailhead inside the park, with helmets and trailside mechanical support."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does University Bicycle Center offer a Low Price Guarantee and trade-ins?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Under our Low Price Guarantee, if you find the identical item advertised for less and in stock at a competing retailer, we will do our best to match their price. We are also an official BicycleBlueBook.com partner offering instant in-store trade-in credit."
+      }
+    }
+  ]
+}
+</script>
+{%- endif -%}
+
+{%- if request.page_type == 'product' and product -%}
+  {%- assign seo_v = product.selected_or_first_available_variant -%}
+  {%- assign seo_mpn = seo_v.metafields.ubc.mpn.value | default: seo_v.sku -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": "{{ shop.url }}{{ product.url }}#ubc-product",
+    "name": {{ product.title | json }},
+    "url": "{{ shop.url }}{{ product.url }}",
+    "brand": {
+      "@type": "Brand",
+      "name": {{ product.vendor | json }}
+    },
+    "sku": {{ seo_mpn | json }},
+    "mpn": {{ seo_mpn | json }}{% if seo_v.barcode != blank %},
+    "gtin": {{ seo_v.barcode | json }}{% endif %},
+    "offers": {
+      "@type": "Offer",
+      "url": "{{ shop.url }}{{ seo_v.url }}",
+      "priceCurrency": {{ cart.currency.iso_code | json }},
+      "price": {{ seo_v.price | divided_by: 100.0 | json }},
+      "availability": "https://schema.org/{% if seo_v.available %}InStock{% else %}OutOfStock{% endif %}",
+      "itemCondition": "https://schema.org/NewCondition"
+    }
+  }
+  </script>
+{%- endif -%}

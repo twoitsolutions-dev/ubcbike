@@ -10200,7 +10200,7 @@ iframe[src*="ikeono"] {
 }
 
 /* ==========================================================================
-   Seasonal Editions: Framed Wide Studio Showcase Card (No Clipped Wheels)
+   Seasonal Editions: Light Clean Hero Canvas + Seasonal Colors & Effects
    ========================================================================== */
 body[data-ubc-edition="christmas"] .show .show-blob,
 body[data-ubc-edition="july_4"] .show .show-blob,
@@ -10215,34 +10215,38 @@ body[data-ubc-edition="veterans"] .show .show-ring {
   display: none !important;
 }
 
+body[data-ubc-edition="christmas"] .show {
+  background: radial-gradient(circle at 76% 42%, rgba(200, 30, 43, 0.06) 0%, transparent 48%),
+              linear-gradient(135deg, #fefdf3 0%, #fbf4e8 55%, #f5ece6 100%) !important;
+}
+body[data-ubc-edition="july_4"] .show {
+  background: radial-gradient(circle at 76% 42%, rgba(37, 99, 235, 0.06) 0%, transparent 48%),
+              linear-gradient(135deg, #fefdf3 0%, #f3f7fd 55%, #edf2fa 100%) !important;
+}
+body[data-ubc-edition="spring"] .show {
+  background: radial-gradient(circle at 76% 42%, rgba(35, 122, 75, 0.06) 0%, transparent 48%),
+              linear-gradient(135deg, #fefdf3 0%, #f3faf1 55%, #fff3ef 100%) !important;
+}
+body[data-ubc-edition="campus"] .show {
+  background: radial-gradient(circle at 76% 42%, rgba(0, 103, 71, 0.07) 0%, transparent 48%),
+              linear-gradient(135deg, #fefdf3 0%, #f2f8f4 55%, #ebf3ee 100%) !important;
+}
+body[data-ubc-edition="veterans"] .show {
+  background: radial-gradient(circle at 76% 42%, rgba(184, 134, 45, 0.08) 0%, transparent 48%),
+              linear-gradient(135deg, #fefdf3 0%, #f7f4ea 55%, #f0ebdc 100%) !important;
+}
+
+/* Open floating stage with soft ground shadow (no heavy box or clipped circle) */
 body[data-ubc-edition="christmas"] .show .show-stage,
 body[data-ubc-edition="july_4"] .show .show-stage,
 body[data-ubc-edition="spring"] .show .show-stage,
 body[data-ubc-edition="campus"] .show .show-stage,
 body[data-ubc-edition="veterans"] .show .show-stage {
-  background: radial-gradient(ellipse at 50% 88%, rgba(20, 32, 45, 0.08) 0%, rgba(254, 253, 243, 0) 58%),
-              linear-gradient(180deg, #ffffff 0%, #fefdf3 100%) !important;
-  border-radius: 28px !important;
-  padding: 26px 28px !important;
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.30), inset 0 -18px 36px rgba(20, 32, 45, 0.04) !important;
-  overflow: hidden !important;
-}
-
-body[data-ubc-edition="christmas"] .show .show-stage {
-  border: 2px solid rgba(234, 208, 138, 0.65) !important;
-}
-body[data-ubc-edition="july_4"] .show .show-stage {
-  border: 2px solid rgba(255, 255, 255, 0.55) !important;
-}
-body[data-ubc-edition="spring"] .show .show-stage {
-  border: 1.5px solid rgba(20, 32, 45, 0.12) !important;
-  box-shadow: 0 22px 48px rgba(20, 32, 45, 0.10) !important;
-}
-body[data-ubc-edition="campus"] .show .show-stage {
-  border: 2px solid rgba(245, 196, 62, 0.72) !important;
-}
-body[data-ubc-edition="veterans"] .show .show-stage {
-  border: 2px solid rgba(216, 174, 86, 0.62) !important;
+  background: radial-gradient(ellipse at 50% 88%, rgba(20, 32, 45, 0.11) 0%, rgba(20, 32, 45, 0) 56%) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
 body[data-ubc-edition="christmas"] .show .show-stage #showImg,
@@ -10250,9 +10254,93 @@ body[data-ubc-edition="july_4"] .show .show-stage #showImg,
 body[data-ubc-edition="spring"] .show .show-stage #showImg,
 body[data-ubc-edition="campus"] .show .show-stage #showImg,
 body[data-ubc-edition="veterans"] .show .show-stage #showImg {
-  width: 94% !important;
-  max-height: 92% !important;
-  filter: drop-shadow(0 18px 20px rgba(20, 32, 45, 0.18)) !important;
+  width: 98% !important;
+  max-height: 100% !important;
+  filter: drop-shadow(0 18px 20px rgba(20, 32, 45, 0.16)) !important;
+}
+
+/* Dark crisp typography & ghost text on light seasonal Hero backgrounds */
+body[data-ubc-edition="christmas"] .fb-scope .show .show-name,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-name,
+body[data-ubc-edition="spring"] .fb-scope .show .show-name,
+body[data-ubc-edition="campus"] .fb-scope .show .show-name,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-name,
+body[data-ubc-edition="christmas"] .show .h1,
+body[data-ubc-edition="july_4"] .show .h1,
+body[data-ubc-edition="campus"] .show .h1,
+body[data-ubc-edition="veterans"] .show .h1,
+body[data-ubc-edition="christmas"] .show .show-price,
+body[data-ubc-edition="july_4"] .show .show-price,
+body[data-ubc-edition="campus"] .show .show-price,
+body[data-ubc-edition="veterans"] .show .show-price,
+body[data-ubc-edition="christmas"] .show .show-count b,
+body[data-ubc-edition="july_4"] .show .show-count b,
+body[data-ubc-edition="campus"] .show .show-count b,
+body[data-ubc-edition="veterans"] .show .show-count b {
+  color: #14202d !important;
+}
+
+body[data-ubc-edition="christmas"] .show .show-sub,
+body[data-ubc-edition="july_4"] .show .show-sub,
+body[data-ubc-edition="campus"] .show .show-sub,
+body[data-ubc-edition="veterans"] .show .show-sub,
+body[data-ubc-edition="christmas"] .show .show-desc,
+body[data-ubc-edition="july_4"] .show .show-desc,
+body[data-ubc-edition="campus"] .show .show-desc,
+body[data-ubc-edition="veterans"] .show .show-desc,
+body[data-ubc-edition="christmas"] .show .show-count,
+body[data-ubc-edition="july_4"] .show .show-count,
+body[data-ubc-edition="campus"] .show .show-count,
+body[data-ubc-edition="veterans"] .show .show-count,
+body[data-ubc-edition="christmas"] .show .apr-note,
+body[data-ubc-edition="july_4"] .show .apr-note,
+body[data-ubc-edition="campus"] .show .apr-note,
+body[data-ubc-edition="veterans"] .show .apr-note {
+  color: #425263 !important;
+}
+
+body[data-ubc-edition="christmas"] .show .eyebrow { color: #b91c1c !important; }
+body[data-ubc-edition="july_4"] .show .eyebrow { color: #1d4ed8 !important; }
+body[data-ubc-edition="campus"] .show .eyebrow { color: #006747 !important; }
+body[data-ubc-edition="veterans"] .show .eyebrow { color: #8c651c !important; }
+
+body[data-ubc-edition="christmas"] .show .btn-ghost,
+body[data-ubc-edition="july_4"] .show .btn-ghost,
+body[data-ubc-edition="campus"] .show .btn-ghost,
+body[data-ubc-edition="veterans"] .show .btn-ghost {
+  background: #ffffff !important;
+  color: #14202d !important;
+  border-color: rgba(20, 32, 45, 0.22) !important;
+}
+
+body[data-ubc-edition="christmas"] .show .show-thumbs button,
+body[data-ubc-edition="july_4"] .show .show-thumbs button,
+body[data-ubc-edition="campus"] .show .show-thumbs button,
+body[data-ubc-edition="veterans"] .show .show-thumbs button {
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: #14202d !important;
+  border-color: rgba(20, 32, 45, 0.16) !important;
+}
+
+body[data-ubc-edition="christmas"] .show .show-emblem,
+body[data-ubc-edition="july_4"] .show .show-emblem,
+body[data-ubc-edition="campus"] .show .show-emblem,
+body[data-ubc-edition="veterans"] .show .show-emblem {
+  background: #ffffff !important;
+  border-color: rgba(20, 32, 45, 0.14) !important;
+  color: #14202d !important;
+}
+body[data-ubc-edition="christmas"] .show .show-emblem strong,
+body[data-ubc-edition="july_4"] .show .show-emblem strong,
+body[data-ubc-edition="campus"] .show .show-emblem strong,
+body[data-ubc-edition="veterans"] .show .show-emblem strong {
+  color: #14202d !important;
+}
+body[data-ubc-edition="christmas"] .show .show-emblem span,
+body[data-ubc-edition="july_4"] .show .show-emblem span,
+body[data-ubc-edition="campus"] .show .show-emblem span,
+body[data-ubc-edition="veterans"] .show .show-emblem span {
+  color: #475569 !important;
 }
 
 body[data-ubc-edition="christmas"] .show .show-ghost,
@@ -10260,7 +10348,7 @@ body[data-ubc-edition="july_4"] .show .show-ghost,
 body[data-ubc-edition="spring"] .show .show-ghost,
 body[data-ubc-edition="campus"] .show .show-ghost,
 body[data-ubc-edition="veterans"] .show .show-ghost {
-  color: rgba(20, 32, 45, 0.06) !important;
+  color: rgba(20, 32, 45, 0.045) !important;
 }
 
 /* Ensure uploaded UBC dark logo turns crisp white ONLY on dark seasonal headers */

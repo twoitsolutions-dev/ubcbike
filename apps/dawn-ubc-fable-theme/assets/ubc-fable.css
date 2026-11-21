@@ -10300,6 +10300,10 @@ body[data-ubc-edition="christmas"] .fb-scope .show .show-count span,
 body[data-ubc-edition="july_4"] .fb-scope .show .show-count span,
 body[data-ubc-edition="campus"] .fb-scope .show .show-count span,
 body[data-ubc-edition="veterans"] .fb-scope .show .show-count span,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-price del,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-price del,
+body[data-ubc-edition="campus"] .fb-scope .show .show-price del,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-price del,
 body[data-ubc-edition="christmas"] .fb-scope .show .apr-note,
 body[data-ubc-edition="july_4"] .fb-scope .show .apr-note,
 body[data-ubc-edition="campus"] .fb-scope .show .apr-note,
@@ -10345,13 +10349,17 @@ body[data-ubc-edition="july_4"] .fb-scope .show .eyebrow { color: #1d4ed8 !impor
 body[data-ubc-edition="campus"] .fb-scope .show .eyebrow { color: #006747 !important; }
 body[data-ubc-edition="veterans"] .fb-scope .show .eyebrow { color: #8c651c !important; }
 
-body[data-ubc-edition="christmas"] .fb-scope .show .fb-btn.outline,
-body[data-ubc-edition="july_4"] .fb-scope .show .fb-btn.outline,
-body[data-ubc-edition="campus"] .fb-scope .show .fb-btn.outline,
-body[data-ubc-edition="veterans"] .fb-scope .show .fb-btn.outline {
+body[data-ubc-edition="christmas"] .fb-scope .show .hero-cta a.fb-btn.outline,
+body[data-ubc-edition="christmas"] .fb-scope .show .hero-cta a.fb-btn.outline span,
+body[data-ubc-edition="july_4"] .fb-scope .show .hero-cta a.fb-btn.outline,
+body[data-ubc-edition="july_4"] .fb-scope .show .hero-cta a.fb-btn.outline span,
+body[data-ubc-edition="campus"] .fb-scope .show .hero-cta a.fb-btn.outline,
+body[data-ubc-edition="campus"] .fb-scope .show .hero-cta a.fb-btn.outline span,
+body[data-ubc-edition="veterans"] .fb-scope .show .hero-cta a.fb-btn.outline,
+body[data-ubc-edition="veterans"] .fb-scope .show .hero-cta a.fb-btn.outline span {
   background: #ffffff !important;
   color: #14202d !important;
-  border: 1.5px solid rgba(20, 32, 45, 0.28) !important;
+  border-color: rgba(20, 32, 45, 0.3) !important;
 }
 
 body[data-ubc-edition="christmas"] .show .show-thumbs button,

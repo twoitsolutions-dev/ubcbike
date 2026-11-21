@@ -198,14 +198,16 @@
                 {%- when 'description' -%}
                   {%- comment -%} Rendered full-width below the gallery (.ubc-pdp-description) to eliminate vertical scrolling gap {%- endcomment -%}
                 {%- when 'sku' -%}
+                  {%- assign v_cur = product.selected_or_first_available_variant -%}
+                  {%- assign v_disp_sku = v_cur.metafields.ubc.mpn.value | default: v_cur.sku -%}
                   <p
-                    class="product__sku{% if block.settings.text_style == 'uppercase' %} caption-with-letter-spacing{% elsif block.settings.text_style == 'subtitle' %} subtitle{% endif %}{% if product.selected_or_first_available_variant.sku.size == 0 %} visibility-hidden{% endif %}"
+                    class="product__sku{% if block.settings.text_style == 'uppercase' %} caption-with-letter-spacing{% elsif block.settings.text_style == 'subtitle' %} subtitle{% endif %}{% if v_disp_sku == blank %} visibility-hidden{% endif %}"
                     id="Sku-{{ section.id }}"
                     role="status"
                     {{ block.shopify_attributes }}
                   >
                     <span class="ubc-sku-prefix">{{ product.vendor }} &nbsp;|&nbsp; SKU:&nbsp;</span>
-                    {{- product.selected_or_first_available_variant.sku -}}
+                    {{- v_disp_sku -}}
                   </p>
                 {%- when 'custom_liquid' -%}
                   {{ block.settings.custom_liquid }}

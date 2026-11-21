@@ -10265,52 +10265,81 @@ body[data-ubc-edition="july_4"] .fb-scope .show .show-name,
 body[data-ubc-edition="spring"] .fb-scope .show .show-name,
 body[data-ubc-edition="campus"] .fb-scope .show .show-name,
 body[data-ubc-edition="veterans"] .fb-scope .show .show-name,
-body[data-ubc-edition="christmas"] .show .h1,
-body[data-ubc-edition="july_4"] .show .h1,
-body[data-ubc-edition="campus"] .show .h1,
-body[data-ubc-edition="veterans"] .show .h1,
-body[data-ubc-edition="christmas"] .show .show-price,
-body[data-ubc-edition="july_4"] .show .show-price,
-body[data-ubc-edition="campus"] .show .show-price,
-body[data-ubc-edition="veterans"] .show .show-price,
-body[data-ubc-edition="christmas"] .show .show-count b,
-body[data-ubc-edition="july_4"] .show .show-count b,
-body[data-ubc-edition="campus"] .show .show-count b,
-body[data-ubc-edition="veterans"] .show .show-count b {
+body[data-ubc-edition="christmas"] .fb-scope .show .h1,
+body[data-ubc-edition="july_4"] .fb-scope .show .h1,
+body[data-ubc-edition="campus"] .fb-scope .show .h1,
+body[data-ubc-edition="veterans"] .fb-scope .show .h1,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-price,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-price,
+body[data-ubc-edition="campus"] .fb-scope .show .show-price,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-price,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-price b,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-price b,
+body[data-ubc-edition="campus"] .fb-scope .show .show-price b,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-price b,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-count b,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-count b,
+body[data-ubc-edition="campus"] .fb-scope .show .show-count b,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-count b {
   color: #14202d !important;
 }
 
-body[data-ubc-edition="christmas"] .show .show-sub,
-body[data-ubc-edition="july_4"] .show .show-sub,
-body[data-ubc-edition="campus"] .show .show-sub,
-body[data-ubc-edition="veterans"] .show .show-sub,
-body[data-ubc-edition="christmas"] .show .show-desc,
-body[data-ubc-edition="july_4"] .show .show-desc,
-body[data-ubc-edition="campus"] .show .show-desc,
-body[data-ubc-edition="veterans"] .show .show-desc,
-body[data-ubc-edition="christmas"] .show .show-count,
-body[data-ubc-edition="july_4"] .show .show-count,
-body[data-ubc-edition="campus"] .show .show-count,
-body[data-ubc-edition="veterans"] .show .show-count,
-body[data-ubc-edition="christmas"] .show .apr-note,
-body[data-ubc-edition="july_4"] .show .apr-note,
-body[data-ubc-edition="campus"] .show .apr-note,
-body[data-ubc-edition="veterans"] .show .apr-note {
+body[data-ubc-edition="christmas"] .fb-scope .show .show-sub,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-sub,
+body[data-ubc-edition="campus"] .fb-scope .show .show-sub,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-sub,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-desc,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-desc,
+body[data-ubc-edition="campus"] .fb-scope .show .show-desc,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-desc,
+body[data-ubc-edition="christmas"] .fb-scope .show .show-count,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-count,
+body[data-ubc-edition="campus"] .fb-scope .show .show-count,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-count,
+body[data-ubc-edition="christmas"] .fb-scope .show .apr-note,
+body[data-ubc-edition="july_4"] .fb-scope .show .apr-note,
+body[data-ubc-edition="campus"] .fb-scope .show .apr-note,
+body[data-ubc-edition="veterans"] .fb-scope .show .apr-note {
   color: #425263 !important;
 }
 
-body[data-ubc-edition="christmas"] .show .eyebrow { color: #b91c1c !important; }
-body[data-ubc-edition="july_4"] .show .eyebrow { color: #1d4ed8 !important; }
-body[data-ubc-edition="campus"] .show .eyebrow { color: #006747 !important; }
-body[data-ubc-edition="veterans"] .show .eyebrow { color: #8c651c !important; }
+body[data-ubc-edition="christmas"] .fb-scope .show .show-rail,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-rail,
+body[data-ubc-edition="campus"] .fb-scope .show .show-rail,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-rail {
+  color: rgba(20, 32, 45, 0.55) !important;
+}
 
-body[data-ubc-edition="christmas"] .show .btn-ghost,
-body[data-ubc-edition="july_4"] .show .btn-ghost,
-body[data-ubc-edition="campus"] .show .btn-ghost,
-body[data-ubc-edition="veterans"] .show .btn-ghost {
+body[data-ubc-edition="christmas"] .fb-scope .show .show-arrows button,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-arrows button,
+body[data-ubc-edition="campus"] .fb-scope .show .show-arrows button,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-arrows button {
   background: #ffffff !important;
   color: #14202d !important;
   border-color: rgba(20, 32, 45, 0.22) !important;
+}
+
+body[data-ubc-edition="christmas"] .fb-scope .show .show-badge,
+body[data-ubc-edition="july_4"] .fb-scope .show .show-badge,
+body[data-ubc-edition="campus"] .fb-scope .show .show-badge,
+body[data-ubc-edition="veterans"] .fb-scope .show .show-badge {
+  background: #ffffff !important;
+  color: #14202d !important;
+  border: 1px solid rgba(20, 32, 45, 0.16) !important;
+}
+
+body[data-ubc-edition="christmas"] .fb-scope .show .eyebrow { color: #b91c1c !important; }
+body[data-ubc-edition="july_4"] .fb-scope .show .eyebrow { color: #1d4ed8 !important; }
+body[data-ubc-edition="campus"] .fb-scope .show .eyebrow { color: #006747 !important; }
+body[data-ubc-edition="veterans"] .fb-scope .show .eyebrow { color: #8c651c !important; }
+
+body[data-ubc-edition="christmas"] .fb-scope .show .btn.btn-ghost,
+body[data-ubc-edition="july_4"] .fb-scope .show .btn.btn-ghost,
+body[data-ubc-edition="campus"] .fb-scope .show .btn.btn-ghost,
+body[data-ubc-edition="veterans"] .fb-scope .show .btn.btn-ghost {
+  background: #ffffff !important;
+  color: #14202d !important;
+  border: 1.5px solid rgba(20, 32, 45, 0.24) !important;
 }
 
 body[data-ubc-edition="christmas"] .show .show-thumbs button,
@@ -10367,12 +10396,15 @@ body[data-ubc-edition="veterans"] .fb-partner-pill--vet {
   letter-spacing: 0.05em !important;
 }
 body[data-ubc-edition="christmas"] .fb-nav,
+body[data-ubc-edition="july_4"] .fb-nav,
 body[data-ubc-edition="campus"] .fb-nav,
 body[data-ubc-edition="veterans"] .fb-nav {
   gap: 2px !important;
 }
 body[data-ubc-edition="christmas"] .fb-nav > li > a,
 body[data-ubc-edition="christmas"] .fb-nav > li > button,
+body[data-ubc-edition="july_4"] .fb-nav > li > a,
+body[data-ubc-edition="july_4"] .fb-nav > li > button,
 body[data-ubc-edition="campus"] .fb-nav > li > a,
 body[data-ubc-edition="campus"] .fb-nav > li > button,
 body[data-ubc-edition="veterans"] .fb-nav > li > a,

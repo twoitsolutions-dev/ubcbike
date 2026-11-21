@@ -5,6 +5,7 @@ import { renderProducts, renderProductDetail } from './views/products.js?v=53';
 import { renderInventory } from './views/inventory.js?v=40';
 import { renderSuppliers } from './views/suppliers.js?v=40';
 import { renderPricing } from './views/pricing.js?v=40';
+import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=1';
 import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=46';
 import { renderOrders, renderOrderDetail } from './views/orders.js?v=40';
 import { renderPurchasing } from './views/purchasing.js?v=40';
@@ -23,6 +24,7 @@ export const routes = [
   { path: '/inventory', title: 'Item Search · In-Store Stock', render: renderInventory },
   { path: '/suppliers', title: 'Vendor Catalogs', render: renderSuppliers },
   { path: '/pricing', title: 'Item Search · Margins & MAP', render: renderPricing },
+  { path: '/lightspeed-sheet', title: 'Item Search · Lightspeed Sheet', render: renderLightspeedSheet },
   { path: '/promotions', title: 'Promotions / Price Rules', render: renderPromotions },
   { path: '/promotions/new', title: 'New Promotion / Price Rule', render: renderPromotionNew },
   { path: '/promotions/:id', title: 'Promotion Details', render: renderPromotionDetail },

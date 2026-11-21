@@ -45,6 +45,8 @@ export function createHttpDriver() {
     reportsNoUpc: () => req('GET', '/api/reports/no-upc'),
     reportsMarginIssues: () => req('GET', '/api/reports/margin-issues'),
     items: (q) => req('GET', '/api/items' + qs(q)),
+    lightspeedSheet: (q) => req('GET', '/api/lightspeed/sheet' + qs(q)),
+    lightspeedBulkUpdate: (changes) => req('POST', '/api/lightspeed/bulk-update', { changes }),
     facets: () => req('GET', '/api/items/facets'),
     item: (id) => req('GET', '/api/items/' + id),
     setPrice: (id, priceCents, version) => req('PATCH', '/api/items/' + id + '/price', { priceCents, version }),

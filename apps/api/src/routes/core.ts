@@ -106,6 +106,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     mode: ctx.config.mode,
     demoNotice: ctx.config.mode === 'demo' ? DEMO_NOTICE : null,
     posEventWritesEnabled: !!ctx.config.env.LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED,
+    lightspeedWritesEnabled: !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED,
     version: '0.1.0',
   }));
 
@@ -175,6 +176,74 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const { availability } = await getSettings(ctx.pool, c);
     const { items, total } = await listItems(ctx.pool, c, filterFromQuery(q), availability, page);
     return { total, items: items.map((i) => ({ ...i, availability: computeAvailability(i, availability) })) };
+  });
+
+  app.get('/api/lightspeed/sheet', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const q = req.query as Record<string, unknown>;
+    const page = pageSchema.parse(q);
+    const c = req.session!.companyId;
+    const { availability } = await getSettings(ctx.pool, c);
+    const { items, total } = await listItems(ctx.pool, c, filterFromQuery(q), availability, page);
+    const tagFilter = typeof q.tag === 'string' ? q.tag.trim().toLowerCase() : '';
+    const mapped = items
+      .map((i) => {
+        const raw = i as unknown as Record<string, unknown>;
+        const tags = Array.isArray(raw.tags) ? (raw.tags as string[]) : [];
+        return {
+          id: i.id,
+          sku: i.sku,
+          mpn: (raw.mpn as string) || '',
+          upc: i.upc || '',
+          description: i.title,
+          customSku: (raw.customSku as string) || '',
+          brand: i.brand || '',
+          category: i.category || '',
+          tags,
+          defaultPriceCents: i.priceCents,
+          msrpCents: (raw.msrpCents as number | null) ?? null,
+          salePriceCents: (raw.salePriceCents as number | null) ?? null,
+          onlinePriceCents: (raw.onlinePriceCents as number | null) ?? null,
+          defaultCostCents: i.costCents ?? null,
+          reorderPoint: (raw.reorderPoint as number | null) ?? 0,
+          desiredLevel: (raw.desiredLevel as number | null) ?? 0,
+          physicalQty: i.physicalQty ?? 0,
+          version: i.version,
+        };
+      })
+      .filter((row) => !tagFilter || row.tags.some((t) => String(t).toLowerCase().includes(tagFilter)));
+    return {
+      total: tagFilter ? mapped.length : total,
+      writesEnabled: !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED,
+      items: mapped,
+    };
+  });
+
+  const lsBulkChangeSchema = z.object({
+    id: z.string().min(1),
+    description: z.string().min(1).max(300).optional(),
+    customSku: z.string().max(120).optional(),
+    tags: z.array(z.string().max(64)).max(50).optional(),
+    defaultPriceCents: z.number().int().nonnegative().optional(),
+    msrpCents: z.number().int().nonnegative().nullable().optional(),
+    salePriceCents: z.number().int().nonnegative().nullable().optional(),
+    onlinePriceCents: z.number().int().nonnegative().nullable().optional(),
+    defaultCostCents: z.number().int().nonnegative().nullable().optional(),
+    reorderPoint: z.number().int().nonnegative().optional(),
+    desiredLevel: z.number().int().nonnegative().optional(),
+  });
+
+  app.post('/api/lightspeed/bulk-update', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req, reply) => {
+    const body = z.object({ changes: z.array(lsBulkChangeSchema).min(1).max(500) }).parse(req.body);
+    if (!ctx.config.env.LIGHTSPEED_WRITES_ENABLED) {
+      return reply.code(403).send({
+        error: 'LIGHTSPEED_READ_ONLY',
+        message: 'Lightspeed writes are disabled. Authorize OAuth scope employee:inventory and set LIGHTSPEED_WRITES_ENABLED=true on the server. Use Export CSV in the meantime.',
+      });
+    }
+    return reply.code(501).send({
+      error: 'LIGHTSPEED_WRITER_NOT_CONFIGURED',
+      message: `Validated ${body.changes.length} changes for company ${req.session!.companyId}, but live Lightspeed item writer requires verified API write mapping.`,
+    });
   });
 
   const collectionsGapCache = new Map<string, { at: number; data: unknown }>();

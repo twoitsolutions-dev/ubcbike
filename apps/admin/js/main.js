@@ -37,7 +37,7 @@ const NAV = [
 
 function navParentFor(hash) {
   const path = (hash || '#/dashboard').split('?')[0];
-  if (path.indexOf('#/inventory') === 0 || path.indexOf('#/pricing') === 0 || path.indexOf('#/products') === 0) return '#/products';
+  if (path.indexOf('#/inventory') === 0 || path.indexOf('#/pricing') === 0 || path.indexOf('#/lightspeed-sheet') === 0 || path.indexOf('#/products') === 0) return '#/products';
   if (path.indexOf('#/pipeline') === 0 || path.indexOf('#/suppliers') === 0) return '#/suppliers';
   if (path.indexOf('#/integrations') === 0 || path.indexOf('#/activity') === 0 || path.indexOf('#/settings') === 0) return '#/settings';
   if (path.indexOf('#/promotions') === 0) return '#/promotions';

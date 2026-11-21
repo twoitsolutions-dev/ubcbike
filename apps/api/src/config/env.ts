@@ -51,6 +51,8 @@ const schema = z.object({
   LIGHTSPEED_R_API_BASE: z.string().optional(),
   /** Disabled by default; enabled only when UBC authorises POS price parity for special events (Black Friday, Christmas, etc.). */
   LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED: bool,
+  /** Disabled by default; enabled only when Lightspeed OAuth write scope (employee:inventory) is authorized for HUB bulk sheet edits. */
+  LIGHTSPEED_WRITES_ENABLED: bool,
 
   QBP_API_KEY: z.string().optional(),
   QBP_API_BASE_URL: z.string().optional(),

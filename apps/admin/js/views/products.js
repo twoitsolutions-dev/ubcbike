@@ -15,6 +15,7 @@ export function itemSearchTabs(activeKey) {
     ['vendor', 'Vendor Catalog Only', '#/products?stock=virtual_only'],
     ['stock', 'Stock by Store', '#/inventory'],
     ['margins', 'Margins & MAP', '#/pricing'],
+    ['ls-sheet', 'Lightspeed Sheet', '#/lightspeed-sheet'],
   ], activeKey);
 }
 

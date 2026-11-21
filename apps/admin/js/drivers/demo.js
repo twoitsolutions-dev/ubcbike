@@ -417,6 +417,62 @@ export function createDemoDriver() {
       const list = R.sortItems(select(toFilter(q)), q.sort || 'title', q.dir || 'asc');
       return { total: list.length, items: list.slice(offset, offset + limit).map((i) => Object.assign(clone(i), { availability: avail(i) })) };
     },
+    async lightspeedSheet(q) {
+      can('catalog.read');
+      const limit = Math.min(200, Number(q.limit) || 50);
+      const offset = Number(q.offset) || 0;
+      const tagFilter = String((q && q.tag) || '').trim().toLowerCase();
+      let list = R.sortItems(select(toFilter(q)), (q && q.sort) || 'title', (q && q.dir) || 'asc');
+      const mapped = list.map((i, idx) => {
+        const defaultTags = i.tags ? i.tags : (idx % 5 === 0 ? ['peoy26'] : idx % 3 === 0 ? ['eoy2026'] : []);
+        return {
+          id: i.id,
+          sku: i.sku,
+          mpn: i.mpn || i.sku,
+          upc: i.upc || '',
+          description: i.title,
+          customSku: i.customSku || '',
+          brand: i.brand || '',
+          category: i.category || '',
+          tags: defaultTags.slice(),
+          defaultPriceCents: i.priceCents,
+          msrpCents: i.msrpCents ?? null,
+          salePriceCents: i.salePriceCents ?? null,
+          onlinePriceCents: i.onlinePriceCents ?? null,
+          defaultCostCents: i.costCents ?? null,
+          reorderPoint: i.reorderPoint ?? 1,
+          desiredLevel: i.desiredLevel ?? 3,
+          physicalQty: i.physicalQty ?? 0,
+          version: i.version,
+        };
+      }).filter((row) => !tagFilter || row.tags.some((t) => String(t).toLowerCase().includes(tagFilter)));
+      return { total: mapped.length, writesEnabled: false, items: mapped.slice(offset, offset + limit) };
+    },
+    async lightspeedBulkUpdate(changes) {
+      can('catalog.write');
+      const list = Array.isArray(changes) ? changes : [];
+      let updated = 0;
+      list.forEach((ch) => {
+        const it = itemsById.get(ch.id);
+        if (!it) return;
+        const patch = {};
+        if (ch.description !== undefined) patch.title = ch.description;
+        if (ch.customSku !== undefined) patch.customSku = ch.customSku;
+        if (ch.tags !== undefined) patch.tags = ch.tags;
+        if (ch.defaultPriceCents !== undefined) patch.priceCents = ch.defaultPriceCents;
+        if (ch.msrpCents !== undefined) patch.msrpCents = ch.msrpCents;
+        if (ch.salePriceCents !== undefined) patch.salePriceCents = ch.salePriceCents;
+        if (ch.onlinePriceCents !== undefined) patch.onlinePriceCents = ch.onlinePriceCents;
+        if (ch.defaultCostCents !== undefined) patch.costCents = ch.defaultCostCents;
+        if (ch.reorderPoint !== undefined) patch.reorderPoint = ch.reorderPoint;
+        if (ch.desiredLevel !== undefined) patch.desiredLevel = ch.desiredLevel;
+        patchItem(it, patch);
+        updated++;
+      });
+      audit('lightspeed.bulk_sheet_saved', null, null, { updated });
+      save();
+      return { ok: true, updated, demo: true };
+    },
     async facets() {
       can('catalog.read');
       const count = (key) => {

@@ -156,7 +156,7 @@
           {%- for pkg in meta_pkgs -%}
             <article class="ubc-ws-card{% if pkg.featured.value %} ubc-ws-card--featured{% endif %}">
               <div>
-                {%- if pkg.kicker.value != blank -%}<span class="ubc-ws-kicker">{{ pkg.kicker.value }}</span>{%- endif -%}
+                <span class="ubc-ws-kicker"{% if pkg.kicker.value == blank %} style="visibility:hidden;" aria-hidden="true"{% endif %}>{{ pkg.kicker.value | default: '&nbsp;' }}</span>
                 <h3>{{ pkg.name.value }}</h3>
                 <div class="ubc-ws-price">{{ pkg.price.value }}</div>
                 {%- if pkg.summary.value != blank -%}<p class="ubc-ws-note">{{ pkg.summary.value }}</p>{%- endif -%}
@@ -172,9 +172,7 @@
               </div>
               <div>
                 {%- if pkg.footnote.value != blank -%}<p class="ubc-ws-note">{{ pkg.footnote.value }}</p>{%- endif -%}
-                {%- if pkg.cta_label.value != blank -%}
-                  <a class="ubc-ws-btn" href="{{ pkg.cta_url.value | default: '/pages/contact-us' }}">{{ pkg.cta_label.value }}</a>
-                {%- endif -%}
+                <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule {{ pkg.name.value | escape }}." data-es="Contáctanos">Contact Us</button>
               </div>
             </article>
           {%- endfor -%}
@@ -187,6 +185,7 @@
           {%- if show_l1 -%}
           <article class="ubc-ws-card">
             <div>
+              <span class="ubc-ws-kicker" data-es="Mantenimiento Esencial">Essential Refresh</span>
               <h3>Level 1 Tune-Up</h3>
               <div class="ubc-ws-price">$100.00</div>
               <p class="ubc-ws-note">This service is a refresh of the parts, having clean and lubricated cables make the systems work better.</p>
@@ -202,7 +201,7 @@
             </div>
             <div>
               <p class="ubc-ws-note">Additional parts not included</p>
-              <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
+              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule a Level 1 Tune-Up." data-es="Contáctanos">Contact Us</button>
             </div>
           </article>
           {%- endif -%}
@@ -223,7 +222,7 @@
             </div>
             <div>
               <p class="ubc-ws-note">Additional parts not included</p>
-              <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
+              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule a Level 2 Tune-Up." data-es="Contáctanos">Contact Us</button>
             </div>
           </article>
           {%- endif -%}
@@ -231,7 +230,8 @@
           {%- if show_oh -%}
           <article class="ubc-ws-card">
             <div>
-              <h3>Level 1 Overhaul</h3>
+              <span class="ubc-ws-kicker" data-es="Reconstrucción Completa">Full Rebuild</span>
+              <h3>Complete Overhaul</h3>
               <div class="ubc-ws-price">$250.00</div>
               <p class="ubc-ws-note">This service is extensive and is vital for the longevity of the parts.</p>
               <ul class="ubc-ws-list">
@@ -244,7 +244,7 @@
             </div>
             <div>
               <p class="ubc-ws-note">Additional parts not included</p>
-              <a class="ubc-ws-btn" href="/pages/contact-us">Book This Tune-Up</a>
+              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule a Complete Overhaul." data-es="Contáctanos">Contact Us</button>
             </div>
           </article>
           {%- endif -%}
@@ -256,7 +256,7 @@
         <h2 class="ubc-ws-h2">Maintenance Service</h2>
         <p class="ubc-ws-lead">Servicing your bike is very important for your safety and the longevity of the parts. Below is a common checklist and maintenance schedule.</p>
         <div class="ubc-ws-grid">
-          <div class="ubc-ws-card">
+          <div class="ubc-ws-card" style="justify-content:flex-start;">
             <h3>300-500 Miles or Every 2-3 Months</h3>
             <ul class="ubc-ws-list">
               <li>Clean the bike and inspect for cracks</li>
@@ -267,7 +267,7 @@
               <li>Check cleats, pedals &amp; suspension lockout/rebound</li>
             </ul>
           </div>
-          <div class="ubc-ws-card">
+          <div class="ubc-ws-card" style="justify-content:flex-start;">
             <h3>1000-2500 Miles or Every 6 Months</h3>
             <ul class="ubc-ws-list">
               <li>Inspect tires for wear, cracks, or embedded debris</li>
@@ -277,7 +277,7 @@
               <li>Deep clean drivetrain &amp; inspect suspension</li>
             </ul>
           </div>
-          <div class="ubc-ws-card">
+          <div class="ubc-ws-card" style="justify-content:flex-start;">
             <h3>2500-5000 Miles or Every Year</h3>
             <ul class="ubc-ws-list">
               <li>Replace grease in headset, bottom bracket, and hubs</li>
@@ -543,7 +543,7 @@
                 </div>
                 <div class="ubc-ws-actions" style="margin-top: 1.6rem;">
                   <button type="submit" class="ubc-ws-btn" data-es="Enviar Mensaje">Send Message</button>
-                  <button type="button" class="ubc-ws-btn ubc-ws-btn--ghost" data-ws-ikeono="Hi UBC! I have a quick question for the shop." data-es="Texto Rápido (Ikeono)">Text Us (Ikeono)</button>
+                  <button type="button" class="ubc-ws-btn ubc-ws-btn--ghost" data-ws-ikeono="Hi UBC! I have a quick question for the shop." data-es="Envíanos un Texto">Text Us</button>
                 </div>
               {%- endform -%}
             </div>
@@ -554,7 +554,7 @@
               <p class="ubc-ws-note" data-es="Pasa sin cita en Tampa para pinchazos, ajustes de frenos/cambios o tune-up completo.">Walk right in during business hours for flat fixes, brake/gear adjustments, or full tune-ups — most repairs completed within 24 hours.</p>
               <div class="ubc-ws-actions">
                 <a class="ubc-ws-btn ubc-ws-btn--light" href="/pages/bike-service-repair" data-es="Ver Servicio y Precios">Service &amp; Pricing</a>
-                <button type="button" class="ubc-ws-btn ubc-ws-btn--light" data-ws-ikeono="Hi UBC Workshop! I need bike service." data-es="Texto al Taller (Ikeono)">Text Workshop (Ikeono)</button>
+                <button type="button" class="ubc-ws-btn ubc-ws-btn--light" data-ws-ikeono="Hi UBC Workshop! I need bike service." data-es="Envíanos un Texto">Text Us</button>
               </div>
             </article>
 

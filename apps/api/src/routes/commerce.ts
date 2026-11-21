@@ -480,7 +480,9 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!clientId) throw new HttpError(400, 'NOT_CONFIGURED', 'LIGHTSPEED_R_CLIENT_ID is not configured on the server.');
     const payload = Buffer.from(JSON.stringify({ companyId, exp: Date.now() + 15 * 60_000 })).toString('base64url');
     const sig = crypto.createHmac('sha256', lsOAuthSecret()).update(payload).digest('base64url');
-    const url = `https://cloud.lightspeedapp.com/oauth/authorize.php?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent('employee:inventory_read')}&redirect_uri=${encodeURIComponent(lsRedirectUri)}&state=${encodeURIComponent(`${payload}.${sig}`)}`;
+    const writeMode = (req.query as { write?: string })?.write === '1';
+    const scope = writeMode ? 'employee:inventory employee:customers' : 'employee:inventory_read';
+    const url = `https://cloud.lightspeedapp.com/oauth/authorize.php?response_type=code&client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(lsRedirectUri)}&state=${encodeURIComponent(`${payload}.${sig}`)}`;
     return { url };
   });
 

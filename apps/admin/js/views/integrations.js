@@ -1,5 +1,5 @@
 import { h } from '../ui/dom.js';
-import { card, dataTable, pageHead } from '../ui/components.js';
+import { card, confirmDialog, dataTable, pageHead, toast } from '../ui/components.js';
 import { dateTime } from '../ui/format.js';
 import { settingsWorkspaceTabs } from './settings.js?v=38';
 
@@ -59,17 +59,36 @@ export async function renderIntegrations(ctx) {
       const m = META[i.system] || [i.system, '', '#334155', i.system.slice(0, 3).toUpperCase()];
       const s = STATUS[i.status] || [i.status, ''];
       const lsReconnect = i.system === 'lightspeed_r' && r.mode !== 'demo' && ctx.can('integrations.manage') && ctx.api.lightspeedOAuthUrl
-        ? h('div', { style: { marginTop: '8px' } }, h('button', {
-          class: (i.status === 'error' || i.status === 'not_connected') ? 'btn primary' : 'btn outline',
-          onclick: async () => {
-            try {
-              const out = await ctx.api.lightspeedOAuthUrl();
-              if (out && out.url) window.location.href = out.url;
-            } catch (err) {
-              ctx.toast(err.message || 'Could not start Lightspeed OAuth', 'err');
-            }
-          },
-        }, i.status === 'error' ? 'Reconnect Lightspeed' : 'Re-authorize Lightspeed'))
+        ? h('div.row', { style: { marginTop: '8px', gap: '8px', flexWrap: 'wrap' } }, [
+          h('button', {
+            class: (i.status === 'error' || i.status === 'not_connected') ? 'btn primary' : 'btn outline',
+            onclick: async () => {
+              try {
+                const out = await ctx.api.lightspeedOAuthUrl(false);
+                if (out && out.url) window.location.href = out.url;
+              } catch (err) {
+                toast(err.message || 'Could not start Lightspeed OAuth', 'err');
+              }
+            },
+          }, i.status === 'error' ? 'Reconnect Lightspeed' : 'Re-authorize (Read-Only)'),
+          h('button', {
+            class: 'btn outline',
+            onclick: async () => {
+              const ok = await confirmDialog({
+                title: 'Authorize Lightspeed Write Scopes?',
+                message: 'This will open Lightspeed OAuth requesting employee:inventory and employee:customers. Server writes remain disabled until LIGHTSPEED_WRITES_ENABLED=true.',
+                confirmLabel: 'Continue to Lightspeed',
+              });
+              if (!ok) return;
+              try {
+                const out = await ctx.api.lightspeedOAuthUrl(true);
+                if (out && out.url) window.location.href = out.url;
+              } catch (err) {
+                toast(err.message || 'Could not start Lightspeed OAuth', 'err');
+              }
+            },
+          }, 'Authorize Write Access (Inventory + Customers)'),
+        ])
         : null;
       return h('section.card', h('div.integration',
         h('div.head', h('div.logo', { style: { background: m[2] } }, m[3]), h('div', h('h3', m[0]), h('span.badge', { class: s[1] }, s[0]))),

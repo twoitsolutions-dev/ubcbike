@@ -98,7 +98,7 @@ export function createHttpDriver() {
     setupShopifyMetafields: () => req('POST', '/api/shopify/setup-metafields', {}),
     setupShopifyCollections: () => req('POST', '/api/shopify/setup-collections', {}),
     syncLightspeed: (body) => req('POST', '/api/lightspeed/sync', body || {}),
-    lightspeedOAuthUrl: () => req('GET', '/api/lightspeed/oauth/url'),
+    lightspeedOAuthUrl: (write) => req('GET', '/api/lightspeed/oauth/url' + (write ? '?write=1' : '')),
     integrations: () => req('GET', '/api/integrations'),
     resetDemo: null,
   };

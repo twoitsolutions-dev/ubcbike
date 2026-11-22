@@ -10627,3 +10627,92 @@ a.ubc-ws-pill {
   border-color: rgba(254, 253, 243, 0.35) !important;
   color: #FEFDF3 !important;
 }
+
+
+/* ==========================================================================
+   Live Header Search Dropdown (.fb-search-live) for Name, SKU, UPC & MPN
+   ========================================================================== */
+.fb-search-live {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(20, 32, 45, 0.10);
+}
+.fb-search-live[hidden] {
+  display: none !important;
+}
+.fb-search-live-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.fb-search-live-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(20, 32, 45, 0.10);
+  text-decoration: none;
+  color: #14202D;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.fb-search-live-item:hover {
+  border-color: #E04F33;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(20, 32, 45, 0.08);
+}
+.fb-search-live-item img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #FFFFFF;
+  flex: 0 0 52px;
+}
+.fb-search-live-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fb-search-live-meta {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fb-search-live-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #14202D;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fb-search-live-price {
+  font-size: 13px;
+  font-weight: 800;
+  color: #E04F33;
+}
+.fb-search-live-empty {
+  font-size: 13.5px;
+  color: #64748B;
+  padding: 6px 2px;
+}
+@media (max-width: 900px) {
+  .fb-search-live-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .fb-search-live-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -360,12 +360,13 @@
             type="search"
             enterkeyhint="search"
             maxlength="150"
-            placeholder="Search 20,000+ items (MIPS helmets, GP5000 tires, Skratch, Turbo e-bikes…)"
-            data-es-placeholder="Buscar en 20,000+ productos (cascos MIPS, llantas GP5000, Skratch, E-Bikes…)"
+            placeholder="Search by product, SKU, UPC barcode, or part # (e.g. Turbo Vado, 210000053951, 888818339389…)"
+            data-es-placeholder="Buscar por nombre, SKU, código UPC o # de parte (ej. Turbo Vado, 210000053951…)"
             autocomplete="off"
           >
           <button class="fb-btn coral" type="submit"><span data-es="Buscar">{{ 'general.search.search' | t }}</span></button>
         </form>
+        <div class="fb-search-live" id="fbSearchLive" hidden aria-live="polite"></div>
         <div class="fb-search-tags">
           <span data-es="Populares:">Popular:</span>
           <a href="{{ home_anchor }}#new-arrivals" data-na-jump="deals" data-es="Promociones">Active Promos</a>

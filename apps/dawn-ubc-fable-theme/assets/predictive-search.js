@@ -381,55 +381,117 @@ class PredictiveSearch extends SearchForm {
 }
 
 window.__findUbcMpnMatches = async function (rawTerm) {
-  const q = String(rawTerm || '').trim().toLowerCase();
+  const clean = String(rawTerm || '').trim();
+  const q = clean.toLowerCase();
   if (q.length < 3) return [];
-  const url = window.routes && window.routes.ubc_sku_index_url;
-  if (!url) return [];
-  try {
-    if (!window.__ubcSkuIndexPromise) {
-      window.__ubcSkuIndexPromise = fetch(url).then((r) => (r.ok ? r.json() : [])).catch(() => []);
-    }
-    const rows = await window.__ubcSkuIndexPromise;
-    const exact = [];
-    const partial = [];
-    const seenHandles = new Set();
-    for (let i = 0; i < rows.length; i++) {
-      const [mpn, handle, vid] = rows[i];
-      const m = String(mpn || '').toLowerCase();
-      if (!m || seenHandles.has(handle)) continue;
-      if (m === q) {
-        seenHandles.add(handle);
-        exact.push({ mpn, handle, vid });
-      } else if (m.includes(q) && partial.length < 6) {
-        seenHandles.add(handle);
-        partial.push({ mpn, handle, vid });
-      }
-      if (exact.length >= 6) break;
-    }
-    const picked = exact.concat(partial).slice(0, 6);
-    const products = await Promise.all(
-      picked.map(async (item) => {
-        try {
-          const p = await fetch(`/products/${encodeURIComponent(item.handle)}.js`).then((r) => (r.ok ? r.json() : null));
-          if (!p) return null;
-          return {
-            mpn: item.mpn,
-            handle: item.handle,
-            vid: item.vid,
-            title: p.title,
-            vendor: p.vendor,
-            image: p.featured_image || (p.images && p.images[0]) || '',
-            priceFormatted: typeof p.price === 'number' ? `$${(p.price / 100).toFixed(2)}` : '',
-          };
-        } catch {
-          return null;
+
+  const padZeros = (str, len) => (str.length >= len ? str : '0'.repeat(len - str.length) + str);
+  const candidateMap = new Map();
+
+  // 1. Live Real-Time Shopify Storefront SKU + UPC / Barcode query (variants.sku & variants.barcode)
+  if (!/\s/.test(clean) && /^[a-z0-9._/-]{3,40}$/i.test(clean)) {
+    const clauses = [`variants.sku:${clean}*`, `variants.barcode:${clean}`];
+    if (/^\d{8,15}$/.test(clean)) {
+      const core = clean.replace(/^0+/, '');
+      if (core.length >= 6) {
+        for (const cand of [padZeros(core, 12), padZeros(core, 13), padZeros(core, 14), core]) {
+          const bc = `variants.barcode:${cand}`;
+          if (!clauses.includes(bc)) clauses.push(bc);
         }
-      })
-    );
-    return products.filter(Boolean);
-  } catch {
-    return [];
+      }
+    }
+    try {
+      const sugUrl = `/search/suggest.json?q=${encodeURIComponent(clauses.join(' OR '))}&resources[type]=product&resources[limit]=8`;
+      const sugRes = await fetch(sugUrl).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const sugProds = sugRes?.resources?.results?.products || [];
+      for (const sp of sugProds) {
+        if (sp?.handle && !candidateMap.has(sp.handle)) {
+          candidateMap.set(sp.handle, { handle: sp.handle, vid: null, mpn: clean });
+        }
+      }
+    } catch {
+      // ignore suggest failure
+    }
   }
+
+  // 2. Manufacturer Part Number (ubc.mpn) index fallback
+  const url = window.routes && window.routes.ubc_sku_index_url;
+  if (url) {
+    try {
+      if (!window.__ubcSkuIndexPromise) {
+        window.__ubcSkuIndexPromise = fetch(url).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+      }
+      const rows = await window.__ubcSkuIndexPromise;
+      const partial = [];
+      for (let i = 0; i < rows.length; i++) {
+        const [mpn, handle, vid] = rows[i];
+        const m = String(mpn || '').toLowerCase();
+        if (!m || candidateMap.has(handle)) continue;
+        if (m === q) {
+          candidateMap.set(handle, { mpn: 'MPN ' + mpn, handle, vid });
+        } else if (m.includes(q) && partial.length < 6) {
+          partial.push({ mpn: 'MPN ' + mpn, handle, vid });
+        }
+        if (candidateMap.size >= 8) break;
+      }
+      for (const pt of partial) {
+        if (candidateMap.size >= 8) break;
+        if (!candidateMap.has(pt.handle)) candidateMap.set(pt.handle, pt);
+      }
+    } catch {
+      // ignore index failure
+    }
+  }
+
+  const picked = Array.from(candidateMap.values()).slice(0, 8);
+  if (!picked.length) return [];
+
+  const coreDigits = /^\d{8,15}$/.test(clean) ? clean.replace(/^0+/, '') : '';
+  const products = await Promise.all(
+    picked.map(async (item) => {
+      try {
+        const p = await fetch(`/products/${encodeURIComponent(item.handle)}.js`).then((r) => (r.ok ? r.json() : null));
+        if (!p) return null;
+        let matchedVar = null;
+        if (Array.isArray(p.variants)) {
+          if (item.vid) {
+            matchedVar = p.variants.find((v) => String(v.id) === String(item.vid)) || null;
+          }
+          if (!matchedVar) {
+            matchedVar = p.variants.find((v) => {
+              const vSku = String(v.sku || '').toLowerCase();
+              const vBc = String(v.barcode || '').trim();
+              const vBcCore = vBc.replace(/^0+/, '');
+              return (vSku && (vSku === q || vSku.indexOf(q) === 0))
+                || (vBc && (vBc.toLowerCase() === q || (coreDigits && vBcCore === coreDigits)));
+            }) || null;
+          }
+        }
+        const activePrice = matchedVar && typeof matchedVar.price === 'number' ? matchedVar.price : p.price;
+        const codeLabel = matchedVar && matchedVar.sku
+          ? 'SKU ' + matchedVar.sku
+          : matchedVar && matchedVar.barcode
+            ? 'UPC ' + matchedVar.barcode
+            : item.mpn;
+        const fullTitle = matchedVar && matchedVar.title && matchedVar.title !== 'Default Title'
+          ? `${p.title} — ${matchedVar.title}`
+          : p.title;
+        const vImg = matchedVar && matchedVar.featured_image && matchedVar.featured_image.src;
+        return {
+          mpn: codeLabel,
+          handle: item.handle,
+          vid: matchedVar ? String(matchedVar.id) : item.vid,
+          title: fullTitle,
+          vendor: p.vendor,
+          image: vImg || p.featured_image || (p.images && p.images[0]) || '',
+          priceFormatted: typeof activePrice === 'number' ? `$${(activePrice / 100).toFixed(2)}` : '',
+        };
+      } catch {
+        return null;
+      }
+    })
+  );
+  return products.filter(Boolean);
 };
 
 customElements.define('predictive-search', PredictiveSearch);

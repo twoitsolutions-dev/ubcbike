@@ -2907,4 +2907,237 @@
     applyEdition(edition, false);
   }
   window.ubcSetEdition = applyEdition;
+
+  /* ---------- Universal SKU, UPC Barcode & MPN Finder + Live Header Search ---------- */
+  function padZerosEs5(str, len) {
+    var out = String(str || '');
+    while (out.length < len) out = '0' + out;
+    return out;
+  }
+
+  function findUbcCodeAndSkuMatches(rawTerm) {
+    var clean = String(rawTerm || '').replace(/^\s+|\s+$/g, '');
+    var q = clean.toLowerCase();
+    if (q.length < 3) return Promise.resolve([]);
+
+    var candidateMap = {};
+    var candidateOrder = [];
+    function addCand(handle, vid, mpnLabel) {
+      if (!handle || candidateMap[handle]) return;
+      candidateMap[handle] = { handle: handle, vid: vid || null, mpn: mpnLabel || clean };
+      candidateOrder.push(handle);
+    }
+
+    var tasks = [];
+    if (!/\s/.test(clean) && /^[a-z0-9._/-]{3,40}$/i.test(clean)) {
+      var clauses = ['variants.sku:' + clean + '*', 'variants.barcode:' + clean];
+      if (/^\d{8,15}$/.test(clean)) {
+        var core = clean.replace(/^0+/, '');
+        if (core.length >= 6) {
+          var cands = [padZerosEs5(core, 12), padZerosEs5(core, 13), padZerosEs5(core, 14), core];
+          for (var ci = 0; ci < cands.length; ci++) {
+            var bc = 'variants.barcode:' + cands[ci];
+            if (clauses.indexOf(bc) === -1) clauses.push(bc);
+          }
+        }
+      }
+      var sugUrl = '/search/suggest.json?q=' + encodeURIComponent(clauses.join(' OR ')) + '&resources[type]=product&resources[limit]=8';
+      tasks.push(
+        fetch(sugUrl)
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var prods = (j && j.resources && j.resources.results && j.resources.results.products) || [];
+            for (var i = 0; i < prods.length; i++) {
+              if (prods[i] && prods[i].handle) addCand(prods[i].handle, null, clean);
+            }
+          })
+          .catch(function () {})
+      );
+    }
+
+    var idxUrl = (window.routes && window.routes.ubc_sku_index_url) || '';
+    if (idxUrl) {
+      if (!window.__ubcSkuIndexPromise) {
+        window.__ubcSkuIndexPromise = fetch(idxUrl)
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .catch(function () { return []; });
+      }
+      tasks.push(
+        window.__ubcSkuIndexPromise.then(function (rows) {
+          if (!Array.isArray(rows)) return;
+          var partial = [];
+          for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            if (!row || !row[0] || !row[1]) continue;
+            var mpn = String(row[0]);
+            var handle = String(row[1]);
+            var vid = row[2] ? String(row[2]) : null;
+            var m = mpn.toLowerCase();
+            if (candidateMap[handle]) continue;
+            if (m === q) {
+              addCand(handle, vid, 'MPN ' + mpn);
+            } else if (m.indexOf(q) !== -1 && partial.length < 6) {
+              partial.push({ handle: handle, vid: vid, mpn: 'MPN ' + mpn });
+            }
+            if (candidateOrder.length >= 8) break;
+          }
+          for (var pi = 0; pi < partial.length && candidateOrder.length < 8; pi++) {
+            addCand(partial[pi].handle, partial[pi].vid, partial[pi].mpn);
+          }
+        }).catch(function () {})
+      );
+    }
+
+    return Promise.all(tasks).then(function () {
+      var handles = candidateOrder.slice(0, 8);
+      if (!handles.length) return [];
+      var coreDigits = /^\d{8,15}$/.test(clean) ? clean.replace(/^0+/, '') : '';
+      return Promise.all(handles.map(function (hKey) {
+        var item = candidateMap[hKey];
+        return fetch('/products/' + encodeURIComponent(item.handle) + '.js')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (p) {
+            if (!p) return null;
+            var matchedVar = null;
+            if (Array.isArray(p.variants)) {
+              for (var vi = 0; vi < p.variants.length; vi++) {
+                var v = p.variants[vi];
+                if (item.vid && String(v.id) === String(item.vid)) { matchedVar = v; break; }
+              }
+              if (!matchedVar) {
+                for (var vj = 0; vj < p.variants.length; vj++) {
+                  var v2 = p.variants[vj];
+                  var vSku = String(v2.sku || '').toLowerCase();
+                  var vBc = String(v2.barcode || '').replace(/^\s+|\s+$/g, '');
+                  var vBcCore = vBc.replace(/^0+/, '');
+                  if ((vSku && (vSku === q || vSku.indexOf(q) === 0)) || (vBc && (vBc.toLowerCase() === q || (coreDigits && vBcCore === coreDigits)))) {
+                    matchedVar = v2;
+                    break;
+                  }
+                }
+              }
+            }
+            var activePrice = matchedVar && typeof matchedVar.price === 'number' ? matchedVar.price : p.price;
+            var codeLabel = matchedVar && matchedVar.sku
+              ? 'SKU ' + matchedVar.sku
+              : matchedVar && matchedVar.barcode
+                ? 'UPC ' + matchedVar.barcode
+                : item.mpn;
+            var fullTitle = matchedVar && matchedVar.title && matchedVar.title !== 'Default Title'
+              ? p.title + ' — ' + matchedVar.title
+              : p.title;
+            var vImg = matchedVar && matchedVar.featured_image && matchedVar.featured_image.src;
+            return {
+              mpn: codeLabel,
+              handle: item.handle,
+              vid: matchedVar ? String(matchedVar.id) : item.vid,
+              title: fullTitle,
+              vendor: p.vendor,
+              image: vImg || p.featured_image || (p.images && p.images[0]) || '',
+              priceFormatted: typeof activePrice === 'number' ? '$' + (activePrice / 100).toFixed(2) : '',
+            };
+          })
+          .catch(function () { return null; });
+      })).then(function (list) {
+        return list.filter(Boolean);
+      });
+    });
+  }
+
+  window.__findUbcMpnMatches = findUbcCodeAndSkuMatches;
+
+  /* Live instant results inside Header Search Popup (#fbQ -> #fbSearchLive) */
+  var searchLiveEl = document.getElementById('fbSearchLive');
+  var liveTimer = null;
+  var liveSeq = 0;
+  if (searchInput && searchLiveEl) {
+    searchInput.addEventListener('input', function () {
+      var val = String(searchInput.value || '').replace(/^\s+|\s+$/g, '');
+      if (liveTimer) clearTimeout(liveTimer);
+      if (val.length < 2) {
+        searchLiveEl.innerHTML = '';
+        searchLiveEl.setAttribute('hidden', 'hidden');
+        return;
+      }
+      liveTimer = setTimeout(function () {
+        var mySeq = ++liveSeq;
+        var textSuggestTask = fetch('/search/suggest.json?q=' + encodeURIComponent(val) + '&resources[type]=product&resources[limit]=6')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var prods = (j && j.resources && j.resources.results && j.resources.results.products) || [];
+            return prods.map(function (sp) {
+              return {
+                mpn: sp.type || '',
+                handle: sp.handle,
+                vid: null,
+                title: sp.title,
+                vendor: sp.vendor,
+                image: sp.image || (sp.featured_image && sp.featured_image.url) || '',
+                priceFormatted: sp.price ? '$' + Number(sp.price).toFixed(2) : '',
+              };
+            });
+          })
+          .catch(function () { return []; });
+
+        var codeTask = val.length >= 3 ? findUbcCodeAndSkuMatches(val) : Promise.resolve([]);
+
+        Promise.all([codeTask, textSuggestTask]).then(function (pair) {
+          if (mySeq !== liveSeq) return;
+          var merged = [];
+          var seenH = {};
+          var combined = (pair[0] || []).concat(pair[1] || []);
+          for (var i = 0; i < combined.length; i++) {
+            var it = combined[i];
+            if (!it || !it.handle || seenH[it.handle]) continue;
+            seenH[it.handle] = true;
+            merged.push(it);
+            if (merged.length >= 6) break;
+          }
+          searchLiveEl.innerHTML = '';
+          if (!merged.length) {
+            var emptyDiv = document.createElement('div');
+            emptyDiv.className = 'fb-search-live-empty';
+            emptyDiv.textContent = 'No instant matches for "' + val + '"';
+            searchLiveEl.appendChild(emptyDiv);
+            searchLiveEl.removeAttribute('hidden');
+            return;
+          }
+          var grid = document.createElement('div');
+          grid.className = 'fb-search-live-grid';
+          merged.forEach(function (m) {
+            var a = document.createElement('a');
+            a.className = 'fb-search-live-item';
+            a.href = m.vid ? '/products/' + m.handle + '?variant=' + m.vid : '/products/' + m.handle;
+            a.addEventListener('click', function () { closeMenus(); });
+            if (m.image) {
+              var img = document.createElement('img');
+              img.src = m.image;
+              img.alt = m.title;
+              a.appendChild(img);
+            }
+            var body = document.createElement('div');
+            body.className = 'fb-search-live-body';
+            var meta = document.createElement('span');
+            meta.className = 'fb-search-live-meta';
+            meta.textContent = (m.vendor || 'UBC') + (m.mpn ? ' · ' + m.mpn : '');
+            var ttl = document.createElement('strong');
+            ttl.className = 'fb-search-live-title';
+            ttl.textContent = m.title;
+            body.appendChild(meta);
+            body.appendChild(ttl);
+            if (m.priceFormatted) {
+              var pr = document.createElement('span');
+              pr.className = 'fb-search-live-price';
+              pr.textContent = m.priceFormatted;
+              body.appendChild(pr);
+            }
+            a.appendChild(body);
+            grid.appendChild(a);
+          });
+          searchLiveEl.appendChild(grid);
+          searchLiveEl.removeAttribute('hidden');
+        });
+      }, 180);
+    });
+  }
 })();

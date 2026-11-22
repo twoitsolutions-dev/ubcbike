@@ -350,14 +350,18 @@ export class LightspeedRClient {
 
   /** Iterate archived Item IDs (sinceTimestamp optional) so items archived in Lightspeed can be removed/hidden from the Hub. */
   async *iterateArchivedIds(sinceTimestamp?: string): AsyncGenerator<string[]> {
-    const params = new URLSearchParams({ archived: 'true', limit: '100' });
+    // R-Series `archived=true` includes active items too; `archived=only` returns ONLY archived items.
+    const params = new URLSearchParams({ archived: 'only', limit: '100' });
     if (sinceTimestamp) params.set('timeStamp', `>,${sinceTimestamp}`);
     let next: string | null = `/Item.json?${params.toString()}`;
     while (next) {
       type Page = { '@attributes'?: { next?: string }; Item?: LsItem | LsItem[] };
       const page: Page = await this.get<Page>(next);
       const items = page.Item ? (Array.isArray(page.Item) ? page.Item : [page.Item]) : [];
-      const ids = items.map((it) => it.itemID).filter(Boolean);
+      const ids = items
+        .filter((it) => String(it.archived ?? '').toLowerCase() === 'true')
+        .map((it) => it.itemID)
+        .filter(Boolean);
       if (ids.length) yield ids;
       next = page['@attributes']?.next || null;
     }

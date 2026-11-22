@@ -870,7 +870,18 @@ export function createDemoDriver() {
         { system: 'lightspeed_r', status: 'demo_adapter', detail: 'Lightspeed Retail R-Series DEMO adapter — physical store stock & event-only POS price parity ready', missing: ['LIGHTSPEED_R_CLIENT_ID / SECRET in .env', 'LIGHTSPEED_R_REFRESH_TOKEN & ACCOUNT_ID in .env'], writesEnabled: false, checkedAt: nowIso() },
       ];
       ds.suppliers.forEach((s) => list.push({ system: s.code.toLowerCase(), status: 'demo_adapter', detail: 'UBC dealer access confirmed — ' + s.name + ' adapter ready to connect', missing: SUPPLIER_HEALTH_MISSING[s.code] || [], writesEnabled: false, checkedAt: nowIso() }));
-      return { mode: 'demo', integrations: list, demoCalls: clone(state.demoCalls.slice(0, 50)) };
+      return {
+        mode: 'demo',
+        lightspeedWritesActive: false,
+        integrations: list,
+        liveTelemetry: {
+          lightspeed: { accountId: '114391', posItems: ds.items.length, inStockSkus: ds.items.filter((i) => i.physicalQty > 0).length, totalUnits: ds.items.reduce((a, i) => a + (i.physicalQty || 0), 0), lastSyncAt: nowIso(), writesActive: false },
+          shopify: { shopDomain: 'ubcbike.myshopify.com', storeUrl: null, linkedVariants: ds.items.length, lastReconcileAt: nowIso(), lastTagSyncAt: nowIso() },
+          suppliers: ds.suppliers.map((s) => ({ code: s.code, name: s.name, offers: ds.items.reduce((a, it) => a + it.offers.filter((o) => o.supplierCode === s.code).length, 0), unmatched: 0, last_sync: nowIso() })),
+        },
+        recentActivity: [],
+        demoCalls: clone(state.demoCalls.slice(0, 50)),
+      };
     },
     async pipelineStatus() {
       can('catalog.read');

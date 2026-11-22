@@ -622,12 +622,101 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // ---------- Integrations ----------
-  app.get('/api/integrations', { preHandler: requireAuth(ctx, 'catalog.read') }, async () => {
-    const list = await Promise.all([
-      ctx.connectors.shopifyHealth(), ctx.connectors.lightspeedHealth(),
-      ...[...ctx.connectors.suppliers.values()].map((s) => s.health()),
+  app.get('/api/integrations', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+    const storeUrl = ctx.config.env.SHOPIFY_STORE_URL || (shop ? `https://${shop}` : null);
+
+    const [rawList, settingsRow, lsCounts, shopLinkCount, supStats, recentAudits] = await Promise.all([
+      Promise.all([
+        ctx.connectors.shopifyHealth(),
+        ctx.connectors.lightspeedHealth(),
+        ...[...ctx.connectors.suppliers.values()].map((s) => s.health()),
+      ]),
+      ctx.pool.query<{ ls_active: string | null }>(
+        `SELECT availability_rules->>'lightspeedWritesActive' AS ls_active FROM company_settings WHERE company_id = $1`,
+        [companyId],
+      ),
+      ctx.pool.query<{ pos_items: number; in_stock_skus: number; total_units: number }>(
+        `WITH q AS (SELECT variant_id, sum(on_hand)::int AS qty FROM inventory_levels WHERE company_id = $1 GROUP BY variant_id)
+         SELECT count(*)::int AS pos_items,
+                count(*) FILTER (WHERE coalesce(q.qty, 0) > 0)::int AS in_stock_skus,
+                coalesce(sum(q.qty) FILTER (WHERE q.qty > 0), 0)::int AS total_units
+         FROM external_ids e
+         LEFT JOIN q ON q.variant_id = e.entity_id
+         WHERE e.company_id = $1 AND e.entity_type = 'variant' AND e.system = 'lightspeed_r'`,
+        [companyId],
+      ),
+      ctx.pool.query<{ linked: number }>(
+        `SELECT count(*)::int AS linked FROM shopify_variant_links WHERE company_id = $1 AND ($2 = '' OR shop_domain = $2)`,
+        [companyId, shop],
+      ),
+      ctx.pool.query<{ code: string; name: string; offers: number; unmatched: number; last_sync: Date | null }>(
+        `SELECT s.code, s.name,
+                count(so.id)::int AS offers,
+                count(so.id) FILTER (WHERE so.variant_id IS NULL)::int AS unmatched,
+                max(so.reported_at) AS last_sync
+         FROM suppliers s
+         LEFT JOIN supplier_offers so ON so.supplier_id = s.id
+         WHERE s.company_id = $1
+         GROUP BY s.id
+         ORDER BY s.code`,
+        [companyId],
+      ),
+      ctx.pool.query<{ action: string; detail: Record<string, unknown>; created_at: Date; actor: string | null }>(
+        `SELECT a.action, a.detail, a.created_at, u.name AS actor
+         FROM audit_log a
+         LEFT JOIN users u ON u.id = a.actor_user_id
+         WHERE a.company_id = $1
+           AND a.action = ANY('{lightspeed.catalog_synced,shopify.store_tags_synced,pipeline.shopify_prices_reconciled,pipeline.flushed_to_shopify,shopify.upc_links_proposed,shopify.product_created_from_items,lightspeed.bulk_sheet_updated,lightspeed.mode_changed,campaign.applied,campaign.restored}'::text[])
+         ORDER BY a.created_at DESC
+         LIMIT 15`,
+        [companyId],
+      ),
     ]);
-    return { mode: ctx.config.mode, integrations: list, demoCalls: ctx.connectors.demoCalls.slice(-50).reverse() };
+
+    const dbLsActive = settingsRow.rows[0]?.ls_active === 'true'
+      ? true
+      : settingsRow.rows[0]?.ls_active === 'false'
+        ? false
+        : !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
+
+    const integrations = rawList.map((item) => {
+      if (item.system === 'lightspeed_r') {
+        return { ...item, writesEnabled: dbLsActive };
+      }
+      return item;
+    });
+
+    const lastOf = (act: string) => recentAudits.rows.find((r) => r.action === act)?.created_at ?? null;
+    const lsRow = lsCounts.rows[0] ?? { pos_items: 0, in_stock_skus: 0, total_units: 0 };
+
+    return {
+      mode: ctx.config.mode,
+      lightspeedWritesActive: dbLsActive,
+      integrations,
+      liveTelemetry: {
+        lightspeed: {
+          accountId: ctx.config.env.LIGHTSPEED_R_ACCOUNT_ID || '114391',
+          posItems: lsRow.pos_items,
+          inStockSkus: lsRow.in_stock_skus,
+          totalUnits: lsRow.total_units,
+          lastSyncAt: lastOf('lightspeed.catalog_synced'),
+          writesActive: dbLsActive,
+        },
+        shopify: {
+          shopDomain: shop || null,
+          storeUrl,
+          linkedVariants: shopLinkCount.rows[0]?.linked ?? 0,
+          lastReconcileAt: lastOf('pipeline.shopify_prices_reconciled'),
+          lastTagSyncAt: lastOf('shopify.store_tags_synced'),
+          lastMatchAt: lastOf('shopify.upc_links_proposed'),
+        },
+        suppliers: supStats.rows,
+      },
+      recentActivity: recentAudits.rows,
+      demoCalls: ctx.connectors.demoCalls.slice(-50).reverse(),
+    };
   });
 
   // ---------- Webhooks ----------

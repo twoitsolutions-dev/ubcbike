@@ -1,9 +1,9 @@
 import { h, mount } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, loading, pageHead, pager, sectionTabs, toast, watchJob, progressBar, errorBox } from '../ui/components.js';
 import { availabilityBadge, dateTime, margin, money, pct } from '../ui/format.js';
-import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=40';
-import { openPriceEditor } from './pricing.js?v=40';
-import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=53';
+import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=77';
+import { openPriceEditor } from './pricing.js?v=77';
+import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=77';
 
 const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s === 'hidden' ? '' : 'warn' }, s);
 
@@ -184,6 +184,9 @@ export async function renderProductDetail(ctx) {
   return h('div.stack',
     pageHead(it.title, it.brand + ' · ' + it.category + ' · SKU ' + it.sku, [
       h('a.btn', { href: '#/products' }, '← Item Search'),
+      d.shopifyAdminUrl
+        ? h('a.btn', { href: d.shopifyAdminUrl, target: '_blank', rel: 'noopener' }, 'Open in Shopify ↗')
+        : null,
       !linkedToShopify && ctx.can('catalog.write') && ctx.api.kind === 'http'
         ? h('button.btn', { onclick: () => openCreateProduct(ctx, [it.id], () => ctx.navigate('#/products/' + it.id + '?r=' + Date.now())) }, 'Create in Shopify…')
         : null,

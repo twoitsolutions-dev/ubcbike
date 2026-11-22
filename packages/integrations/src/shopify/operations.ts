@@ -84,8 +84,8 @@ export interface ShopifyAdminPort {
    * unlike the automatic `upsertProduct`.
    */
   createDraftProductFromItems(input: ShopifyUpsertProductInput): Promise<ShopifyUpsertedProductResult>;
-  /** Vendor, productType, tags and lowest variant price of products by GID (read-only, 250 per call). */
-  getProductsTagInfo(productIds: string[]): Promise<{ id: string; vendor: string; productType: string; tags: string[]; minPriceCents: number }[]>;
+  /** Vendor, productType, tags, status, publishedAt and lowest variant price of products by GID (read-only, 250 per call). */
+  getProductsTagInfo(productIds: string[]): Promise<{ id: string; status?: string; publishedAt?: string | null; vendor: string; productType: string; tags: string[]; minPriceCents: number }[]>;
   /** IDs of every product carrying a tag (read-only). */
   listProductIdsByTag(tag: string): Promise<string[]>;
   /** Add / remove tags on one product (only the given tags are touched). */
@@ -514,14 +514,26 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
   }
 
   async getProductsTagInfo(productIds: string[]) {
-    type N = { id: string; vendor: string; productType: string; tags: string[]; priceRangeV2: { minVariantPrice: { amount: string } } } | null;
-    const out: { id: string; vendor: string; productType: string; tags: string[]; minPriceCents: number }[] = [];
+    type N = { id: string; status?: string; publishedAt?: string | null; vendor: string; productType: string; tags: string[]; priceRangeV2: { minVariantPrice: { amount: string } } } | null;
+    const out: { id: string; status?: string; publishedAt?: string | null; vendor: string; productType: string; tags: string[]; minPriceCents: number }[] = [];
     for (let i = 0; i < productIds.length; i += 250) {
       const r = await this.client.query<{ nodes: N[] }>(
-        `query($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id vendor productType tags priceRangeV2 { minVariantPrice { amount } } } } }`,
+        `query($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id status publishedAt vendor productType tags priceRangeV2 { minVariantPrice { amount } } } } }`,
         { ids: productIds.slice(i, i + 250) },
       );
-      for (const n of r.nodes) if (n?.id) out.push({ id: n.id, vendor: n.vendor || '', productType: n.productType || '', tags: n.tags || [], minPriceCents: strToCents(n.priceRangeV2.minVariantPrice.amount) });
+      for (const n of r.nodes) {
+        if (n?.id) {
+          out.push({
+            id: n.id,
+            status: n.status,
+            publishedAt: n.publishedAt ?? null,
+            vendor: n.vendor || '',
+            productType: n.productType || '',
+            tags: n.tags || [],
+            minPriceCents: strToCents(n.priceRangeV2.minVariantPrice.amount),
+          });
+        }
+      }
     }
     return out;
   }
@@ -718,7 +730,8 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
   }
 
   async publishProductsToOnlineStore(productIds: string[]) {
-    for (const gid of productIds) {
+    for (let i = 0; i < productIds.length; i++) {
+      const gid = productIds[i]!;
       const numericId = String(gid).split('/').pop() || '';
       if (!/^\d+$/.test(numericId)) continue;
       await this.client.restMutate('PUT', `/products/${numericId}.json`, {
@@ -730,6 +743,9 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
           published_at: new Date().toISOString(),
         },
       });
+      if (productIds.length > 1 && i < productIds.length - 1) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
     }
   }
 

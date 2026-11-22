@@ -162,6 +162,7 @@ export async function syncStoreTagsJob(ctx: AppContext, companyId: string) {
 
   const info = await ctx.connectors.shopify.getProductsTagInfo([...stockBy.keys()]);
   const changes: { id: string; add: string[]; remove: string[] }[] = [];
+  const toPublishOnline: string[] = [];
   const wantStoreTag = new Map<string, Set<string>>(); // tag -> products that must have it
   for (const t of Object.values(STORE_TAGS)) wantStoreTag.set(t, new Set());
 
@@ -178,6 +179,9 @@ export async function syncStoreTagsJob(ctx: AppContext, companyId: string) {
       if (!has && have.has(tag)) remove.push(tag);
     }
     if (inStock) {
+      if (p.status === 'ACTIVE' && p.publishedAt === null) {
+        toPublishOnline.push(p.id);
+      }
       const brand = handleize(p.vendor);
       if (brand && !have.has(`brand-${brand}`)) add.push(`brand-${brand}`);
       const pt = priceTag(p.minPriceCents);
@@ -222,9 +226,19 @@ export async function syncStoreTagsJob(ctx: AppContext, companyId: string) {
     }
   }
 
+  let autoPublishedToOnlineStore = 0;
+  if (toPublishOnline.length > 0 && ctx.config.env.SHOPIFY_WRITES_ENABLED) {
+    const batch = toPublishOnline.slice(0, 60);
+    await ctx.connectors.shopify.publishProductsToOnlineStore(batch).catch((err: Error) => {
+      void logError(ctx.pool, { companyId, source: 'job:shopify.sync_tags', message: `publishOnlineStore: ${err.message}` }).catch(() => {});
+    });
+    autoPublishedToOnlineStore = batch.length;
+  }
+
   const summary = {
     shop, linkedProducts: info.length, productsUpdated: updated, staleStoreTagsRemoved: staleRemoved, failed, removalsSkipped,
     inTampa: wantStoreTag.get('ubc-tampa-stock')!.size, inAlafia: wantStoreTag.get('ubc-alafia-stock')!.size,
+    autoPublishedToOnlineStore,
   };
   await audit(ctx.pool, { companyId, action: 'shopify.store_tags_synced', detail: summary });
   return summary;

@@ -1,19 +1,19 @@
-import { renderDashboard } from './views/dashboard.js?v=55';
-import { renderReports } from './views/reports.js?v=60';
-import { renderPipeline } from './views/pipeline.js?v=40';
-import { renderProducts, renderProductDetail } from './views/products.js?v=54';
-import { renderInventory } from './views/inventory.js?v=40';
-import { renderSuppliers } from './views/suppliers.js?v=40';
-import { renderPricing } from './views/pricing.js?v=40';
-import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=9';
-import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=49';
-import { renderOrders, renderOrderDetail } from './views/orders.js?v=40';
-import { renderPurchasing } from './views/purchasing.js?v=40';
-import { renderIntegrations } from './views/integrations.js?v=50';
-import { renderActivity } from './views/activity.js?v=40';
-import { renderSettings } from './views/settings.js?v=54';
-import { renderUpcReview } from './views/upc-review.js?v=51';
-import { renderHelp } from './views/help.js?v=65';
+import { renderDashboard } from './views/dashboard.js?v=77';
+import { renderReports } from './views/reports.js?v=77';
+import { renderPipeline } from './views/pipeline.js?v=77';
+import { renderProducts, renderProductDetail } from './views/products.js?v=77';
+import { renderInventory } from './views/inventory.js?v=77';
+import { renderSuppliers } from './views/suppliers.js?v=77';
+import { renderPricing } from './views/pricing.js?v=77';
+import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=77';
+import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=77';
+import { renderOrders, renderOrderDetail } from './views/orders.js?v=77';
+import { renderPurchasing } from './views/purchasing.js?v=77';
+import { renderIntegrations } from './views/integrations.js?v=77';
+import { renderActivity } from './views/activity.js?v=77';
+import { renderSettings } from './views/settings.js?v=77';
+import { renderUpcReview } from './views/upc-review.js?v=77';
+import { renderHelp } from './views/help.js?v=77';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },

@@ -732,9 +732,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const item = await getItem(ctx.pool, c, id);
     if (!item) throw notFound('Item');
     const { availability } = await getSettings(ctx.pool, c);
-    const [history, ext, locs] = await Promise.all([
+    const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+    const [history, ext, locs, shopLinks] = await Promise.all([
       ctx.pool.query(`SELECT old_price_cents, new_price_cents, source, campaign_id, created_at FROM price_history WHERE variant_id = $1 ORDER BY created_at DESC LIMIT 50`, [id]),
-      ctx.pool.query(`SELECT system, external_id FROM external_ids WHERE entity_id = $1`, [id]),
+      ctx.pool.query<{ system: string; external_id: string }>(`SELECT system, external_id FROM external_ids WHERE entity_id = $1`, [id]),
       ctx.pool.query(
         `SELECT l.name, coalesce(il.on_hand, 0)::int AS on_hand, coalesce(il.reserved, 0)::int AS reserved
          FROM locations l
@@ -743,8 +744,30 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
          ORDER BY (l.shopify_location_id IS NULL), l.name`,
         [id, c],
       ),
+      ctx.pool.query<{ shopify_product_id: string; shopify_variant_id: string; match_method: string }>(
+        `SELECT shopify_product_id, shopify_variant_id, match_method FROM shopify_variant_links
+         WHERE company_id = $1 AND variant_id = $2 AND ($3 = '' OR shop_domain = $3)`,
+        [c, id, shop],
+      ),
     ]);
-    return { item, availability: computeAvailability(item, availability), priceHistory: history.rows, externalIds: ext.rows, locationLevels: locs.rows };
+    const externalIds = [...ext.rows];
+    if (shopLinks.rows[0] && !externalIds.some((e) => e.system === 'shopify')) {
+      externalIds.push({ system: 'shopify', external_id: shopLinks.rows[0].shopify_variant_id });
+    }
+    const enrichedItem = shopLinks.rows[0] && !item.shopifyVariantId
+      ? { ...item, shopifyVariantId: shopLinks.rows[0].shopify_variant_id }
+      : item;
+    const firstShopProd = shopLinks.rows[0]?.shopify_product_id;
+    const numericProdId = firstShopProd ? firstShopProd.split('/').pop() : '';
+    const shopifyAdminUrl = shop && numericProdId ? `https://${shop}/admin/products/${numericProdId}` : null;
+    return {
+      item: enrichedItem,
+      availability: computeAvailability(enrichedItem, availability),
+      priceHistory: history.rows,
+      externalIds,
+      shopifyAdminUrl,
+      locationLevels: locs.rows,
+    };
   });
 
   /** Manual price change: same commercial rules as campaigns, optimistic locking on version. */
@@ -854,8 +877,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     }).parse(req.body);
     const s = req.session!;
     const before = await getSettings(ctx.pool, s.companyId);
+    const nextAvailability = { ...before.availability, ...body.availability };
+    const nextCampaignRules = { ...before.campaignRules, ...body.campaignRules, excludeWithoutCost: before.campaignRules.excludeWithoutCost ?? true };
     await ctx.pool.query(`UPDATE company_settings SET campaign_rules = $2, availability_rules = $3, updated_at = now() WHERE company_id = $1`,
-      [s.companyId, JSON.stringify({ ...body.campaignRules, excludeWithoutCost: true }), JSON.stringify(body.availability)]);
+      [s.companyId, JSON.stringify(nextCampaignRules), JSON.stringify(nextAvailability)]);
     await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'settings.updated', detail: { before, after: body } });
     return getSettings(ctx.pool, s.companyId);
   });

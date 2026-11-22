@@ -1,6 +1,6 @@
 import { h, mount } from '../ui/dom.js';
 import { card, confirmDialog, errorBox, loading, pageHead, pager, toast } from '../ui/components.js';
-import { itemSearchTabs } from './products.js?v=79';
+import { itemSearchTabs } from './products.js?v=80';
 
 function centsToInput(c) {
   if (c === null || c === undefined || Number.isNaN(Number(c))) return '';
@@ -40,8 +40,28 @@ function downloadCsv(filename, rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+const VIEW_MODES = [
+  { id: 'all', label: 'All Columns' },
+  { id: 'prices', label: 'Prices & Cost' },
+  { id: 'identity', label: 'SKU & Tags' },
+  { id: 'restock', label: 'Restock Levels' },
+];
+
+const ALL_COLUMNS = [
+  { key: 'description', label: 'Description', field: 'description', cls: 'lss-col-desc', groups: ['all', 'prices', 'identity', 'restock'], parse: (v) => String(v || '').trim() || undefined },
+  { key: 'customSku', label: 'Custom SKU', field: 'customSku', cls: 'lss-col-csku', groups: ['all', 'identity'], parse: (v) => String(v || '').trim() },
+  { key: 'tags', label: 'Tags', field: 'tags', cls: 'lss-col-tags', groups: ['all', 'identity'], format: (v) => (Array.isArray(v) ? v.join(', ') : ''), parse: parseTags },
+  { key: 'defaultPrice', label: 'Default ($)', field: 'defaultPriceCents', cls: 'lss-col-money', groups: ['all', 'prices'], numeric: true, format: centsToInput, parse: (v) => { const c = inputToCents(v); return c === null ? NaN : c; } },
+  { key: 'msrp', label: 'MSRP ($)', field: 'msrpCents', cls: 'lss-col-money', groups: ['all', 'prices'], numeric: true, format: centsToInput, parse: inputToCents },
+  { key: 'salePrice', label: 'Sale ($)', field: 'salePriceCents', cls: 'lss-col-money', groups: ['all', 'prices'], numeric: true, format: centsToInput, parse: inputToCents },
+  { key: 'onlinePrice', label: 'Online ($)', field: 'onlinePriceCents', cls: 'lss-col-money', groups: ['all', 'prices'], numeric: true, format: centsToInput, parse: inputToCents },
+  { key: 'defaultCost', label: 'Default Cost ($)', field: 'defaultCostCents', cls: 'lss-col-cost', groups: ['all', 'prices'], numeric: true, format: centsToInput, parse: inputToCents },
+  { key: 'reorderPoint', label: 'Reorder Pt', field: 'reorderPoint', cls: 'lss-col-qty', groups: ['all', 'restock'], numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
+  { key: 'desiredLevel', label: 'Desired Lvl', field: 'desiredLevel', cls: 'lss-col-qty lss-col-last', groups: ['all', 'restock'], numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
+];
+
 export async function renderLightspeedSheet(ctx) {
-  const root = h('div');
+  const root = h('div.stack.lss-root');
 
   const facets = await ctx.api.facets();
   const st = {
@@ -52,6 +72,7 @@ export async function renderLightspeedSheet(ctx) {
       stock: ctx.query.stock || 'physical',
       tag: ctx.query.tag || '',
     },
+    viewMode: 'all',
     offset: 0,
     limit: 50,
     data: null,
@@ -118,10 +139,10 @@ export async function renderLightspeedSheet(ctx) {
             if (!ok) return;
             try {
               await ctx.api.lightspeedSetMode(true);
-              toast('Switched to Read-Only mode', 'info');
+              toast('Switched to Read-Only mode', 'ok');
               load();
             } catch (err) {
-              toast(err.message || 'Could not switch mode', 'err');
+              toast(err.message || 'Could not switch mode', 'bad');
             }
           },
         }, 'Stop / Switch to Read-Only'));
@@ -139,33 +160,33 @@ export async function renderLightspeedSheet(ctx) {
               toast('Live Lightspeed writes enabled', 'ok');
               load();
             } catch (err) {
-              toast(err.message || 'Could not enable writes', 'err');
+              toast(err.message || 'Could not enable writes', 'bad');
             }
           },
         }, 'Enable Live Writes'));
       }
     }
     if (ctx.api.syncLightspeed) {
-      modeActions.push(h('button.btn.sm.outline', {
+      modeActions.push(h('button.btn.sm', {
         onclick: async () => {
           try {
             await ctx.api.syncLightspeed();
             toast('Lightspeed sync started — refresh in a few seconds for new items.', 'ok');
           } catch (err) {
-            toast(err.message || 'Could not start sync', 'err');
+            toast(err.message || 'Could not start sync', 'bad');
           }
         },
       }, 'Sync from Lightspeed'));
     }
-    modeActions.push(h('a.btn.sm.outline', { href: '#/integrations' }, 'OAuth Connections'));
+    modeActions.push(h('a.btn.sm', { href: '#/integrations' }, 'OAuth Connections'));
 
     mount(statusWrap, card(null, [
-      h('div.row', { style: 'gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap' }, [
-        h('div.row', { style: 'gap:10px;align-items:center;flex-wrap:wrap' }, [
+      h('div.lss-status-bar', [
+        h('div.lss-status-copy', [
           badge,
-          h('span.muted', { style: 'font-size:13px' }, msg),
+          h('span.muted.small', msg),
         ]),
-        h('div.row', { style: 'gap:8px;align-items:center;flex-wrap:wrap' }, modeActions),
+        h('div.lss-status-actions', modeActions),
       ]),
     ]));
   }
@@ -174,6 +195,7 @@ export async function renderLightspeedSheet(ctx) {
   let pushBtn = null;
   let exportBtn = null;
   let applyBulkBtn = null;
+  let viewModeBar = null;
 
   function updateActionBar() {
     const n = st.dirty.size;
@@ -192,24 +214,35 @@ export async function renderLightspeedSheet(ctx) {
     if (applyBulkBtn) {
       applyBulkBtn.textContent = selCount > 0 ? 'Apply to ' + selCount + ' Selected' : 'Apply to Visible Page';
     }
+    if (viewModeBar) {
+      Array.from(viewModeBar.querySelectorAll('button')).forEach((b) => {
+        b.classList.toggle('on', b.dataset.mode === st.viewMode);
+      });
+    }
   }
 
   function buildControls() {
-    const qInput = h('input.input', { type: 'search', placeholder: 'Search description, System ID, UPC, MPN…', value: st.filter.q, style: 'width:220px;flex:1 1 180px' });
-    const stockSel = h('select.input', { style: 'width:auto;max-width:155px' }, [
+    const qInput = h('input', { type: 'search', class: 'lss-q', placeholder: 'Search description, System ID, UPC, MPN…', value: st.filter.q });
+    const stockSel = h('select', { class: 'lss-sel' }, [
       h('option', { value: 'physical', selected: st.filter.stock === 'physical' }, 'In Stock Only'),
       h('option', { value: 'any', selected: st.filter.stock === 'any' }, 'All Active Items'),
       h('option', { value: 'unavailable', selected: st.filter.stock === 'unavailable' }, 'Out of Stock'),
     ]);
-    const brandSel = h('select.input', { style: 'width:auto;max-width:155px' }, [
+    const brandSel = h('select', { class: 'lss-sel' }, [
       h('option', { value: '' }, 'All brands'),
       ...facets.brands.map((b) => h('option', { value: b.value, selected: st.filter.brands === b.value }, b.value + ' (' + b.n + ')')),
     ]);
-    const catSel = h('select.input', { style: 'width:auto;max-width:155px' }, [
+    const catSel = h('select', { class: 'lss-sel' }, [
       h('option', { value: '' }, 'All categories'),
       ...facets.categories.map((c) => h('option', { value: c.value, selected: st.filter.categories === c.value }, c.value + ' (' + c.n + ')')),
     ]);
-    const tagInput = h('input.input', { type: 'search', placeholder: 'Tag…', value: st.filter.tag, style: 'width:110px' });
+    const tagInput = h('input', { type: 'search', class: 'lss-tag', placeholder: 'Tag…', value: st.filter.tag });
+
+    const limitSel = h('select', { class: 'lss-limit' }, [
+      h('option', { value: '50', selected: st.limit === 50 }, '50 / page'),
+      h('option', { value: '100', selected: st.limit === 100 }, '100 / page'),
+      h('option', { value: '200', selected: st.limit === 200 }, '200 / page'),
+    ]);
 
     const applyFilters = () => {
       st.filter.q = qInput.value.trim();
@@ -225,11 +258,16 @@ export async function renderLightspeedSheet(ctx) {
     stockSel.addEventListener('change', applyFilters);
     brandSel.addEventListener('change', applyFilters);
     catSel.addEventListener('change', applyFilters);
+    limitSel.addEventListener('change', () => {
+      st.limit = Number(limitSel.value) || 50;
+      st.offset = 0;
+      load();
+    });
 
-    const searchBtn = h('button.btn.sm', { onClick: applyFilters }, 'Filter');
+    const searchBtn = h('button.btn.sm', { onclick: applyFilters }, 'Filter');
     const stdBtn = h('button.btn.sm', {
       title: 'Find & replace a tag across all visible rows',
-      onClick: () => {
+      onclick: () => {
         if (!st.data || !st.data.items.length) return;
         const fromTag = window.prompt('Find tag to replace (exact match):', '');
         if (!fromTag || !fromTag.trim()) return;
@@ -251,28 +289,28 @@ export async function renderLightspeedSheet(ctx) {
           }
         });
         renderTable();
-        toast(count ? 'Updated tag on ' + count + ' visible row(s)' : 'No visible rows had tag "' + fromTag.trim() + '"', count ? 'ok' : 'info');
+        toast(count ? 'Updated tag on ' + count + ' visible row(s)' : 'No visible rows had tag "' + fromTag.trim() + '"', 'ok');
       },
     }, 'Replace Tag');
 
     discardBtn = h('button.btn.sm', {
       disabled: true,
-      onClick: () => {
+      onclick: () => {
         st.dirty.clear();
         renderTable();
         updateActionBar();
-        toast('Discarded staged edits', 'info');
+        toast('Discarded staged edits', 'ok');
       },
     }, 'Discard (0)');
 
     exportBtn = h('button.btn.sm', {
-      onClick: () => {
+      onclick: () => {
         if (!st.data) return;
         const rows = st.dirty.size > 0
           ? st.data.items.filter((r) => st.dirty.has(r.id)).map(getMergedRow)
           : st.data.items.map(getMergedRow);
         if (!rows.length) {
-          toast('No rows to export on this page', 'warn');
+          toast('No rows to export on this page', 'bad');
           return;
         }
         const header = [
@@ -302,12 +340,12 @@ export async function renderLightspeedSheet(ctx) {
 
     pushBtn = h('button.btn.primary.sm', {
       disabled: true,
-      onClick: async () => {
+      onclick: async () => {
         const changes = Array.from(st.dirty.entries()).map(([id, patch]) => Object.assign({ id }, patch));
         if (!changes.length) return;
         const ok = await confirmDialog({
           title: 'Push ' + changes.length + ' item updates?',
-          message: 'This will submit ' + changes.length + ' modified row(s) to the Lightspeed bulk-update endpoint.',
+          message: 'This will submit ' + changes.length + ' modified row(s) to Lightspeed POS with an automatic before-snapshot in Audit Log.',
           confirmLabel: 'Push Changes',
         });
         if (!ok) return;
@@ -317,23 +355,23 @@ export async function renderLightspeedSheet(ctx) {
           toast('Saved ' + (res.updated || changes.length) + ' item(s)' + (res.demo ? ' (DEMO)' : ''), 'ok');
           load();
         } catch (err) {
-          toast(err.message || 'Lightspeed write blocked', 'err');
+          toast(err.message || 'Lightspeed write blocked', 'bad');
         }
       },
     }, 'Push to Lightspeed (0)');
 
-    const limitSel = h('select.input', { style: 'width:auto;max-width:115px' }, [
-      h('option', { value: '50', selected: st.limit === 50 }, '50 / page'),
-      h('option', { value: '100', selected: st.limit === 100 }, '100 / page'),
-      h('option', { value: '200', selected: st.limit === 200 }, '200 / page'),
-    ]);
-    limitSel.addEventListener('change', () => {
-      st.limit = Number(limitSel.value) || 50;
-      st.offset = 0;
-      load();
-    });
+    viewModeBar = h('div.seg-group.lss-view-modes', VIEW_MODES.map((m) => h('button.seg-btn', {
+      type: 'button',
+      class: st.viewMode === m.id ? 'seg-btn on' : 'seg-btn',
+      dataset: { mode: m.id },
+      onclick: () => {
+        st.viewMode = m.id;
+        updateActionBar();
+        renderTable();
+      },
+    }, m.label)));
 
-    const bulkOpSel = h('select.input', { style: 'width:auto;max-width:210px' }, [
+    const bulkOpSel = h('select', { class: 'lss-bulk-op' }, [
       h('option', { value: 'sale_pct_off' }, 'Bulk: Sale ($) = Default − %'),
       h('option', { value: 'sale_usd_off' }, 'Bulk: Sale ($) = Default − $'),
       h('option', { value: 'set_sale' }, 'Bulk: Set Sale ($)'),
@@ -345,19 +383,19 @@ export async function renderLightspeedSheet(ctx) {
       h('option', { value: 'set_reorder' }, 'Bulk: Set Reorder Pt'),
       h('option', { value: 'set_desired' }, 'Bulk: Set Desired Lvl'),
     ]);
-    const bulkValInp = h('input.input', { type: 'text', placeholder: 'e.g. 15 or tag…', style: 'width:130px' });
+    const bulkValInp = h('input', { type: 'text', class: 'lss-bulk-val', placeholder: 'e.g. 15 or tag…' });
     bulkOpSel.addEventListener('change', () => {
       bulkValInp.disabled = bulkOpSel.value === 'clear_sale';
       if (bulkOpSel.value === 'clear_sale') bulkValInp.value = '';
     });
 
     applyBulkBtn = h('button.btn.sm', {
-      onClick: () => {
+      onclick: () => {
         if (!st.data || !st.data.items.length) return;
         const op = bulkOpSel.value;
         const rawVal = bulkValInp.value.trim();
         if (op !== 'clear_sale' && !rawVal) {
-          toast('Enter a value or tag for Bulk Apply first', 'warn');
+          toast('Enter a value or tag for Bulk Apply first', 'bad');
           return;
         }
         const targets = st.selected.size > 0
@@ -409,7 +447,7 @@ export async function renderLightspeedSheet(ctx) {
           }
         });
         if (!count) {
-          toast('Invalid value or no applicable rows', 'err');
+          toast('Invalid value or no applicable rows', 'bad');
           return;
         }
         renderTable();
@@ -419,17 +457,30 @@ export async function renderLightspeedSheet(ctx) {
     }, 'Apply to Visible Page');
 
     mount(controlsWrap, card(null, [
-      h('div.stack', { style: 'gap:10px' }, [
-        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between' }, [
-          h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [qInput, stockSel, brandSel, catSel, tagInput, limitSel, searchBtn, stdBtn]),
-          h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [discardBtn, exportBtn, pushBtn]),
+      h('div.lss-controls', [
+        h('div.lss-filter-row', [
+          qInput,
+          stockSel,
+          brandSel,
+          catSel,
+          tagInput,
+          limitSel,
+          searchBtn,
+          stdBtn,
         ]),
-        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center;padding-top:8px;border-top:1px solid rgba(20,32,45,.08)' }, [
-          h('strong', { style: 'font-size:12px' }, 'Bulk Fill:'),
+        h('div.lss-mode-row', [
+          h('div.lss-mode-left', [
+            h('span.lss-label', 'Columns:'),
+            viewModeBar,
+          ]),
+          h('div.lss-actions', [discardBtn, exportBtn, pushBtn]),
+        ]),
+        h('div.lss-bulk-row', [
+          h('span.lss-label', 'Bulk Fill:'),
           bulkOpSel,
           bulkValInp,
           applyBulkBtn,
-          h('span.muted', { style: 'font-size:12px' }, 'Check rows below to target specific items, or leave unchecked to fill the whole page.'),
+          h('span.muted.small.lss-bulk-hint', 'Check rows below to target specific items, or leave unchecked to fill the visible page.'),
         ]),
       ]),
     ]));
@@ -439,30 +490,31 @@ export async function renderLightspeedSheet(ctx) {
     const cur = getMergedRow(row);
     const patch = st.dirty.get(row.id);
     const isDirty = patch && Object.prototype.hasOwnProperty.call(patch, opts.field);
-    const inp = h('input.input', {
-      type: opts.type || 'text',
+    const cls = ['lss-inp'];
+    if (opts.numeric) cls.push('lss-inp-num');
+    if (isDirty) cls.push('is-dirty');
+
+    const inp = h('input', {
+      type: 'text',
+      inputmode: opts.numeric ? 'decimal' : undefined,
+      class: cls.join(' '),
       value: opts.format ? opts.format(cur[opts.field]) : String(cur[opts.field] ?? ''),
+      'aria-label': opts.label + ' for ' + (row.sku || row.description || 'item'),
       'data-ls-row': String(rowIdx),
       'data-ls-col': String(colIdx),
-      style: [
-        'padding:4px 6px;font-size:12px;height:28px;border-radius:4px',
-        opts.width ? 'width:' + opts.width : 'width:100%',
-        opts.numeric ? 'text-align:right;font-variant-numeric:tabular-nums' : '',
-        isDirty ? 'border-color:#d97706;background:#fffbeb' : '',
-      ].filter(Boolean).join(';'),
     });
 
     inp.addEventListener('change', () => {
       const parsed = opts.parse(inp.value);
       if (parsed === undefined || Number.isNaN(parsed)) {
-        inp.style.borderColor = '#dc2626';
-        toast('Invalid value in ' + opts.label, 'err');
+        inp.classList.add('is-invalid');
+        toast('Invalid value in ' + opts.label, 'bad');
         return;
       }
+      inp.classList.remove('is-invalid');
       stageField(row, opts.field, parsed);
       const nowDirty = st.dirty.get(row.id) && Object.prototype.hasOwnProperty.call(st.dirty.get(row.id), opts.field);
-      inp.style.borderColor = nowDirty ? '#d97706' : '';
-      inp.style.background = nowDirty ? '#fffbeb' : '';
+      inp.classList.toggle('is-dirty', !!nowDirty);
     });
 
     inp.addEventListener('keydown', (e) => {
@@ -470,8 +522,7 @@ export async function renderLightspeedSheet(ctx) {
         const origVal = opts.format ? opts.format(row[opts.field]) : String(row[opts.field] ?? '');
         inp.value = origVal;
         stageField(row, opts.field, row[opts.field]);
-        inp.style.borderColor = '';
-        inp.style.background = '';
+        inp.classList.remove('is-dirty', 'is-invalid');
         return;
       }
       if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -496,18 +547,8 @@ export async function renderLightspeedSheet(ctx) {
       return;
     }
 
-    const cols = [
-      { label: 'Description', field: 'description', width: '240px', parse: (v) => String(v || '').trim() || undefined },
-      { label: 'Custom SKU', field: 'customSku', width: '125px', parse: (v) => String(v || '').trim() },
-      { label: 'Tags', field: 'tags', width: '145px', format: (v) => (Array.isArray(v) ? v.join(', ') : ''), parse: parseTags },
-      { label: 'Default ($)', field: 'defaultPriceCents', width: '88px', numeric: true, format: centsToInput, parse: (v) => { const c = inputToCents(v); return c === null ? NaN : c; } },
-      { label: 'MSRP ($)', field: 'msrpCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
-      { label: 'Sale ($)', field: 'salePriceCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
-      { label: 'Online ($)', field: 'onlinePriceCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
-      { label: 'Default Cost ($)', field: 'defaultCostCents', width: '98px', numeric: true, format: centsToInput, parse: inputToCents },
-      { label: 'Reorder Pt', field: 'reorderPoint', width: '74px', numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
-      { label: 'Desired Lvl', field: 'desiredLevel', width: '78px', numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
-    ];
+    const activeCols = ALL_COLUMNS.filter((c) => c.groups.includes(st.viewMode));
+    const showExtraIds = st.viewMode === 'identity';
 
     const allChecked = items.length > 0 && items.every((r) => st.selected.has(r.id));
     const headChk = h('input', {
@@ -525,12 +566,17 @@ export async function renderLightspeedSheet(ctx) {
     });
 
     const thead = h('thead', h('tr', [
-      h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap;padding:4px 6px' }, headChk),
-      h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, '↺'),
-      h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, 'System ID'),
-      h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, 'UPC'),
-      h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, 'Manufact. SKU'),
-      ...cols.map((c) => h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' + (c.numeric ? ';text-align:right' : '') }, c.label)),
+      h('th.lss-th.lss-sticky-col', [
+        h('div.lss-id-head', [
+          headChk,
+          h('span', 'Item ID'),
+        ]),
+      ]),
+      showExtraIds ? h('th.lss-th', 'UPC / EAN') : null,
+      showExtraIds ? h('th.lss-th', 'Manufact. SKU') : null,
+      ...activeCols.map((c) => h('th', {
+        class: 'lss-th ' + c.cls + (c.numeric ? ' num' : ''),
+      }, c.label)),
     ]));
 
     const tbody = h('tbody', items.map((row, rowIdx) => {
@@ -538,35 +584,71 @@ export async function renderLightspeedSheet(ctx) {
       const rowChk = h('input', {
         type: 'checkbox',
         checked: st.selected.has(row.id),
+        'aria-label': 'Select ' + (row.sku || row.description || 'row'),
         onchange: (e) => {
           if (e.target.checked) st.selected.add(row.id);
-          else st.selected.delete(row.id);
+          else st.selected.delete(rId(row));
           updateActionBar();
         },
       });
-      const undoBtn = h('button.btn.sm', {
+      function rId(r) { return r.id; }
+
+      const undoBtn = h('button.btn.sm.lss-undo', {
+        type: 'button',
         disabled: !isRowDirty,
-        title: 'Revert row',
-        style: 'padding:2px 6px;font-size:11px',
-        onClick: () => {
+        title: 'Revert row changes',
+        onclick: () => {
           st.dirty.delete(row.id);
           renderTable();
           updateActionBar();
         },
       }, '↺');
 
-      return h('tr', { style: isRowDirty ? 'background:#fffbeb55' : '' }, [
-        h('td', { style: 'padding:4px 6px' }, rowChk),
-        h('td', { style: 'padding:4px 6px' }, undoBtn),
-        h('td', { style: 'padding:4px 6px;font-family:monospace;font-size:11px;white-space:nowrap' }, row.sku || '—'),
-        h('td', { style: 'padding:4px 6px;font-family:monospace;font-size:11px;white-space:nowrap' }, row.upc || '—'),
-        h('td', { style: 'padding:4px 6px;font-family:monospace;font-size:11px;white-space:nowrap' }, row.mpn || '—'),
-        ...cols.map((c, colIdx) => h('td', { style: 'padding:3px 4px' }, makeCellInput(row, colIdx, rowIdx, c))),
+      const subIds = [row.upc ? 'UPC ' + row.upc : null, row.mpn ? 'MPN ' + row.mpn : null].filter(Boolean).join(' · ');
+
+      return h('tr', { class: isRowDirty ? 'lss-row is-dirty-row' : 'lss-row' }, [
+        h('td.lss-td.lss-sticky-col', [
+          h('div.lss-id-cell', [
+            rowChk,
+            undoBtn,
+            h('div.lss-id-meta', [
+              h('a.lss-sku-link', { href: '#/products/' + row.id, title: 'Open Item Details' }, row.sku || '—'),
+              !showExtraIds && subIds ? h('span.lss-sub-ids', subIds) : null,
+            ]),
+          ]),
+        ]),
+        showExtraIds ? h('td.lss-td.lss-mono', { 'data-label': 'UPC / EAN' }, row.upc || '—') : null,
+        showExtraIds ? h('td.lss-td.lss-mono', { 'data-label': 'Manufact. SKU' }, row.mpn || '—') : null,
+        ...activeCols.map((c, colIdx) => h('td', {
+          class: 'lss-td ' + c.cls,
+          'data-label': c.label,
+        }, makeCellInput(row, colIdx, rowIdx, c))),
       ]);
     }));
 
-    mount(tableWrap, h('div.card', { style: 'padding:0;overflow:auto;max-height:68vh' }, [
-      h('table.table', { style: 'width:max-content;min-width:100%;border-collapse:collapse' }, [thead, tbody]),
+    const scrollBox = h('div.lss-scroll', [
+      h('table', { class: 'lss-table mode-' + st.viewMode }, [thead, tbody]),
+    ]);
+
+    const scrollLeftBtn = h('button.btn.sm.ghost', {
+      type: 'button',
+      onclick: () => scrollBox.scrollBy({ left: -320, behavior: 'smooth' }),
+    }, '◀ Left');
+    const scrollRightBtn = h('button.btn.sm.ghost', {
+      type: 'button',
+      onclick: () => scrollBox.scrollBy({ left: 320, behavior: 'smooth' }),
+    }, 'Right ▶');
+
+    const sheetFootHint = st.viewMode === 'all'
+      ? h('div.lss-scroll-bar', [
+        h('span.muted.small', 'Tip: Switch Columns above to "Prices & Cost" to fit narrow laptop screens without horizontal scrolling, or scroll sideways here.'),
+        h('div.lss-scroll-btns', [scrollLeftBtn, scrollRightBtn]),
+      ])
+      : null;
+
+    mount(tableWrap, h('div.card.lss-sheet-card', [
+      sheetFootHint,
+      scrollBox,
     ]));
     updateActionBar();
   }

@@ -151,8 +151,7 @@
               if (!box) return;
               var terms = (box.getAttribute('data-terms') || '').trim();
               var nativeCount = parseInt(box.getAttribute('data-native-count') || '0', 10) || 0;
-              var looksLikeCode = terms.length >= 3 && !/\s/.test(terms) && /\d/.test(terms);
-              if (terms.length < 3 || (nativeCount > 0 && !looksLikeCode)) return;
+              if (terms.length < 3 || nativeCount > 0) return;
 
               var tries = 0;
               function waitForFinder() {

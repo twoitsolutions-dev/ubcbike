@@ -102,13 +102,22 @@ async function shopifySyncStats(ctx: AppContext, companyId: string) {
 export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/health', async () => ({ ok: true }));
 
-  app.get('/api/system', async () => ({
-    mode: ctx.config.mode,
-    demoNotice: ctx.config.mode === 'demo' ? DEMO_NOTICE : null,
-    posEventWritesEnabled: !!ctx.config.env.LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED,
-    lightspeedWritesEnabled: !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED,
-    version: '0.1.0',
-  }));
+  app.get('/api/system', async () => {
+    let dbLsActive = false;
+    try {
+      const r = await ctx.pool.query<{ active: string | null }>(
+        `SELECT availability_rules->>'lightspeedWritesActive' AS active FROM company_settings LIMIT 1`,
+      );
+      dbLsActive = r.rows[0]?.active === 'true';
+    } catch {}
+    return {
+      mode: ctx.config.mode,
+      demoNotice: ctx.config.mode === 'demo' ? DEMO_NOTICE : null,
+      posEventWritesEnabled: !!ctx.config.env.LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED || dbLsActive,
+      lightspeedWritesEnabled: !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED || dbLsActive,
+      version: '0.1.0',
+    };
+  });
 
   app.post('/api/auth/login', { config: { rawBody: false } }, async (req, reply) => {
     const body = z.object({ email: z.string().trim().min(2).max(200), password: z.string().min(1).max(200) }).parse(req.body);

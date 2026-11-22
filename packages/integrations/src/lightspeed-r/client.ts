@@ -405,8 +405,11 @@ export class LightspeedRClient {
    * (e.g. Black Friday, Christmas) when `LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED=true`.
    * Respects R-Series leaky bucket (`X-LS-API-Bucket-Level`).
    */
-  async updateEventPosPrices(updates: { lightspeedItemId: string; priceCents: number }[]): Promise<void> {
-    if (!this.cfg.posEventWritesEnabled) throw new WritesDisabledError('Lightspeed R-Series');
+  async updateEventPosPrices(
+    updates: { lightspeedItemId: string; priceCents: number }[],
+    opts?: { authorizedByOwner?: boolean },
+  ): Promise<void> {
+    if (!this.cfg.posEventWritesEnabled && !opts?.authorizedByOwner) throw new WritesDisabledError('Lightspeed R-Series');
     await this.ensureConfigured();
     for (const u of updates) {
       const url = `${this.apiBase}/Account/${this.currentAccountId}/Item/${encodeURIComponent(u.lightspeedItemId)}.json`;

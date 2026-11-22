@@ -56,6 +56,7 @@ export async function renderLightspeedSheet(ctx) {
     limit: 50,
     data: null,
     dirty: new Map(),
+    selected: new Set(),
   };
 
   const head = pageHead(
@@ -172,9 +173,11 @@ export async function renderLightspeedSheet(ctx) {
   let discardBtn = null;
   let pushBtn = null;
   let exportBtn = null;
+  let applyBulkBtn = null;
 
   function updateActionBar() {
     const n = st.dirty.size;
+    const selCount = st.selected.size;
     if (discardBtn) {
       discardBtn.textContent = 'Discard (' + n + ')';
       discardBtn.disabled = n === 0;
@@ -185,6 +188,9 @@ export async function renderLightspeedSheet(ctx) {
     }
     if (exportBtn) {
       exportBtn.textContent = n > 0 ? 'Export CSV (' + n + ' changed)' : 'Export Visible CSV';
+    }
+    if (applyBulkBtn) {
+      applyBulkBtn.textContent = selCount > 0 ? 'Apply to ' + selCount + ' Selected' : 'Apply to Visible Page';
     }
   }
 
@@ -316,10 +322,107 @@ export async function renderLightspeedSheet(ctx) {
       },
     }, 'Push to Lightspeed (0)');
 
+    const limitSel = h('select.input', { style: 'width:auto;max-width:115px' }, [
+      h('option', { value: '50', selected: st.limit === 50 }, '50 / page'),
+      h('option', { value: '100', selected: st.limit === 100 }, '100 / page'),
+      h('option', { value: '200', selected: st.limit === 200 }, '200 / page'),
+    ]);
+    limitSel.addEventListener('change', () => {
+      st.limit = Number(limitSel.value) || 50;
+      st.offset = 0;
+      load();
+    });
+
+    const bulkOpSel = h('select.input', { style: 'width:auto;max-width:210px' }, [
+      h('option', { value: 'sale_pct_off' }, 'Bulk: Sale ($) = Default − %'),
+      h('option', { value: 'sale_usd_off' }, 'Bulk: Sale ($) = Default − $'),
+      h('option', { value: 'set_sale' }, 'Bulk: Set Sale ($)'),
+      h('option', { value: 'set_default' }, 'Bulk: Set Default ($)'),
+      h('option', { value: 'set_online' }, 'Bulk: Set Online ($)'),
+      h('option', { value: 'add_tag' }, 'Bulk: Add Tag'),
+      h('option', { value: 'remove_tag' }, 'Bulk: Remove Tag'),
+      h('option', { value: 'set_reorder' }, 'Bulk: Set Reorder Pt'),
+      h('option', { value: 'set_desired' }, 'Bulk: Set Desired Lvl'),
+    ]);
+    const bulkValInp = h('input.input', { type: 'text', placeholder: 'e.g. 15 or tag…', style: 'width:130px' });
+
+    applyBulkBtn = h('button.btn.sm', {
+      onClick: () => {
+        if (!st.data || !st.data.items.length) return;
+        const op = bulkOpSel.value;
+        const rawVal = bulkValInp.value.trim();
+        if (!rawVal) {
+          toast('Enter a value or tag for Bulk Apply first', 'warn');
+          return;
+        }
+        const targets = st.selected.size > 0
+          ? st.data.items.filter((r) => st.selected.has(r.id))
+          : st.data.items;
+        let count = 0;
+        targets.forEach((row) => {
+          const cur = getMergedRow(row);
+          if (op === 'add_tag') {
+            const tags = Array.isArray(cur.tags) ? cur.tags.slice() : [];
+            if (!tags.some((t) => String(t).toLowerCase() === rawVal.toLowerCase())) tags.push(rawVal);
+            stageField(row, 'tags', tags);
+            count++;
+          } else if (op === 'remove_tag') {
+            const tags = (Array.isArray(cur.tags) ? cur.tags : []).filter((t) => String(t).toLowerCase() !== rawVal.toLowerCase());
+            stageField(row, 'tags', tags);
+            count++;
+          } else if (op === 'sale_pct_off') {
+            const pct = Number(rawVal);
+            if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) return;
+            const base = cur.defaultPriceCents || 0;
+            if (base > 0) {
+              stageField(row, 'salePriceCents', Math.max(1, Math.round(base * (1 - pct / 100))));
+              count++;
+            }
+          } else if (op === 'sale_usd_off') {
+            const offCents = inputToCents(rawVal);
+            const base = cur.defaultPriceCents || 0;
+            if (offCents && base > offCents) {
+              stageField(row, 'salePriceCents', base - offCents);
+              count++;
+            }
+          } else if (op === 'set_sale' || op === 'set_default' || op === 'set_online') {
+            const cents = inputToCents(rawVal);
+            if (cents !== null && !Number.isNaN(cents)) {
+              const f = op === 'set_sale' ? 'salePriceCents' : op === 'set_default' ? 'defaultPriceCents' : 'onlinePriceCents';
+              stageField(row, f, cents);
+              count++;
+            }
+          } else if (op === 'set_reorder' || op === 'set_desired') {
+            const n = Number(rawVal);
+            if (Number.isInteger(n) && n >= 0) {
+              stageField(row, op === 'set_reorder' ? 'reorderPoint' : 'desiredLevel', n);
+              count++;
+            }
+          }
+        });
+        if (!count) {
+          toast('Invalid value or no applicable rows', 'err');
+          return;
+        }
+        renderTable();
+        updateActionBar();
+        toast('Applied bulk edit to ' + count + ' row(s) — review and click Push to Lightspeed', 'ok');
+      },
+    }, 'Apply to Visible Page');
+
     mount(controlsWrap, card(null, [
-      h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between' }, [
-        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [qInput, stockSel, brandSel, catSel, tagInput, searchBtn, stdBtn]),
-        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [discardBtn, exportBtn, pushBtn]),
+      h('div.stack', { style: 'gap:10px' }, [
+        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between' }, [
+          h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [qInput, stockSel, brandSel, catSel, tagInput, limitSel, searchBtn, stdBtn]),
+          h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [discardBtn, exportBtn, pushBtn]),
+        ]),
+        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center;padding-top:8px;border-top:1px solid rgba(20,32,45,.08)' }, [
+          h('strong', { style: 'font-size:12px' }, 'Bulk Fill:'),
+          bulkOpSel,
+          bulkValInp,
+          applyBulkBtn,
+          h('span.muted', { style: 'font-size:12px' }, 'Check rows below to target specific items, or leave unchecked to fill the whole page.'),
+        ]),
       ]),
     ]));
   }
@@ -398,7 +501,23 @@ export async function renderLightspeedSheet(ctx) {
       { label: 'Desired Lvl', field: 'desiredLevel', width: '78px', numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
     ];
 
+    const allChecked = items.length > 0 && items.every((r) => st.selected.has(r.id));
+    const headChk = h('input', {
+      type: 'checkbox',
+      checked: allChecked,
+      'aria-label': 'Select all visible rows',
+      onchange: (e) => {
+        items.forEach((r) => {
+          if (e.target.checked) st.selected.add(r.id);
+          else st.selected.delete(r.id);
+        });
+        renderTable();
+        updateActionBar();
+      },
+    });
+
     const thead = h('thead', h('tr', [
+      h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap;padding:4px 6px' }, headChk),
       h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, '↺'),
       h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, 'System ID'),
       h('th', { style: 'position:sticky;top:0;background:var(--bg-card,#fff);z-index:2;font-size:11px;white-space:nowrap' }, 'UPC'),
@@ -408,6 +527,15 @@ export async function renderLightspeedSheet(ctx) {
 
     const tbody = h('tbody', items.map((row, rowIdx) => {
       const isRowDirty = st.dirty.has(row.id);
+      const rowChk = h('input', {
+        type: 'checkbox',
+        checked: st.selected.has(row.id),
+        onchange: (e) => {
+          if (e.target.checked) st.selected.add(row.id);
+          else st.selected.delete(row.id);
+          updateActionBar();
+        },
+      });
       const undoBtn = h('button.btn.sm', {
         disabled: !isRowDirty,
         title: 'Revert row',
@@ -420,6 +548,7 @@ export async function renderLightspeedSheet(ctx) {
       }, '↺');
 
       return h('tr', { style: isRowDirty ? 'background:#fffbeb55' : '' }, [
+        h('td', { style: 'padding:4px 6px' }, rowChk),
         h('td', { style: 'padding:4px 6px' }, undoBtn),
         h('td', { style: 'padding:4px 6px;font-family:monospace;font-size:11px;white-space:nowrap' }, row.sku || '—'),
         h('td', { style: 'padding:4px 6px;font-family:monospace;font-size:11px;white-space:nowrap' }, row.upc || '—'),

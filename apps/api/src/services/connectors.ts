@@ -187,7 +187,15 @@ export function createConnectors(cfg: AppConfig, pool: Pool): Connectors {
     shopifyHealth: () => shopifyClient.health(),
     lightspeed: ls,
     lightspeedHealth: () => ls.health(),
-    pos: { updatePrices: (updates) => ls.updateEventPosPrices(updates) },
+    pos: {
+      updatePrices: async (updates) => {
+        const r = await pool.query<{ active: string | null }>(
+          `SELECT availability_rules->>'lightspeedWritesActive' AS active FROM company_settings LIMIT 1`,
+        );
+        const authorizedByOwner = r.rows[0]?.active === 'true' || !!e.LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED;
+        return ls.updateEventPosPrices(updates, { authorizedByOwner });
+      },
+    },
     suppliers: new Map<string, SupplierConnector>([
       ['QBP', liveQbp(e as never)], ['JBI', liveJbi(e as never)], ['SPECIALIZED', liveSpecialized(e as never)],
     ]),

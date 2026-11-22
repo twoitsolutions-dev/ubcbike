@@ -1,7 +1,7 @@
 import { h } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, pageHead, toast, watchJob } from '../ui/components.js';
 import { dateTime } from '../ui/format.js';
-import { settingsWorkspaceTabs } from './settings.js?v=77';
+import { settingsWorkspaceTabs } from './settings.js?v=78';
 
 const SUPPLIER_META = {
   qbp: {
@@ -404,6 +404,13 @@ export async function renderIntegrations(ctx) {
 
     // Live Omnichannel Topology Ribbon
     h('section.conn-topo',
+      h('div.conn-topo-head',
+        h('span.conn-topo-kicker', 'Live Omnichannel Data Architecture'),
+        h('div.row', { style: { gap: '10px' } }, [
+          h('span.conn-topo-pill', { class: isDemo ? 'conn-topo-pill demo' : 'conn-topo-pill' },
+            isDemo ? 'DEMO Sandbox Mode' : (lsConnected && shConnected ? 'All Retail Core Systems Online' : 'Check Connector Health')),
+          h('span.conn-node-sub', 'Checked ' + dateTime(sh.checkedAt || ls.checkedAt)),
+        ])),
       h('div.conn-topo-flow',
         h('div.conn-node',
           h('span.conn-pulse', { class: lsConnected ? 'conn-pulse' : 'conn-pulse warn' }),
@@ -412,7 +419,7 @@ export async function renderIntegrations(ctx) {
             h('div.conn-node-sub', isDemo ? 'Demo Store Adapter' : 'Acct #' + (lsTele.accountId || '114391') + ' · ' + fmtNum(lsTele.inStockSkus) + ' in-stock SKUs'))),
         h('div.conn-bridge',
           h('span.conn-bridge-arrow', '⇄'),
-          h('span', '5m Delta Sync')),
+          h('span', '5m Sync')),
         h('div.conn-node.hub',
           h('span.conn-pulse.gold'),
           h('div',
@@ -420,16 +427,12 @@ export async function renderIntegrations(ctx) {
             h('div.conn-node-sub', 'MAP Floor · Min Margin · Never-Sum Stock'))),
         h('div.conn-bridge',
           h('span.conn-bridge-arrow', '⇄'),
-          h('span', '10m Store & Promo')),
+          h('span', '10m Sync')),
         h('div.conn-node',
           h('span.conn-pulse', { class: shConnected ? 'conn-pulse' : 'conn-pulse warn' }),
           h('div',
             h('div.conn-node-title', 'Shopify Online Store'),
-            h('div.conn-node-sub', isDemo ? 'Demo Storefront' : fmtNum(shTele.linkedVariants) + ' linked variants · Online Store')))),
-      h('div.conn-topo-meta',
-        h('span.conn-topo-pill', { class: isDemo ? 'conn-topo-pill demo' : 'conn-topo-pill' },
-          isDemo ? 'DEMO Sandbox Mode' : (lsConnected && shConnected ? 'All Retail Core Systems Online' : 'Check Connector Health')),
-        h('span.conn-node-sub', 'Checked ' + dateTime(sh.checkedAt || ls.checkedAt)))),
+            h('div.conn-node-sub', isDemo ? 'Demo Storefront' : fmtNum(shTele.linkedVariants) + ' linked variants · Online Store'))))),
 
     // Section 1: Core Retail Platforms
     h('div.conn-section-head',

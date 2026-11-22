@@ -334,7 +334,7 @@ class PredictiveSearch extends SearchForm {
 
       const vendor = document.createElement('div');
       vendor.className = 'predictive-search__item-vendor caption-with-letter-spacing';
-      vendor.textContent = `${m.vendor || 'UBC'} · SKU: ${m.mpn}`;
+      vendor.textContent = `${m.vendor || 'UBC'}${m.mpn ? ` · ${m.mpn}` : ''}`;
       content.appendChild(vendor);
 
       const title = document.createElement('p');
@@ -380,24 +380,52 @@ class PredictiveSearch extends SearchForm {
   }
 }
 
-window.__findUbcMpnMatches = async function (rawTerm) {
+window.__findUbcMpnMatches = window.__findUbcMpnMatches || (async function (rawTerm) {
   const clean = String(rawTerm || '').trim();
   const q = clean.toLowerCase();
   if (q.length < 3) return [];
+  const coreDigits = /^\d{8,15}$/.test(clean) ? clean.replace(/^0+/, '') : '';
 
   const padZeros = (str, len) => (str.length >= len ? str : '0'.repeat(len - str.length) + str);
+  const formatBadge = (code) => {
+    const c = String(code || '').trim();
+    if (!c) return '';
+    if (/^2100\d{6,}$/.test(c)) return `SKU ${c}`;
+    if (/^\d{11,14}$/.test(c)) return `UPC ${c}`;
+    return `MPN ${c}`;
+  };
+  const normThumb = (url) => {
+    let src = String(url || '');
+    if (!src) return '';
+    if (src.startsWith('//')) src = `https:${src}`;
+    if ((src.includes('cdn.shopify.com') || src.includes('/cdn/shop/')) && !src.includes('width=')) {
+      src += `${src.includes('?') ? '&' : '?'}width=360`;
+    }
+    return src;
+  };
+
   const candidateMap = new Map();
+  const upsertCand = (handle, vid, mpn, fromIndex) => {
+    if (!handle) return;
+    const prev = candidateMap.get(handle);
+    if (prev) {
+      if (fromIndex && !prev.fromIndex) {
+        if (vid) prev.vid = vid;
+        if (mpn) prev.mpn = mpn;
+        prev.fromIndex = true;
+      }
+      return;
+    }
+    candidateMap.set(handle, { handle, vid: vid || null, mpn: mpn || '', fromIndex: Boolean(fromIndex) });
+  };
 
   // 1. Live Real-Time Shopify Storefront SKU + UPC / Barcode query (variants.sku & variants.barcode)
   if (!/\s/.test(clean) && /^[a-z0-9._/-]{3,40}$/i.test(clean)) {
     const clauses = [`variants.sku:${clean}*`, `variants.barcode:${clean}`];
-    if (/^\d{8,15}$/.test(clean)) {
-      const core = clean.replace(/^0+/, '');
-      if (core.length >= 6) {
-        for (const cand of [padZeros(core, 12), padZeros(core, 13), padZeros(core, 14), core]) {
-          const bc = `variants.barcode:${cand}`;
-          if (!clauses.includes(bc)) clauses.push(bc);
-        }
+    if (coreDigits.length >= 6) {
+      for (const cand of [padZeros(coreDigits, 12), padZeros(coreDigits, 13), padZeros(coreDigits, 14), coreDigits]) {
+        const bc = `variants.barcode:${cand}`;
+        if (!clauses.includes(bc)) clauses.push(bc);
       }
     }
     try {
@@ -405,16 +433,14 @@ window.__findUbcMpnMatches = async function (rawTerm) {
       const sugRes = await fetch(sugUrl).then((r) => (r.ok ? r.json() : null)).catch(() => null);
       const sugProds = sugRes?.resources?.results?.products || [];
       for (const sp of sugProds) {
-        if (sp?.handle && !candidateMap.has(sp.handle)) {
-          candidateMap.set(sp.handle, { handle: sp.handle, vid: null, mpn: clean });
-        }
+        if (sp?.handle) upsertCand(sp.handle, null, '', false);
       }
     } catch {
       // ignore suggest failure
     }
   }
 
-  // 2. Manufacturer Part Number (ubc.mpn) index fallback
+  // 2. Lightspeed System SKU (2100000...) + Manufacturer Part Number (MPN) index
   const url = window.routes && window.routes.ubc_sku_index_url;
   if (url) {
     try {
@@ -424,19 +450,21 @@ window.__findUbcMpnMatches = async function (rawTerm) {
       const rows = await window.__ubcSkuIndexPromise;
       const partial = [];
       for (let i = 0; i < rows.length; i++) {
-        const [mpn, handle, vid] = rows[i];
-        const m = String(mpn || '').toLowerCase();
-        if (!m || candidateMap.has(handle)) continue;
-        if (m === q) {
-          candidateMap.set(handle, { mpn: 'MPN ' + mpn, handle, vid });
-        } else if (m.includes(q) && partial.length < 6) {
-          partial.push({ mpn: 'MPN ' + mpn, handle, vid });
+        const [codeRaw, handle, vid] = rows[i];
+        const code = String(codeRaw || '');
+        const m = code.toLowerCase();
+        if (!m) continue;
+        const mCore = coreDigits && /^\d{8,15}$/.test(code) ? code.replace(/^0+/, '') : '';
+        if (m === q || (coreDigits && mCore && mCore === coreDigits)) {
+          upsertCand(handle, vid, formatBadge(code), true);
+        } else if (q.length >= 4 && m.includes(q) && partial.length < 6) {
+          partial.push({ mpn: formatBadge(code), handle, vid });
         }
         if (candidateMap.size >= 8) break;
       }
       for (const pt of partial) {
         if (candidateMap.size >= 8) break;
-        if (!candidateMap.has(pt.handle)) candidateMap.set(pt.handle, pt);
+        upsertCand(pt.handle, pt.vid, pt.mpn, true);
       }
     } catch {
       // ignore index failure
@@ -446,7 +474,6 @@ window.__findUbcMpnMatches = async function (rawTerm) {
   const picked = Array.from(candidateMap.values()).slice(0, 8);
   if (!picked.length) return [];
 
-  const coreDigits = /^\d{8,15}$/.test(clean) ? clean.replace(/^0+/, '') : '';
   const products = await Promise.all(
     picked.map(async (item) => {
       try {
@@ -468,11 +495,10 @@ window.__findUbcMpnMatches = async function (rawTerm) {
           }
         }
         const activePrice = matchedVar && typeof matchedVar.price === 'number' ? matchedVar.price : p.price;
-        const codeLabel = matchedVar && matchedVar.sku
-          ? 'SKU ' + matchedVar.sku
-          : matchedVar && matchedVar.barcode
-            ? 'UPC ' + matchedVar.barcode
-            : item.mpn;
+        const codeLabel = item.mpn
+          || (matchedVar && matchedVar.sku ? `SKU ${matchedVar.sku}` : '')
+          || (matchedVar && matchedVar.barcode ? `UPC ${matchedVar.barcode}` : '')
+          || formatBadge(clean);
         const fullTitle = matchedVar && matchedVar.title && matchedVar.title !== 'Default Title'
           ? `${p.title} — ${matchedVar.title}`
           : p.title;
@@ -483,7 +509,7 @@ window.__findUbcMpnMatches = async function (rawTerm) {
           vid: matchedVar ? String(matchedVar.id) : item.vid,
           title: fullTitle,
           vendor: p.vendor,
-          image: vImg || p.featured_image || (p.images && p.images[0]) || '',
+          image: normThumb(vImg || p.featured_image || (p.images && p.images[0]) || ''),
           priceFormatted: typeof activePrice === 'number' ? `$${(activePrice / 100).toFixed(2)}` : '',
         };
       } catch {
@@ -492,6 +518,6 @@ window.__findUbcMpnMatches = async function (rawTerm) {
     })
   );
   return products.filter(Boolean);
-};
+});
 
 customElements.define('predictive-search', PredictiveSearch);

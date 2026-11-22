@@ -2915,30 +2915,56 @@
     return out;
   }
 
+  function formatUbcCodeBadge(code) {
+    var c = String(code || '').replace(/^\s+|\s+$/g, '');
+    if (!c) return '';
+    if (/^2100\d{6,}$/.test(c)) return 'SKU ' + c;
+    if (/^\d{11,14}$/.test(c)) return 'UPC ' + c;
+    return 'MPN ' + c;
+  }
+
+  function normalizeShopifyThumb(url, width) {
+    var src = String(url || '');
+    if (!src) return '';
+    if (src.indexOf('//') === 0) src = 'https:' + src;
+    if (src.indexOf('cdn.shopify.com') !== -1 || src.indexOf('/cdn/shop/') !== -1) {
+      if (src.indexOf('width=') === -1) {
+        src += (src.indexOf('?') === -1 ? '?' : '&') + 'width=' + String(width || 360);
+      }
+    }
+    return src;
+  }
+
   function findUbcCodeAndSkuMatches(rawTerm) {
     var clean = String(rawTerm || '').replace(/^\s+|\s+$/g, '');
     var q = clean.toLowerCase();
     if (q.length < 3) return Promise.resolve([]);
+    var coreDigits = /^\d{8,15}$/.test(clean) ? clean.replace(/^0+/, '') : '';
 
     var candidateMap = {};
     var candidateOrder = [];
-    function addCand(handle, vid, mpnLabel) {
-      if (!handle || candidateMap[handle]) return;
-      candidateMap[handle] = { handle: handle, vid: vid || null, mpn: mpnLabel || clean };
+    function addCand(handle, vid, mpnLabel, fromIndex) {
+      if (!handle) return;
+      if (candidateMap[handle]) {
+        if (fromIndex && !candidateMap[handle].fromIndex) {
+          if (vid) candidateMap[handle].vid = vid;
+          if (mpnLabel) candidateMap[handle].mpn = mpnLabel;
+          candidateMap[handle].fromIndex = true;
+        }
+        return;
+      }
+      candidateMap[handle] = { handle: handle, vid: vid || null, mpn: mpnLabel || '', fromIndex: Boolean(fromIndex) };
       candidateOrder.push(handle);
     }
 
     var tasks = [];
     if (!/\s/.test(clean) && /^[a-z0-9._/-]{3,40}$/i.test(clean)) {
       var clauses = ['variants.sku:' + clean + '*', 'variants.barcode:' + clean];
-      if (/^\d{8,15}$/.test(clean)) {
-        var core = clean.replace(/^0+/, '');
-        if (core.length >= 6) {
-          var cands = [padZerosEs5(core, 12), padZerosEs5(core, 13), padZerosEs5(core, 14), core];
-          for (var ci = 0; ci < cands.length; ci++) {
-            var bc = 'variants.barcode:' + cands[ci];
-            if (clauses.indexOf(bc) === -1) clauses.push(bc);
-          }
+      if (coreDigits.length >= 6) {
+        var cands = [padZerosEs5(coreDigits, 12), padZerosEs5(coreDigits, 13), padZerosEs5(coreDigits, 14), coreDigits];
+        for (var ci = 0; ci < cands.length; ci++) {
+          var bc = 'variants.barcode:' + cands[ci];
+          if (clauses.indexOf(bc) === -1) clauses.push(bc);
         }
       }
       var sugUrl = '/search/suggest.json?q=' + encodeURIComponent(clauses.join(' OR ')) + '&resources[type]=product&resources[limit]=8';
@@ -2948,7 +2974,7 @@
           .then(function (j) {
             var prods = (j && j.resources && j.resources.results && j.resources.results.products) || [];
             for (var i = 0; i < prods.length; i++) {
-              if (prods[i] && prods[i].handle) addCand(prods[i].handle, null, clean);
+              if (prods[i] && prods[i].handle) addCand(prods[i].handle, null, '', false);
             }
           })
           .catch(function () {})
@@ -2969,20 +2995,20 @@
           for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             if (!row || !row[0] || !row[1]) continue;
-            var mpn = String(row[0]);
+            var code = String(row[0]);
             var handle = String(row[1]);
             var vid = row[2] ? String(row[2]) : null;
-            var m = mpn.toLowerCase();
-            if (candidateMap[handle]) continue;
-            if (m === q) {
-              addCand(handle, vid, 'MPN ' + mpn);
-            } else if (m.indexOf(q) !== -1 && partial.length < 6) {
-              partial.push({ handle: handle, vid: vid, mpn: 'MPN ' + mpn });
+            var m = code.toLowerCase();
+            var mCore = (coreDigits && /^\d{8,15}$/.test(code)) ? code.replace(/^0+/, '') : '';
+            if (m === q || (coreDigits && mCore && mCore === coreDigits)) {
+              addCand(handle, vid, formatUbcCodeBadge(code), true);
+            } else if (q.length >= 4 && m.indexOf(q) !== -1 && partial.length < 6) {
+              partial.push({ handle: handle, vid: vid, mpn: formatUbcCodeBadge(code) });
             }
             if (candidateOrder.length >= 8) break;
           }
           for (var pi = 0; pi < partial.length && candidateOrder.length < 8; pi++) {
-            addCand(partial[pi].handle, partial[pi].vid, partial[pi].mpn);
+            addCand(partial[pi].handle, partial[pi].vid, partial[pi].mpn, true);
           }
         }).catch(function () {})
       );
@@ -2991,7 +3017,6 @@
     return Promise.all(tasks).then(function () {
       var handles = candidateOrder.slice(0, 8);
       if (!handles.length) return [];
-      var coreDigits = /^\d{8,15}$/.test(clean) ? clean.replace(/^0+/, '') : '';
       return Promise.all(handles.map(function (hKey) {
         var item = candidateMap[hKey];
         return fetch('/products/' + encodeURIComponent(item.handle) + '.js')
@@ -3018,22 +3043,22 @@
               }
             }
             var activePrice = matchedVar && typeof matchedVar.price === 'number' ? matchedVar.price : p.price;
-            var codeLabel = matchedVar && matchedVar.sku
-              ? 'SKU ' + matchedVar.sku
-              : matchedVar && matchedVar.barcode
-                ? 'UPC ' + matchedVar.barcode
-                : item.mpn;
+            var codeLabel = item.mpn
+              || (matchedVar && matchedVar.sku ? 'SKU ' + matchedVar.sku : '')
+              || (matchedVar && matchedVar.barcode ? 'UPC ' + matchedVar.barcode : '')
+              || formatUbcCodeBadge(clean);
             var fullTitle = matchedVar && matchedVar.title && matchedVar.title !== 'Default Title'
               ? p.title + ' — ' + matchedVar.title
               : p.title;
             var vImg = matchedVar && matchedVar.featured_image && matchedVar.featured_image.src;
+            var rawImg = vImg || p.featured_image || (p.images && p.images[0]) || '';
             return {
               mpn: codeLabel,
               handle: item.handle,
               vid: matchedVar ? String(matchedVar.id) : item.vid,
               title: fullTitle,
               vendor: p.vendor,
-              image: vImg || p.featured_image || (p.images && p.images[0]) || '',
+              image: normalizeShopifyThumb(rawImg, 360),
               priceFormatted: typeof activePrice === 'number' ? '$' + (activePrice / 100).toFixed(2) : '',
             };
           })

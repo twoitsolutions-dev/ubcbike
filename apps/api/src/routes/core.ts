@@ -201,28 +201,53 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const { items, total } = await listItems(ctx.pool, c, filter, availability, page);
     const tagFilter = typeof q.tag === 'string' ? q.tag.trim().toLowerCase() : '';
     const includeHidden = q.status === 'hidden' || q.includeHidden === '1';
-    const mapped = items
-      .filter((i) => includeHidden || i.status !== 'hidden')
+    const visibleItems = items.filter((i) => includeHidden || i.status !== 'hidden');
+
+    // Hydrate exact live Lightspeed fields (`customSku`, `Tags`, all 4 `Prices`, `defaultCost`, `reorderPoint`, `desiredLevel`) for visible rows.
+    const lsDetailsByVariant = new Map<string, Awaited<ReturnType<NonNullable<typeof ctx.connectors.lightspeed>['fetchSheetDetailsByIds']>> extends Map<string, infer V> ? V : never>();
+    if (visibleItems.length && ctx.connectors.lightspeed) {
+      try {
+        const vids = visibleItems.map((i) => i.id);
+        const extRes = await ctx.pool.query<{ entity_id: string; external_id: string }>(
+          `SELECT entity_id, external_id FROM external_ids WHERE company_id = $1 AND system = 'lightspeed_r' AND entity_id = ANY($2::uuid[])`,
+          [c, vids],
+        );
+        const shopId = (ctx.config.env.LIGHTSPEED_R_PHYSICAL_SHOP_ID || '1').split(',')[0]?.trim() || '1';
+        const lsMap = await ctx.connectors.lightspeed.fetchSheetDetailsByIds(
+          extRes.rows.map((r) => r.external_id),
+          shopId,
+        );
+        for (const r of extRes.rows) {
+          const det = lsMap.get(r.external_id);
+          if (det) lsDetailsByVariant.set(r.entity_id, det);
+        }
+      } catch (err) {
+        req.log.warn({ err }, 'Live Lightspeed sheet hydration skipped; falling back to DB values');
+      }
+    }
+
+    const mapped = visibleItems
       .map((i) => {
         const raw = i as unknown as Record<string, unknown>;
-        const tags = Array.isArray(raw.tags) ? (raw.tags as string[]) : [];
+        const ls = lsDetailsByVariant.get(i.id);
+        const tags = ls ? ls.tags : Array.isArray(raw.tags) ? (raw.tags as string[]) : [];
         return {
           id: i.id,
           sku: i.sku,
-          mpn: (raw.mpn as string) || '',
-          upc: i.upc || '',
-          description: i.title,
-          customSku: (raw.customSku as string) || '',
+          mpn: ls?.mpn || (raw.mpn as string) || '',
+          upc: ls?.upc || i.upc || '',
+          description: ls?.description || i.title,
+          customSku: ls ? ls.customSku : (raw.customSku as string) || '',
           brand: i.brand || '',
           category: i.category || '',
           tags,
-          defaultPriceCents: i.priceCents,
-          msrpCents: (raw.msrpCents as number | null) ?? null,
-          salePriceCents: (raw.salePriceCents as number | null) ?? null,
-          onlinePriceCents: (raw.onlinePriceCents as number | null) ?? null,
-          defaultCostCents: i.costCents ?? null,
-          reorderPoint: (raw.reorderPoint as number | null) ?? 0,
-          desiredLevel: (raw.desiredLevel as number | null) ?? 0,
+          defaultPriceCents: ls?.defaultPriceCents ?? i.priceCents,
+          msrpCents: ls ? ls.msrpCents : (raw.msrpCents as number | null) ?? null,
+          salePriceCents: ls ? ls.salePriceCents : (raw.salePriceCents as number | null) ?? null,
+          onlinePriceCents: ls ? ls.onlinePriceCents : (raw.onlinePriceCents as number | null) ?? null,
+          defaultCostCents: ls ? ls.defaultCostCents : i.costCents ?? null,
+          reorderPoint: ls ? ls.reorderPoint : (raw.reorderPoint as number | null) ?? 0,
+          desiredLevel: ls ? ls.desiredLevel : (raw.desiredLevel as number | null) ?? 0,
           physicalQty: i.physicalQty ?? 0,
           version: i.version,
         };

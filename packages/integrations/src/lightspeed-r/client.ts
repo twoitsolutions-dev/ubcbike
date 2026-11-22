@@ -555,6 +555,115 @@ export class LightspeedRClient {
     }
     return results;
   }
+
+  /**
+   * Live hydration for HUB Lightspeed Bulk Sheet: fetches exact live R-Series fields
+   * (`customSku`, `manufacturerSku`, `defaultCost`, `Prices`, `Tags`, `ItemShops`) for up to 100 itemIDs in 1 call.
+   */
+  async fetchSheetDetailsByIds(
+    itemIds: string[],
+    physicalShopId = '1',
+  ): Promise<
+    Map<
+      string,
+      {
+        mpn: string;
+        upc: string;
+        description: string;
+        customSku: string;
+        tags: string[];
+        defaultPriceCents: number | null;
+        msrpCents: number | null;
+        salePriceCents: number | null;
+        onlinePriceCents: number | null;
+        defaultCostCents: number | null;
+        reorderPoint: number;
+        desiredLevel: number;
+      }
+    >
+  > {
+    const out = new Map<
+      string,
+      {
+        mpn: string;
+        upc: string;
+        description: string;
+        customSku: string;
+        tags: string[];
+        defaultPriceCents: number | null;
+        msrpCents: number | null;
+        salePriceCents: number | null;
+        onlinePriceCents: number | null;
+        defaultCostCents: number | null;
+        reorderPoint: number;
+        desiredLevel: number;
+      }
+    >();
+    const cleanIds = [...new Set(itemIds.map((x) => String(x || '').trim()).filter((x) => /^\d+$/.test(x)))];
+    if (!cleanIds.length) return out;
+    await this.ensureConfigured();
+
+    const toCents = (v: unknown): number | null => {
+      if (v === undefined || v === null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.round(n * 100) : null;
+    };
+
+    for (let i = 0; i < cleanIds.length; i += 80) {
+      const chunk = cleanIds.slice(i, i + 80);
+      const q = new URLSearchParams({
+        itemID: `IN,[${chunk.join(',')}]`,
+        load_relations: '["ItemShops","Tags"]',
+        limit: '100',
+      });
+      type Page = { Item?: LsItem | LsItem[] };
+      const page = await this.get<Page>(`/Item.json?${q.toString()}`);
+      const list = page.Item ? (Array.isArray(page.Item) ? page.Item : [page.Item]) : [];
+      for (const it of list) {
+        const raw = it as unknown as Record<string, unknown>;
+        const pricesRaw = (raw.Prices as { ItemPrice?: unknown } | undefined)?.ItemPrice;
+        const prices = (Array.isArray(pricesRaw) ? pricesRaw : pricesRaw ? [pricesRaw] : []) as {
+          amount?: string;
+          useTypeID?: string;
+          useType?: string;
+        }[];
+        const byType = new Map<string, number | null>();
+        for (const p of prices) {
+          if (p.useTypeID) byType.set(String(p.useTypeID), toCents(p.amount));
+        }
+
+        const tagsWrap = raw.Tags as { tag?: string | string[] } | undefined;
+        const tagsRaw = tagsWrap?.tag;
+        const tags = (Array.isArray(tagsRaw) ? tagsRaw : tagsRaw ? [tagsRaw] : [])
+          .map((t) => String(t || '').trim())
+          .filter(Boolean);
+
+        const shopsRaw = (raw.ItemShops as { ItemShop?: unknown } | undefined)?.ItemShop;
+        const shops = (Array.isArray(shopsRaw) ? shopsRaw : shopsRaw ? [shopsRaw] : []) as {
+          shopID?: string;
+          reorderPoint?: string;
+          reorderLevel?: string;
+        }[];
+        const shop = shops.find((s) => String(s.shopID) === physicalShopId) ?? shops.find((s) => s.shopID && s.shopID !== '0');
+
+        out.set(String(it.itemID), {
+          mpn: String(it.manufacturerSku || '').trim(),
+          upc: String(it.upc || it.ean || '').trim(),
+          description: String(it.description || '').trim(),
+          customSku: String(it.customSku || '').trim(),
+          tags,
+          defaultPriceCents: byType.get('1') ?? null,
+          msrpCents: byType.get('2') ?? null,
+          salePriceCents: byType.get('3') ?? null,
+          onlinePriceCents: byType.get('4') ?? null,
+          defaultCostCents: toCents(raw.defaultCost),
+          reorderPoint: Math.max(0, Math.floor(Number(shop?.reorderPoint) || 0)),
+          desiredLevel: Math.max(0, Math.floor(Number(shop?.reorderLevel) || 0)),
+        });
+      }
+    }
+    return out;
+  }
 }
 
 function sleep(ms: number) {

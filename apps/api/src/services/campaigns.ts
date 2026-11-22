@@ -201,7 +201,7 @@ export async function cancelCampaign(ctx: AppContext, companyId: string, userId:
   await audit(ctx.pool, { companyId, userId, action: 'campaign.cancelled', entityType: 'campaign', entityId: id });
 }
 
-interface LineRow { variant_id: string; old_price_cents: number; new_price_cents: number; status: string; applied_at: Date | null; product_id: string; shopify_variant_id: string | null; shopify_product_id: string | null; lightspeed_item_id: string | null }
+interface LineRow { variant_id: string; old_price_cents: number; new_price_cents: number; compare_at_cents: number | null; status: string; applied_at: Date | null; product_id: string; shopify_variant_id: string | null; shopify_product_id: string | null; lightspeed_item_id: string | null }
 
 /** Job handler: apply an approved campaign in chunks with optimistic guards. */
 export async function applyCampaignJob(ctx: AppContext, companyId: string, campaignId: string, jobId: number) {
@@ -296,24 +296,42 @@ export async function applyCampaignJob(ctx: AppContext, companyId: string, campa
  * e.g. Black Friday, Navidad).
  */
 async function pushPrices(ctx: AppContext, campaignId: string, channel: string, which: 'new' | 'old', jobId?: number) {
+  const buildPosUpdate = (l: { lightspeed_item_id: string; old_price_cents: number; new_price_cents: number; compare_at_cents: number | null }) => {
+    if (which === 'new') {
+      const regular = Math.max(l.old_price_cents, l.compare_at_cents ?? 0);
+      return {
+        lightspeedItemId: l.lightspeed_item_id,
+        priceCents: l.new_price_cents,
+        regularPriceCents: regular > l.new_price_cents ? regular : null,
+      };
+    }
+    const preRegular = l.compare_at_cents && l.compare_at_cents > l.old_price_cents ? l.compare_at_cents : null;
+    return {
+      lightspeedItemId: l.lightspeed_item_id,
+      priceCents: l.old_price_cents,
+      regularPriceCents: preRegular,
+    };
+  };
+
   if (ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only') {
     await pushPricesUpdateOnly(ctx, campaignId, which, jobId);
     if (channel === 'online_and_pos') {
-      const pl = await ctx.pool.query<{ lightspeed_item_id: string | null; old_price_cents: number; new_price_cents: number }>(
-        `SELECT cl.old_price_cents, cl.new_price_cents,
+      const pl = await ctx.pool.query<{ lightspeed_item_id: string | null; old_price_cents: number; new_price_cents: number; compare_at_cents: number | null }>(
+        `SELECT cl.old_price_cents, cl.new_price_cents, v.compare_at_cents,
                 (SELECT external_id FROM external_ids e WHERE e.entity_type='variant' AND e.entity_id=cl.variant_id AND e.system='lightspeed_r') AS lightspeed_item_id
          FROM campaign_lines cl
+         JOIN variants v ON v.id = cl.variant_id
          WHERE cl.campaign_id = $1 AND cl.applied_at IS NOT NULL AND ${which === 'old' ? `cl.restore_result = 'restored'` : 'cl.restored_at IS NULL'}`,
         [campaignId]);
       const pos = pl.rows
-        .filter((l) => l.lightspeed_item_id)
-        .map((l) => ({ lightspeedItemId: l.lightspeed_item_id!, priceCents: which === 'new' ? l.new_price_cents : l.old_price_cents }));
+        .filter((l): l is typeof l & { lightspeed_item_id: string } => Boolean(l.lightspeed_item_id))
+        .map(buildPosUpdate);
       if (pos.length) await ctx.connectors.pos.updatePrices(pos);
     }
     return;
   }
   const lines = await ctx.pool.query<LineRow>(
-    `SELECT cl.variant_id, cl.old_price_cents, cl.new_price_cents, cl.status, cl.applied_at, v.product_id,
+    `SELECT cl.variant_id, cl.old_price_cents, cl.new_price_cents, v.compare_at_cents, cl.status, cl.applied_at, v.product_id,
             (SELECT external_id FROM external_ids e WHERE e.entity_type='variant' AND e.entity_id=v.id AND e.system='shopify') AS shopify_variant_id,
             (SELECT external_id FROM external_ids e WHERE e.entity_type='product' AND e.entity_id=v.product_id AND e.system='shopify') AS shopify_product_id,
             (SELECT external_id FROM external_ids e WHERE e.entity_type='variant' AND e.entity_id=v.id AND e.system='lightspeed_r') AS lightspeed_item_id
@@ -345,8 +363,8 @@ async function pushPrices(ctx: AppContext, campaignId: string, channel: string, 
 
   if (channel === 'online_and_pos') {
     const pos = lines.rows
-      .filter((l) => l.lightspeed_item_id)
-      .map((l) => ({ lightspeedItemId: l.lightspeed_item_id!, priceCents: which === 'new' ? l.new_price_cents : l.old_price_cents }));
+      .filter((l): l is LineRow & { lightspeed_item_id: string } => Boolean(l.lightspeed_item_id))
+      .map(buildPosUpdate);
     if (pos.length) await ctx.connectors.pos.updatePrices(pos);
   }
 }

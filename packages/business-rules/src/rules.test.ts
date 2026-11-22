@@ -105,6 +105,19 @@ describe('pricing', () => {
     expect(low.reasons).toContain('LOW_MARGIN');
   });
 
+  it('never raises an item price when it is already on a deeper Sale Price than the promo discount', () => {
+    const deeperSale = item({ priceCents: 2200, compareAtCents: 8499, costCents: 1250 });
+    const res = evaluateLine(deeperSale, { type: 'percent_off', value: 0.1, rounding: 'charm_99' }, { rules: DEFAULT_CAMPAIGN_RULES, now: NOW });
+    expect(res.status).toBe('excluded');
+    expect(res.newPriceCents).toBe(2200);
+    expect(res.reasons).toContain('ALREADY_ON_DEEPER_SALE');
+
+    const milderSale = item({ priceCents: 9500, compareAtCents: 10000, costCents: 5000 });
+    const applied = evaluateLine(milderSale, off20, { rules: DEFAULT_CAMPAIGN_RULES, now: NOW });
+    expect(applied.status).toBe('ok');
+    expect(applied.newPriceCents).toBe(8000);
+  });
+
   it('summarises a large campaign quickly and chooses a strategy', () => {
     const items = Array.from({ length: 20000 }, (_, i) => item({ id: `v${i}`, priceCents: 5000 + i, costCents: 2000 }));
     const t0 = Date.now();

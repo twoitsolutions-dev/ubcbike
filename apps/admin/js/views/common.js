@@ -69,7 +69,7 @@ export function filterBar(facets, filter, onChange, opts) {
 
 export function filterToQuery(f) {
   return {
-    q: f.q, categories: f.categories, brands: f.brands, suppliers: f.suppliers, stock: f.stock, status: f.status,
+    q: f.q, ids: f.ids, categories: f.categories, brands: f.brands, suppliers: f.suppliers, stock: f.stock, status: f.status,
     priceMinCents: f.priceMinCents, priceMaxCents: f.priceMaxCents, marginMinPct: f.marginMinPct, marginMaxPct: f.marginMaxPct,
   };
 }

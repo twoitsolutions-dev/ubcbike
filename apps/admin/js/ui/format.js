@@ -86,6 +86,7 @@ export const LINE_STATUS = { ok: ['Will apply', 'ok'], warning: ['Warning', 'war
 export const REASON_LABELS = {
   NO_COST: 'No cost on file',
   NO_CHANGE: 'No price change',
+  ALREADY_ON_DEEPER_SALE: 'Already on deeper Sale Price',
   NON_POSITIVE_PRICE: 'Price <= 0',
   MAP_VIOLATION: 'Below MAP',
   MAP_EXCEPTION_APPLIED: 'MAP exception',

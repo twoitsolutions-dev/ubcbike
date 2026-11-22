@@ -8,7 +8,7 @@ import type { AppConfig } from '../config/env.js';
 
 export interface PosPricePort {
   /** Changing POS prices is reserved for authorised omnichannel events (Black Friday, Christmas, etc.). */
-  updatePrices(updates: { lightspeedItemId: string; priceCents: number }[]): Promise<void>;
+  updatePrices(updates: { lightspeedItemId: string; priceCents: number; regularPriceCents?: number | null }[]): Promise<void>;
 }
 
 export interface Connectors {

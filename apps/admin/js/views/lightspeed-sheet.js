@@ -337,6 +337,7 @@ export async function renderLightspeedSheet(ctx) {
       h('option', { value: 'sale_pct_off' }, 'Bulk: Sale ($) = Default − %'),
       h('option', { value: 'sale_usd_off' }, 'Bulk: Sale ($) = Default − $'),
       h('option', { value: 'set_sale' }, 'Bulk: Set Sale ($)'),
+      h('option', { value: 'clear_sale' }, 'Bulk: Clear Sale ($)'),
       h('option', { value: 'set_default' }, 'Bulk: Set Default ($)'),
       h('option', { value: 'set_online' }, 'Bulk: Set Online ($)'),
       h('option', { value: 'add_tag' }, 'Bulk: Add Tag'),
@@ -345,13 +346,17 @@ export async function renderLightspeedSheet(ctx) {
       h('option', { value: 'set_desired' }, 'Bulk: Set Desired Lvl'),
     ]);
     const bulkValInp = h('input.input', { type: 'text', placeholder: 'e.g. 15 or tag…', style: 'width:130px' });
+    bulkOpSel.addEventListener('change', () => {
+      bulkValInp.disabled = bulkOpSel.value === 'clear_sale';
+      if (bulkOpSel.value === 'clear_sale') bulkValInp.value = '';
+    });
 
     applyBulkBtn = h('button.btn.sm', {
       onClick: () => {
         if (!st.data || !st.data.items.length) return;
         const op = bulkOpSel.value;
         const rawVal = bulkValInp.value.trim();
-        if (!rawVal) {
+        if (op !== 'clear_sale' && !rawVal) {
           toast('Enter a value or tag for Bulk Apply first', 'warn');
           return;
         }
@@ -361,7 +366,10 @@ export async function renderLightspeedSheet(ctx) {
         let count = 0;
         targets.forEach((row) => {
           const cur = getMergedRow(row);
-          if (op === 'add_tag') {
+          if (op === 'clear_sale') {
+            stageField(row, 'salePriceCents', null);
+            count++;
+          } else if (op === 'add_tag') {
             const tags = Array.isArray(cur.tags) ? cur.tags.slice() : [];
             if (!tags.some((t) => String(t).toLowerCase() === rawVal.toLowerCase())) tags.push(rawVal);
             stageField(row, 'tags', tags);

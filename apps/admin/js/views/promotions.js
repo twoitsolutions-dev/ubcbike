@@ -1,14 +1,14 @@
 import { h, mount, clear, debounce } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, errorBox, loading, pageHead, pager, progressBar, searchableDropdown, toast, watchJob } from '../ui/components.js?v=42';
-import { adjustmentLabel, campaignBadge, channelBadge, dateTime, LINE_STATUS, money, pct, POS_EVENT_LABELS, REASON_LABELS } from '../ui/format.js';
-import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=40';
+import { adjustmentLabel, campaignBadge, channelBadge, dateTime, LINE_STATUS, money, pct, POS_EVENT_LABELS, REASON_LABELS } from '../ui/format.js?v=47';
+import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=47';
 import { sessionStorageSafeGet } from './products.js?v=40';
 
 const PRESETS = {
   online: { key: 'online', kicker: 'Web Promo', title: 'Online Promo', sub: '15% off · Exact price · Online Store', name: 'Online Sale', channel: 'online', event: null, pct: 15, rounding: 'none', featured: true },
-  black_friday: { key: 'black_friday', kicker: 'Seasonal Sale', title: 'Black Friday', sub: '20% off (.99) · Online Store', name: 'Black Friday', channel: 'online', event: 'black_friday', pct: 20, rounding: 'charm_99' },
-  christmas: { key: 'christmas', kicker: 'Seasonal Sale', title: 'Holiday / Christmas', sub: '15% off (.99) · Online Store', name: 'Holiday Sale', channel: 'online', event: 'christmas', pct: 15, rounding: 'charm_99' },
-  clearance: { key: 'clearance', kicker: 'Clearance', title: 'Clearance Event', sub: '25% off (Whole $) · Online Store', name: 'Annual Clearance', channel: 'online', event: 'annual_clearance', pct: 25, rounding: 'whole_dollar' },
+  black_friday: { key: 'black_friday', kicker: 'Store + Online Event', title: 'Black Friday', sub: '20% off (.99) · Online + Store POS', name: 'Black Friday', channel: 'online_and_pos', event: 'black_friday', pct: 20, rounding: 'charm_99' },
+  christmas: { key: 'christmas', kicker: 'Store + Online Event', title: 'Holiday / Christmas', sub: '15% off (.99) · Online + Store POS', name: 'Holiday Sale', channel: 'online_and_pos', event: 'christmas', pct: 15, rounding: 'charm_99' },
+  clearance: { key: 'clearance', kicker: 'Store + Online Event', title: 'Clearance Event', sub: '25% off (Whole $) · Online + Store POS', name: 'Annual Clearance', channel: 'online_and_pos', event: 'annual_clearance', pct: 25, rounding: 'whole_dollar' },
 };
 
 export async function renderPromotions(ctx) {
@@ -128,13 +128,15 @@ function computeSamplePriceCents(sampleCents, adjType, rawVal, rounding) {
 export async function renderPromotionNew(ctx) {
   if (!ctx.can('pricing.write')) return errorBox({ message: 'Your role cannot create promotions.' });
   const editId = ctx.query.edit || null;
-  const [facets, settings, editCamp] = await Promise.all([
+  const [facets, settings, editCamp, freshSys] = await Promise.all([
     ctx.api.facets(),
     ctx.api.settings(),
     editId ? ctx.api.campaign(editId) : Promise.resolve(null),
+    ctx.api.system ? ctx.api.system().catch(() => ctx.system) : Promise.resolve(ctx.system),
   ]);
+  if (freshSys && ctx.system) Object.assign(ctx.system, freshSys);
   const promoBrands = (facets.shopifyBrands && facets.shopifyBrands.length) ? facets.shopifyBrands : facets.brands;
-  const posEnabled = !!(ctx.system && ctx.system.posEventWritesEnabled);
+  const posEnabled = !!((freshSys || ctx.system) && (freshSys || ctx.system).posEventWritesEnabled);
 
   let selection = { stock: 'physical' };
   let scopeMode = 'filter';
@@ -169,7 +171,8 @@ export async function renderPromotionNew(ctx) {
 
   const defaultNameForState = () => {
     const base = st.presetKey && PRESETS[st.presetKey] ? PRESETS[st.presetKey].name : (st.channel === 'online_and_pos' ? (POS_EVENT_LABELS[st.posEventType] || 'Store Event').split('/')[0].trim() : 'Online Promo');
-    const suffix = describeFilter(selection);
+    const effSel = scopeMode === 'selected' ? { ids: selection.ids || [] } : selection;
+    const suffix = describeFilter(effSel);
     return base + ' — ' + suffix;
   };
 
@@ -208,12 +211,15 @@ export async function renderPromotionNew(ctx) {
     clear(presetHost);
     Object.keys(PRESETS).forEach((k) => {
       const p = PRESETS[k];
+      const subText = p.channel === 'online_and_pos' && !posEnabled
+        ? p.sub.replace('Online + Store POS', 'Online Store')
+        : p.sub;
       presetHost.appendChild(h('button.quick-card', {
         type: 'button',
         class: st.presetKey === k ? 'active' : '',
         onclick: () => {
           st.presetKey = k;
-          st.channel = p.channel;
+          st.channel = p.channel === 'online_and_pos' && posEnabled ? 'online_and_pos' : 'online';
           if (p.event) st.posEventType = p.event;
           st.adjType = 'percent_off';
           st.value = String(p.pct);
@@ -228,7 +234,7 @@ export async function renderPromotionNew(ctx) {
           renderExample();
           renderSummary();
         },
-      }, h('span.quick-kicker', p.kicker), h('span.quick-title', p.title), h('span.quick-sub', p.sub)));
+      }, h('span.quick-kicker', p.kicker), h('span.quick-title', p.title), h('span.quick-sub', subText)));
     });
   };
 
@@ -285,9 +291,14 @@ export async function renderPromotionNew(ctx) {
   const loadInitialSelected = async () => {
     if (selection.ids && selection.ids.length && selectedItemsMap.size === 0) {
       try {
-        const res = await ctx.api.items({ ids: selection.ids.slice(0, 200), limit: 200 });
-        (res.items || []).forEach((it) => selectedItemsMap.set(it.id, it));
-        if (scopeMode === 'selected') drawScope();
+        for (let i = 0; i < selection.ids.length; i += 200) {
+          const slice = selection.ids.slice(i, i + 200);
+          const res = await ctx.api.items({ ids: slice, limit: 200 });
+          const allowed = new Set(slice);
+          (res.items || []).forEach((it) => {
+            if (allowed.has(it.id)) selectedItemsMap.set(it.id, it);
+          });
+        }
       } catch (e) { /* ignore */ }
     }
   };
@@ -385,10 +396,13 @@ export async function renderPromotionNew(ctx) {
         }
         const list = h('div.picker-selected-list');
         items.forEach((it) => {
+          const priceDesc = (it.compareAtCents && it.compareAtCents > it.priceCents)
+            ? money(it.priceCents) + ' (Sale · Default ' + money(it.compareAtCents) + ')'
+            : money(it.priceCents);
           list.appendChild(h('div.picker-selected-item',
             h('div',
               h('strong', it.title),
-              h('div.small.muted', [it.brand, it.sku ? 'SKU: ' + it.sku : null, it.upc ? 'UPC: ' + it.upc : null, money(it.priceCents)].filter(Boolean).join(' · '))),
+              h('div.small.muted', [it.brand, it.sku ? 'SKU: ' + it.sku : null, it.upc ? 'UPC: ' + it.upc : null, priceDesc].filter(Boolean).join(' · '))),
             h('button.btn.sm.ghost', {
               type: 'button',
               onclick: () => {
@@ -427,6 +441,7 @@ export async function renderPromotionNew(ctx) {
               ].filter(Boolean).map((txt) => h('span', txt)))),
             h('div.picker-row-price',
               h('div', h('strong', money(it.priceCents))),
+              (it.compareAtCents && it.compareAtCents > it.priceCents) ? h('div.small.muted', 'Default ' + money(it.compareAtCents)) : null,
               it.mapCents ? h('div.small.muted', 'MAP ' + money(it.mapCents)) : null),
             h('button.btn.sm', {
               type: 'button',
@@ -756,6 +771,7 @@ export async function renderPromotionNew(ctx) {
   const err = h('div');
   const submit = h('button.btn.primary.lg.full', { type: 'submit' }, 'Preview impact');
 
+  await loadInitialSelected();
   drawPresets();
   drawChannel();
   rebuildAdvFilters();
@@ -767,7 +783,6 @@ export async function renderPromotionNew(ctx) {
   drawSchedule();
   renderGuardrailSummary();
   updateCount();
-  loadInitialSelected();
 
   const leftCol = h('div.stack',
     !editCamp ? card(null, h('div.stack-sm',
@@ -890,7 +905,9 @@ export async function renderPromotionDetail(ctx) {
       mount(linesHost, dataTable({
         columns: [
           { key: 'title', label: 'Product', cls: 'title-cell', render: (l) => h('div', h('a', { href: '#/products/' + l.variant_id }, h('strong', l.title)), h('div.sku', l.sku + ' · ' + l.brand)) },
-          { key: 'old', label: 'Before', num: true, render: (l) => money(l.old_price_cents) },
+          { key: 'old', label: 'Before', num: true, render: (l) => (l.compare_at_cents && l.compare_at_cents > l.old_price_cents
+            ? h('div', money(l.old_price_cents), h('div.small.muted', 'Sale · Default ' + money(l.compare_at_cents)))
+            : money(l.old_price_cents)) },
           { key: 'new', label: 'After', num: true, render: (l) => (l.status === 'excluded' ? h('span.muted', '—') : h('strong', money(l.new_price_cents))) },
           { key: 'cost', label: 'Cost', num: true, opt: true, render: (l) => money(l.cost_cents) },
           { key: 'om', label: 'Margin before', num: true, opt: true, render: (l) => pct(l.cost_cents === null ? null : (l.old_price_cents - l.cost_cents) / l.old_price_cents) },

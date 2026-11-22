@@ -278,10 +278,17 @@ describe('lightspeed R-Series (Physical Store POS)', () => {
       clientId: 'id', clientSecret: 's', refreshToken: 'r', accountId: '123',
       posEventWritesEnabled: true, fetchImpl,
     });
-    await eventClient.updateEventPosPrices([{ lightspeedItemId: '10', priceCents: 7999 }]);
+    await eventClient.updateEventPosPrices([{ lightspeedItemId: '10', priceCents: 7999, regularPriceCents: 9999 }]);
     expect(puts).toHaveLength(1);
     expect(puts[0]?.url).toContain('/Account/123/Item/10.json');
     expect(puts[0]?.body).toContain('"amount":"79.99"');
+    expect(puts[0]?.body).toContain('"useType":"SALE PRICE"');
+    expect(puts[0]?.body).toContain('"amount":"99.99"');
+
+    // On restore back to regular price, SALE PRICE is cleared to "0" and Default restored
+    await eventClient.updateEventPosPrices([{ lightspeedItemId: '10', priceCents: 9999, regularPriceCents: null }]);
+    expect(puts[1]?.body).toContain('"amount":"99.99","useType":"Default"');
+    expect(puts[1]?.body).toContain('"amount":"0","useType":"SALE PRICE"');
   });
 });
 

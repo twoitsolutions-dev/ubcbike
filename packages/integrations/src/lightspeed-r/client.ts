@@ -402,11 +402,18 @@ export class LightspeedRClient {
 
   /**
    * Ready-to-connect POS price update exclusively for special omnichannel events
-   * (e.g. Black Friday, Christmas) when `LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED=true`.
+   * (e.g. Black Friday, Christmas) when `LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED=true`
+   * or Owner/Admin Live Writes are enabled.
+   *
+   * When `regularPriceCents` is provided:
+   *  - Discount (`priceCents < regularPriceCents`): preserves `Default` (`useTypeID: '1'`) at `regularPriceCents`
+   *    and sets `SALE PRICE` (`useTypeID: '3'`) to `priceCents` so POS registers ring up the promo price cleanly.
+   *  - Restore to regular / price increase (`regularPriceCents === null || priceCents >= regularPriceCents`):
+   *    sets `Default` (`useTypeID: '1'`) to `priceCents` and clears `SALE PRICE` (`useTypeID: '3'`) to `'0'`.
    * Respects R-Series leaky bucket (`X-LS-API-Bucket-Level`).
    */
   async updateEventPosPrices(
-    updates: { lightspeedItemId: string; priceCents: number }[],
+    updates: { lightspeedItemId: string; priceCents: number; regularPriceCents?: number | null }[],
     opts?: { authorizedByOwner?: boolean },
   ): Promise<void> {
     if (!this.cfg.posEventWritesEnabled && !opts?.authorizedByOwner) throw new WritesDisabledError('Lightspeed R-Series');
@@ -414,6 +421,18 @@ export class LightspeedRClient {
     for (const u of updates) {
       const url = `${this.apiBase}/Account/${this.currentAccountId}/Item/${encodeURIComponent(u.lightspeedItemId)}.json`;
       const amount = (u.priceCents / 100).toFixed(2);
+      const itemPrices =
+        u.regularPriceCents === undefined
+          ? [{ amount, useType: 'Default', useTypeID: '1' }]
+          : u.regularPriceCents !== null && u.regularPriceCents > u.priceCents
+            ? [
+                { amount: (u.regularPriceCents / 100).toFixed(2), useType: 'Default', useTypeID: '1' },
+                { amount, useType: 'SALE PRICE', useTypeID: '3' },
+              ]
+            : [
+                { amount, useType: 'Default', useTypeID: '1' },
+                { amount: '0', useType: 'SALE PRICE', useTypeID: '3' },
+              ];
       const res = await this.fetchImpl(url, {
         method: 'PUT',
         headers: {
@@ -421,7 +440,7 @@ export class LightspeedRClient {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ Prices: { ItemPrice: [{ amount, useType: 'Default', useTypeID: '1' }] } }),
+        body: JSON.stringify({ Prices: { ItemPrice: itemPrices } }),
       });
       if (res.status === 429 || res.status === 503) {
         const retry = Number(res.headers.get('Retry-After') ?? '2') * 1000;
@@ -523,9 +542,9 @@ export class LightspeedRClient {
         }[];
         const priceOverrides = new Map<string, string>();
         if (u.defaultPriceCents !== undefined) priceOverrides.set('1', (u.defaultPriceCents / 100).toFixed(2));
-        if (u.msrpCents !== undefined && u.msrpCents !== null) priceOverrides.set('2', (u.msrpCents / 100).toFixed(2));
-        if (u.salePriceCents !== undefined && u.salePriceCents !== null) priceOverrides.set('3', (u.salePriceCents / 100).toFixed(2));
-        if (u.onlinePriceCents !== undefined && u.onlinePriceCents !== null) priceOverrides.set('4', (u.onlinePriceCents / 100).toFixed(2));
+        if (u.msrpCents !== undefined) priceOverrides.set('2', u.msrpCents === null ? '0' : (u.msrpCents / 100).toFixed(2));
+        if (u.salePriceCents !== undefined) priceOverrides.set('3', u.salePriceCents === null ? '0' : (u.salePriceCents / 100).toFixed(2));
+        if (u.onlinePriceCents !== undefined) priceOverrides.set('4', u.onlinePriceCents === null ? '0' : (u.onlinePriceCents / 100).toFixed(2));
         const nextPrices = curPrices.map((p) => ({
           amount: priceOverrides.get(String(p.useTypeID)) ?? p.amount,
           useTypeID: String(p.useTypeID),

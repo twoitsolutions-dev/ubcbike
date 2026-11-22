@@ -55,7 +55,7 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     const q = z.object({ status: z.enum(['ok', 'warning', 'blocked', 'excluded']).optional(), limit: z.coerce.number().int().max(500).default(100), offset: z.coerce.number().int().min(0).default(0) }).parse(req.query);
     await getCampaign(ctx.pool, req.session!.companyId, id);
     const r = await ctx.pool.query(
-      `SELECT cl.*, v.sku, v.title, p.brand, p.category FROM campaign_lines cl JOIN variants v ON v.id = cl.variant_id JOIN products p ON p.id = v.product_id
+      `SELECT cl.*, v.sku, v.title, v.compare_at_cents, p.brand, p.category FROM campaign_lines cl JOIN variants v ON v.id = cl.variant_id JOIN products p ON p.id = v.product_id
        WHERE cl.campaign_id = $1 AND ($2::text IS NULL OR cl.status = $2) ORDER BY cl.status, v.sku LIMIT $3 OFFSET $4`, [id, q.status ?? null, q.limit, q.offset]);
     const n = await ctx.pool.query<{ n: number }>(`SELECT count(*)::int n FROM campaign_lines WHERE campaign_id = $1 AND ($2::text IS NULL OR status = $2)`, [id, q.status ?? null]);
     return { total: n.rows[0]!.n, lines: r.rows, reasonLabels: REASON_LABELS };

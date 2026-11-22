@@ -62,6 +62,7 @@ export type LineStatus = 'ok' | 'warning' | 'blocked' | 'excluded';
 export type LineReason =
   | 'NO_COST'
   | 'NO_CHANGE'
+  | 'ALREADY_ON_DEEPER_SALE'
   | 'NON_POSITIVE_PRICE'
   | 'MAP_VIOLATION'
   | 'MAP_EXCEPTION_APPLIED'
@@ -174,6 +175,10 @@ export function evaluateLine(item: CatalogItem, adj: PriceAdjustment, opts: Eval
     }
   }
 
+  if ((adj.type === 'percent_off' || adj.type === 'amount_off') && newPrice > oldPrice && status !== 'blocked') {
+    return { ...base, newPriceCents: oldPrice, newMarginPct: base.oldMarginPct, status: 'excluded', reasons: ['ALREADY_ON_DEEPER_SALE'] };
+  }
+
   if (newPrice === oldPrice && status !== 'blocked') {
     return { ...base, newPriceCents: newPrice, newMarginPct: base.oldMarginPct, status: 'excluded', reasons: ['NO_CHANGE'] };
   }
@@ -264,6 +269,7 @@ export function planRestore(
 export const REASON_LABELS: Record<LineReason, string> = {
   NO_COST: 'No cost on file — margin cannot be verified',
   NO_CHANGE: 'Price does not change',
+  ALREADY_ON_DEEPER_SALE: 'Already on a deeper Sale Price than this discount',
   NON_POSITIVE_PRICE: 'Resulting price is zero or negative',
   MAP_VIOLATION: 'Below MAP — requires an authorised MAP exception',
   MAP_EXCEPTION_APPLIED: 'Below MAP under an authorised exception',

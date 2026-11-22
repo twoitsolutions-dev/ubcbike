@@ -24,6 +24,7 @@ export function filterFromQuery(q: Record<string, unknown>): ItemFilter {
   const num = (v: unknown) => (v === undefined || v === '' ? undefined : Number(v));
   return itemFilterSchema.parse({
     q: typeof q.q === 'string' && q.q ? q.q : undefined,
+    ids: list(q.ids),
     categories: list(q.categories), brands: list(q.brands), suppliers: list(q.suppliers),
     priceMinCents: num(q.priceMinCents), priceMaxCents: num(q.priceMaxCents),
     marginMinPct: num(q.marginMinPct), marginMaxPct: num(q.marginMaxPct),
@@ -384,17 +385,58 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       });
       if (ch.description !== undefined) {
         await ctx.pool.query(`UPDATE products SET title = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3`, [ch.description, link.product_id, s.companyId]);
+        await ctx.pool.query(`UPDATE variants SET title = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3`, [ch.description, ch.id, s.companyId]);
       }
-      if (ch.defaultPriceCents !== undefined || ch.defaultCostCents !== undefined) {
+      if (ch.defaultPriceCents !== undefined || ch.salePriceCents !== undefined || ch.defaultCostCents !== undefined) {
+        const beforePricesRaw = (resRow?.before?.Prices as { ItemPrice?: unknown } | undefined)?.ItemPrice;
+        const beforePrices = (Array.isArray(beforePricesRaw) ? beforePricesRaw : beforePricesRaw ? [beforePricesRaw] : []) as {
+          amount?: string;
+          useTypeID?: string;
+        }[];
+        const parsePosCents = (v: unknown): number | null => {
+          if (v === undefined || v === null || v === '') return null;
+          const n = Math.round(Number(v) * 100);
+          return Number.isFinite(n) && n > 0 ? n : null;
+        };
+        const prevDefault = parsePosCents(beforePrices.find((p) => String(p.useTypeID) === '1')?.amount);
+        const prevSale = parsePosCents(beforePrices.find((p) => String(p.useTypeID) === '3')?.amount);
+        const effDefault = ch.defaultPriceCents !== undefined ? (ch.defaultPriceCents > 0 ? ch.defaultPriceCents : null) : prevDefault;
+        const effSale = ch.salePriceCents !== undefined ? (ch.salePriceCents && ch.salePriceCents > 0 ? ch.salePriceCents : null) : prevSale;
+        const hasSale = effSale !== null && effDefault !== null && effSale < effDefault;
+        const nextPrice = hasSale ? effSale : effDefault;
+        const nextCompare = hasSale ? effDefault : null;
+        const prevAvgCost = parsePosCents(resRow?.before?.avgCost);
+        const effCost = prevAvgCost ?? (ch.defaultCostCents !== undefined ? (ch.defaultCostCents && ch.defaultCostCents > 0 ? ch.defaultCostCents : null) : undefined);
+
         await ctx.pool.query(
           `UPDATE variants
            SET price_cents = COALESCE($1, price_cents),
-               cost_cents = COALESCE($2, cost_cents),
+               compare_at_cents = CASE WHEN $5::boolean THEN $2 ELSE compare_at_cents END,
+               cost_cents = CASE WHEN $6::boolean THEN $3 ELSE cost_cents END,
                updated_at = NOW()
-           WHERE id = $3 AND company_id = $4`,
-          [ch.defaultPriceCents ?? null, ch.defaultCostCents ?? null, ch.id, s.companyId],
+           WHERE id = $4 AND company_id = $7`,
+          [
+            nextPrice,
+            nextCompare,
+            effCost ?? null,
+            ch.id,
+            ch.defaultPriceCents !== undefined || ch.salePriceCents !== undefined,
+            effCost !== undefined,
+            s.companyId,
+          ],
         );
+        if (ch.defaultPriceCents !== undefined || ch.salePriceCents !== undefined) {
+          await ctx.pool.query(
+            `INSERT INTO outbound_sync_staging (company_id, variant_id, stream, decision, hold_reasons, shopify_payload, status, updated_at)
+             VALUES ($1, $2, 'availability', 'ready_for_shopify', '[]'::jsonb, '{"trigger":"lightspeed_sheet"}'::jsonb, 'pending', now())
+             ON CONFLICT (company_id, variant_id, stream) DO UPDATE SET decision = 'ready_for_shopify', hold_reasons = '[]'::jsonb, status = 'pending', last_error = NULL, updated_at = now()`,
+            [s.companyId, ch.id],
+          );
+        }
       }
+    }
+    if (body.changes.some((c) => c.defaultPriceCents !== undefined || c.salePriceCents !== undefined)) {
+      await enqueue(ctx.pool, { companyId: s.companyId, type: 'pipeline.flush_shopify', payload: { trigger: 'lightspeed_sheet' } });
     }
 
     return { ok: true, updated: results.length, skipped };

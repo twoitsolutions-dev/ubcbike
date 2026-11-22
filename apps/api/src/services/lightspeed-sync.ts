@@ -372,11 +372,14 @@ export async function ingestLightspeedItemsBatch(
           const inPromo = new Set(promo.rows.map((r) => r.variant_id));
           const lsPrices = existingUpdates.filter((u) => inPromo.has(u.vid) && u.price !== null).map((u) => ({ vid: u.vid, p: u.price }));
           if (lsPrices.length) {
+            // Only update restore target from Lightspeed on online-only promos (where Lightspeed holds the regular price),
+            // or on online_and_pos if staff manually changed Lightspeed away from the campaign's promo price.
             await c.query(
               `UPDATE campaign_lines cl SET old_price_cents = r.p
                FROM jsonb_to_recordset($2::jsonb) AS r(vid uuid, p int), campaigns cp
                WHERE cp.id = cl.campaign_id AND cp.company_id = $1 AND cp.status = 'active' AND cl.variant_id = r.vid
-                 AND cl.applied_at IS NOT NULL AND cl.restored_at IS NULL`,
+                 AND cl.applied_at IS NOT NULL AND cl.restored_at IS NULL
+                 AND (cp.channel = 'online' OR r.p <> cl.new_price_cents)`,
               [companyId, JSON.stringify(lsPrices)],
             );
           }

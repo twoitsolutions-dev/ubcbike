@@ -178,18 +178,23 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     return { total, items: items.map((i) => ({ ...i, availability: computeAvailability(i, availability) })) };
   });
 
+  const getLsWritesActive = async (companyId: string): Promise<boolean> => {
+    const r = await ctx.pool.query<{ ls_active: string | null }>(
+      `SELECT availability_rules->>'lightspeedWritesActive' AS ls_active FROM company_settings WHERE company_id = $1`,
+      [companyId],
+    );
+    const val = r.rows[0]?.ls_active;
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
+  };
+
   app.get('/api/lightspeed/sheet', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const q = req.query as Record<string, unknown>;
     const page = pageSchema.parse(q);
     const c = req.session!.companyId;
     const { availability } = await getSettings(ctx.pool, c);
-    const compRes = await ctx.pool.query<{ ls_paused: string | null }>(
-      `SELECT availability_rules->>'lightspeedWritePaused' AS ls_paused FROM company_settings WHERE company_id = $1`,
-      [c],
-    );
-    const writePaused = compRes.rows[0]?.ls_paused === 'true';
-    const serverWritesEnabled = !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
-    const writesEnabled = serverWritesEnabled && !writePaused;
+    const writesEnabled = await getLsWritesActive(c);
     const filter = filterFromQuery(q);
     if (!q.stock) filter.stock = 'physical';
     else if (q.stock === 'any') delete filter.stock;
@@ -225,8 +230,6 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       .filter((row) => !tagFilter || row.tags.some((t) => String(t).toLowerCase().includes(tagFilter)));
     return {
       total: tagFilter ? mapped.length : total,
-      serverWritesEnabled,
-      writePaused,
       writesEnabled,
       items: mapped,
     };
@@ -238,23 +241,21 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       return reply.code(403).send({ error: 'FORBIDDEN', message: 'Only owner or admin can change Lightspeed write mode.' });
     }
     const { paused } = z.object({ paused: z.boolean() }).parse(req.body);
+    const enabled = !paused;
     await ctx.pool.query(
       `UPDATE company_settings
-       SET availability_rules = COALESCE(availability_rules, '{}'::jsonb) || jsonb_build_object('lightspeedWritePaused', $1::boolean)
+       SET availability_rules = COALESCE(availability_rules, '{}'::jsonb) || jsonb_build_object('lightspeedWritesActive', $1::boolean)
        WHERE company_id = $2`,
-      [paused, s.companyId],
+      [enabled, s.companyId],
     );
     await ctx.pool.query(
       `INSERT INTO audit_logs (company_id, actor_user_id, action, entity_type, entity_id, details)
        VALUES ($1, $2, 'lightspeed.mode_changed', 'company', $1, $3::jsonb)`,
-      [s.companyId, s.userId, JSON.stringify({ paused })],
+      [s.companyId, s.userId, JSON.stringify({ writesEnabled: enabled })],
     );
-    const serverWritesEnabled = !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
     return {
       ok: true,
-      serverWritesEnabled,
-      writePaused: paused,
-      writesEnabled: serverWritesEnabled && !paused,
+      writesEnabled: enabled,
     };
   });
 
@@ -281,20 +282,11 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       });
     }
     const body = z.object({ changes: z.array(lsBulkChangeSchema).min(1).max(100) }).parse(req.body);
-    if (!ctx.config.env.LIGHTSPEED_WRITES_ENABLED) {
+    const active = await getLsWritesActive(s.companyId);
+    if (!active) {
       return reply.code(403).send({
         error: 'LIGHTSPEED_READ_ONLY',
-        message: 'Lightspeed writes are disabled. Set LIGHTSPEED_WRITES_ENABLED=true on the server when ready.',
-      });
-    }
-    const pauseRes = await ctx.pool.query<{ ls_paused: string | null }>(
-      `SELECT availability_rules->>'lightspeedWritePaused' AS ls_paused FROM company_settings WHERE company_id = $1`,
-      [s.companyId],
-    );
-    if (pauseRes.rows[0]?.ls_paused === 'true') {
-      return reply.code(403).send({
-        error: 'LIGHTSPEED_PAUSED',
-        message: 'Lightspeed Bulk Sheet is paused in Read-Only mode. Click "Enable Live Writes" above to resume.',
+        message: 'Lightspeed Sheet is in Read-Only mode. Click "Enable Live Writes" at the top of the sheet first.',
       });
     }
 
@@ -340,7 +332,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!ctx.connectors.lightspeed) {
       return reply.code(400).send({ error: 'NOT_CONFIGURED', message: 'Lightspeed connector is not configured.' });
     }
-    const results = updates.length ? await ctx.connectors.lightspeed.bulkUpdateItems(updates) : [];
+    const results = updates.length ? await ctx.connectors.lightspeed.bulkUpdateItems(updates, { authorizedByOwner: true }) : [];
     for (const ch of body.changes) {
       const link = lsByVariant.get(ch.id);
       if (!link) continue;

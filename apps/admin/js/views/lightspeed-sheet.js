@@ -93,58 +93,55 @@ export async function renderLightspeedSheet(ctx) {
 
   function renderStatusBanner(data) {
     const writesEnabled = !!(data && data.writesEnabled);
-    const serverWritesEnabled = !!(data && data.serverWritesEnabled);
-    const writePaused = !!(data && data.writePaused);
 
     const badge = writesEnabled
       ? h('span.badge.ok', 'LIVE WRITES ENABLED')
-      : writePaused
-        ? h('span.badge.warn', 'PAUSED · READ-ONLY')
-        : h('span.badge.warn', 'READ-ONLY (Server Lock)');
+      : h('span.badge.warn', 'READ-ONLY MODE');
 
     const msg = writesEnabled
       ? 'Live push to Lightspeed is active (Owner/Admin only, with automatic backup in Audit Log).'
-      : writePaused
-        ? 'Live writes are paused by Owner/Admin. You can still edit cells and Export CSV safely.'
-        : 'Server safety lock is active (LIGHTSPEED_WRITES_ENABLED=false). Export CSV works immediately.';
+      : 'Direct push to Lightspeed is locked. Edit cells and Export CSV anytime, or click Enable Live Writes when ready.';
 
     const canManage = !ctx.can || ctx.can('catalog.write');
     const modeActions = [];
     if (canManage && ctx.api.lightspeedSetMode) {
-      if (!writePaused) {
+      if (writesEnabled) {
         modeActions.push(h('button.btn.sm.danger', {
           onclick: async () => {
             const ok = await confirmDialog({
               title: 'Pause & Switch to Read-Only?',
-              message: 'This immediately blocks all live Lightspeed pushes from the HUB until resumed.',
+              message: 'This immediately blocks all live Lightspeed pushes from the HUB until re-enabled.',
               confirmLabel: 'Switch to Read-Only',
               danger: true,
             });
             if (!ok) return;
             try {
               await ctx.api.lightspeedSetMode(true);
-              toast('Lightspeed Bulk Sheet paused (Read-Only)', 'info');
+              toast('Switched to Read-Only mode', 'info');
               load();
             } catch (err) {
-              toast(err.message || 'Could not pause', 'err');
+              toast(err.message || 'Could not switch mode', 'err');
             }
           },
         }, 'Stop / Switch to Read-Only'));
       } else {
         modeActions.push(h('button.btn.sm.primary', {
           onclick: async () => {
-            if (!serverWritesEnabled) {
-              toast('Server lock LIGHTSPEED_WRITES_ENABLED=false is still active on Hostinger.', 'warn');
-            }
+            const ok = await confirmDialog({
+              title: 'Enable Live Lightspeed Writes?',
+              message: 'Owner/Admin pushes from this sheet will update Lightspeed R-Series directly (with automatic before-snapshot in Audit Log).',
+              confirmLabel: 'Enable Live Writes',
+            });
+            if (!ok) return;
             try {
               await ctx.api.lightspeedSetMode(false);
-              toast(serverWritesEnabled ? 'Live Lightspeed writes resumed' : 'Unpaused (waiting for server LIGHTSPEED_WRITES_ENABLED=true)', 'ok');
+              toast('Live Lightspeed writes enabled', 'ok');
               load();
             } catch (err) {
-              toast(err.message || 'Could not resume', 'err');
+              toast(err.message || 'Could not enable writes', 'err');
             }
           },
-        }, 'Resume Live Writes'));
+        }, 'Enable Live Writes'));
       }
     }
     if (ctx.api.syncLightspeed) {

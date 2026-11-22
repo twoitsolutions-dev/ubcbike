@@ -454,8 +454,9 @@ export class LightspeedRClient {
       desiredLevel?: number;
       physicalShopId?: string;
     }[],
+    opts?: { authorizedByOwner?: boolean },
   ): Promise<{ lightspeedItemId: string; before: Record<string, unknown>; updated: boolean }[]> {
-    if (!this.cfg.writesEnabled) throw new WritesDisabledError('Lightspeed R-Series');
+    if (!this.cfg.writesEnabled && !opts?.authorizedByOwner) throw new WritesDisabledError('Lightspeed R-Series');
     await this.ensureConfigured();
 
     const lsJsonReq = async (method: 'GET' | 'PUT', path: string, body?: unknown): Promise<Record<string, unknown>> => {

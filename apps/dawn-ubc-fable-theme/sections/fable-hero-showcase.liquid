@@ -84,19 +84,19 @@
         </div>
 
         <div class="hero-cta">
-          <a class="fb-btn coral magnetic" id="showLink" href="#finder">
+          <a class="fb-btn coral magnetic" id="showLink" href="{% if collections['electric-bikes'] != blank %}{{ collections['electric-bikes'].url }}{% else %}/collections/electric-bikes{% endif %}">
             <span id="showPrimaryTxt" data-es="Ver E-Bikes">Shop E-Bikes</span>
             <svg><use href="#i-arrow"/></svg>
           </a>
-          <a class="fb-btn outline magnetic" id="showSecondaryLink" href="#new-arrivals">
+          <a class="fb-btn outline magnetic" id="showSecondaryLink" href="{{ routes.all_products_collection_url }}">
             {%- if edition == 'black_friday' -%}
-              <span data-es="Ver promos Black Friday">See Black Friday Promos</span>
+              <span data-es="Ver catálogo y promos">Browse Catalog &amp; Deals</span>
             {%- elsif edition == 'christmas' -%}
-              <span data-es="Ver regalos y promos">Explore Holiday Promos</span>
+              <span data-es="Ver catálogo y regalos">Browse Full Catalog</span>
             {%- elsif edition == 'july_4' -%}
-              <span data-es="Ver ofertas 4 de Julio">See July 4th Promos</span>
+              <span data-es="Ver catálogo completo">Browse Full Catalog</span>
             {%- else -%}
-              <span data-es="Promos, equipo y novedades">Shop Deals &amp; Gear</span>
+              <span data-es="Explorar catálogo">Browse Full Catalog</span>
             {%- endif -%}
           </a>
         </div>

@@ -1,0 +1,175 @@
+{%- comment -%}
+  UBC Dawn V34 — Clean, Scannable 3-Card Home Services & Experiences Gateway
+  Directs visitors effortlessly to Service & Repair, Alafia Trailhead Rentals, and Financing & Trade-In
+  without duplicating entire inner pages on the Home Page.
+{%- endcomment -%}
+{%- liquid
+  assign ws_img = images['ubc-service-wheel-truing.jpg']
+-%}
+<style>
+  .ubc-hs-sec {
+    padding: clamp(32px, 4vw, 52px) 0;
+    background: var(--paper, #FEFDF3);
+  }
+  .ubc-hs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .ubc-hs-card {
+    background: #FFFFFF;
+    border: 1px solid rgba(20, 32, 45, 0.10);
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: #14202D;
+    box-shadow: 0 8px 24px -16px rgba(20, 32, 45, 0.16);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ubc-hs-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(20, 32, 45, 0.24);
+    box-shadow: 0 16px 32px -18px rgba(20, 32, 45, 0.24);
+  }
+  .ubc-hs-media {
+    aspect-ratio: 16 / 9;
+    background: #14202D;
+    overflow: hidden;
+    position: relative;
+  }
+  .ubc-hs-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+  .ubc-hs-card:hover .ubc-hs-media img {
+    transform: scale(1.03);
+  }
+  .ubc-hs-body {
+    padding: 22px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .ubc-hs-kicker {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #E04F33;
+  }
+  .ubc-hs-title {
+    font-family: var(--display, 'Anton', sans-serif);
+    font-size: 24px;
+    line-height: 1.1;
+    color: #14202D;
+    margin: 0;
+  }
+  .ubc-hs-desc {
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: #465463;
+    margin: 0 0 10px;
+    flex: 1;
+  }
+  .ubc-hs-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #14202D;
+  }
+  .ubc-hs-card:hover .ubc-hs-cta {
+    color: #E04F33;
+  }
+  .ubc-hs-cta svg {
+    width: 16px;
+    height: 16px;
+  }
+  @media (max-width: 920px) {
+    .ubc-hs-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+  }
+</style>
+
+<div class="fb-scope">
+  <section class="ubc-hs-sec" id="service">
+    <span id="rentals" class="fb-anchor-alias" aria-hidden="true"></span>
+    <span id="financing" class="fb-anchor-alias" aria-hidden="true"></span>
+    <div class="fb-wrap">
+      <div class="fb-sec-head split" style="margin-bottom:22px;">
+        <div>
+          <span class="eyebrow" data-es="Servicios en Tienda y Senderos">In-Store Services &amp; Trailhead</span>
+          <h2 class="h2" data-es="Taller experto, rentas y <em>financiamiento fácil.</em>">Expert service, trail rentals &amp; <em>easy financing.</em></h2>
+        </div>
+        <a class="link-arrow" href="/pages/about-us">
+          <span data-es="Conoce la Diferencia UBC">The UBC Difference Since 1972</span>
+          <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+
+      <div class="ubc-hs-grid">
+        <a class="ubc-hs-card" href="/pages/bike-service-repair">
+          <div class="ubc-hs-media">
+            {%- if ws_img != blank -%}
+              {{ ws_img | image_url: width: 800 | image_tag: loading: 'lazy', alt: 'UBC Walk-In Bike Service Workshop' }}
+            {%- else -%}
+              <img src="{{ 'ubc-showroom-wide.jpg' | asset_url }}" alt="UBC Walk-In Bike Service Workshop" loading="lazy" width="800" height="450">
+            {%- endif -%}
+          </div>
+          <div class="ubc-hs-body">
+            <span class="ubc-hs-kicker" data-es="Sin Cita · Tampa">Walk-In Workshop · 24h Turnaround</span>
+            <h3 class="ubc-hs-title" data-es="Taller y Reparación">Bike Service &amp; Tune-Ups</h3>
+            <p class="ubc-hs-desc" data-es="Atendemos todas las marcas de bicicletas y e-bikes sin cita previa; la mayoría de reparaciones listas en 24 horas.">All bike &amp; e-bike brands serviced with no appointment needed — flat fixes, tune-ups, and full overhauls.</p>
+            <span class="ubc-hs-cta"><span data-es="Ver paquetes de taller">View Service &amp; Pricing</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+          </div>
+        </a>
+
+        <a class="ubc-hs-card" href="/pages/bike-rentals">
+          <div class="ubc-hs-media">
+            <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="Alafia River State Park MTB Rentals" loading="lazy" width="800" height="450">
+          </div>
+          <div class="ubc-hs-body">
+            <span class="ubc-hs-kicker" data-es="Dentro del Parque Estatal">Inside Alafia River State Park</span>
+            <h3 class="ubc-hs-title" data-es="Rentas en Alafia River">Trailhead MTB &amp; E-MTB Rentals</h3>
+            <p class="ubc-hs-desc" data-es="Renta bicis de doble suspensión y e-MTB a pasos de más de 20 millas de senderos en Lithia, FL.">Ride 20+ miles of premier Florida singletrack with tuned full-suspension MTB &amp; e-MTB rentals right at the trailhead.</p>
+            <span class="ubc-hs-cta"><span data-es="Reservar bicicleta">Explore Rentals &amp; Trails</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+          </div>
+        </a>
+
+        <a class="ubc-hs-card" href="/pages/financing">
+          <div class="ubc-hs-media">
+            <img src="{{ 'fable-ebike-tile.jpg' | asset_url }}" alt="0% APR Bike Financing and Trade-In" loading="lazy" width="800" height="450">
+          </div>
+          <div class="ubc-hs-body">
+            <span class="ubc-hs-kicker" data-es="0% APR + Intercambio">0% APR + Instant Bike Trade-In</span>
+            <h3 class="ubc-hs-title" data-es="Financiamiento e Intercambio">Financing &amp; Trade-In</h3>
+            <p class="ubc-hs-desc" data-es="Opciones con Synchrony, Acima y Snap, más crédito inmediato por tu bici usada con BicycleBlueBook.">Flexible monthly plans via Synchrony, Acima &amp; Snap, plus instant BicycleBlueBook trade-in credit toward your new ride.</p>
+            <span class="ubc-hs-cta"><span data-es="Ver opciones de pago">See Financing &amp; Trade-In</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "UBC Home Services Strip",
+  "settings": [],
+  "presets": [
+    {
+      "name": "UBC Home Services Strip"
+    }
+  ]
+}
+{% endschema %}

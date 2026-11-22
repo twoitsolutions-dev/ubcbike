@@ -1,9 +1,9 @@
 import { h, mount } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, loading, pageHead, pager, sectionTabs, toast, watchJob, progressBar, errorBox } from '../ui/components.js';
 import { availabilityBadge, dateTime, margin, money, pct } from '../ui/format.js';
-import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=78';
-import { openPriceEditor } from './pricing.js?v=78';
-import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=78';
+import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=79';
+import { openPriceEditor } from './pricing.js?v=79';
+import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=79';
 
 const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s === 'hidden' ? '' : 'warn' }, s);
 
@@ -201,7 +201,15 @@ export async function renderProductDetail(ctx) {
         h('dt', 'Sale Price'), h('dd', it.compareAtCents && it.compareAtCents > it.priceCents
           ? h('span', h('strong', money(it.priceCents)), ' ', h('span.badge.ok', 'Active Sale'))
           : h('span.muted', 'None')),
-        h('dt', 'Average Cost'), h('dd', it.costCents === null ? h('span.badge.warn', 'No cost on file') : money(it.costCents)),
+        h('dt', 'Lightspeed Avg. Cost'), h('dd', it.costCents === null
+          ? h('span.badge.warn', 'No cost on file')
+          : h('div.row', { style: { gap: '8px', flexWrap: 'wrap' } }, [
+            h('strong', money(it.costCents)),
+            it.costCents > it.priceCents
+              ? h('span.badge.warn', 'Cost > Retail in Lightspeed — check PO/Lot cost or Default Price')
+              : h('span.muted.small', '(synced from Lightspeed POS)'),
+            it.lightspeedItemId ? h('a.btn.sm.ghost', { href: '#/lightspeed-sheet' }, 'Edit in Bulk Sheet →') : null,
+          ])),
         h('dt', 'Margin'), h('dd', pct(m)),
         h('dt', 'MAP Floor'), h('dd', it.mapPolicy === 'none' ? 'No MAP policy' : money(it.mapCents) + ' (' + it.mapPolicy.toUpperCase() + ')'),
         h('dt', 'Web Status'), h('dd', statusBadge(it.status)),

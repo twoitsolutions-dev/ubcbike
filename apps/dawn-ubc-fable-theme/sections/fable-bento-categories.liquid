@@ -32,7 +32,7 @@
           <span class="go"><svg><use href="#i-arrow"/></svg></span>
         </a>
 
-        <a class="tile t-ebike reveal" style="--d:1" href="#ebikes">
+        <a class="tile t-ebike reveal" style="--d:1" href="{% if collections['electric-bikes'] != blank %}{{ collections['electric-bikes'].url }}{% else %}{{ bikes_col_url }}{% endif %}">
           <div class="tile-copy">
             <span class="tile-pill" data-es="Más Vendidas">Top Seller</span>
             <h3 data-es="Eléctricas">Electric Bikes</h3>
@@ -43,7 +43,7 @@
           <span class="go go--coral"><svg><use href="#i-bolt"/></svg></span>
         </a>
 
-        <a class="tile t-s reveal" style="--d:2" href="#gear" data-gear-jump="parts">
+        <a class="tile t-s reveal" style="--d:2" href="{% if collections['parts-components'] != blank %}{{ collections['parts-components'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}">
           <div class="tile-copy">
             <h3 data-es="Componentes y Llantas">Components &amp; Tires</h3>
             <p data-es="Transmisión SRAM y Shimano, frenos, sillines y llantas.">
@@ -54,7 +54,7 @@
           <span class="go"><svg><use href="#i-arrow"/></svg></span>
         </a>
 
-        <a class="tile t-third reveal" href="#gear" data-gear-jump="accessories">
+        <a class="tile t-third reveal" href="{% if collections['helmets'] != blank %}{{ collections['helmets'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}">
           <div class="tile-copy">
             <h3 data-es="Cascos y Accesorios">Helmets &amp; Gear</h3>
             <p data-es="Cascos MIPS, luces potentes, ánforas y portaequipajes.">
@@ -65,7 +65,7 @@
           <span class="go"><svg><use href="#i-arrow"/></svg></span>
         </a>
 
-        <a class="tile t-third reveal" style="--d:1" href="#gear" data-gear-jump="supplements">
+        <a class="tile t-third reveal" style="--d:1" href="{% if collections['hydration-nutrition'] != blank %}{{ collections['hydration-nutrition'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}">
           <div class="tile-copy">
             <h3 data-es="Nutrición e Hidratación">Hydration &amp; Fuel</h3>
             <p data-es="Electrolitos Skratch Labs, geles GU, gomitas y recuperación.">
@@ -76,7 +76,7 @@
           <span class="go"><svg><use href="#i-arrow"/></svg></span>
         </a>
 
-        <a class="tile t-third t-sale reveal" style="--d:2" href="{{ routes.collections_url }}/all">
+        <a class="tile t-third t-sale reveal" style="--d:2" href="{% if collections['black-friday-deals'] != blank %}{{ collections['black-friday-deals'].url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}">
           <div class="tile-copy">
             {%- if edition == 'black_friday' -%}
               <h3 data-es="Especiales Black Friday">Black Friday Specials</h3>
@@ -101,6 +101,7 @@
     </div>
   </section>
 
+  {%- if section.settings.show_floor_grid -%}
   {%- comment -%} Balanced 4-Column Storewide `On the Floor Today` Grid (Bikes, E-Bikes, Helmets, Parts & Hydration) {%- endcomment -%}
   <section class="fb-sec stock-sec" id="instock">
     <div id="ebikes" class="anchor-offset" aria-hidden="true"></div>
@@ -135,6 +136,7 @@
       </div>
     </div>
   </section>
+  {%- endif -%}
 </div>
 
 {% schema %}
@@ -145,6 +147,12 @@
       "type": "collection",
       "id": "collection",
       "label": "Bikes collection"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_floor_grid",
+      "label": "Show secondary In-Stock product grid below categories",
+      "default": false
     }
   ],
   "presets": [

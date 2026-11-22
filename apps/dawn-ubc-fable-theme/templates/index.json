@@ -6,26 +6,20 @@
         "eyebrow": "3-Generation Family Cycling Shop · Tampa Since 1972"
       }
     },
-    "new_arrivals": {
-      "type": "fable-new-arrivals",
-      "settings": {}
-    },
-    "workshop_pro": {
-      "type": "fable-workshop-pro",
-      "settings": {}
-    },
-    "bike_finder": {
-      "type": "fable-bike-finder",
-      "settings": {}
-    },
-    "family_story": {
-      "type": "fable-family-story",
+    "bento_categories": {
+      "type": "fable-bento-categories",
       "settings": {
-        "is_standalone_page": false
+        "show_floor_grid": false
       }
     },
-    "service_rentals_stores": {
-      "type": "fable-service-rentals-stores",
+    "new_arrivals": {
+      "type": "fable-new-arrivals",
+      "settings": {
+        "show_promo_strip": false
+      }
+    },
+    "home_services": {
+      "type": "ubc-home-services",
       "settings": {}
     },
     "store_locator": {
@@ -40,11 +34,9 @@
   },
   "order": [
     "hero_showcase",
+    "bento_categories",
     "new_arrivals",
-    "workshop_pro",
-    "bike_finder",
-    "family_story",
-    "service_rentals_stores",
+    "home_services",
     "store_locator"
   ]
 }

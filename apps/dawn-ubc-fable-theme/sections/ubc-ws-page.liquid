@@ -77,9 +77,48 @@
   #shopify-section-{{ section.id }} .ubc-ws-kicker {
     color: var(--ubc-page-accent);
   }
-  #shopify-section-{{ section.id }} .ubc-ws-btn {
+  #shopify-section-{{ section.id }} .ubc-ws-btn,
+  #shopify-section-{{ section.id }} a.ubc-ws-btn,
+  #shopify-section-{{ section.id }} button.ubc-ws-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.6rem !important;
+    height: 4.6rem !important;
+    min-height: 4.6rem !important;
+    min-width: 15.6rem;
+    padding: 0 2.4rem !important;
+    font-family: var(--ubc-font-body, 'Barlow', sans-serif) !important;
+    font-size: 1.45rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    letter-spacing: 0.01em !important;
+    text-decoration: none !important;
+    border-width: 1.5px !important;
+    border-style: solid !important;
+    border-radius: 999px !important;
+    box-sizing: border-box !important;
+    appearance: none;
+    -webkit-appearance: none;
+    white-space: nowrap;
     cursor: pointer;
     transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+  #shopify-section-{{ section.id }} .ubc-ws-pill,
+  #shopify-section-{{ section.id }} a.ubc-ws-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 3.6rem !important;
+    min-height: 3.6rem !important;
+    padding: 0 1.6rem !important;
+    border-radius: 999px !important;
+    font-family: var(--ubc-font-body, 'Barlow', sans-serif) !important;
+    font-size: 1.35rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    box-sizing: border-box !important;
   }
   #shopify-section-{{ section.id }} .ubc-ws-btn:not(.ubc-ws-btn--ghost):not(.ubc-ws-btn--light) {
     background: var(--ubc-page-btn-bg);
@@ -1147,16 +1186,37 @@
           {%- assign meta_bt = shop.metaobjects.ubc_bike_type_guide.values | sort: 'sort_order' -%}
           {%- if meta_bt.size > 0 -%}
             {%- for bt in meta_bt -%}
-              {%- assign bt_img = blank -%}
-              {%- if bt.image_filename.value != blank -%}{%- assign bt_img = images[bt.image_filename.value] -%}{%- endif -%}
-              <article class="ubc-ws-card">
-                {%- if bt_img != blank -%}<div class="ubc-ws-card-media">{{ bt_img | image_url: width: 700 | image_tag: loading: 'lazy', alt: bt.name.value }}</div>{%- endif -%}
-                <h3>{{ bt.name.value }}</h3>
-                {%- if bt.summary.value != blank -%}<p class="ubc-ws-note">{{ bt.summary.value }}</p>{%- endif -%}
-                {%- if bt.cta_url.value != blank -%}
-                  <a class="ubc-ws-btn ubc-ws-btn--ghost" href="{{ bt.cta_url.value }}">{{ bt.cta_label.value | default: 'Explore' }}</a>
-                {%- endif -%}
-              </article>
+              {%- assign bt_name_down = bt.name.value | downcase -%}
+              {%- if bt_name_down contains 'recumbent' -%}
+                <article class="ubc-ws-card">
+                  <div class="ubc-ws-card-media">
+                    {%- assign img_eb = images['Electric_Bikes.jpg'] -%}
+                    {%- if img_eb != blank -%}
+                      {{ img_eb | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Electric Bikes' }}
+                    {%- else -%}
+                      <img src="{{ 'fable-ebike-tile.jpg' | asset_url }}" alt="Electric Bikes" loading="lazy" width="700" height="467">
+                    {%- endif -%}
+                  </div>
+                  <h3 data-es="Bicicletas Eléctricas (E-Bikes)">Electric Bikes</h3>
+                  <p class="ubc-ws-note" data-es="Asistencia suave al pedaleo para traslados sin esfuerzo, rodadas más largas y subir pendientes con facilidad.">Smooth pedal-assist power for effortless commuting, longer weekend rides, and flattening hills with ease.</p>
+                  <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/electric-bikes" data-es="Ver Bicicletas Eléctricas">Shop Electric Bikes</a>
+                </article>
+              {%- else -%}
+                {%- assign bt_img = blank -%}
+                {%- if bt.image_filename.value != blank -%}{%- assign bt_img = images[bt.image_filename.value] -%}{%- endif -%}
+                <article class="ubc-ws-card">
+                  {%- if bt_img != blank -%}
+                    <div class="ubc-ws-card-media">{{ bt_img | image_url: width: 700 | image_tag: loading: 'lazy', alt: bt.name.value }}</div>
+                  {%- elsif bt_name_down contains 'electric' or bt_name_down contains 'e-bike' -%}
+                    <div class="ubc-ws-card-media"><img src="{{ 'fable-ebike-tile.jpg' | asset_url }}" alt="{{ bt.name.value | escape }}" loading="lazy" width="700" height="467"></div>
+                  {%- endif -%}
+                  <h3>{{ bt.name.value }}</h3>
+                  {%- if bt.summary.value != blank -%}<p class="ubc-ws-note">{{ bt.summary.value }}</p>{%- endif -%}
+                  {%- if bt.cta_url.value != blank -%}
+                    <a class="ubc-ws-btn ubc-ws-btn--ghost" href="{{ bt.cta_url.value }}">{{ bt.cta_label.value | default: 'Explore' }}</a>
+                  {%- endif -%}
+                </article>
+              {%- endif -%}
             {%- endfor -%}
           {%- else -%}
           {%- assign img_road = images['Road_Bikes.jpg'] -%}
@@ -1199,12 +1259,18 @@
             <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/hybrid-bikes">Shop Cruisers</a>
           </article>
 
-          {%- assign img_rec = images['Recumbent_Bikes.jpg'] -%}
+          {%- assign img_eb = images['Electric_Bikes.jpg'] -%}
           <article class="ubc-ws-card">
-            {%- if img_rec -%}<div class="ubc-ws-card-media">{{ img_rec | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Recumbent Bikes' }}</div>{%- endif -%}
-            <h3>Recumbent Bikes</h3>
-            <p class="ubc-ws-note">Known for ergonomic comfort and impressive aerodynamic speed.</p>
-            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/contact-us">Ask Our Team</a>
+            <div class="ubc-ws-card-media">
+              {%- if img_eb != blank -%}
+                {{ img_eb | image_url: width: 700 | image_tag: loading: 'lazy', alt: 'Electric Bikes' }}
+              {%- else -%}
+                <img src="{{ 'fable-ebike-tile.jpg' | asset_url }}" alt="Electric Bikes" loading="lazy" width="700" height="467">
+              {%- endif -%}
+            </div>
+            <h3 data-es="Bicicletas Eléctricas (E-Bikes)">Electric Bikes</h3>
+            <p class="ubc-ws-note" data-es="Asistencia suave al pedaleo para traslados sin esfuerzo, rodadas más largas y subir pendientes con facilidad.">Smooth pedal-assist power for effortless commuting, longer weekend rides, and flattening hills with ease.</p>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/electric-bikes" data-es="Ver Bicicletas Eléctricas">Shop Electric Bikes</a>
           </article>
         {%- endif -%}
         </div>

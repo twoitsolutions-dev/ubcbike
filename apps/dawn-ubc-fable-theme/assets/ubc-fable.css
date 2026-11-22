@@ -10456,3 +10456,174 @@ body[data-ubc-edition="veterans"] .fb-nav > li > button {
   padding: 7px 8px !important;
   font-size: 14px !important;
 }
+
+
+/* ==========================================================================
+   Unified Pill Buttons Across All UBC Pages + Category-First Mobile Drawer
+   ========================================================================== */
+.ubc-ws-btn,
+a.ubc-ws-btn,
+button.ubc-ws-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.6rem !important;
+  height: 4.6rem !important;
+  min-height: 4.6rem !important;
+  min-width: 15.6rem;
+  padding: 0 2.4rem !important;
+  border-radius: 999px !important;
+  font-family: var(--ubc-font-body, 'Barlow', sans-serif) !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.01em !important;
+  text-decoration: none !important;
+  border-width: 1.5px !important;
+  border-style: solid !important;
+  box-sizing: border-box !important;
+  appearance: none;
+  -webkit-appearance: none;
+  white-space: nowrap;
+}
+
+.ubc-ws-pill,
+a.ubc-ws-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 3.6rem !important;
+  min-height: 3.6rem !important;
+  padding: 0 1.6rem !important;
+  border-radius: 999px !important;
+  font-family: var(--ubc-font-body, 'Barlow', sans-serif) !important;
+  font-size: 1.35rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+}
+
+.fb-drawer {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fb-drawer-catalog-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 14px;
+  border-bottom: 1px solid rgba(254, 253, 243, 0.14);
+  margin-bottom: 6px;
+}
+
+.fb-drawer-browse-btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 46px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-drawer-store-pills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fb-drawer-store-pills a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(204, 187, 141, 0.14);
+  border: 1px solid rgba(204, 187, 141, 0.36);
+  color: #FEFDF3;
+  font-family: var(--label, 'Barlow Condensed', sans-serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.fb-drawer-cats {
+  background: rgba(254, 253, 243, 0.05);
+  border: 1px solid rgba(254, 253, 243, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.fb-drawer-cats summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: var(--display, 'Anton', sans-serif);
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gold, #CCBB8D);
+  user-select: none;
+}
+
+.fb-drawer-cats summary::-webkit-details-marker {
+  display: none;
+}
+
+.fb-drawer-cats summary svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+.fb-drawer-cats[open] summary {
+  border-bottom: 1px solid rgba(254, 253, 243, 0.12);
+}
+
+.fb-drawer-cats[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.fb-drawer-cats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 11px 12px 13px;
+}
+
+.fb-drawer-cats-grid a {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-height: 36px;
+  padding: 7px 11px !important;
+  border-radius: 9px;
+  background: rgba(20, 32, 45, 0.55);
+  border: 1px solid rgba(254, 253, 243, 0.12) !important;
+  color: #FEFDF3 !important;
+  font-family: var(--ubc-font-body, 'Barlow', sans-serif) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  line-height: 1.2 !important;
+  text-decoration: none !important;
+}
+
+.fb-drawer-cats-grid a:hover,
+.fb-drawer-cats-grid a:active {
+  background: rgba(224, 79, 51, 0.88);
+  border-color: #E04F33 !important;
+}
+
+.fb-drawer-call-btn {
+  width: 100%;
+  justify-content: center;
+  border-color: rgba(254, 253, 243, 0.35) !important;
+  color: #FEFDF3 !important;
+}

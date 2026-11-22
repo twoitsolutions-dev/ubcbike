@@ -75,6 +75,7 @@
         </a>
       </div>
 
+      {%- if section.settings.show_promo_strip -%}
       {%- comment -%} Compact 3-Card Promos, Discounts & Activities Strip (Classic Luminous Pattern) {%- endcomment -%}
       <div class="promo-strip reveal" aria-label="Store promotions, discounts and activities">
         {%- if section.blocks.size > 0 -%}
@@ -203,6 +204,7 @@
           </a>
         {%- endif -%}
       </div>
+      {%- endif -%}
 
       {%- comment -%} Unified Storewide Department Tabs + Quick Search {%- endcomment -%}
       <div class="na-toolbar reveal">
@@ -571,7 +573,13 @@
       "type": "text",
       "id": "browse_label",
       "label": "Browse all link label",
-      "default": "Browse All 20,000+ Items"
+      "default": "Browse All In-Stock Items"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_promo_strip",
+      "label": "Show 3-card promo strip above product grid",
+      "default": false
     }
   ],
   "blocks": [

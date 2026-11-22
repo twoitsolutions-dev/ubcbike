@@ -101,6 +101,8 @@ export interface ShopifyAdminPort {
   createAutomaticDiscount(input: { title: string; percentOff?: number; amountOffCents?: number; productIds: string[]; variantIds?: string[]; startsAt: string; endsAt: string | null }): Promise<string>;
   deactivateAutomaticDiscount(discountId: string): Promise<void>;
   setProductsStatus(productIds: string[], status: 'ACTIVE' | 'DRAFT'): Promise<void>;
+  publishProductsToOnlineStore(productIds: string[]): Promise<void>;
+  updateProductTitle(productId: string, title: string): Promise<void>;
   setVariantFulfillmentMetafields(updates: VariantFulfillmentMetafieldUpdate[]): Promise<void>;
   setInventoryOnHand(locationId: string, quantities: { inventoryItemId: string; quantity: number }[]): Promise<void>;
   ensureUbcMetafieldDefinitions(): Promise<{ created: string[]; existing: string[] }>;
@@ -504,6 +506,9 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     if (input.locationId && onHandBatch.length) {
       await this.setInventoryOnHand(input.locationId, onHandBatch);
     }
+    if (input.status === 'ACTIVE') {
+      await this.publishProductsToOnlineStore([prod.id]);
+    }
 
     return { productId: prod.id, variants: outVariants };
   }
@@ -707,6 +712,34 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
       const r = await this.client.mutate<R>(PRODUCT_UPDATE_STATUS, { product: { id, status } });
       assertNoUserErrors(r.productUpdate.userErrors);
     }
+    if (status === 'ACTIVE') {
+      await this.publishProductsToOnlineStore(productIds);
+    }
+  }
+
+  async publishProductsToOnlineStore(productIds: string[]) {
+    for (const gid of productIds) {
+      const numericId = String(gid).split('/').pop() || '';
+      if (!/^\d+$/.test(numericId)) continue;
+      await this.client.restMutate('PUT', `/products/${numericId}.json`, {
+        product: {
+          id: Number(numericId),
+          status: 'active',
+          published: true,
+          published_scope: 'web',
+          published_at: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async updateProductTitle(productId: string, title: string) {
+    type R = { productUpdate: { userErrors: { field: string[]; message: string }[] } };
+    const r = await this.client.mutate<R>(
+      `mutation SetTitle($product: ProductUpdateInput!) { productUpdate(product: $product) { userErrors { field message } } }`,
+      { product: { id: productId, title } },
+    );
+    assertNoUserErrors(r.productUpdate.userErrors);
   }
 
   async setVariantFulfillmentMetafields(updates: VariantFulfillmentMetafieldUpdate[]) {
@@ -898,6 +931,8 @@ export class MockShopifyAdmin implements ShopifyAdminPort {
   async createAutomaticDiscount(input: unknown) { this.calls.push({ op: 'createAutomaticDiscount', args: input }); return `gid://shopify/DiscountAutomaticNode/demo-${++this.discountSeq}`; }
   async deactivateAutomaticDiscount(id: string) { this.calls.push({ op: 'deactivateAutomaticDiscount', args: id }); }
   async setProductsStatus(productIds: string[], status: string) { this.calls.push({ op: 'setProductsStatus', args: { productIds, status } }); }
+  async publishProductsToOnlineStore(productIds: string[]) { this.calls.push({ op: 'publishProductsToOnlineStore', args: { productIds } }); }
+  async updateProductTitle(productId: string, title: string) { this.calls.push({ op: 'updateProductTitle', args: { productId, title } }); }
   async setVariantFulfillmentMetafields(updates: unknown) { this.calls.push({ op: 'setVariantFulfillmentMetafields', args: updates }); }
   async setInventoryOnHand(locationId: string, quantities: unknown) { this.calls.push({ op: 'setInventoryOnHand', args: { locationId, quantities } }); }
   async ensureUbcMetafieldDefinitions() { this.calls.push({ op: 'ensureUbcMetafieldDefinitions', args: null }); return { created: ['ubc.availability', 'ubc.lead_time_days', 'ubc.click_and_collect_only'], existing: [] }; }

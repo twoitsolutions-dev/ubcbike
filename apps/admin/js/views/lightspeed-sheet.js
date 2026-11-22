@@ -504,7 +504,7 @@ export async function renderLightspeedSheet(ctx) {
       { label: 'MSRP ($)', field: 'msrpCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
       { label: 'Sale ($)', field: 'salePriceCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
       { label: 'Online ($)', field: 'onlinePriceCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
-      { label: 'Cost ($)', field: 'defaultCostCents', width: '88px', numeric: true, format: centsToInput, parse: inputToCents },
+      { label: 'Default Cost ($)', field: 'defaultCostCents', width: '98px', numeric: true, format: centsToInput, parse: inputToCents },
       { label: 'Reorder Pt', field: 'reorderPoint', width: '74px', numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
       { label: 'Desired Lvl', field: 'desiredLevel', width: '78px', numeric: true, parse: (v) => { const n = Number(String(v || '').trim() || '0'); return Number.isInteger(n) && n >= 0 ? n : NaN; } },
     ];

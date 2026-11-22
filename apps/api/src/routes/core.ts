@@ -387,6 +387,18 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       if (ch.description !== undefined) {
         await ctx.pool.query(`UPDATE products SET title = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3`, [ch.description, link.product_id, s.companyId]);
         await ctx.pool.query(`UPDATE variants SET title = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3`, [ch.description, ch.id, s.companyId]);
+        const hubShopProd = await ctx.pool.query<{ shopify_product_id: string }>(
+          `SELECT shopify_product_id FROM shopify_variant_links
+           WHERE company_id = $1 AND variant_id = $2 AND match_method = 'created_in_hub'
+             AND (SELECT count(*) FROM shopify_variant_links x WHERE x.company_id = $1 AND x.shopify_product_id = shopify_variant_links.shopify_product_id) = 1
+           LIMIT 1`,
+          [s.companyId, ch.id],
+        );
+        if (hubShopProd.rows[0]?.shopify_product_id) {
+          await ctx.connectors.shopify.updateProductTitle(hubShopProd.rows[0].shopify_product_id, ch.description).catch((err) => {
+            req.log.warn({ err }, 'Could not sync HUB-created Shopify product title');
+          });
+        }
       }
       if (ch.defaultPriceCents !== undefined || ch.salePriceCents !== undefined || ch.defaultCostCents !== undefined) {
         const beforePricesRaw = (resRow?.before?.Prices as { ItemPrice?: unknown } | undefined)?.ItemPrice;

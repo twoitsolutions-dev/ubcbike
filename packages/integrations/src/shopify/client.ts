@@ -224,6 +224,39 @@ export class ShopifyAdminClient {
     if (!this.cfg.writesEnabled) throw new WritesDisabledError('Shopify');
     return this.query<T>(mutation, variables);
   }
+
+  /**
+   * Mutating REST call against Shopify Admin API (used strictly for `published_scope: 'web'`
+   * Online Store sales channel publication using `write_products`, without requiring `write_publications`).
+   */
+  async restMutate<T>(method: 'PUT' | 'POST', path: string, payload: unknown, attempt = 0, refreshed401 = false): Promise<T> {
+    if (!this.cfg.writesEnabled) throw new WritesDisabledError('Shopify');
+    const token = await this.getAccessToken(false);
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const url = `https://${this.shopDomain}/admin/api/2025-10${cleanPath}`;
+    const res = await this.fetchImpl(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Shopify-Access-Token': token,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 401 && this.usesClientCredentials() && !refreshed401) {
+      await this.getAccessToken(true);
+      return this.restMutate<T>(method, path, payload, attempt, true);
+    }
+    if (res.status === 429 || res.status >= 500) {
+      if (attempt < 4) {
+        await sleep(500 * 2 ** attempt);
+        return this.restMutate<T>(method, path, payload, attempt + 1, refreshed401);
+      }
+      throw new RetryableError(`Shopify REST HTTP ${res.status}`);
+    }
+    if (!res.ok) throw new Error(`Shopify REST HTTP ${res.status}`);
+    return (await res.json()) as T;
+  }
 }
 
 function sleep(ms: number) {

@@ -982,9 +982,11 @@ async function renderPersonalizedPromoEditor(ctx, c) {
   }
 
   const errBox = h('div');
+  const editJobHost = h('div');
   const saveBtns = [];
+  const publishBtns = [];
 
-  async function saveChanges() {
+  async function saveChanges(publishLive) {
     clear(errBox);
     const trimmedName = st.name.trim();
     if (trimmedName.length < 3) {
@@ -1026,9 +1028,10 @@ async function renderPersonalizedPromoEditor(ctx, c) {
       }
     });
 
-    saveBtns.forEach((b) => { b.disabled = true; b.textContent = 'Saving…'; });
+    saveBtns.forEach((b) => { b.disabled = true; b.textContent = publishLive ? 'Save draft' : 'Saving…'; });
+    publishBtns.forEach((b) => { b.disabled = true; b.textContent = publishLive ? 'Publishing live…' : 'Save & Publish Live Now'; });
     try {
-      await ctx.api.updateCampaign(c.id, {
+      const updated = await ctx.api.updateCampaign(c.id, {
         name: trimmedName,
         channel: st.channel,
         posEventType: st.channel === 'online_and_pos' ? st.posEventType : undefined,
@@ -1048,17 +1051,40 @@ async function renderPersonalizedPromoEditor(ctx, c) {
         startsAt,
         endsAt,
       });
-      toast('Promotion updated', 'ok');
+
+      if (publishLive && ctx.can('campaign.approve')) {
+        const appRes = await ctx.api.approveCampaign(c.id, updated.previewToken);
+        if (appRes.jobId) {
+          const pb = progressBar();
+          const lbl = h('span.small.muted', 'pushing prices…');
+          mount(editJobHost, h('div.notice.info', h('div', 'Publishing promotion live — ', lbl), pb.el));
+          const job = await watchJob(ctx.api, appRes.jobId, pb.bar, lbl);
+          if (job.status === 'succeeded') toast('Promotion is now LIVE across ' + (st.channel === 'online_and_pos' ? 'Shopify + Lightspeed POS' : 'Shopify'), 'ok');
+          else toast('Publish failed: ' + job.last_error, 'bad');
+          ctx.refreshBadges();
+        } else {
+          toast('Promotion scheduled', 'ok');
+        }
+      } else {
+        toast('Draft saved (click Publish Live Now when ready)', 'ok');
+      }
       ctx.navigate('#/promotions/' + c.id + '?r=' + Date.now());
     } catch (ex) {
-      saveBtns.forEach((b) => { b.disabled = false; b.textContent = 'Save changes'; });
+      saveBtns.forEach((b) => { b.disabled = false; b.textContent = 'Save draft'; });
+      publishBtns.forEach((b) => { b.disabled = false; b.textContent = 'Save & Publish Live Now'; });
       errBox.appendChild(h('div.notice.bad', ex.message || 'Could not save promotion'));
     }
   }
 
   const makeSaveBtn = () => {
-    const b = h('button.btn.primary', { type: 'button', onclick: saveChanges }, 'Save changes');
+    const b = h('button.btn', { type: 'button', onclick: () => saveChanges(false) }, 'Save draft');
     saveBtns.push(b);
+    return b;
+  };
+  const makePublishBtn = () => {
+    if (!ctx.can('campaign.approve')) return null;
+    const b = h('button.btn.primary', { type: 'button', onclick: () => saveChanges(true) }, 'Save & Publish Live Now');
+    publishBtns.push(b);
     return b;
   };
 
@@ -1414,7 +1440,7 @@ async function renderPersonalizedPromoEditor(ctx, c) {
           h('th', 'Product'),
           h('th.num', 'Current'),
           h('th.num', 'Promo Price ($)'),
-          h('th.num', 'Cost'),
+          h('th.num', 'Avg. Cost'),
           h('th.num', 'Margin After'),
           h('th.num', 'MAP Floor'),
           h('th', 'Status'),
@@ -1460,13 +1486,16 @@ async function renderPersonalizedPromoEditor(ctx, c) {
       [
         h('a.btn', { href: '#/promotions/' + c.id }, 'Cancel'),
         makeSaveBtn(),
-      ]),
+        makePublishBtn(),
+      ].filter(Boolean)),
     errBox,
+    editJobHost,
     controlsCard,
     productsCard,
     h('div.row', { style: { justifyContent: 'flex-end', gap: '10px' } },
       h('a.btn', { href: '#/promotions/' + c.id }, 'Cancel'),
-      makeSaveBtn()));
+      makeSaveBtn(),
+      makePublishBtn()));
 }
 
 export async function renderPromotionDetail(ctx) {
@@ -1507,7 +1536,7 @@ export async function renderPromotionDetail(ctx) {
             ? h('div', money(l.old_price_cents), h('div.small.muted', 'Sale · Default ' + money(l.compare_at_cents)))
             : money(l.old_price_cents)) },
           { key: 'new', label: 'After', num: true, render: (l) => (l.status === 'excluded' ? h('span.muted', '—') : h('strong', money(l.new_price_cents))) },
-          { key: 'cost', label: 'Cost', num: true, opt: true, render: (l) => money(l.cost_cents) },
+          { key: 'cost', label: 'Avg. Cost', num: true, opt: true, render: (l) => money(l.cost_cents) },
           { key: 'om', label: 'Margin before', num: true, opt: true, render: (l) => pct(l.cost_cents === null ? null : (l.old_price_cents - l.cost_cents) / l.old_price_cents) },
           { key: 'nm', label: 'Margin after', num: true, render: (l) => (l.status === 'excluded' || l.cost_cents === null ? '—' : pct((l.new_price_cents - l.cost_cents) / l.new_price_cents)) },
           { key: 'map', label: 'MAP floor', num: true, opt: true, render: (l) => (l.map_cents ? money(l.map_cents) : '—') },
@@ -1546,15 +1575,16 @@ export async function renderPromotionDetail(ctx) {
   if (c.status === 'draft') {
     if (ctx.can('pricing.write')) actions.push(h('button.btn', { onclick: async () => { await ctx.api.previewCampaign(c.id); toast('Preview refreshed with current data'); ctx.navigate('#/promotions/' + c.id + '?r=' + Date.now()); } }, 'Refresh preview'));
     if (ctx.can('campaign.approve')) {
+      const isFuture = Boolean(c.starts_at && new Date(c.starts_at) > new Date());
       actions.push(h('button.btn.primary', {
         onclick: async () => {
           const ok = await confirmDialog({
-            title: 'Approve “' + c.name + '”?',
+            title: (isFuture ? 'Schedule' : 'Publish live') + ' “' + c.name + '”?',
             message: h('div.stack',
-              h('p', (s.ok + s.warning).toLocaleString('en-US') + ' prices will change' + (c.starts_at && new Date(c.starts_at) > new Date() ? ' on ' + dateTime(c.starts_at) : ' now') + '. ' + s.blocked + ' blocked and ' + s.excluded + ' excluded products will remain untouched.'),
-              h('p.small.muted', 'Scope: ' + channelDesc + '. Original prices are stored automatically so you can restore them in one click.'),
+              h('p', (s.ok + s.warning).toLocaleString('en-US') + ' prices will change' + (isFuture ? ' on ' + dateTime(c.starts_at) : ' immediately across ' + channelDesc) + '. ' + s.blocked + ' blocked and ' + s.excluded + ' excluded products will remain untouched.'),
+              h('p.small.muted', 'Original prices are backed up automatically so you can restore them in one click.'),
               s.warning ? h('div.notice.warn', s.warning + ' products have low-margin or MAP-exception warnings. Review them first if unsure.') : null),
-            confirmLabel: 'Approve & schedule',
+            confirmLabel: isFuture ? 'Approve & schedule' : 'Publish Live Now',
           });
           if (!ok) return;
           try {
@@ -1566,7 +1596,7 @@ export async function renderPromotionDetail(ctx) {
             else toast(e.message, 'bad');
           }
         },
-      }, 'Approve & schedule'));
+      }, isFuture ? 'Approve & Schedule' : 'Publish Live Now'));
     }
   }
   if ((c.status === 'draft' || c.status === 'scheduled') && ctx.can('pricing.write')) {
@@ -1597,9 +1627,9 @@ export async function renderPromotionDetail(ctx) {
 
   let guideBanner = null;
   if (c.status === 'draft') {
-    guideBanner = h('div.notice.info',
-      h('strong', 'Preview Ready (Nothing published yet): '),
-      String((s.ok || 0) + (s.warning || 0)) + ' products will be updated, and ' + String(s.blocked || 0) + ' products are automatically protected (MAP / minimum margin) and will not change. Click "Approve & schedule" above to publish.');
+    guideBanner = h('div.notice.warn',
+      h('strong', 'DRAFT — NOT LIVE YET: '),
+      'Lightspeed POS and Shopify still show original prices. ' + String((s.ok || 0) + (s.warning || 0)) + ' product(s) are ready — click "Publish Live Now" above to apply the new prices.');
   } else if (c.status === 'active') {
     guideBanner = h('div.notice.ok',
       h('strong', 'Live Promotion: '),

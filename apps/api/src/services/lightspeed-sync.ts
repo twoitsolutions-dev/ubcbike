@@ -95,7 +95,7 @@ export function formatPosBrand(rawBrand: string | null, fallbackTitle: string): 
       return clean;
     }
   }
-  return inferBrandFromTitle(fallbackTitle, false) ?? 'UBC Shop';
+  return inferBrandFromTitle(fallbackTitle, true) ?? 'UBC';
 }
 
 function inferBrandFromTitle(title: string, strictOnly = false): string | null {

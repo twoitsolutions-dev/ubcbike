@@ -184,7 +184,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const c = req.session!.companyId;
     const { availability } = await getSettings(ctx.pool, c);
     const compRes = await ctx.pool.query<{ ls_paused: string | null }>(
-      `SELECT settings->>'lightspeedWritePaused' AS ls_paused FROM companies WHERE id = $1`,
+      `SELECT availability_rules->>'lightspeedWritePaused' AS ls_paused FROM company_settings WHERE company_id = $1`,
       [c],
     );
     const writePaused = compRes.rows[0]?.ls_paused === 'true';
@@ -234,10 +234,9 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const { paused } = z.object({ paused: z.boolean() }).parse(req.body);
     await ctx.pool.query(
-      `UPDATE companies
-       SET settings = COALESCE(settings, '{}'::jsonb) || jsonb_build_object('lightspeedWritePaused', $1::boolean),
-           updated_at = NOW()
-       WHERE id = $2`,
+      `UPDATE company_settings
+       SET availability_rules = COALESCE(availability_rules, '{}'::jsonb) || jsonb_build_object('lightspeedWritePaused', $1::boolean)
+       WHERE company_id = $2`,
       [paused, s.companyId],
     );
     await ctx.pool.query(
@@ -284,7 +283,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       });
     }
     const pauseRes = await ctx.pool.query<{ ls_paused: string | null }>(
-      `SELECT settings->>'lightspeedWritePaused' AS ls_paused FROM companies WHERE id = $1`,
+      `SELECT availability_rules->>'lightspeedWritePaused' AS ls_paused FROM company_settings WHERE company_id = $1`,
       [s.companyId],
     );
     if (pauseRes.rows[0]?.ls_paused === 'true') {

@@ -248,11 +248,14 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
        WHERE company_id = $2`,
       [enabled, s.companyId],
     );
-    await ctx.pool.query(
-      `INSERT INTO audit_logs (company_id, actor_user_id, action, entity_type, entity_id, details)
-       VALUES ($1, $2, 'lightspeed.mode_changed', 'company', $1, $3::jsonb)`,
-      [s.companyId, s.userId, JSON.stringify({ writesEnabled: enabled })],
-    );
+    await audit(ctx.pool, {
+      companyId: s.companyId,
+      userId: s.userId,
+      action: 'lightspeed.mode_changed',
+      entityType: 'company',
+      entityId: s.companyId,
+      detail: { writesEnabled: enabled },
+    });
     return {
       ok: true,
       writesEnabled: enabled,
@@ -337,11 +340,14 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       const link = lsByVariant.get(ch.id);
       if (!link) continue;
       const resRow = results.find((r) => r.lightspeedItemId === link.lightspeed_item_id);
-      await ctx.pool.query(
-        `INSERT INTO audit_logs (company_id, actor_user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, 'lightspeed.bulk_sheet_updated', 'variant', $3, $4::jsonb)`,
-        [s.companyId, s.userId, ch.id, JSON.stringify({ lightspeedItemId: link.lightspeed_item_id, changes: ch, before: resRow?.before ?? null })],
-      );
+      await audit(ctx.pool, {
+        companyId: s.companyId,
+        userId: s.userId,
+        action: 'lightspeed.bulk_sheet_updated',
+        entityType: 'variant',
+        entityId: ch.id,
+        detail: { lightspeedItemId: link.lightspeed_item_id, changes: ch, before: resRow?.before ?? null },
+      });
       if (ch.description !== undefined) {
         await ctx.pool.query(`UPDATE products SET title = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3`, [ch.description, link.product_id, s.companyId]);
       }

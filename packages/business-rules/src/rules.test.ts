@@ -118,6 +118,22 @@ describe('pricing', () => {
     expect(applied.newPriceCents).toBe(8000);
   });
 
+  it('supports per-item customPricesCents overrides while strictly enforcing MAP and margin floors', () => {
+    const a = item({ id: 'v-a', priceCents: 10000, costCents: 5000 });
+    const b = item({ id: 'v-b', priceCents: 10000, costCents: 5000, mapPolicy: 'map', mapCents: 8500 });
+    const ev = evaluateCampaign([a, b], off20, {
+      rules: { ...DEFAULT_CAMPAIGN_RULES, customPricesCents: { 'v-a': 7499, 'v-b': 7999 } },
+      now: NOW,
+    });
+    expect(ev.summary.uniformAdjustment).toBe(false);
+    expect(ev.lines[0]?.newPriceCents).toBe(7499);
+    expect(ev.lines[0]?.status).toBe('ok');
+    expect(ev.lines[1]?.status).toBe('blocked');
+    expect(ev.lines[1]?.reasons).toContain('MAP_VIOLATION');
+    expect(matchesFilter(a, { excludeIds: ['v-a'] })).toBe(false);
+    expect(matchesFilter(b, { excludeIds: ['v-a'] })).toBe(true);
+  });
+
   it('summarises a large campaign quickly and chooses a strategy', () => {
     const items = Array.from({ length: 20000 }, (_, i) => item({ id: `v${i}`, priceCents: 5000 + i, costCents: 2000 }));
     const t0 = Date.now();

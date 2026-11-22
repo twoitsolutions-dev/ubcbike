@@ -132,7 +132,7 @@ export function createDemoDriver() {
     const list = (v) => (Array.isArray(v) ? v : typeof v === 'string' && v ? v.split(',') : undefined);
     const num = (v) => (v === undefined || v === '' || v === null ? undefined : Number(v));
     return {
-      q: q.q || undefined, ids: list(q.ids), categories: list(q.categories), brands: list(q.brands), suppliers: list(q.suppliers),
+      q: q.q || undefined, ids: list(q.ids), excludeIds: list(q.excludeIds), categories: list(q.categories), brands: list(q.brands), suppliers: list(q.suppliers),
       priceMinCents: num(q.priceMinCents), priceMaxCents: num(q.priceMaxCents), marginMinPct: num(q.marginMinPct), marginMaxPct: num(q.marginMaxPct),
       stock: q.stock || undefined, status: q.status || undefined,
     };

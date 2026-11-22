@@ -197,8 +197,19 @@ export function evaluateCampaign(
   adj: PriceAdjustment,
   opts: EvaluateOptions,
 ): { lines: CampaignLine[]; summary: CampaignSummary } {
-  const lines = items.map((it) => evaluateLine(it, adj, opts));
-  return { lines, summary: summarize(lines, adj) };
+  const overrides = opts.rules.customPricesCents;
+  let hasOverride = false;
+  const lines = items.map((it) => {
+    const customCents = overrides?.[it.id];
+    if (customCents !== undefined) {
+      hasOverride = true;
+      return evaluateLine(it, { type: 'set_price', value: customCents, rounding: 'none' }, opts);
+    }
+    return evaluateLine(it, adj, opts);
+  });
+  const summary = summarize(lines, adj);
+  if (hasOverride) summary.uniformAdjustment = false;
+  return { lines, summary };
 }
 
 export function summarize(lines: readonly CampaignLine[], adj: PriceAdjustment): CampaignSummary {

@@ -1,7 +1,7 @@
 import { h, mount, clear, debounce } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, errorBox, loading, pageHead, pager, progressBar, searchableDropdown, toast, watchJob } from '../ui/components.js?v=42';
-import { adjustmentLabel, campaignBadge, channelBadge, dateTime, LINE_STATUS, money, pct, POS_EVENT_LABELS, REASON_LABELS } from '../ui/format.js?v=47';
-import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=47';
+import { adjustmentLabel, campaignBadge, channelBadge, dateTime, LINE_STATUS, money, pct, POS_EVENT_LABELS, REASON_LABELS } from '../ui/format.js?v=48';
+import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=48';
 import { sessionStorageSafeGet } from './products.js?v=40';
 
 const PRESETS = {
@@ -127,6 +127,9 @@ function computeSamplePriceCents(sampleCents, adjType, rawVal, rounding) {
 
 export async function renderPromotionNew(ctx) {
   if (!ctx.can('pricing.write')) return errorBox({ message: 'Your role cannot create promotions.' });
+  if (ctx.query.edit && ctx.query.wizard !== '1') {
+    return renderPromotionDetail(Object.assign({}, ctx, { params: { id: ctx.query.edit }, query: { edit: '1' } }));
+  }
   const editId = ctx.query.edit || null;
   const [facets, settings, editCamp, freshSys] = await Promise.all([
     ctx.api.facets(),
@@ -420,6 +423,10 @@ export async function renderPromotionNew(ctx) {
 
       const renderResults = () => {
         clear(resultsHost);
+        if (!pickerState.q.trim() && !pickerState.brands.length) {
+          resultsHost.appendChild(h('div.msd-empty', 'Type a product name, SKU, or UPC above (or pick a brand) to search and add products.'));
+          return;
+        }
         if (pickerState.loading) {
           resultsHost.appendChild(h('div.msd-empty', 'Searching catalog…'));
           return;
@@ -460,6 +467,12 @@ export async function renderPromotionNew(ctx) {
       };
 
       const runPickerSearch = async () => {
+        if (!pickerState.q.trim() && !pickerState.brands.length) {
+          pickerState.results = [];
+          pickerState.loading = false;
+          renderResults();
+          return;
+        }
         pickerState.loading = true;
         renderResults();
         try {
@@ -512,12 +525,12 @@ export async function renderPromotionNew(ctx) {
       }, '+ Add all shown');
 
       scopeBodyHost.appendChild(h('div.picker-box',
+        selectedHost,
         h('div.picker-toolbar', searchBox, brandDrop, addAllBtn),
         h('div.row-between',
           h('label.check', stockOnlyCb, h('span.small', 'In stock at UBC stores only')),
-          h('span.small.muted', 'Showing up to 25 matching products')),
-        resultsHost,
-        selectedHost));
+          h('span.small.muted', 'Search results (up to 25)')),
+        resultsHost));
 
       renderSelectedTray();
       runPickerSearch();
@@ -874,8 +887,593 @@ export async function renderPromotionNew(ctx) {
     form);
 }
 
+async function renderPersonalizedPromoEditor(ctx, c) {
+  const [settings, freshSys, firstPage] = await Promise.all([
+    ctx.api.settings(),
+    ctx.api.system ? ctx.api.system().catch(() => ctx.system) : Promise.resolve(ctx.system),
+    ctx.api.campaignLines(c.id, undefined, 0, 100),
+  ]);
+  if (freshSys && ctx.system) Object.assign(ctx.system, freshSys);
+  const posEnabled = !!((freshSys || ctx.system) && (freshSys || ctx.system).posEventWritesEnabled);
+
+  const editAdj = c.adjustment || { type: 'percent_off', value: 0.2, rounding: 'charm_99' };
+  const editIsPct = editAdj.type.indexOf('percent') === 0;
+  const editRules = c.rules || {};
+  const isExplicitIds = Boolean(c.selection && c.selection.ids && c.selection.ids.length);
+
+  const st = {
+    name: c.name || 'Promotion',
+    channel: c.channel === 'online_and_pos' && posEnabled ? 'online_and_pos' : 'online',
+    posEventType: (c.summary && c.summary.posEventType) || 'black_friday',
+    adjType: editAdj.type,
+    value: String(editIsPct ? Math.round(editAdj.value * 10000) / 100 : editAdj.value / 100),
+    rounding: editAdj.rounding || 'none',
+    minMarginPct: String((editRules.minMarginPct !== undefined ? editRules.minMarginPct : settings.campaignRules.minMarginPct) * 100),
+    warnMarginPct: String((editRules.warnMarginPct !== undefined ? editRules.warnMarginPct : settings.campaignRules.warnMarginPct) * 100),
+    clampToMinMargin: editRules.clampToMinMargin !== undefined ? !!editRules.clampToMinMargin : true,
+    includeNoCost: editRules.excludeWithoutCost !== undefined ? !editRules.excludeWithoutCost : true,
+    startsAt: c.starts_at ? toLocalInput(new Date(c.starts_at)) : '',
+    endsAt: c.ends_at ? toLocalInput(new Date(c.ends_at)) : '',
+    customPrices: Object.assign({}, editRules.customPricesCents || {}),
+    selectedIds: isExplicitIds ? c.selection.ids.slice() : null,
+    excludeIds: new Set((c.selection && c.selection.excludeIds) || []),
+    rows: (firstPage.lines || []).slice(),
+    total: firstPage.total || 0,
+    offset: 0,
+    limit: 100,
+    optionsOpen: Boolean(c.starts_at || c.ends_at),
+    addOpen: false,
+  };
+
+  function evalRowLive(row) {
+    const oldPrice = row.old_price_cents;
+    const basePrice = row.compare_at_cents && row.compare_at_cents > oldPrice ? row.compare_at_cents : oldPrice;
+    const customCents = st.customPrices[row.variant_id];
+    const isCustom = customCents !== undefined && customCents !== null;
+    let newPrice = isCustom
+      ? customCents
+      : computeSamplePriceCents(basePrice, st.adjType, st.value, st.rounding);
+    if (!newPrice || newPrice <= 0) {
+      return { newPriceCents: oldPrice, marginAfter: null, status: 'blocked', label: 'Invalid price', cls: 'bad', isCustom };
+    }
+    const cost = row.cost_cents;
+    const minM = (Number(st.minMarginPct) || 0) / 100;
+    const warnM = (Number(st.warnMarginPct) || 0) / 100;
+    let status = 'ok';
+    let label = isCustom ? 'Custom price' : 'Will apply';
+    let cls = 'ok';
+
+    if ((cost === null || cost === undefined) && !st.includeNoCost) {
+      return { newPriceCents: oldPrice, marginAfter: null, status: 'excluded', label: 'Excluded (no cost)', cls: '', isCustom };
+    }
+    if (cost !== null && cost !== undefined && minM < 1) {
+      const floor = Math.ceil(cost / (1 - minM));
+      if (newPrice < floor) {
+        if (st.clampToMinMargin) {
+          newPrice = floor;
+          status = 'warning';
+          label = 'Clamped to min. margin';
+          cls = 'warn';
+        } else {
+          status = 'blocked';
+          label = newPrice < cost ? 'Below cost' : 'Below min. margin';
+          cls = 'bad';
+        }
+      }
+    }
+    if (row.map_cents && newPrice < row.map_cents) {
+      status = 'blocked';
+      label = 'Blocked: Below MAP (' + money(row.map_cents) + ')';
+      cls = 'bad';
+    }
+    if (!isCustom && (st.adjType === 'percent_off' || st.adjType === 'amount_off') && newPrice > oldPrice && status !== 'blocked') {
+      return { newPriceCents: oldPrice, marginAfter: cost !== null && cost !== undefined ? (oldPrice - cost) / oldPrice : null, status: 'excluded', label: 'Already on deeper Sale', cls: '', isCustom: false };
+    }
+    if (newPrice === oldPrice && status !== 'blocked') {
+      return { newPriceCents: newPrice, marginAfter: cost !== null && cost !== undefined ? (newPrice - cost) / newPrice : null, status: 'excluded', label: 'No price change', cls: '', isCustom };
+    }
+    const mAfter = cost !== null && cost !== undefined && newPrice > 0 ? (newPrice - cost) / newPrice : null;
+    if (status === 'ok' && mAfter !== null && mAfter < warnM) {
+      status = 'warning';
+      label = isCustom ? 'Custom · Low margin' : 'Low margin';
+      cls = 'warn';
+    }
+    return { newPriceCents: newPrice, marginAfter: mAfter, status, label, cls, isCustom };
+  }
+
+  const errBox = h('div');
+  const saveBtns = [];
+
+  async function saveChanges() {
+    clear(errBox);
+    const trimmedName = st.name.trim();
+    if (trimmedName.length < 3) {
+      errBox.appendChild(h('div.notice.bad', 'Enter a promotion name (at least 3 characters).'));
+      return;
+    }
+    if (st.selectedIds && st.selectedIds.length === 0) {
+      errBox.appendChild(h('div.notice.bad', 'Keep at least one product in this promotion (or click "+ Add product").'));
+      return;
+    }
+    const isPct = st.adjType.indexOf('percent') === 0;
+    const raw = Number(st.value);
+    if (!(raw >= 0) || isNaN(raw)) {
+      errBox.appendChild(h('div.notice.bad', 'Enter a valid discount or price value.'));
+      return;
+    }
+    if (st.adjType === 'percent_off' && raw >= 100) {
+      errBox.appendChild(h('div.notice.bad', 'Percentage discount must be below 100%.'));
+      return;
+    }
+    const startsAt = st.startsAt ? new Date(st.startsAt).toISOString() : null;
+    const endsAt = st.endsAt ? new Date(st.endsAt).toISOString() : null;
+    if (startsAt && endsAt && endsAt <= startsAt) {
+      errBox.appendChild(h('div.notice.bad', 'End date must be after start date.'));
+      return;
+    }
+
+    const nextSelection = st.selectedIds
+      ? { ids: st.selectedIds.slice() }
+      : cleanFilter(Object.assign({}, c.selection || {}, {
+        excludeIds: st.excludeIds.size ? Array.from(st.excludeIds) : undefined,
+      }));
+
+    const cleanCustom = {};
+    Object.keys(st.customPrices).forEach((vid) => {
+      const v = st.customPrices[vid];
+      if (Number.isInteger(v) && v > 0 && (!st.selectedIds || st.selectedIds.indexOf(vid) >= 0) && !st.excludeIds.has(vid)) {
+        cleanCustom[vid] = v;
+      }
+    });
+
+    saveBtns.forEach((b) => { b.disabled = true; b.textContent = 'Saving…'; });
+    try {
+      await ctx.api.updateCampaign(c.id, {
+        name: trimmedName,
+        channel: st.channel,
+        posEventType: st.channel === 'online_and_pos' ? st.posEventType : undefined,
+        selection: nextSelection,
+        adjustment: {
+          type: st.adjType,
+          value: isPct ? raw / 100 : dollarsToCents(st.value),
+          rounding: st.rounding,
+        },
+        rules: {
+          minMarginPct: (Number(st.minMarginPct) || 0) / 100,
+          warnMarginPct: (Number(st.warnMarginPct) || 0) / 100,
+          clampToMinMargin: st.clampToMinMargin,
+          excludeWithoutCost: !st.includeNoCost,
+          customPricesCents: Object.keys(cleanCustom).length ? cleanCustom : undefined,
+        },
+        startsAt,
+        endsAt,
+      });
+      toast('Promotion updated', 'ok');
+      ctx.navigate('#/promotions/' + c.id + '?r=' + Date.now());
+    } catch (ex) {
+      saveBtns.forEach((b) => { b.disabled = false; b.textContent = 'Save changes'; });
+      errBox.appendChild(h('div.notice.bad', ex.message || 'Could not save promotion'));
+    }
+  }
+
+  const makeSaveBtn = () => {
+    const b = h('button.btn.primary', { type: 'button', onclick: saveChanges }, 'Save changes');
+    saveBtns.push(b);
+    return b;
+  };
+
+  // --- Controls Card ---
+  const nameInput = h('input', {
+    type: 'text', value: st.name, maxlength: '120',
+    oninput: (e) => { st.name = e.target.value; },
+  });
+
+  const channelHost = h('div.stack-sm');
+  const drawChannel = () => {
+    clear(channelHost);
+    channelHost.appendChild(h('div.seg-group',
+      h('button.seg-btn', {
+        type: 'button', class: st.channel === 'online' ? 'on' : '',
+        onclick: () => { st.channel = 'online'; drawChannel(); },
+      }, 'Online Store Only (Shopify)'),
+      h('button.seg-btn', {
+        type: 'button',
+        class: st.channel === 'online_and_pos' ? 'on' : '',
+        disabled: !posEnabled,
+        title: posEnabled ? 'Syncs both Shopify and Lightspeed POS' : 'Enable Live Writes in Lightspeed Sheet first',
+        onclick: () => { if (!posEnabled) return; st.channel = 'online_and_pos'; drawChannel(); },
+      }, 'Online + Store POS (Lightspeed)')));
+    if (st.channel === 'online_and_pos' && posEnabled) {
+      channelHost.appendChild(h('div.chips', Object.keys(POS_EVENT_LABELS).map((k) => h('button.chip', {
+        type: 'button', class: st.posEventType === k ? 'on' : '',
+        onclick: () => { st.posEventType = k; drawChannel(); },
+      }, POS_EVENT_LABELS[k]))));
+    }
+  };
+
+  const adjTabsHost = h('div.seg-group');
+  const unitBadge = h('span.badge', '% OFF');
+  const quickPctHost = h('div.chips');
+  const roundingHost = h('div.seg-group');
+
+  let rowBindings = [];
+  const refreshLiveRows = (updateInputs) => {
+    rowBindings.forEach((rb) => rb.refresh(updateInputs));
+  };
+
+  const valueInput = h('input.promo-big-input', {
+    type: 'number', min: '0', step: 'any', value: st.value, style: { maxWidth: '130px' },
+    oninput: () => {
+      st.value = valueInput.value;
+      drawQuickPcts();
+      refreshLiveRows(true);
+    },
+  });
+
+  const drawQuickPcts = () => {
+    clear(quickPctHost);
+    if (st.adjType !== 'percent_off') return;
+    [10, 15, 20, 25, 30, 50].forEach((p) => {
+      quickPctHost.appendChild(h('button.chip', {
+        type: 'button', class: Number(st.value) === p ? 'on' : '',
+        onclick: () => {
+          st.value = String(p);
+          valueInput.value = st.value;
+          drawQuickPcts();
+          refreshLiveRows(true);
+        },
+      }, p + '%'));
+    });
+  };
+
+  const drawAdj = () => {
+    clear(adjTabsHost);
+    [
+      ['percent_off', '% Discount'],
+      ['amount_off', '$ Off'],
+      ['set_price', 'Fixed Price ($)'],
+      ['percent_increase', '+ % Increase'],
+    ].forEach(([k, lbl]) => {
+      adjTabsHost.appendChild(h('button.seg-btn', {
+        type: 'button', class: st.adjType === k ? 'on' : '',
+        onclick: () => {
+          st.adjType = k;
+          drawAdj();
+          drawQuickPcts();
+          refreshLiveRows(true);
+        },
+      }, lbl));
+    });
+    const labels = { percent_off: '% OFF', amount_off: '$ OFF', set_price: 'FIXED $', percent_increase: '+ %', amount_increase: '+ $' };
+    unitBadge.textContent = labels[st.adjType] || '';
+  };
+
+  const drawRounding = () => {
+    clear(roundingHost);
+    [
+      ['none', 'Exact'],
+      ['charm_99', '.99'],
+      ['whole_dollar', 'Whole $'],
+    ].forEach(([k, lbl]) => {
+      roundingHost.appendChild(h('button.seg-btn', {
+        type: 'button', class: st.rounding === k ? 'on' : '',
+        onclick: () => {
+          st.rounding = k;
+          drawRounding();
+          refreshLiveRows(true);
+        },
+      }, lbl));
+    });
+  };
+
+  const optionsPanel = h('div.stack-sm', { hidden: !st.optionsOpen });
+  const drawOptionsPanel = () => {
+    clear(optionsPanel);
+    const startInp = h('input', { type: 'datetime-local', value: st.startsAt, oninput: (e) => { st.startsAt = e.target.value; } });
+    const endInp = h('input', { type: 'datetime-local', value: st.endsAt, oninput: (e) => { st.endsAt = e.target.value; } });
+    const minMInp = h('input', {
+      type: 'number', min: '0', max: '95', step: '0.5', value: st.minMarginPct,
+      oninput: (e) => { st.minMarginPct = e.target.value; refreshLiveRows(true); },
+    });
+    const clampCb = h('input', {
+      type: 'checkbox', checked: st.clampToMinMargin,
+      onchange: (e) => { st.clampToMinMargin = e.target.checked; refreshLiveRows(true); },
+    });
+    const noCostCb = h('input', {
+      type: 'checkbox', checked: st.includeNoCost,
+      onchange: (e) => { st.includeNoCost = e.target.checked; refreshLiveRows(true); },
+    });
+    optionsPanel.appendChild(h('div.sep'));
+    optionsPanel.appendChild(h('div.form-grid',
+      h('label.field', 'Start date & time (optional)', startInp),
+      h('label.field', 'End date & time (optional)', endInp),
+      h('label.field', 'Min. profit margin (%)', minMInp)));
+    optionsPanel.appendChild(h('div.row', { style: { gap: '18px', flexWrap: 'wrap' } },
+      h('label.check', clampCb, 'Auto-cap at minimum margin instead of blocking'),
+      h('label.check', noCostCb, 'Include items with $0 cost in Lightspeed'),
+      !isExplicitIds ? h('a.btn.sm.ghost', { href: '#/promotions/new?edit=' + c.id + '&wizard=1' }, 'Change Brand / Category filters →') : null));
+  };
+  const optionsBtn = h('button.btn.sm.ghost', {
+    type: 'button',
+    onclick: () => {
+      st.optionsOpen = !st.optionsOpen;
+      optionsPanel.hidden = !st.optionsOpen;
+      optionsBtn.textContent = st.optionsOpen ? 'Hide schedule & margin rules ▴' : 'Schedule & margin rules ▾';
+    },
+  }, st.optionsOpen ? 'Hide schedule & margin rules ▴' : 'Schedule & margin rules ▾');
+
+  // --- Add Product Inline Drawer (hidden until clicked!) ---
+  const addDrawer = h('div', { hidden: true });
+  let addQuery = '';
+  let addResults = [];
+  const addResultsHost = h('div.picker-results');
+
+  const renderAddResults = () => {
+    clear(addResultsHost);
+    if (!addQuery.trim()) {
+      addResultsHost.appendChild(h('div.msd-empty', 'Type a product name, SKU, or UPC above to find an item to add.'));
+      return;
+    }
+    if (!addResults.length) {
+      addResultsHost.appendChild(h('div.msd-empty', 'No matching products found.'));
+      return;
+    }
+    const existingSet = new Set(st.rows.map((r) => r.variant_id));
+    addResults.forEach((it) => {
+      const already = existingSet.has(it.id) || (st.selectedIds && st.selectedIds.indexOf(it.id) >= 0);
+      addResultsHost.appendChild(h('div.picker-row',
+        h('div',
+          h('div.picker-row-title', it.title),
+          h('div.picker-row-meta', [it.brand, it.sku ? 'SKU: ' + it.sku : null, 'Qty: ' + (it.physicalQty || 0)].filter(Boolean).map((t) => h('span', t)))),
+        h('div.picker-row-price', h('strong', money(it.priceCents))),
+        h('button.btn.sm', {
+          type: 'button',
+          class: already ? 'ghost' : 'primary',
+          disabled: already,
+          onclick: () => {
+            if (!st.selectedIds) {
+              st.selectedIds = st.rows.map((r) => r.variant_id);
+            }
+            if (st.selectedIds.indexOf(it.id) < 0) st.selectedIds.push(it.id);
+            st.excludeIds.delete(it.id);
+            st.rows.unshift({
+              variant_id: it.id,
+              sku: it.sku,
+              title: it.title,
+              brand: it.brand || '',
+              old_price_cents: it.priceCents,
+              compare_at_cents: it.compareAtCents || null,
+              cost_cents: it.costCents !== undefined ? it.costCents : null,
+              map_cents: it.mapCents || null,
+            });
+            st.total = st.rows.length;
+            renderProductsTable();
+            renderAddResults();
+            toast('Added "' + it.title + '"', 'ok');
+          },
+        }, already ? '✓ In list' : '+ Add')));
+    });
+  };
+
+  const runAddSearch = debounce(async () => {
+    if (!addQuery.trim()) { addResults = []; renderAddResults(); return; }
+    try {
+      const r = await ctx.api.items({ q: addQuery.trim(), limit: 15 });
+      addResults = r.items || [];
+    } catch (e) { addResults = []; }
+    renderAddResults();
+  }, 220);
+
+  const buildAddDrawer = () => {
+    clear(addDrawer);
+    const inp = h('input', {
+      type: 'search',
+      placeholder: 'Search by Name, System ID (SKU), UPC, or MPN to add to this promotion…',
+      value: addQuery,
+      oninput: (e) => { addQuery = e.target.value || ''; runAddSearch(); },
+    });
+    addDrawer.appendChild(h('div.picker-box', { style: { marginBottom: '12px' } },
+      h('div.row-between',
+        h('strong.small', 'Add another product to this promotion'),
+        h('button.btn.sm.ghost', { type: 'button', onclick: () => { st.addOpen = false; addDrawer.hidden = true; } }, 'Close ×')),
+      inp,
+      addResultsHost));
+    renderAddResults();
+  };
+
+  const addProductBtn = h('button.btn.sm', {
+    type: 'button',
+    onclick: () => {
+      st.addOpen = !st.addOpen;
+      addDrawer.hidden = !st.addOpen;
+      if (st.addOpen) buildAddDrawer();
+    },
+  }, '+ Add product');
+
+  // --- Personalized Products Table ---
+  const tableContainer = h('div');
+  const countTitleSpan = h('span');
+
+  const loadEditorPage = async (nextOffset) => {
+    st.offset = nextOffset;
+    mount(tableContainer, loading());
+    try {
+      const r = await ctx.api.campaignLines(c.id, undefined, st.offset, st.limit);
+      st.rows = (r.lines || []).filter((l) => !st.excludeIds.has(l.variant_id) && (!st.selectedIds || st.selectedIds.indexOf(l.variant_id) >= 0));
+      st.total = r.total;
+      renderProductsTable();
+    } catch (e) {
+      mount(tableContainer, errorBox(e));
+    }
+  };
+
+  function renderProductsTable() {
+    rowBindings = [];
+    const visibleCount = st.selectedIds ? st.selectedIds.length : Math.max(0, st.total - st.excludeIds.size);
+    countTitleSpan.textContent = 'Products in this promotion (' + visibleCount.toLocaleString('en-US') + ')';
+
+    if (!st.rows.length) {
+      mount(tableContainer, h('div.msd-empty', 'No products in this promotion yet. Click "+ Add product" above to pick items.'));
+      return;
+    }
+
+    const tbody = h('tbody');
+    st.rows.forEach((row) => {
+      const initLive = evalRowLive(row);
+      const priceInput = h('input.input', {
+        type: 'number',
+        min: '0.01',
+        step: '0.01',
+        value: (initLive.newPriceCents / 100).toFixed(2),
+        'aria-label': 'Promo price for ' + row.title,
+        style: {
+          width: '104px',
+          textAlign: 'right',
+          fontVariantNumeric: 'tabular-nums',
+          padding: '4px 8px',
+          height: '32px',
+          fontWeight: '600',
+        },
+      });
+      const resetCustomBtn = h('button.btn.sm.ghost', {
+        type: 'button',
+        title: 'Reset to rule (' + st.value + (st.adjType === 'percent_off' ? '%' : '') + ')',
+        hidden: !initLive.isCustom,
+        style: { padding: '2px 6px', fontSize: '11px' },
+        onclick: () => {
+          delete st.customPrices[row.variant_id];
+          refreshRow(true);
+        },
+      }, '↺ Rule');
+      const marginCell = h('td.num');
+      const statusCell = h('td');
+
+      function refreshRow(syncInputValue) {
+        const lv = evalRowLive(row);
+        if (syncInputValue && !lv.isCustom) {
+          priceInput.value = (lv.newPriceCents / 100).toFixed(2);
+        } else if (syncInputValue && lv.isCustom && lv.newPriceCents !== st.customPrices[row.variant_id]) {
+          priceInput.value = (lv.newPriceCents / 100).toFixed(2);
+        }
+        priceInput.style.borderColor = lv.isCustom ? '#d97706' : '';
+        priceInput.style.background = lv.isCustom ? '#fffbeb' : '';
+        resetCustomBtn.hidden = !lv.isCustom;
+        marginCell.textContent = lv.status === 'excluded' || lv.marginAfter === null ? '—' : pct(lv.marginAfter);
+        clear(statusCell);
+        statusCell.appendChild(h('span.badge', { class: lv.cls }, lv.label));
+      }
+
+      priceInput.addEventListener('input', () => {
+        const cents = dollarsToCents(priceInput.value);
+        if (cents && cents > 0) {
+          st.customPrices[row.variant_id] = cents;
+          refreshRow(false);
+        }
+      });
+
+      refreshRow(false);
+      rowBindings.push({ refresh: refreshRow });
+
+      const removeBtn = h('button.btn.sm.ghost', {
+        type: 'button',
+        title: 'Remove from this promotion',
+        onclick: () => {
+          if (st.selectedIds) {
+            st.selectedIds = st.selectedIds.filter((id) => id !== row.variant_id);
+          } else {
+            st.excludeIds.add(row.variant_id);
+          }
+          delete st.customPrices[row.variant_id];
+          st.rows = st.rows.filter((r) => r.variant_id !== row.variant_id);
+          renderProductsTable();
+        },
+      }, '× Remove');
+
+      tbody.appendChild(h('tr',
+        h('td.title-cell',
+          h('strong', row.title),
+          h('div.sku', [row.sku, row.brand].filter(Boolean).join(' · '))),
+        h('td.num', row.compare_at_cents && row.compare_at_cents > row.old_price_cents
+          ? h('div', money(row.old_price_cents), h('div.small.muted', 'Sale · Default ' + money(row.compare_at_cents)))
+          : money(row.old_price_cents)),
+        h('td.num',
+          h('div.row', { style: { justifyContent: 'flex-end', gap: '6px', flexWrap: 'nowrap' } },
+            h('span.small.muted', '$'),
+            priceInput,
+            resetCustomBtn)),
+        h('td.num', money(row.cost_cents)),
+        marginCell,
+        h('td.num', row.map_cents ? money(row.map_cents) : '—'),
+        statusCell,
+        h('td', { style: { textAlign: 'right' } }, removeBtn)));
+    });
+
+    const tbl = h('div.table-wrap',
+      h('table.data-table',
+        h('thead', h('tr',
+          h('th', 'Product'),
+          h('th.num', 'Current'),
+          h('th.num', 'Promo Price ($)'),
+          h('th.num', 'Cost'),
+          h('th.num', 'Margin After'),
+          h('th.num', 'MAP Floor'),
+          h('th', 'Status'),
+          h('th', ''))),
+        tbody));
+
+    const pg = !st.selectedIds && st.total > st.limit
+      ? pager({ total: st.total, limit: st.limit, offset: st.offset, onPage: loadEditorPage })
+      : null;
+    mount(tableContainer, tbl, pg);
+  }
+
+  drawChannel();
+  drawAdj();
+  drawQuickPcts();
+  drawRounding();
+  drawOptionsPanel();
+  renderProductsTable();
+
+  const controlsCard = card(null, h('div.stack',
+    h('div.form-grid',
+      h('label.field', 'Promotion name', nameInput),
+      h('div.stack-sm', h('span.small.muted', 'Where it applies'), channelHost)),
+    h('div.sep'),
+    h('div.row', { style: { gap: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' } },
+      h('div.row', { style: { gap: '10px', flexWrap: 'wrap', alignItems: 'center' } },
+        adjTabsHost,
+        valueInput,
+        unitBadge,
+        quickPctHost),
+      h('div.row', { style: { gap: '8px', alignItems: 'center' } },
+        h('span.small.muted', 'Ending:'),
+        roundingHost)),
+    h('div', optionsBtn),
+    optionsPanel));
+
+  const productsCard = card(countTitleSpan, h('div.stack-sm',
+    addDrawer,
+    tableContainer), { actions: h('div.row', { style: { gap: '8px' } }, addProductBtn) });
+
+  return h('div.stack',
+    pageHead('Edit Promotion', 'Viewing only the products in this promotion. Adjust the % rule above or type an exact $ price directly on any product.',
+      [
+        h('a.btn', { href: '#/promotions/' + c.id }, 'Cancel'),
+        makeSaveBtn(),
+      ]),
+    errBox,
+    controlsCard,
+    productsCard,
+    h('div.row', { style: { justifyContent: 'flex-end', gap: '10px' } },
+      h('a.btn', { href: '#/promotions/' + c.id }, 'Cancel'),
+      makeSaveBtn()));
+}
+
 export async function renderPromotionDetail(ctx) {
   const c = await ctx.api.campaign(ctx.params.id);
+  if (ctx.query.edit === '1' && (c.status === 'draft' || c.status === 'failed') && ctx.can('pricing.write')) {
+    return renderPersonalizedPromoEditor(ctx, c);
+  }
   const s = c.summary || { total: 0, ok: 0, warning: 0, blocked: 0, excluded: 0, revenueDeltaCents: 0 };
   const st = { status: s.blocked ? 'blocked' : null, offset: 0, limit: 50 };
   const linesHost = h('div', loading());
@@ -943,7 +1541,7 @@ export async function renderPromotionDetail(ctx) {
 
   const actions = [];
   if ((c.status === 'draft' || c.status === 'failed') && ctx.can('pricing.write')) {
-    actions.push(h('a.btn', { href: '#/promotions/new?edit=' + c.id }, 'Edit % / .99 / brands'));
+    actions.push(h('a.btn', { href: '#/promotions/' + c.id + '?edit=1' }, 'Edit promotion'));
   }
   if (c.status === 'draft') {
     if (ctx.can('pricing.write')) actions.push(h('button.btn', { onclick: async () => { await ctx.api.previewCampaign(c.id); toast('Preview refreshed with current data'); ctx.navigate('#/promotions/' + c.id + '?r=' + Date.now()); } }, 'Refresh preview'));

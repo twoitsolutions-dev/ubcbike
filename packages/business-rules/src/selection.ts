@@ -12,6 +12,7 @@ export function matchesFilter(
   now: Date = new Date(),
 ): boolean {
   if (f.ids && f.ids.length && !f.ids.includes(item.id)) return false;
+  if (f.excludeIds && f.excludeIds.length && f.excludeIds.includes(item.id)) return false;
   if (f.status && f.status !== 'any' && item.status !== f.status) return false;
   if (f.categories?.length && !f.categories.includes(item.category)) return false;
   if (f.brands?.length && !f.brands.includes(item.brand)) return false;

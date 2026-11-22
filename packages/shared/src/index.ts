@@ -123,6 +123,8 @@ export interface CampaignRules {
   clampToMinMargin: boolean;
   /** Exclude items with no known cost (cannot verify margin). Always true in the default rules. */
   excludeWithoutCost: boolean;
+  /** Optional per-variant custom promo prices (in integer cents); MAP and margin floors still apply. */
+  customPricesCents?: Record<string, Cents>;
 }
 
 export const DEFAULT_CAMPAIGN_RULES: CampaignRules = {
@@ -176,6 +178,7 @@ export type CampaignStatus =
 export interface ItemFilter {
   q?: string;
   ids?: string[];
+  excludeIds?: string[];
   categories?: string[];
   brands?: string[];
   suppliers?: string[];

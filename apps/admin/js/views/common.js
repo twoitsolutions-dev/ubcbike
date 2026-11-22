@@ -69,7 +69,7 @@ export function filterBar(facets, filter, onChange, opts) {
 
 export function filterToQuery(f) {
   return {
-    q: f.q, ids: f.ids, categories: f.categories, brands: f.brands, suppliers: f.suppliers, stock: f.stock, status: f.status,
+    q: f.q, ids: f.ids, excludeIds: f.excludeIds, categories: f.categories, brands: f.brands, suppliers: f.suppliers, stock: f.stock, status: f.status,
     priceMinCents: f.priceMinCents, priceMaxCents: f.priceMaxCents, marginMinPct: f.marginMinPct, marginMaxPct: f.marginMaxPct,
   };
 }
@@ -94,6 +94,7 @@ export function describeFilter(f) {
   if (f.stock) parts.push({ physical: 'in stock', virtual_only: 'supplier-only', unavailable: 'unavailable' }[f.stock]);
   if (f.status) parts.push(f.status);
   if (f.ids) parts.push(f.ids.length + ' selected items');
+  if (f.excludeIds && f.excludeIds.length) parts.push(f.excludeIds.length + ' excluded');
   return parts.length ? parts.join(' · ') : 'All products';
 }
 

@@ -8,6 +8,7 @@ type Q = Pool | PoolClient;
 export const itemFilterSchema = z.object({
   q: z.string().max(200).optional(),
   ids: z.array(z.string().uuid()).max(20000).optional(),
+  excludeIds: z.array(z.string().uuid()).max(20000).optional(),
   categories: z.array(z.string().max(100)).max(50).optional(),
   brands: z.array(z.string().max(100)).max(200).optional(),
   suppliers: z.array(z.string().max(50)).max(20).optional(),
@@ -31,6 +32,7 @@ export function buildWhere(companyId: string, f: ItemFilter, av: AvailabilitySet
   const w: string[] = ['company_id = $1'];
   const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
   if (f.ids?.length) w.push(`id = ANY(${p(f.ids)}::uuid[])`);
+  if (f.excludeIds?.length) w.push(`NOT (id = ANY(${p(f.excludeIds)}::uuid[]))`);
   if (f.status && f.status !== 'any') w.push(`status = ${p(f.status)}`);
   if (f.categories?.length) w.push(`category = ANY(${p(f.categories)}::text[])`);
   if (f.brands?.length) w.push(`brand = ANY(${p(f.brands)}::text[])`);

@@ -25,6 +25,7 @@ export function filterFromQuery(q: Record<string, unknown>): ItemFilter {
   return itemFilterSchema.parse({
     q: typeof q.q === 'string' && q.q ? q.q : undefined,
     ids: list(q.ids),
+    excludeIds: list(q.excludeIds),
     categories: list(q.categories), brands: list(q.brands), suppliers: list(q.suppliers),
     priceMinCents: num(q.priceMinCents), priceMaxCents: num(q.priceMaxCents),
     marginMinPct: num(q.marginMinPct), marginMaxPct: num(q.marginMaxPct),

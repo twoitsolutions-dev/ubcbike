@@ -25,6 +25,7 @@ export const rulesSchema = z.object({
   warnMarginPct: z.number().min(0).max(0.95),
   clampToMinMargin: z.boolean(),
   excludeWithoutCost: z.boolean(),
+  customPricesCents: z.record(z.string().uuid(), z.number().int().positive()).optional(),
 }).partial();
 
 export const posSyncEventSchema = z.enum([

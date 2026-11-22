@@ -305,7 +305,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       lightspeed_item_id: string;
     }>(
       `SELECT pv.id AS variant_id, pv.product_id, ei.external_id AS lightspeed_item_id
-       FROM product_variants pv
+       FROM variants pv
        JOIN external_ids ei ON ei.entity_id = pv.id AND ei.company_id = pv.company_id AND ei.system = 'lightspeed_r'
        WHERE pv.company_id = $1 AND pv.id = ANY($2::uuid[])`,
       [s.companyId, ids],
@@ -355,7 +355,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       }
       if (ch.defaultPriceCents !== undefined || ch.defaultCostCents !== undefined) {
         await ctx.pool.query(
-          `UPDATE product_variants
+          `UPDATE variants
            SET price_cents = COALESCE($1, price_cents),
                cost_cents = COALESCE($2, cost_cents),
                updated_at = NOW()

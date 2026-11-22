@@ -147,6 +147,18 @@ export async function renderLightspeedSheet(ctx) {
         }, 'Resume Live Writes'));
       }
     }
+    if (ctx.api.syncLightspeed) {
+      modeActions.push(h('button.btn.sm.outline', {
+        onclick: async () => {
+          try {
+            await ctx.api.syncLightspeed();
+            toast('Lightspeed sync started — refresh in a few seconds for new items.', 'ok');
+          } catch (err) {
+            toast(err.message || 'Could not start sync', 'err');
+          }
+        },
+      }, 'Sync from Lightspeed'));
+    }
     modeActions.push(h('a.btn.sm.outline', { href: '#/integrations' }, 'OAuth Connections'));
 
     mount(statusWrap, card(null, [

@@ -31,6 +31,8 @@ export interface LightspeedRConfig {
   apiBase?: string;
   /** Opt-in gate: only enabled when UBC authorises POS price parity for major events (Black Friday, Christmas, etc.). */
   posEventWritesEnabled?: boolean;
+  /** Opt-in gate: only enabled when UBC authorises HUB Bulk Sheet writes (`LIGHTSPEED_WRITES_ENABLED=true`). */
+  writesEnabled?: boolean;
   fetchImpl?: typeof fetch;
   /** Optional server-side vault callbacks to persist rotating refresh tokens across restarts & workers. */
   loadTokenState?: () => Promise<LightspeedTokenVaultState | null>;
@@ -426,6 +428,127 @@ export class LightspeedRClient {
         if (lvl !== undefined && max && lvl / max > 0.75) await sleep(1100);
       }
     }
+  }
+
+  /**
+   * Controlled HUB Bulk Sheet write to Lightspeed R-Series (`LIGHTSPEED_WRITES_ENABLED=true`).
+   * Reads each item first as a backup snapshot, updates only whitelisted Item fields (`PUT Item/{id}.json`),
+   * and updates restock thresholds separately via `PUT ItemShop/{itemShopID}.json`.
+   */
+  async bulkUpdateItems(
+    updates: {
+      lightspeedItemId: string;
+      description?: string;
+      customSku?: string;
+      tags?: string[];
+      defaultPriceCents?: number;
+      msrpCents?: number | null;
+      salePriceCents?: number | null;
+      onlinePriceCents?: number | null;
+      defaultCostCents?: number | null;
+      reorderPoint?: number;
+      desiredLevel?: number;
+      physicalShopId?: string;
+    }[],
+  ): Promise<{ lightspeedItemId: string; before: Record<string, unknown>; updated: boolean }[]> {
+    if (!this.cfg.writesEnabled) throw new WritesDisabledError('Lightspeed R-Series');
+    await this.ensureConfigured();
+
+    const lsJsonReq = async (method: 'GET' | 'PUT', path: string, body?: unknown): Promise<Record<string, unknown>> => {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await this.fetchImpl(`${this.apiBase}/Account/${this.currentAccountId}/${path}`, {
+          method,
+          headers: {
+            Authorization: `Bearer ${await this.token()}`,
+            Accept: 'application/json',
+            ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          },
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+        if (res.status === 429 || res.status === 503) {
+          const retry = Number(res.headers.get('Retry-After') ?? '2') * 1000;
+          await sleep(retry);
+          continue;
+        }
+        const txt = await res.text();
+        if (!res.ok) throw new Error(`Lightspeed ${method} ${path} HTTP ${res.status}: ${txt.slice(0, 300)}`);
+        const bucket = res.headers.get('X-LS-API-Bucket-Level');
+        if (bucket) {
+          const [lvl, max] = bucket.split('/').map(Number);
+          if (lvl !== undefined && max && lvl / max > 0.75) await sleep(1100);
+        }
+        return JSON.parse(txt) as Record<string, unknown>;
+      }
+      throw new RetryableError(`Lightspeed ${method} ${path} exhausted rate-limit retries`, 2000);
+    };
+
+    const results: { lightspeedItemId: string; before: Record<string, unknown>; updated: boolean }[] = [];
+    for (const u of updates) {
+      const beforeWrap = await lsJsonReq(
+        'GET',
+        `Item/${encodeURIComponent(u.lightspeedItemId)}.json?load_relations=${encodeURIComponent('["ItemShops","Tags"]')}`,
+      );
+      const before = (beforeWrap.Item ?? {}) as Record<string, unknown>;
+      const putBody: Record<string, unknown> = {};
+      if (u.description !== undefined) putBody.description = u.description;
+      if (u.customSku !== undefined) putBody.customSku = u.customSku;
+      if (u.defaultCostCents !== undefined && u.defaultCostCents !== null) {
+        putBody.defaultCost = (u.defaultCostCents / 100).toFixed(2);
+      }
+      if (u.tags !== undefined) {
+        const cleanTags = u.tags.map((t) => t.trim()).filter(Boolean);
+        // Lightspeed R-Series V3 requires a plain string when setting 1 tag (single-item array returns 400).
+        putBody.Tags = cleanTags.length === 0 ? {} : { tag: cleanTags.length === 1 ? cleanTags[0] : cleanTags };
+      }
+
+      const hasPriceUpdate =
+        u.defaultPriceCents !== undefined ||
+        u.msrpCents !== undefined ||
+        u.salePriceCents !== undefined ||
+        u.onlinePriceCents !== undefined;
+      if (hasPriceUpdate) {
+        const curPricesRaw = (before.Prices as { ItemPrice?: unknown } | undefined)?.ItemPrice;
+        const curPrices = (Array.isArray(curPricesRaw) ? curPricesRaw : curPricesRaw ? [curPricesRaw] : []) as {
+          amount: string;
+          useTypeID: string;
+          useType: string;
+        }[];
+        const priceOverrides = new Map<string, string>();
+        if (u.defaultPriceCents !== undefined) priceOverrides.set('1', (u.defaultPriceCents / 100).toFixed(2));
+        if (u.msrpCents !== undefined && u.msrpCents !== null) priceOverrides.set('2', (u.msrpCents / 100).toFixed(2));
+        if (u.salePriceCents !== undefined && u.salePriceCents !== null) priceOverrides.set('3', (u.salePriceCents / 100).toFixed(2));
+        if (u.onlinePriceCents !== undefined && u.onlinePriceCents !== null) priceOverrides.set('4', (u.onlinePriceCents / 100).toFixed(2));
+        const nextPrices = curPrices.map((p) => ({
+          amount: priceOverrides.get(String(p.useTypeID)) ?? p.amount,
+          useTypeID: String(p.useTypeID),
+          useType: p.useType,
+        }));
+        putBody.Prices = { ItemPrice: nextPrices };
+      }
+
+      if (Object.keys(putBody).length > 0) {
+        await lsJsonReq('PUT', `Item/${encodeURIComponent(u.lightspeedItemId)}.json`, putBody);
+      }
+
+      if (u.reorderPoint !== undefined || u.desiredLevel !== undefined) {
+        const shopsRaw = (before.ItemShops as { ItemShop?: unknown } | undefined)?.ItemShop;
+        const shops = (Array.isArray(shopsRaw) ? shopsRaw : shopsRaw ? [shopsRaw] : []) as {
+          itemShopID?: string;
+          shopID?: string;
+        }[];
+        const targetShopId = u.physicalShopId || '1';
+        const shopRow = shops.find((s) => String(s.shopID) === targetShopId) ?? shops.find((s) => s.shopID && s.shopID !== '0');
+        if (shopRow?.itemShopID) {
+          const shopPatch: Record<string, string> = {};
+          if (u.reorderPoint !== undefined) shopPatch.reorderPoint = String(u.reorderPoint);
+          if (u.desiredLevel !== undefined) shopPatch.reorderLevel = String(u.desiredLevel);
+          await lsJsonReq('PUT', `ItemShop/${encodeURIComponent(shopRow.itemShopID)}.json`, shopPatch);
+        }
+      }
+
+      results.push({ lightspeedItemId: u.lightspeedItemId, before, updated: true });
+    }
+    return results;
   }
 }
 

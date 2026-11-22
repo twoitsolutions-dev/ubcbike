@@ -127,6 +127,7 @@ export function createConnectors(cfg: AppConfig, pool: Pool): Connectors {
     tokenUrl: e.LIGHTSPEED_R_TOKEN_URL,
     apiBase: e.LIGHTSPEED_R_API_BASE,
     posEventWritesEnabled: e.LIGHTSPEED_R_POS_EVENT_WRITES_ENABLED,
+    writesEnabled: e.LIGHTSPEED_WRITES_ENABLED,
     async loadTokenState() {
       const r = await pool.query<{
         client_id: string | null;

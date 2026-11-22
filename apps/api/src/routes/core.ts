@@ -233,17 +233,89 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.post('/api/lightspeed/bulk-update', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req, reply) => {
-    const body = z.object({ changes: z.array(lsBulkChangeSchema).min(1).max(500) }).parse(req.body);
+    const s = req.session!;
+    if (!['owner', 'admin'].includes(s.role)) {
+      return reply.code(403).send({
+        error: 'FORBIDDEN',
+        message: 'Only owner or admin accounts can push bulk updates to Lightspeed.',
+      });
+    }
+    const body = z.object({ changes: z.array(lsBulkChangeSchema).min(1).max(100) }).parse(req.body);
     if (!ctx.config.env.LIGHTSPEED_WRITES_ENABLED) {
       return reply.code(403).send({
         error: 'LIGHTSPEED_READ_ONLY',
-        message: 'Lightspeed writes are disabled. Authorize OAuth scope employee:inventory and set LIGHTSPEED_WRITES_ENABLED=true on the server. Use Export CSV in the meantime.',
+        message: 'Lightspeed writes are disabled. Set LIGHTSPEED_WRITES_ENABLED=true on the server when ready.',
       });
     }
-    return reply.code(501).send({
-      error: 'LIGHTSPEED_WRITER_NOT_CONFIGURED',
-      message: `Validated ${body.changes.length} changes for company ${req.session!.companyId}, but live Lightspeed item writer requires verified API write mapping.`,
-    });
+
+    const ids = body.changes.map((c) => c.id);
+    const linkRes = await ctx.pool.query<{
+      variant_id: string;
+      product_id: string;
+      lightspeed_item_id: string;
+    }>(
+      `SELECT pv.id AS variant_id, pv.product_id, ei.external_id AS lightspeed_item_id
+       FROM product_variants pv
+       JOIN external_ids ei ON ei.entity_id = pv.id AND ei.company_id = pv.company_id AND ei.system = 'lightspeed_r'
+       WHERE pv.company_id = $1 AND pv.id = ANY($2::uuid[])`,
+      [s.companyId, ids],
+    );
+    const lsByVariant = new Map(linkRes.rows.map((r) => [r.variant_id, r]));
+    const shopId = (ctx.config.env.LIGHTSPEED_R_PHYSICAL_SHOP_ID || '1').split(',')[0]?.trim() || '1';
+
+    const updates = [];
+    const skipped: string[] = [];
+    for (const ch of body.changes) {
+      const link = lsByVariant.get(ch.id);
+      if (!link) {
+        skipped.push(ch.id);
+        continue;
+      }
+      updates.push({
+        lightspeedItemId: link.lightspeed_item_id,
+        description: ch.description,
+        customSku: ch.customSku,
+        tags: ch.tags,
+        defaultPriceCents: ch.defaultPriceCents,
+        msrpCents: ch.msrpCents,
+        salePriceCents: ch.salePriceCents,
+        onlinePriceCents: ch.onlinePriceCents,
+        defaultCostCents: ch.defaultCostCents,
+        reorderPoint: ch.reorderPoint,
+        desiredLevel: ch.desiredLevel,
+        physicalShopId: shopId,
+      });
+    }
+
+    if (!ctx.connectors.lightspeed) {
+      return reply.code(400).send({ error: 'NOT_CONFIGURED', message: 'Lightspeed connector is not configured.' });
+    }
+    const results = updates.length ? await ctx.connectors.lightspeed.bulkUpdateItems(updates) : [];
+    for (const ch of body.changes) {
+      const link = lsByVariant.get(ch.id);
+      if (!link) continue;
+      const resRow = results.find((r) => r.lightspeedItemId === link.lightspeed_item_id);
+      await ctx.pool.query(
+        `INSERT INTO audit_logs (company_id, actor_user_id, action, entity_type, entity_id, details)
+         VALUES ($1, $2, 'lightspeed.bulk_sheet_updated', 'variant', $3, $4::jsonb)`,
+        [s.companyId, s.userId, ch.id, JSON.stringify({ lightspeedItemId: link.lightspeed_item_id, changes: ch, before: resRow?.before ?? null })],
+      );
+      if (ch.description !== undefined) {
+        await ctx.pool.query(`UPDATE products SET title = $1, updated_at = NOW() WHERE id = $2 AND company_id = $3`, [ch.description, link.product_id, s.companyId]);
+      }
+      if (ch.defaultPriceCents !== undefined || ch.defaultCostCents !== undefined) {
+        await ctx.pool.query(
+          `UPDATE product_variants
+           SET price_cents = COALESCE($1, price_cents),
+               cost_cents = COALESCE($2, cost_cents),
+               updated_at = NOW()
+           WHERE id = $3 AND company_id = $4`,
+          [ch.defaultPriceCents ?? null, ch.defaultCostCents ?? null, ch.id, s.companyId],
+        );
+      }
+    }
+
+    return { ok: true, updated: results.length, skipped };
   });
 
   const collectionsGapCache = new Map<string, { at: number; data: unknown }>();

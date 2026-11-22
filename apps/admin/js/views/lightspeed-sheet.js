@@ -45,7 +45,13 @@ export async function renderLightspeedSheet(ctx) {
 
   const facets = await ctx.api.facets();
   const st = {
-    filter: { q: ctx.query.q || '', brand: ctx.query.brand || '', category: ctx.query.category || '', tag: ctx.query.tag || '' },
+    filter: {
+      q: ctx.query.q || '',
+      brands: ctx.query.brands || '',
+      categories: ctx.query.categories || '',
+      stock: ctx.query.stock || 'physical',
+      tag: ctx.query.tag || '',
+    },
     offset: 0,
     limit: 50,
     data: null,
@@ -54,7 +60,7 @@ export async function renderLightspeedSheet(ctx) {
 
   const head = pageHead(
     'Lightspeed Bulk Sheet',
-    'Excel-style editor for descriptions, Custom SKU, tags (eoy2026), all price fields, and restock levels.',
+    'Excel-style editor for descriptions, Custom SKU, tags, all price fields, and restock levels.',
   );
   const tabs = itemSearchTabs('ls-sheet');
   const statusWrap = h('div');
@@ -174,53 +180,65 @@ export async function renderLightspeedSheet(ctx) {
   }
 
   function buildControls() {
-    const qInput = h('input.input', { type: 'search', placeholder: 'Search description, System ID, UPC, MPN…', value: st.filter.q, style: 'width:240px;flex:1 1 200px' });
-    const brandSel = h('select.input', { style: 'width:auto;max-width:170px' }, [
+    const qInput = h('input.input', { type: 'search', placeholder: 'Search description, System ID, UPC, MPN…', value: st.filter.q, style: 'width:220px;flex:1 1 180px' });
+    const stockSel = h('select.input', { style: 'width:auto;max-width:155px' }, [
+      h('option', { value: 'physical', selected: st.filter.stock === 'physical' }, 'In Stock Only'),
+      h('option', { value: 'any', selected: st.filter.stock === 'any' }, 'All Active Items'),
+      h('option', { value: 'unavailable', selected: st.filter.stock === 'unavailable' }, 'Out of Stock'),
+    ]);
+    const brandSel = h('select.input', { style: 'width:auto;max-width:155px' }, [
       h('option', { value: '' }, 'All brands'),
-      ...facets.brands.map((b) => h('option', { value: b.value, selected: st.filter.brand === b.value }, b.value + ' (' + b.n + ')')),
+      ...facets.brands.map((b) => h('option', { value: b.value, selected: st.filter.brands === b.value }, b.value + ' (' + b.n + ')')),
     ]);
-    const catSel = h('select.input', { style: 'width:auto;max-width:170px' }, [
+    const catSel = h('select.input', { style: 'width:auto;max-width:155px' }, [
       h('option', { value: '' }, 'All categories'),
-      ...facets.categories.map((c) => h('option', { value: c.value, selected: st.filter.category === c.value }, c.value + ' (' + c.n + ')')),
+      ...facets.categories.map((c) => h('option', { value: c.value, selected: st.filter.categories === c.value }, c.value + ' (' + c.n + ')')),
     ]);
-    const tagSel = h('select.input', { style: 'width:auto;max-width:140px' }, [
-      h('option', { value: '' }, 'All tags'),
-      h('option', { value: 'eoy2026', selected: st.filter.tag === 'eoy2026' }, 'Tag: eoy2026'),
-      h('option', { value: 'peoy26', selected: st.filter.tag === 'peoy26' }, 'Tag: peoy26'),
-    ]);
+    const tagInput = h('input.input', { type: 'search', placeholder: 'Tag…', value: st.filter.tag, style: 'width:110px' });
 
     const applyFilters = () => {
       st.filter.q = qInput.value.trim();
-      st.filter.brand = brandSel.value;
-      st.filter.category = catSel.value;
-      st.filter.tag = tagSel.value;
+      st.filter.stock = stockSel.value;
+      st.filter.brands = brandSel.value;
+      st.filter.categories = catSel.value;
+      st.filter.tag = tagInput.value.trim();
       st.offset = 0;
       load();
     };
     qInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
+    tagInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
+    stockSel.addEventListener('change', applyFilters);
     brandSel.addEventListener('change', applyFilters);
     catSel.addEventListener('change', applyFilters);
-    tagSel.addEventListener('change', applyFilters);
 
     const searchBtn = h('button.btn.sm', { onClick: applyFilters }, 'Filter');
     const stdBtn = h('button.btn.sm', {
-      title: 'Replace peoy26 with eoy2026 on all visible rows',
+      title: 'Find & replace a tag across all visible rows',
       onClick: () => {
         if (!st.data || !st.data.items.length) return;
+        const fromTag = window.prompt('Find tag to replace (exact match):', '');
+        if (!fromTag || !fromTag.trim()) return;
+        const toTag = window.prompt('Replace "' + fromTag.trim() + '" with (leave blank to remove):', '');
+        if (toTag === null) return;
+        const fromLow = fromTag.trim().toLowerCase();
+        const toClean = toTag.trim();
         let count = 0;
         st.data.items.forEach((row) => {
           const cur = getMergedRow(row);
           const tags = Array.isArray(cur.tags) ? cur.tags : [];
-          if (tags.some((t) => String(t).toLowerCase() === 'peoy26')) {
-            const next = Array.from(new Set(tags.map((t) => (String(t).toLowerCase() === 'peoy26' ? 'eoy2026' : t))));
+          if (tags.some((t) => String(t).toLowerCase() === fromLow)) {
+            const mapped = tags
+              .map((t) => (String(t).toLowerCase() === fromLow ? toClean : t))
+              .filter(Boolean);
+            const next = Array.from(new Set(mapped));
             stageField(row, 'tags', next);
             count++;
           }
         });
         renderTable();
-        toast(count ? 'Staged peoy26 → eoy2026 on ' + count + ' visible rows' : 'No visible rows had tag peoy26', count ? 'ok' : 'info');
+        toast(count ? 'Updated tag on ' + count + ' visible row(s)' : 'No visible rows had tag "' + fromTag.trim() + '"', count ? 'ok' : 'info');
       },
-    }, 'Standardize peoy26 → eoy2026');
+    }, 'Replace Tag');
 
     discardBtn = h('button.btn.sm', {
       disabled: true,
@@ -291,7 +309,7 @@ export async function renderLightspeedSheet(ctx) {
 
     mount(controlsWrap, card(null, [
       h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between' }, [
-        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [qInput, brandSel, catSel, tagSel, searchBtn, stdBtn]),
+        h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [qInput, stockSel, brandSel, catSel, tagInput, searchBtn, stdBtn]),
         h('div.row', { style: 'gap:8px;flex-wrap:wrap;align-items:center' }, [discardBtn, exportBtn, pushBtn]),
       ]),
     ]));

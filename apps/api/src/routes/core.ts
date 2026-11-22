@@ -190,9 +190,14 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const writePaused = compRes.rows[0]?.ls_paused === 'true';
     const serverWritesEnabled = !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
     const writesEnabled = serverWritesEnabled && !writePaused;
-    const { items, total } = await listItems(ctx.pool, c, filterFromQuery(q), availability, page);
+    const filter = filterFromQuery(q);
+    if (!q.stock) filter.stock = 'physical';
+    else if (q.stock === 'any') delete filter.stock;
+    const { items, total } = await listItems(ctx.pool, c, filter, availability, page);
     const tagFilter = typeof q.tag === 'string' ? q.tag.trim().toLowerCase() : '';
+    const includeHidden = q.status === 'hidden' || q.includeHidden === '1';
     const mapped = items
+      .filter((i) => includeHidden || i.status !== 'hidden')
       .map((i) => {
         const raw = i as unknown as Record<string, unknown>;
         const tags = Array.isArray(raw.tags) ? (raw.tags as string[]) : [];

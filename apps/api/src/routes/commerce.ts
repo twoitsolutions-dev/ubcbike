@@ -683,7 +683,10 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
 
     const integrations = rawList.map((item) => {
       if (item.system === 'lightspeed_r') {
-        return { ...item, writesEnabled: dbLsActive };
+        const cleanDetail = item.status === 'connected'
+          ? `Authenticated (Account #${ctx.config.env.LIGHTSPEED_R_ACCOUNT_ID || '114391'} · ${dbLsActive ? 'Live Bulk Sheet & POS Event SALE PRICE writes active' : 'Read-Only safety lock active; 5m inventory sync running'})`
+          : item.detail;
+        return { ...item, writesEnabled: dbLsActive, detail: cleanDetail };
       }
       return item;
     });

@@ -47,7 +47,7 @@ export function buildWhere(companyId: string, f: ItemFilter, av: AvailabilitySet
       w.push(`(lower(title) LIKE ${ph} OR lower(brand) LIKE ${ph} OR lower(sku) LIKE ${ph} OR coalesce(upc,'') LIKE ${ph} OR lower(coalesce(mpn,'')) LIKE ${ph})`);
     }
   }
-  if (f.stock && f.stock !== 'any') {
+  if (f.stock === 'physical' || f.stock === 'virtual_only' || f.stock === 'unavailable') {
     const sellable = `(physical_qty - reserved_qty - ${p(av.physicalSafetyQty)}) > 0`;
     // Only bind the freshness parameters when the expression is actually used.
     const fresh = () => `EXISTS (SELECT 1 FROM jsonb_array_elements(offers) o WHERE (o->>'qtyAvailable')::int > ${p(av.supplierSafetyQty)}

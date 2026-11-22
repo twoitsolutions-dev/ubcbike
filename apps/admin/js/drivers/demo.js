@@ -446,7 +446,14 @@ export function createDemoDriver() {
           version: i.version,
         };
       }).filter((row) => !tagFilter || row.tags.some((t) => String(t).toLowerCase().includes(tagFilter)));
-      return { total: mapped.length, writesEnabled: false, items: mapped.slice(offset, offset + limit) };
+      return { total: mapped.length, serverWritesEnabled: true, writePaused: !!state.lightspeedPaused, writesEnabled: !state.lightspeedPaused, items: mapped.slice(offset, offset + limit) };
+    },
+    async lightspeedSetMode(paused) {
+      can('catalog.write');
+      state.lightspeedPaused = !!paused;
+      audit('lightspeed.mode_changed', 'company', null, { paused: state.lightspeedPaused });
+      save();
+      return { ok: true, serverWritesEnabled: true, writePaused: state.lightspeedPaused, writesEnabled: !state.lightspeedPaused };
     },
     async lightspeedBulkUpdate(changes) {
       can('catalog.write');

@@ -183,6 +183,13 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const page = pageSchema.parse(q);
     const c = req.session!.companyId;
     const { availability } = await getSettings(ctx.pool, c);
+    const compRes = await ctx.pool.query<{ ls_paused: string | null }>(
+      `SELECT settings->>'lightspeedWritePaused' AS ls_paused FROM companies WHERE id = $1`,
+      [c],
+    );
+    const writePaused = compRes.rows[0]?.ls_paused === 'true';
+    const serverWritesEnabled = !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
+    const writesEnabled = serverWritesEnabled && !writePaused;
     const { items, total } = await listItems(ctx.pool, c, filterFromQuery(q), availability, page);
     const tagFilter = typeof q.tag === 'string' ? q.tag.trim().toLowerCase() : '';
     const mapped = items
@@ -213,8 +220,37 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       .filter((row) => !tagFilter || row.tags.some((t) => String(t).toLowerCase().includes(tagFilter)));
     return {
       total: tagFilter ? mapped.length : total,
-      writesEnabled: !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED,
+      serverWritesEnabled,
+      writePaused,
+      writesEnabled,
       items: mapped,
+    };
+  });
+
+  app.post('/api/lightspeed/mode', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req, reply) => {
+    const s = req.session!;
+    if (!['owner', 'admin'].includes(s.role)) {
+      return reply.code(403).send({ error: 'FORBIDDEN', message: 'Only owner or admin can change Lightspeed write mode.' });
+    }
+    const { paused } = z.object({ paused: z.boolean() }).parse(req.body);
+    await ctx.pool.query(
+      `UPDATE companies
+       SET settings = COALESCE(settings, '{}'::jsonb) || jsonb_build_object('lightspeedWritePaused', $1::boolean),
+           updated_at = NOW()
+       WHERE id = $2`,
+      [paused, s.companyId],
+    );
+    await ctx.pool.query(
+      `INSERT INTO audit_logs (company_id, actor_user_id, action, entity_type, entity_id, details)
+       VALUES ($1, $2, 'lightspeed.mode_changed', 'company', $1, $3::jsonb)`,
+      [s.companyId, s.userId, JSON.stringify({ paused })],
+    );
+    const serverWritesEnabled = !!ctx.config.env.LIGHTSPEED_WRITES_ENABLED;
+    return {
+      ok: true,
+      serverWritesEnabled,
+      writePaused: paused,
+      writesEnabled: serverWritesEnabled && !paused,
     };
   });
 
@@ -245,6 +281,16 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       return reply.code(403).send({
         error: 'LIGHTSPEED_READ_ONLY',
         message: 'Lightspeed writes are disabled. Set LIGHTSPEED_WRITES_ENABLED=true on the server when ready.',
+      });
+    }
+    const pauseRes = await ctx.pool.query<{ ls_paused: string | null }>(
+      `SELECT settings->>'lightspeedWritePaused' AS ls_paused FROM companies WHERE id = $1`,
+      [s.companyId],
+    );
+    if (pauseRes.rows[0]?.ls_paused === 'true') {
+      return reply.code(403).send({
+        error: 'LIGHTSPEED_PAUSED',
+        message: 'Lightspeed Bulk Sheet is paused in Read-Only mode. Click "Enable Live Writes" above to resume.',
       });
     }
 

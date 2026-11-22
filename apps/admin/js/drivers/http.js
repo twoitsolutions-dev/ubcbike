@@ -46,6 +46,7 @@ export function createHttpDriver() {
     reportsMarginIssues: () => req('GET', '/api/reports/margin-issues'),
     items: (q) => req('GET', '/api/items' + qs(q)),
     lightspeedSheet: (q) => req('GET', '/api/lightspeed/sheet' + qs(q)),
+    lightspeedSetMode: (paused) => req('POST', '/api/lightspeed/mode', { paused }),
     lightspeedBulkUpdate: (changes) => req('POST', '/api/lightspeed/bulk-update', { changes }),
     facets: () => req('GET', '/api/items/facets'),
     item: (id) => req('GET', '/api/items/' + id),

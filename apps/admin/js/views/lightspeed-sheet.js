@@ -85,17 +85,71 @@ export async function renderLightspeedSheet(ctx) {
     updateActionBar();
   }
 
-  function renderStatusBanner(writesEnabled) {
+  function renderStatusBanner(data) {
+    const writesEnabled = !!(data && data.writesEnabled);
+    const serverWritesEnabled = !!(data && data.serverWritesEnabled);
+    const writePaused = !!(data && data.writePaused);
+
     const badge = writesEnabled
-      ? h('span.badge.ok', 'Lightspeed Writes Enabled')
-      : h('span.badge.warn', 'Lightspeed Read-Only (Pending OAuth employee:inventory)');
+      ? h('span.badge.ok', 'LIVE WRITES ENABLED')
+      : writePaused
+        ? h('span.badge.warn', 'PAUSED · READ-ONLY')
+        : h('span.badge.warn', 'READ-ONLY (Server Lock)');
+
     const msg = writesEnabled
-      ? 'Live push to Lightspeed R-Series is authorized.'
-      : 'Edit any cell below and use Export CSV immediately. Direct push to Lightspeed stays safely locked until OAuth write scope (employee:inventory) and LIGHTSPEED_WRITES_ENABLED=true are enabled.';
+      ? 'Live push to Lightspeed is active (Owner/Admin only, with automatic backup in Audit Log).'
+      : writePaused
+        ? 'Live writes are paused by Owner/Admin. You can still edit cells and Export CSV safely.'
+        : 'Server safety lock is active (LIGHTSPEED_WRITES_ENABLED=false). Export CSV works immediately.';
+
+    const canManage = !ctx.can || ctx.can('catalog.write');
+    const modeActions = [];
+    if (canManage && ctx.api.lightspeedSetMode) {
+      if (!writePaused) {
+        modeActions.push(h('button.btn.sm.danger', {
+          onclick: async () => {
+            const ok = await confirmDialog({
+              title: 'Pause & Switch to Read-Only?',
+              message: 'This immediately blocks all live Lightspeed pushes from the HUB until resumed.',
+              confirmLabel: 'Switch to Read-Only',
+              danger: true,
+            });
+            if (!ok) return;
+            try {
+              await ctx.api.lightspeedSetMode(true);
+              toast('Lightspeed Bulk Sheet paused (Read-Only)', 'info');
+              load();
+            } catch (err) {
+              toast(err.message || 'Could not pause', 'err');
+            }
+          },
+        }, 'Stop / Switch to Read-Only'));
+      } else {
+        modeActions.push(h('button.btn.sm.primary', {
+          onclick: async () => {
+            if (!serverWritesEnabled) {
+              toast('Server lock LIGHTSPEED_WRITES_ENABLED=false is still active on Hostinger.', 'warn');
+            }
+            try {
+              await ctx.api.lightspeedSetMode(false);
+              toast(serverWritesEnabled ? 'Live Lightspeed writes resumed' : 'Unpaused (waiting for server LIGHTSPEED_WRITES_ENABLED=true)', 'ok');
+              load();
+            } catch (err) {
+              toast(err.message || 'Could not resume', 'err');
+            }
+          },
+        }, 'Resume Live Writes'));
+      }
+    }
+    modeActions.push(h('a.btn.sm.outline', { href: '#/integrations' }, 'OAuth Connections'));
+
     mount(statusWrap, card(null, [
-      h('div.row', { style: 'gap:10px;align-items:center;flex-wrap:wrap' }, [
-        badge,
-        h('span.muted', { style: 'font-size:13px' }, msg),
+      h('div.row', { style: 'gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap' }, [
+        h('div.row', { style: 'gap:10px;align-items:center;flex-wrap:wrap' }, [
+          badge,
+          h('span.muted', { style: 'font-size:13px' }, msg),
+        ]),
+        h('div.row', { style: 'gap:8px;align-items:center;flex-wrap:wrap' }, modeActions),
       ]),
     ]));
   }
@@ -120,16 +174,16 @@ export async function renderLightspeedSheet(ctx) {
   }
 
   function buildControls() {
-    const qInput = h('input.input', { type: 'search', placeholder: 'Search description, System ID, UPC, MPN…', value: st.filter.q, style: 'min-width:240px' });
-    const brandSel = h('select.input', [
+    const qInput = h('input.input', { type: 'search', placeholder: 'Search description, System ID, UPC, MPN…', value: st.filter.q, style: 'width:240px;flex:1 1 200px' });
+    const brandSel = h('select.input', { style: 'width:auto;max-width:170px' }, [
       h('option', { value: '' }, 'All brands'),
       ...facets.brands.map((b) => h('option', { value: b.value, selected: st.filter.brand === b.value }, b.value + ' (' + b.n + ')')),
     ]);
-    const catSel = h('select.input', [
+    const catSel = h('select.input', { style: 'width:auto;max-width:170px' }, [
       h('option', { value: '' }, 'All categories'),
       ...facets.categories.map((c) => h('option', { value: c.value, selected: st.filter.category === c.value }, c.value + ' (' + c.n + ')')),
     ]);
-    const tagSel = h('select.input', [
+    const tagSel = h('select.input', { style: 'width:auto;max-width:140px' }, [
       h('option', { value: '' }, 'All tags'),
       h('option', { value: 'eoy2026', selected: st.filter.tag === 'eoy2026' }, 'Tag: eoy2026'),
       h('option', { value: 'peoy26', selected: st.filter.tag === 'peoy26' }, 'Tag: peoy26'),
@@ -358,11 +412,16 @@ export async function renderLightspeedSheet(ctx) {
     try {
       const q = Object.assign({}, st.filter, { offset: st.offset, limit: st.limit });
       st.data = await ctx.api.lightspeedSheet(q);
-      renderStatusBanner(!!st.data.writesEnabled);
+      renderStatusBanner(st.data);
       renderTable();
-      mount(pagerWrap, pager(st.data.total, st.offset, st.limit, (nextOffset) => {
-        st.offset = nextOffset;
-        load();
+      mount(pagerWrap, pager({
+        total: st.data.total,
+        offset: st.offset,
+        limit: st.limit,
+        onPage: (nextOffset) => {
+          st.offset = nextOffset;
+          load();
+        },
       }));
     } catch (err) {
       mount(tableWrap, errorBox(err));

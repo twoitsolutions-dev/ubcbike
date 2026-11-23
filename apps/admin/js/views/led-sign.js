@@ -1,7 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
 import { money } from '../ui/format.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=81';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=82';
 
 const SIZES = {
   '214x112': { w: 214, h: 112, label: '214 × 112 (UBC Sign)' },
@@ -33,6 +33,17 @@ const LOGOS = [
 ];
 
 const TEMPLATES = [
+  {
+    id: 'ubc_pro',
+    name: 'UBC Pro Street Ad (Kallisto)',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'NEW', line2: 'E-BIKES', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'slam', badge: '', line1: 'WE FIX', line2: 'BIKES, E-BIKES, SCOOTERS', foot: '', palette: 'red_white', logo: 'none', icon: 'none', seconds: 6 },
+      { layout: 'swap', badge: '', line1: 'WALK IN TODAY', line2: 'READY IN 24H', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 971-2277 · UBCBIKE.COM', palette: 'blue_red_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
   {
     id: 'brand_service',
     name: 'UBC Logo + Service Center',
@@ -114,6 +125,159 @@ function easeOutExpo(t) {
 
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// ---- UBC Pro street style (same look as tools/led-pro HyperFrames render) ----
+// Kallisto (cufonfonts demo) ships blank digits/punctuation, so the FontFace is limited
+// to letters + space via unicodeRange and everything else falls back to Arial Black.
+const PRO_FONT = '"UBC Kallisto", "Arial Black", Impact, Arial, sans-serif';
+const PRO_NUM_FONT = '"Arial Black", Impact, Arial, sans-serif';
+const PRO_LAYOUTS = [
+  ['slam', 'Headline Slam (Line 2 commas = rotating words)'],
+  ['swap', 'Line Swap (Line 1 → Line 2)'],
+  ['brand', 'UBC Brand Close (logo + phone + web)'],
+];
+
+function fitPro(ctx2d, text, maxWidth, startSize, minSize, family) {
+  let size = startSize;
+  while (size > minSize) {
+    ctx2d.font = '900 ' + size + 'px ' + family;
+    if (ctx2d.measureText(text).width <= maxWidth) break;
+    size -= 1;
+  }
+  ctx2d.font = '900 ' + size + 'px ' + family;
+  return size;
+}
+
+function drawProRail(ctx2d, W, H, elapsedSec) {
+  const x = ((elapsedSec / 3.5) % 1) * 2 * W - W;
+  const g = ctx2d.createLinearGradient(x, 0, x + W, 0);
+  g.addColorStop(0, 'rgba(56,189,248,0)');
+  g.addColorStop(0.35, '#38BDF8');
+  g.addColorStop(0.65, '#FF2D2D');
+  g.addColorStop(1, 'rgba(255,45,45,0)');
+  ctx2d.save();
+  ctx2d.globalAlpha = 0.9;
+  ctx2d.fillStyle = g;
+  ctx2d.fillRect(x, H - 2, W, 2);
+  ctx2d.restore();
+}
+
+function drawProSlide(ctx2d, W, H, slide, elapsedSec, secDur, pal, assets, railSec) {
+  ctx2d.fillStyle = '#000000';
+  ctx2d.fillRect(0, 0, W, H);
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+  const layout = slide.layout || 'slam';
+  const maxW = W - 12;
+  const big = Math.round(H * 0.4);
+
+  if (layout === 'brand') {
+    const parts = String(slide.foot || '(813) 971-2277 · UBCBIKE.COM').split(/[·|]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+    const mark = assets.ubcMark;
+    const kIn = easeOutExpo(Math.min(1, elapsedSec / 0.75));
+    let y = Math.round(H * 0.06);
+    if (mark && mark.complete && mark.naturalWidth > 0) {
+      const mh = Math.round(H * 0.41);
+      const mw = Math.round(mark.naturalWidth * (mh / mark.naturalHeight));
+      const sc = 1.18 - 0.18 * kIn;
+      ctx2d.save();
+      ctx2d.globalAlpha = kIn;
+      if ('filter' in ctx2d) ctx2d.filter = 'blur(' + ((1 - kIn) * 6).toFixed(2) + 'px)';
+      ctx2d.translate(W / 2, y + mh / 2);
+      ctx2d.scale(sc, sc);
+      ctx2d.drawImage(mark, -mw / 2, -mh / 2, mw, mh);
+      ctx2d.restore();
+      y += mh + 4;
+    }
+    const sizes = [Math.round(H * 0.19), Math.round(H * 0.12)];
+    const colors = ['#FFFFFF', '#38BDF8'];
+    parts.slice(0, 2).forEach((txt, i) => {
+      const k = easeOutExpo(Math.min(1, Math.max(0, elapsedSec - 0.35 - i * 0.25) / 0.55));
+      const sz = fitPro(ctx2d, txt, maxW, sizes[i], 7, PRO_NUM_FONT);
+      ctx2d.save();
+      ctx2d.globalAlpha = k;
+      ctx2d.fillStyle = colors[i];
+      ctx2d.fillText(txt, W / 2, y + sz / 2 + Math.round((1 - k) * 8));
+      ctx2d.restore();
+      y += sz + 3;
+    });
+    drawProRail(ctx2d, W, H, railSec);
+    return;
+  }
+
+  if (layout === 'swap') {
+    const lines = [String(slide.line1 || '').toUpperCase().trim(), String(slide.line2 || '').toUpperCase().trim()].filter(Boolean);
+    const swapAt = lines.length > 1 ? secDur * 0.42 : secDur + 1;
+    const showB = elapsedSec >= swapAt;
+    const txt = showB ? lines[1] : lines[0];
+    const local = showB ? elapsedSec - swapAt : elapsedSec;
+    const k = easeOutExpo(Math.min(1, local / 0.4));
+    const sz = fitPro(ctx2d, txt || '', maxW, big, 10, PRO_FONT);
+    const cy = Math.round(H * 0.48);
+    ctx2d.save();
+    ctx2d.globalAlpha = k;
+    ctx2d.fillStyle = '#FFFFFF';
+    ctx2d.fillText(txt || '', W / 2, cy + Math.round((1 - k) * 14));
+    ctx2d.restore();
+    if (showB) {
+      // underline the last word of line 2 (e.g. "24H")
+      const words = txt.split(/\s+/);
+      const last = words[words.length - 1];
+      const full = ctx2d.measureText(txt).width;
+      const lw = ctx2d.measureText(last).width;
+      const u = easeOutExpo(Math.min(1, Math.max(0, local - 0.3) / 0.5));
+      ctx2d.fillStyle = pal.primary;
+      ctx2d.fillRect(Math.round(W / 2 + full / 2 - lw), Math.round(cy + sz * 0.5 + 2), Math.round(lw * u), 2);
+    }
+    drawProRail(ctx2d, W, H, railSec);
+    return;
+  }
+
+  // slam: line1 white + line2 accent; line2 "A,B,C" rotates through the words
+  const l1 = String(slide.line1 || '').toUpperCase().trim();
+  const opts = String(slide.line2 || '').toUpperCase().split(',').map((s) => s.trim()).filter(Boolean);
+  const share = secDur / Math.max(1, opts.length);
+  const wi = Math.min(opts.length - 1, Math.floor(elapsedSec / share));
+  const word = opts.length ? opts[Math.max(0, wi)] : '';
+  const wordLocal = elapsedSec - Math.max(0, wi) * share;
+  const kIn = easeOutExpo(Math.min(1, elapsedSec / 0.35));
+  const kWord = wi > 0 ? easeOutExpo(Math.min(1, wordLocal / 0.3)) : kIn;
+
+  // one line if every rotating word fits big enough, otherwise stack the two lines
+  let longest = word;
+  opts.forEach((o) => { if (o.length > longest.length) longest = o; });
+  const joined = (l1 ? l1 + ' ' : '') + longest;
+  const oneSz = fitPro(ctx2d, joined, maxW, big, 8, PRO_FONT);
+  const stacked = l1 && word && oneSz < Math.round(H * 0.24);
+
+  ctx2d.save();
+  const sc = 1.28 - 0.28 * kIn;
+  ctx2d.translate(W / 2, H * 0.47);
+  ctx2d.scale(sc, sc);
+  ctx2d.globalAlpha = Math.min(1, kIn * 1.2);
+  if (!stacked) {
+    ctx2d.font = '900 ' + oneSz + 'px ' + PRO_FONT;
+    const w1 = l1 ? ctx2d.measureText(l1 + ' ').width : 0;
+    const w2 = ctx2d.measureText(word).width;
+    let x = -(w1 + w2) / 2;
+    ctx2d.textAlign = 'left';
+    if (l1) { ctx2d.fillStyle = '#FFFFFF'; ctx2d.fillText(l1, x, 0); x += w1; }
+    ctx2d.globalAlpha = Math.min(1, kIn * 1.2) * kWord;
+    ctx2d.fillStyle = pal.primary;
+    ctx2d.fillText(word, x, Math.round((1 - kWord) * 10));
+  } else {
+    const s1 = fitPro(ctx2d, l1, maxW, big, 8, PRO_FONT);
+    ctx2d.fillStyle = '#FFFFFF';
+    ctx2d.fillText(l1, 0, -Math.round(s1 * 0.55));
+    const s2 = fitPro(ctx2d, longest, maxW, big, 8, PRO_FONT);
+    ctx2d.font = '900 ' + s2 + 'px ' + PRO_FONT;
+    ctx2d.globalAlpha = Math.min(1, kIn * 1.2) * kWord;
+    ctx2d.fillStyle = pal.primary;
+    ctx2d.fillText(word, 0, Math.round(s2 * 0.55) + Math.round((1 - kWord) * 10));
+  }
+  ctx2d.restore();
+  drawProRail(ctx2d, W, H, railSec);
 }
 
 function drawVectorIcon(ctx2d, type, cx, cy, r, phase, pal) {
@@ -260,6 +424,11 @@ function drawSingleSlide(ctx2d, W, H, slide, phase01, secDur, animMode, assets) 
   const isWide = H <= 130;
   const elapsedSec = phase01 * secDur;
 
+  if (animMode === 'pro') {
+    drawProSlide(ctx2d, W, H, slide, elapsedSec, secDur, pal, assets, (assets.railSec || 0));
+    return;
+  }
+
   drawMotionBackdrop(ctx2d, W, H, phase01, animMode, pal);
   drawBorderEffect(ctx2d, W, H, animMode, phase01, pal);
 
@@ -402,6 +571,7 @@ function drawSingleSlide(ctx2d, W, H, slide, phase01, secDur, animMode, assets) 
 }
 
 function drawComposedFrame(ctx2d, W, H, slides, totalSec, elapsedSec, animMode, assets) {
+  assets.railSec = elapsedSec;
   let rem = elapsedSec % Math.max(1, totalSec);
   let curIdx = 0;
   let slideElapsed = 0;
@@ -417,10 +587,10 @@ function drawComposedFrame(ctx2d, W, H, slides, totalSec, elapsedSec, animMode, 
 
   const cur = slides[curIdx];
   const curDur = Math.max(2, Number(cur.seconds) || 5);
-  const transDur = slides.length > 1 ? 0.42 : 0;
+  const transDur = slides.length > 1 ? (animMode === 'pro' ? 0.3 : 0.42) : 0;
 
   // Smooth Motion Transition into the NEXT slide during the last 0.42s
-  if (transDur > 0 && slideElapsed > curDur - transDur && (animMode === 'motion_push' || animMode === 'motion_fade')) {
+  if (transDur > 0 && slideElapsed > curDur - transDur && (animMode === 'motion_push' || animMode === 'motion_fade' || animMode === 'pro')) {
     const t = easeInOutCubic((slideElapsed - (curDur - transDur)) / transDur);
     const nextIdx = (curIdx + 1) % slides.length;
     const next = slides[nextIdx];
@@ -459,7 +629,17 @@ function drawComposedFrame(ctx2d, W, H, slides, totalSec, elapsedSec, animMode, 
 export async function renderLedSign(ctx) {
   const ubcLogo = new window.Image();
   ubcLogo.src = 'assets/ubc-logo-white.png';
-  const assets = { ubcLogo, customImg: null, customName: '' };
+  const ubcMark = new window.Image();
+  ubcMark.src = 'assets/ubc-mark-white.png';
+  let fontReady = Promise.resolve();
+  if (window.FontFace && document.fonts) {
+    const ff = new window.FontFace('UBC Kallisto', 'url(assets/fonts/kallisto-black.otf)', {
+      weight: '900',
+      unicodeRange: 'U+0020, U+0041-005A, U+0061-007A',
+    });
+    fontReady = ff.load().then((f) => { document.fonts.add(f); }).catch(() => {});
+  }
+  const assets = { ubcLogo, ubcMark, customImg: null, customName: '', railSec: 0 };
 
   const st = {
     sizeKey: '214x112',
@@ -526,7 +706,7 @@ export async function renderLedSign(ctx) {
         st.slides.length < 4 ? h('button.btn.sm', {
           type: 'button',
           onclick: () => {
-            st.slides.push({ badge: 'UBC TAMPA', line1: 'SHOP TODAY', line2: 'UBCBIKE.COM', foot: 'CALL (813) 971-2277', palette: 'blue_red_white', logo: 'ubc', icon: 'wheel', seconds: 5 });
+            st.slides.push({ layout: 'slam', badge: 'UBC TAMPA', line1: 'SHOP TODAY', line2: 'UBCBIKE.COM', foot: 'CALL (813) 971-2277', palette: 'blue_red_white', logo: 'ubc', icon: 'wheel', seconds: 5 });
             st.activeIdx = st.slides.length - 1;
             renderSlidesBar();
             renderSlideEditor();
@@ -561,6 +741,10 @@ export async function renderLedSign(ctx) {
       onchange: (e) => { cur.seconds = Number(e.target.value) || 5; renderSlidesBar(); },
     }, [3, 4, 5, 6, 8].map((sec) => h('option', { value: String(sec), selected: Number(cur.seconds || 5) === sec }, sec + ' seconds' + (sec === 5 ? ' (Recommended)' : ''))));
 
+    const layoutSel = h('select', {
+      onchange: (e) => { cur.layout = e.target.value; },
+    }, PRO_LAYOUTS.map(([v, lbl]) => h('option', { value: v, selected: (cur.layout || 'slam') === v }, lbl)));
+
     const delBtn = st.slides.length > 1 ? h('button.btn.sm.danger', {
       type: 'button',
       onclick: () => {
@@ -573,6 +757,7 @@ export async function renderLedSign(ctx) {
 
     mount(editorHost,
       h('div.led-form-grid',
+        h('label.led-field', h('span.small.muted', 'Pro Layout (UBC Pro mode)'), layoutSel),
         h('label.led-field', h('span.small.muted', 'Top Logo / Header'), logoSel),
         h('label.led-field', h('span.small.muted', 'Animated Vector Icon'), iconSel),
         field('Top Banner (when Text Only)', 'badge', 'e.g. IN STOCK TODAY'),
@@ -645,6 +830,7 @@ ${sections}
     exportBtn.disabled = true;
     const dim = SIZES[st.sizeKey] || SIZES['214x112'];
     try {
+      await fontReady;
       const off = document.createElement('canvas');
       off.width = dim.w;
       off.height = dim.h;
@@ -769,7 +955,8 @@ ${sections}
     Object.keys(SIZES).map((k) => h('option', { value: k, selected: st.sizeKey === k }, SIZES[k].label)));
 
   const animSel = h('select', { onchange: (e) => { st.animMode = e.target.value; } },
-    h('option', { value: 'motion_push', selected: true }, 'Hyperframe Motion Push (Smooth Slide)'),
+    h('option', { value: 'pro', selected: true }, 'UBC Pro Street (Big Kallisto Type)'),
+    h('option', { value: 'motion_push' }, 'Hyperframe Motion Push (Smooth Slide)'),
     h('option', { value: 'motion_fade' }, 'Hyperframe Glow + Crossfade'),
     h('option', { value: 'laser' }, 'Laser Corner Chase'),
     h('option', { value: 'ticker' }, 'Slow Readable Ticker'),

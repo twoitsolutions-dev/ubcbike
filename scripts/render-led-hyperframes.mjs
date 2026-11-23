@@ -8,7 +8,7 @@ const projectDir = path.resolve(process.cwd(), process.argv[2] || 'tools/led-pro
 const outMp4 = path.join(projectDir, 'render-214x112.mp4');
 const outAvi = process.argv[3]
   ? path.resolve(process.argv[3])
-  : path.join(process.env.USERPROFILE || process.cwd(), 'Downloads', 'ubc-led-' + path.basename(projectDir) + '-214x112.avi');
+  : path.join(process.env.USERPROFILE || process.cwd(), 'Downloads', 'ubc-' + path.basename(projectDir).replace(/^led-/, 'led-') + '-214x112.avi');
 
 const npx = (args) => execFileSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['--yes', 'hyperframes', ...args], { stdio: 'inherit', shell: process.platform === 'win32' });
 

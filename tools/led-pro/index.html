@@ -6,6 +6,8 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Inter:wght@700;900&display=block");
+    @font-face { font-family: "Kallisto"; src: url("assets/kallisto-black.otf") format("opentype"); font-weight: 400 900; font-display: block; unicode-range: U+0020, U+0041-005A, U+0061-007A; }
+    /* Kallisto (cufonfonts demo) has blank digits/punctuation: letters only, the rest falls back to Montserrat */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 214px; height: 112px; overflow: hidden; background: #000; }
   </style>
@@ -28,7 +30,7 @@
         --brand: #FF2D2D;      /* "green" slot  -> UBC red    */
         --accent: #38BDF8;
         --accent-2: #38BDF8;   /* "violet" slot -> light blue */
-        --font-display: "Montserrat", "Inter", system-ui, sans-serif;
+        --font-display: "Kallisto", "Montserrat", "Inter", system-ui, sans-serif;
         --font-body: "Inter", system-ui, sans-serif;
         position: relative;
         width: 214px;
@@ -39,18 +41,18 @@
 
       /* ---- Bigger type for the street: scale every catalog block's fitted size ---- */
       [data-composition-id="ubc-pro"] .hs-headline {
-        font-size: calc(var(--hs-font-size, 10.5cqw) * 1.3) !important;
+        font-size: calc(var(--hs-font-size, 10.5cqw) * 1.85) !important;
         width: 98cqw !important;
         letter-spacing: -0.2cqw !important;
       }
       [data-composition-id="ubc-pro"] .kts-sentence {
-        font-size: calc(var(--kts-font-size) * 1.22) !important;
+        font-size: calc(var(--kts-font-size) * 1.6) !important;
       }
       [data-composition-id="ubc-pro"] .kts-sentence > * { font-size: inherit !important; }
       [data-composition-id="ubc-pro"] .kts-word { justify-self: start !important; }
       [data-composition-id="ubc-pro"] .ls-line,
       [data-composition-id="ubc-pro"] [class*="ls-"] {
-        --ls-font-size: min(10.4cqw, 30cqh) !important;
+        --ls-font-size: min(13.5cqw, 34cqh) !important;
       }
       [data-composition-id="ubc-pro"] .ls-line { font-weight: 900 !important; }
 
@@ -72,7 +74,7 @@
         will-change: transform, filter, opacity;
       }
       #brand-phone {
-        font-family: var(--font-display);
+        font-family: "Montserrat", "Inter", sans-serif;
         font-size: 20px;
         font-weight: 900;
         line-height: 1;
@@ -82,7 +84,7 @@
         will-change: transform, opacity;
       }
       #brand-url {
-        font-family: var(--font-display);
+        font-family: "Montserrat", "Inter", sans-serif;
         font-size: 13px;
         font-weight: 900;
         line-height: 1;

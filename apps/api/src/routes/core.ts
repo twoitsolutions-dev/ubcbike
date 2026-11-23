@@ -1069,12 +1069,19 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // ---------- LED Sign Studio: saved templates ----------
   const ledSlideSchema = z.object({
-    layout: z.enum(['slam', 'swap', 'rating', 'brand']),
+    layout: z.enum(['slam', 'swap', 'rating', 'price', 'ticker', 'brand']),
     line1: z.string().max(60).default(''),
     line2: z.string().max(120).default(''),
     foot: z.string().max(80).default(''),
     palette: z.string().max(30),
     seconds: z.number().int().min(2).max(10),
+    // visual style (validated loosely: unknown values fall back to defaults when drawn)
+    bg: z.string().max(20).optional(),
+    enter: z.string().max(20).optional(),
+    motion: z.string().max(20).optional(),
+    deco: z.string().max(20).optional(),
+    trans: z.string().max(20).optional(),
+    color: z.string().max(30).optional(),
   });
   const ledTemplateSchema = z.object({ name: z.string().trim().min(1).max(60), slides: z.array(ledSlideSchema).min(1).max(6) });
   const ledRow = (r: { id: string; name: string; slides: unknown; updated_at: Date; author: string | null }) =>
@@ -1084,8 +1091,8 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const r = await q.query(
       `SELECT t.id, t.name, t.slides, t.updated_at, u.name AS author FROM led_templates t LEFT JOIN users u ON u.id = t.created_by
        WHERE t.company_id = $1 ORDER BY t.sort_order, t.created_at, t.id LIMIT 200`, [companyId]);
-    const seeded = await q.query(`SELECT 1 FROM led_template_seeds WHERE company_id = $1`, [companyId]);
-    return { templates: r.rows.map(ledRow), seeded: (seeded.rowCount ?? 0) > 0 };
+    const seeded = await q.query(`SELECT version FROM led_template_seeds WHERE company_id = $1`, [companyId]);
+    return { templates: r.rows.map(ledRow), seeded: (seeded.rowCount ?? 0) > 0, seededVersion: seeded.rows[0]?.version ?? 0 };
   };
 
   app.get('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) =>
@@ -1094,13 +1101,31 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   // Copies UBC's default templates into the company's list. First time: once (seeded flag).
   // restore=true: re-adds any default whose name is missing (after someone deleted it).
   app.post('/api/led-templates/seed', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
-    const body = z.object({ restore: z.boolean().default(false), templates: z.array(ledTemplateSchema).min(1).max(30) }).parse(req.body);
+    const body = z.object({
+      restore: z.boolean().default(false),
+      version: z.number().int().min(1).max(1000).default(1),
+      templates: z.array(ledTemplateSchema).min(1).max(30),
+    }).parse(req.body);
     const s = req.session!;
     let added = 0;
+    let refreshed = 0;
     await withTransaction(ctx.pool, async (c) => {
       await c.query(`SELECT pg_advisory_xact_lock(hashtext('led_templates:' || $1::text))`, [s.companyId]);
-      const seeded = await c.query(`SELECT 1 FROM led_template_seeds WHERE company_id = $1`, [s.companyId]);
-      if (seeded.rowCount && !body.restore) return;
+      const seeded = await c.query(`SELECT version FROM led_template_seeds WHERE company_id = $1`, [s.companyId]);
+      if (seeded.rowCount && !body.restore) {
+        if ((seeded.rows[0].version ?? 1) >= body.version) return;
+        // newer UBC design: refresh only the defaults nobody has edited
+        for (const t of body.templates) {
+          const u = await c.query(
+            `UPDATE led_templates SET slides = $3, created_at = now(), updated_at = now()
+             WHERE company_id = $1 AND lower(name) = lower($2) AND created_at = updated_at`,
+            [s.companyId, t.name, JSON.stringify(t.slides)]);
+          refreshed += u.rowCount ?? 0;
+        }
+        await c.query(`UPDATE led_template_seeds SET version = $2 WHERE company_id = $1`, [s.companyId, body.version]);
+        if (refreshed) await audit(c, { companyId: s.companyId, userId: s.userId, action: 'led_template.refreshed', detail: { refreshed, version: body.version } });
+        return;
+      }
       const existing = await c.query(`SELECT lower(name) AS n FROM led_templates WHERE company_id = $1`, [s.companyId]);
       const have = new Set(existing.rows.map((r: { n: string }) => r.n));
       for (const [i, t] of body.templates.entries()) {
@@ -1109,10 +1134,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
           [s.companyId, t.name, JSON.stringify(t.slides), s.userId, i]);
         added++;
       }
-      await c.query(`INSERT INTO led_template_seeds (company_id) VALUES ($1) ON CONFLICT (company_id) DO NOTHING`, [s.companyId]);
+      await c.query(`INSERT INTO led_template_seeds (company_id, version) VALUES ($1, $2) ON CONFLICT (company_id) DO NOTHING`, [s.companyId, body.version]);
       if (added) await audit(c, { companyId: s.companyId, userId: s.userId, action: body.restore ? 'led_template.restored' : 'led_template.seeded', detail: { added } });
     });
-    return { ...(await listLedTemplates(ctx.pool, s.companyId)), added };
+    return { ...(await listLedTemplates(ctx.pool, s.companyId)), added, refreshed };
   });
 
   app.post('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {

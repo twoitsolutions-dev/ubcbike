@@ -1,9 +1,9 @@
 import { h, mount } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, loading, pageHead, pager, sectionTabs, toast, watchJob, progressBar, errorBox } from '../ui/components.js';
 import { availabilityBadge, dateTime, margin, money, pct } from '../ui/format.js';
-import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=85';
-import { openPriceEditor } from './pricing.js?v=85';
-import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=85';
+import { cleanFilter, describeFilter, filterBar, filterToQuery, remember } from './common.js?v=86';
+import { openPriceEditor } from './pricing.js?v=86';
+import { openCreateProduct, openCreateSeparateProducts } from './create-product.js?v=86';
 
 const statusBadge = (s) => h('span.badge', { class: s === 'published' ? 'ok' : s === 'hidden' ? '' : 'warn' }, s);
 

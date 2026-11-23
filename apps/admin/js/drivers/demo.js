@@ -544,12 +544,23 @@ export function createDemoDriver() {
     async resolveError(eid) { can('audit.read'); const e = state.errors.find((x) => x.id === eid); if (e) e.resolved_at = nowIso(); audit('error.resolved', 'error', String(eid)); save(); return { ok: true }; },
     async audit() { can('audit.read'); return { entries: clone(state.audit) }; },
     async settings() { return clone(state.settings); },
-    async ledTemplates() { can('catalog.read'); return { templates: clone(state.ledTemplates || []), seeded: !!state.ledSeeded }; },
-    async seedLedTemplates(templates, restore) {
+    async ledTemplates() { can('catalog.read'); return { templates: clone(state.ledTemplates || []), seeded: !!state.ledSeeded, seededVersion: state.ledSeedVersion || (state.ledSeeded ? 1 : 0) }; },
+    async seedLedTemplates(templates, restore, version) {
       const u = can('catalog.write');
+      const ver = version || 1;
       state.ledTemplates = state.ledTemplates || [];
       let added = 0;
-      if (!state.ledSeeded || restore) {
+      let refreshed = 0;
+      if (state.ledSeeded && !restore) {
+        if ((state.ledSeedVersion || 1) < ver) {
+          (templates || []).forEach((t) => {
+            const row = state.ledTemplates.find((x) => x.name.toLowerCase() === String(t.name).toLowerCase() && !x.edited);
+            if (row) { row.slides = clone(t.slides); row.updatedAt = nowIso(); refreshed++; }
+          });
+          state.ledSeedVersion = ver;
+          save();
+        }
+      } else {
         const have = new Set(state.ledTemplates.map((t) => t.name.toLowerCase()));
         const fresh = [];
         (templates || []).forEach((t, i) => {
@@ -558,11 +569,12 @@ export function createDemoDriver() {
           added++;
         });
         state.ledTemplates = fresh.concat(state.ledTemplates).sort((a, b) => (a.sort === undefined ? 1000 : a.sort) - (b.sort === undefined ? 1000 : b.sort));
+        if (!state.ledSeeded) state.ledSeedVersion = ver;
         state.ledSeeded = true;
         if (added) audit(restore ? 'led_template.restored' : 'led_template.seeded', null, null, { added });
         save();
       }
-      return { templates: clone(state.ledTemplates), seeded: true, added };
+      return { templates: clone(state.ledTemplates), seeded: true, seededVersion: state.ledSeedVersion, added, refreshed };
     },
     async createLedTemplate(t) {
       const u = can('catalog.write');
@@ -573,7 +585,7 @@ export function createDemoDriver() {
     async updateLedTemplate(id, t) {
       can('catalog.write');
       const row = (state.ledTemplates || []).find((x) => x.id === String(id)); if (!row) fail(404, 'NOT_FOUND', 'LED template not found');
-      row.name = String(t.name || row.name).trim().slice(0, 60); row.slides = clone(t.slides || []); row.updatedAt = nowIso();
+      row.name = String(t.name || row.name).trim().slice(0, 60); row.slides = clone(t.slides || []); row.updatedAt = nowIso(); row.edited = true;
       audit('led_template.updated', null, null, { id, name: row.name }); save(); return clone(row);
     },
     async deleteLedTemplate(id) {

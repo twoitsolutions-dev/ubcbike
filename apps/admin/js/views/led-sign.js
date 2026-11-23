@@ -1,12 +1,13 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=85';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=86';
 
 // UBC street sign: 214 x 112 pixels, 15 fps, audio-free .AVI.
 const W = 214;
 const H = 112;
 const FPS = 15;
 const MAX_SLIDES = 6;
+const TRANS_SEC = 0.35;
 
 // Kallisto (cufonfonts demo) ships blank digits/punctuation, so the FontFace is limited
 // to letters + space via unicodeRange and everything else falls back to Arial Black.
@@ -19,42 +20,149 @@ const COLORS = {
   cyan_white: { label: 'Electric Cyan', primary: '#00E5FF' },
   yellow_cyan: { label: 'Neon Yellow', primary: '#FFE600' },
   green_white: { label: 'Neon Green', primary: '#00FF66' },
+  orange: { label: 'Orange', primary: '#FF8A00' },
+  magenta: { label: 'Magenta', primary: '#FF2BD6' },
+  purple: { label: 'Purple', primary: '#B26BFF' },
+  gold: { label: 'Gold', primary: '#FFC400' },
+  lime: { label: 'Lime', primary: '#B6FF1A' },
+  white: { label: 'White', primary: '#FFFFFF' },
 };
 
 const LAYOUTS = [
   ['slam', 'Headline'],
   ['swap', 'Line Swap'],
+  ['price', 'Price Tag'],
   ['rating', 'Star Rating'],
+  ['ticker', 'Scrolling Ticker'],
   ['brand', 'UBC Close (logo + phone)'],
+];
+const BGS = [
+  ['black', 'Black'], ['tint', 'Dark color tint'], ['gradient', 'Moving gradient'], ['stripes', 'Moving stripes'],
+  ['rays', 'Spinning rays'], ['spotlight', 'Spotlight sweep'], ['stars', 'Twinkling stars'], ['grid', 'Retro grid'],
+  ['flood', 'Solid color (bold)'],
+];
+const ENTERS = [
+  ['zoom_in', 'Slam (zoom in)'], ['zoom_out', 'Pop (grow + bounce)'], ['slide_left', 'Slide in from right'],
+  ['slide_right', 'Slide in from left'], ['drop', 'Drop + bounce'], ['rise', 'Rise up'], ['flip', 'Flip'],
+  ['spin', 'Spin in (full turn)'], ['typewriter', 'Type reveal'], ['glitch', 'Glitch'], ['fade', 'Fade'],
+];
+const MOTIONS = [
+  ['none', 'Hold still'], ['pulse', 'Pulse'], ['float', 'Float'], ['zoom', 'Slow zoom'],
+  ['swing', 'Swing'], ['shake', 'Shake'], ['blink', 'Flash'],
+];
+const DECOS = [
+  ['rail', 'Bottom rail'], ['chase', 'Border chase'], ['corners', 'Corner brackets'],
+  ['bars', 'Top & bottom bars'], ['sparkle', 'Sparkles'], ['none', 'None'],
+];
+const TRANS = [
+  ['fade', 'Crossfade'], ['push_left', 'Push left'], ['push_up', 'Push up'], ['zoom', 'Zoom through'],
+  ['wipe', 'Color wipe'], ['flash', 'Flash'], ['cut', 'Cut'],
 ];
 
 const TAMPA = '(813) 971-2277 · UBCBIKE.COM';
 const ALAFIA = '(813) 459-8293 · UBCBIKE.COM';
-const S = (layout, line1, line2, palette, seconds, foot) => ({ layout, line1, line2, foot: foot || '', palette, seconds });
+const S = (layout, line1, line2, palette, seconds, foot, style) => Object.assign(
+  { layout, line1, line2, foot: foot || '', palette, seconds, bg: 'black', enter: 'zoom_in', motion: 'none', deco: 'rail', trans: 'fade', color: 'white' },
+  style || {});
+const st_ = (bg, enter, motion, deco, trans, color) => ({ bg, enter, motion, deco, trans, color: color || 'white' });
 
-// Built-in templates. Copy only uses facts published on ubcbike.com or given by UBC.
+// Built-in templates (version 2: every one has its own look).
+// Copy only uses facts published on ubcbike.com or given by UBC.
+const BUILTIN_VERSION = 2;
 const BUILTIN = [
-  { id: 'street', name: 'Street Ad', slides: [S('slam', 'NEW', 'E-BIKES', 'blue_red_white', 5), S('slam', 'WE FIX', 'BIKES, E-BIKES, SCOOTERS', 'red_white', 6), S('swap', 'WALK IN TODAY', 'READY IN 24H', 'blue_red_white', 5), S('brand', '', '', 'blue_red_white', 5, TAMPA)] },
-  { id: 'reviews', name: '4.8 Stars · 1,100+ Reviews', slides: [S('rating', '4.8 STARS', '1,100+ REVIEWS', 'yellow_cyan', 6), S('slam', 'THANK YOU', 'TAMPA', 'blue_red_white', 4), S('swap', 'SEE WHY', 'VISIT UBC TODAY', 'yellow_cyan', 5), S('brand', '', '', 'yellow_cyan', 5, TAMPA)] },
-  { id: 'black_friday', name: 'Black Friday', slides: [S('slam', 'BLACK', 'FRIDAY', 'red_white', 4), S('slam', 'BIKES UP TO', '35% OFF', 'red_white', 5), S('swap', 'WE PRICE MATCH', 'SHOP IN STORE', 'blue_red_white', 5), S('brand', '', '', 'red_white', 5, TAMPA)] },
-  { id: 'alafia', name: 'Alafia Rentals', slides: [S('slam', 'ALAFIA', 'BIKE RENTALS', 'green_white', 5), S('slam', 'RIDE THE', 'TRAILS', 'green_white', 6), S('swap', 'WED-FRI 10-5', 'SAT-SUN 8-5', 'green_white', 5), S('brand', '', '', 'green_white', 5, ALAFIA)] },
-  { id: 'online', name: 'Shop Online', slides: [S('slam', 'SHOP', 'ONLINE', 'cyan_white', 4), S('swap', 'ORDER ONLINE', 'FREE PICKUP', 'cyan_white', 5), S('slam', 'FREE SHIPPING', '$50+', 'cyan_white', 5), S('brand', '', '', 'cyan_white', 5, 'UBCBIKE.COM · (813) 971-2277')] },
-  { id: 'financing', name: 'Financing', slides: [S('slam', 'EASY', 'FINANCING', 'yellow_cyan', 4), S('slam', 'WITH', 'SYNCHRONY, SNAP, ACIMA', 'yellow_cyan', 6), S('swap', 'RIDE TODAY', 'PAY OVER TIME', 'yellow_cyan', 5), S('brand', '', '', 'yellow_cyan', 5, TAMPA)] },
-  { id: 'service', name: 'Service & Tune-Ups', slides: [S('slam', 'TUNE-UPS', 'FROM $100', 'blue_red_white', 5), S('swap', 'NO APPOINTMENT', '1 DAY REPAIRS', 'blue_red_white', 5), S('slam', 'WE FIX', 'ROAD, MTB, E-BIKES', 'red_white', 6), S('brand', '', '', 'blue_red_white', 5, TAMPA)] },
-  { id: 'trade_in', name: 'Trade-In', slides: [S('slam', 'TRADE IN', 'YOUR BIKE', 'cyan_white', 5), S('swap', 'GET CREDIT', 'UPGRADE TODAY', 'cyan_white', 5), S('slam', 'WE', 'PRICE MATCH', 'red_white', 4), S('brand', '', '', 'cyan_white', 5, TAMPA)] },
-  { id: 'since_1972', name: 'Since 1972', slides: [S('slam', 'SINCE', '1972', 'blue_red_white', 4), S('slam', 'TAMPA', 'BIKE SHOP', 'blue_red_white', 5), S('swap', '1220 E FLETCHER', 'OPEN MON - SAT', 'blue_red_white', 5), S('brand', '', '', 'blue_red_white', 5, TAMPA)] },
+  { name: 'Street Ad', slides: [
+    S('slam', 'NEW', 'E-BIKES', 'blue_red_white', 5, '', st_('rays', 'zoom_in', 'pulse', 'rail', 'push_left')),
+    S('slam', 'WE FIX', 'BIKES, E-BIKES, SCOOTERS', 'red_white', 6, '', st_('stripes', 'slide_left', 'none', 'chase', 'zoom')),
+    S('swap', 'WALK IN TODAY', 'READY IN 24H', 'blue_red_white', 5, '', st_('spotlight', 'rise', 'float', 'corners', 'wipe')),
+    S('brand', '', '', 'blue_red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'sparkle', 'fade'))] },
+  { name: '4.8 Stars · 1,100+ Reviews', slides: [
+    S('rating', '4.8 STARS', '1,100+ REVIEWS', 'gold', 6, '', st_('stars', 'zoom_out', 'none', 'sparkle', 'flash')),
+    S('slam', 'THANK YOU', 'TAMPA', 'blue_red_white', 4, '', st_('gradient', 'typewriter', 'float', 'bars', 'push_up')),
+    S('swap', 'SEE WHY', 'VISIT UBC TODAY', 'gold', 5, '', st_('tint', 'flip', 'none', 'corners', 'wipe')),
+    S('brand', '', '', 'gold', 5, TAMPA, st_('stars', 'zoom_in', 'none', 'corners', 'fade'))] },
+  { name: 'Black Friday', slides: [
+    S('slam', 'BLACK', 'FRIDAY', 'red_white', 4, '', st_('flood', 'glitch', 'shake', 'none', 'flash')),
+    S('price', 'BIKES UP TO', '35% OFF', 'red_white', 5, '', st_('rays', 'zoom_out', 'pulse', 'chase', 'zoom')),
+    S('swap', 'WE PRICE MATCH', 'SHOP IN STORE', 'gold', 5, '', st_('stripes', 'slide_right', 'none', 'bars', 'wipe')),
+    S('brand', '', '', 'red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'chase', 'fade'))] },
+  { name: 'Alafia Rentals', slides: [
+    S('slam', 'ALAFIA', 'BIKE RENTALS', 'green_white', 5, '', st_('grid', 'drop', 'none', 'corners', 'push_left')),
+    S('slam', 'RIDE THE', 'TRAILS', 'lime', 5, '', st_('gradient', 'slide_left', 'float', 'rail', 'push_up')),
+    S('swap', 'WED-FRI 10-5', 'SAT-SUN 8-5', 'green_white', 5, '', st_('tint', 'flip', 'none', 'bars', 'wipe')),
+    S('brand', '', '', 'green_white', 5, ALAFIA, st_('black', 'zoom_in', 'none', 'rail', 'fade'))] },
+  { name: 'Shop Online', slides: [
+    S('slam', 'SHOP', 'ONLINE', 'cyan_white', 4, '', st_('grid', 'typewriter', 'none', 'bars', 'zoom')),
+    S('swap', 'ORDER ONLINE', 'FREE PICKUP', 'purple', 5, '', st_('spotlight', 'rise', 'pulse', 'corners', 'push_left')),
+    S('ticker', 'FREE SHIPPING', 'ON $50+', 'cyan_white', 6, '', st_('tint', 'fade', 'none', 'rail', 'wipe')),
+    S('brand', '', '', 'cyan_white', 5, 'UBCBIKE.COM · (813) 971-2277', st_('black', 'zoom_in', 'none', 'sparkle', 'fade'))] },
+  { name: 'Financing', slides: [
+    S('slam', 'EASY', 'FINANCING', 'gold', 4, '', st_('flood', 'zoom_out', 'none', 'none', 'push_up')),
+    S('slam', 'WITH', 'SYNCHRONY, SNAP, ACIMA', 'yellow_cyan', 6, '', st_('stripes', 'slide_right', 'none', 'chase', 'zoom')),
+    S('swap', 'RIDE TODAY', 'PAY OVER TIME', 'yellow_cyan', 5, '', st_('rays', 'spin', 'float', 'sparkle', 'flash')),
+    S('brand', '', '', 'yellow_cyan', 5, TAMPA, st_('black', 'zoom_in', 'none', 'corners', 'fade'))] },
+  { name: 'Service & Tune-Ups', slides: [
+    S('price', 'TUNE-UPS FROM', '$100', 'blue_red_white', 5, '', st_('spotlight', 'drop', 'pulse', 'corners', 'push_left')),
+    S('swap', 'NO APPOINTMENT', '1 DAY REPAIRS', 'orange', 5, '', st_('stripes', 'slide_left', 'none', 'bars', 'wipe')),
+    S('slam', 'WE FIX', 'ROAD, MTB, E-BIKES', 'red_white', 6, '', st_('tint', 'glitch', 'none', 'chase', 'zoom')),
+    S('brand', '', '', 'blue_red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'rail', 'fade'))] },
+  { name: 'Trade-In', slides: [
+    S('slam', 'TRADE IN', 'YOUR BIKE', 'cyan_white', 5, '', st_('gradient', 'spin', 'none', 'sparkle', 'zoom')),
+    S('swap', 'GET CREDIT', 'UPGRADE TODAY', 'lime', 5, '', st_('grid', 'rise', 'float', 'corners', 'push_up')),
+    S('slam', 'WE', 'PRICE MATCH', 'red_white', 4, '', st_('flood', 'zoom_in', 'shake', 'none', 'flash')),
+    S('brand', '', '', 'cyan_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'chase', 'fade'))] },
+  { name: 'Since 1972', slides: [
+    S('slam', 'SINCE', '1972', 'gold', 4, '', st_('stars', 'zoom_out', 'zoom', 'sparkle', 'push_left')),
+    S('slam', 'TAMPA', 'BIKE SHOP', 'blue_red_white', 5, '', st_('rays', 'typewriter', 'none', 'rail', 'wipe')),
+    S('swap', '1220 E FLETCHER', 'OPEN MON - SAT', 'blue_red_white', 5, '', st_('tint', 'flip', 'none', 'bars', 'zoom')),
+    S('brand', '', '', 'gold', 5, TAMPA, st_('stars', 'zoom_in', 'none', 'corners', 'fade'))] },
 ];
 
 const cloneSlides = (slides) => slides.map((s) => Object.assign({}, s));
 const slideSeconds = (s) => Math.min(10, Math.max(2, Number(s.seconds) || 5));
 const totalSeconds = (slides) => slides.reduce((a, s) => a + slideSeconds(s), 0);
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
 function easeOutExpo(t) {
   return t >= 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, t));
 }
-
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - clamp01(t), 3);
+}
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+function easeOutBack(t) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  const x = clamp01(t) - 1;
+  return 1 + c3 * x * x * x + c1 * x * x;
+}
+function easeOutBounce(t) {
+  let x = clamp01(t);
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (x < 1 / d1) return n1 * x * x;
+  if (x < 2 / d1) { x -= 1.5 / d1; return n1 * x * x + 0.75; }
+  if (x < 2.5 / d1) { x -= 2.25 / d1; return n1 * x * x + 0.9375; }
+  x -= 2.625 / d1;
+  return n1 * x * x + 0.984375;
+}
+// deterministic pseudo-random in [0,1) so the export and the preview match
+function rand(n) {
+  const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return v - Math.floor(v);
+}
+function hexToRgb(hex) {
+  const v = parseInt(String(hex).slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+function rgba(hex, a) {
+  const c = hexToRgb(hex);
+  return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+}
+function isLight(hex) {
+  const c = hexToRgb(hex);
+  return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 > 0.6;
 }
 
 function fitFont(ctx2d, text, maxWidth, startSize, minSize, family) {
@@ -68,18 +176,294 @@ function fitFont(ctx2d, text, maxWidth, startSize, minSize, family) {
   return size;
 }
 
-function drawRail(ctx2d, railSec) {
-  const x = ((railSec / 3.5) % 1) * 2 * W - W;
-  const g = ctx2d.createLinearGradient(x, 0, x + W, 0);
-  g.addColorStop(0, 'rgba(56,189,248,0)');
-  g.addColorStop(0.35, '#38BDF8');
-  g.addColorStop(0.65, '#FF2D2D');
-  g.addColorStop(1, 'rgba(255,45,45,0)');
+// ---------- Backgrounds ----------
+function drawBackground(ctx2d, kind, rs, accent) {
+  ctx2d.fillStyle = '#000000';
+  ctx2d.fillRect(0, 0, W, H);
   ctx2d.save();
-  ctx2d.globalAlpha = 0.9;
-  ctx2d.fillStyle = g;
-  ctx2d.fillRect(x, H - 2, W, 2);
+  if (kind === 'flood') {
+    ctx2d.fillStyle = accent;
+    ctx2d.fillRect(0, 0, W, H);
+  } else if (kind === 'tint') {
+    ctx2d.fillStyle = rgba(accent, 0.17);
+    ctx2d.fillRect(0, 0, W, H);
+  } else if (kind === 'gradient') {
+    const p = ((rs * 45) % (2 * W)) - W;
+    const g = ctx2d.createLinearGradient(p - W, 0, p + W, H);
+    g.addColorStop(0, rgba(accent, 0.05));
+    g.addColorStop(0.5, rgba(accent, 0.38));
+    g.addColorStop(1, rgba(accent, 0.05));
+    ctx2d.fillStyle = g;
+    ctx2d.fillRect(0, 0, W, H);
+  } else if (kind === 'stripes') {
+    ctx2d.fillStyle = rgba(accent, 0.15);
+    const off = (rs * 22) % 24;
+    for (let x = -H - 24 + off; x < W + 24; x += 24) {
+      ctx2d.beginPath();
+      ctx2d.moveTo(x, H);
+      ctx2d.lineTo(x + 10, H);
+      ctx2d.lineTo(x + 10 + H, 0);
+      ctx2d.lineTo(x + H, 0);
+      ctx2d.closePath();
+      ctx2d.fill();
+    }
+  } else if (kind === 'rays') {
+    ctx2d.translate(W / 2, H / 2);
+    ctx2d.rotate(rs * 0.35);
+    ctx2d.fillStyle = rgba(accent, 0.17);
+    for (let i = 0; i < 12; i++) {
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, 0);
+      ctx2d.arc(0, 0, W, (i * Math.PI) / 6, (i * Math.PI) / 6 + Math.PI / 12);
+      ctx2d.closePath();
+      ctx2d.fill();
+    }
+  } else if (kind === 'spotlight') {
+    const x = W / 2 + Math.sin(rs * 1.1) * W * 0.42;
+    const g = ctx2d.createRadialGradient(x, H * 0.45, 4, x, H * 0.45, 85);
+    g.addColorStop(0, rgba(accent, 0.45));
+    g.addColorStop(1, rgba(accent, 0));
+    ctx2d.fillStyle = g;
+    ctx2d.fillRect(0, 0, W, H);
+  } else if (kind === 'stars') {
+    for (let i = 0; i < 34; i++) {
+      const tw = Math.abs(Math.sin(rs * (1.3 + rand(i + 7) * 2) + i));
+      ctx2d.globalAlpha = 0.15 + 0.85 * tw;
+      ctx2d.fillStyle = i % 3 === 0 ? accent : '#FFFFFF';
+      const sz = rand(i + 3) > 0.8 ? 2 : 1;
+      ctx2d.fillRect(Math.floor(rand(i) * W), Math.floor(rand(i + 100) * H), sz, sz);
+    }
+  } else if (kind === 'grid') {
+    const hz = Math.round(H * 0.58);
+    ctx2d.strokeStyle = rgba(accent, 0.45);
+    ctx2d.lineWidth = 1;
+    const ph = (rs * 0.9) % 1;
+    for (let i = 0; i < 7; i++) {
+      const k = (i + ph) / 7;
+      const y = hz + (H - hz) * k * k;
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, y);
+      ctx2d.lineTo(W, y);
+      ctx2d.stroke();
+    }
+    for (let i = -6; i <= 6; i++) {
+      ctx2d.beginPath();
+      ctx2d.moveTo(W / 2 + i * 6, hz);
+      ctx2d.lineTo(W / 2 + i * 40, H);
+      ctx2d.stroke();
+    }
+    const g = ctx2d.createLinearGradient(0, hz - 30, 0, hz);
+    g.addColorStop(0, rgba(accent, 0));
+    g.addColorStop(1, rgba(accent, 0.25));
+    ctx2d.fillStyle = g;
+    ctx2d.fillRect(0, hz - 30, W, 30);
+  }
   ctx2d.restore();
+}
+
+// ---------- Decorations ----------
+function drawDeco(ctx2d, kind, rs, accent) {
+  ctx2d.save();
+  if (kind === 'rail') {
+    const x = ((rs / 3.5) % 1) * 2 * W - W;
+    const g = ctx2d.createLinearGradient(x, 0, x + W, 0);
+    g.addColorStop(0, 'rgba(56,189,248,0)');
+    g.addColorStop(0.35, '#38BDF8');
+    g.addColorStop(0.65, '#FF2D2D');
+    g.addColorStop(1, 'rgba(255,45,45,0)');
+    ctx2d.globalAlpha = 0.9;
+    ctx2d.fillStyle = g;
+    ctx2d.fillRect(x, H - 2, W, 2);
+  } else if (kind === 'chase') {
+    const per = 2 * (W - 2 + H - 2);
+    ctx2d.lineWidth = 2;
+    [accent, '#FFFFFF'].forEach((c, i) => {
+      ctx2d.strokeStyle = c;
+      ctx2d.setLineDash([46, per - 46]);
+      ctx2d.lineDashOffset = -((rs * 140 + (i * per) / 2) % per);
+      ctx2d.strokeRect(1, 1, W - 2, H - 2);
+    });
+  } else if (kind === 'corners') {
+    const L = 13;
+    ctx2d.strokeStyle = accent;
+    ctx2d.lineWidth = 2;
+    ctx2d.globalAlpha = 0.65 + 0.35 * Math.sin(rs * 4);
+    [[2, 2, 1, 1], [W - 2, 2, -1, 1], [2, H - 2, 1, -1], [W - 2, H - 2, -1, -1]].forEach(([x, y, dx, dy]) => {
+      ctx2d.beginPath();
+      ctx2d.moveTo(x, y + dy * L);
+      ctx2d.lineTo(x, y);
+      ctx2d.lineTo(x + dx * L, y);
+      ctx2d.stroke();
+    });
+  } else if (kind === 'bars') {
+    ctx2d.fillStyle = accent;
+    ctx2d.fillRect(0, 0, W, 3);
+    ctx2d.fillRect(0, H - 3, W, 3);
+    const x = ((rs * 90) % (W + 40)) - 40;
+    ctx2d.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx2d.fillRect(x, 0, 40, 3);
+    ctx2d.fillRect(W - x - 40, H - 3, 40, 3);
+  } else if (kind === 'sparkle') {
+    for (let i = 0; i < 10; i++) {
+      const s = 3.5 * Math.max(0, Math.sin(rs * 2.6 + i * 1.9));
+      if (s < 0.4) continue;
+      const edge = i % 2 === 0;
+      const x = edge ? 6 + rand(i + 40) * (W - 12) : (rand(i + 41) > 0.5 ? 8 + rand(i) * 26 : W - 8 - rand(i) * 26);
+      const y = edge ? (rand(i + 42) > 0.5 ? 6 + rand(i + 1) * 10 : H - 6 - rand(i + 1) * 10) : 8 + rand(i + 43) * (H - 16);
+      ctx2d.strokeStyle = i % 3 === 0 ? '#FFFFFF' : accent;
+      ctx2d.lineWidth = 1;
+      ctx2d.beginPath();
+      ctx2d.moveTo(x - s, y);
+      ctx2d.lineTo(x + s, y);
+      ctx2d.moveTo(x, y - s);
+      ctx2d.lineTo(x, y + s);
+      ctx2d.stroke();
+    }
+  }
+  ctx2d.restore();
+}
+
+// ---------- Entrance + motion ----------
+function fxState(enter, motion, local, dur) {
+  const f = { a: 1, s: 1, sx: 1, rot: 0, dx: 0, dy: 0, reveal: 1, ghost: false };
+  switch (enter) {
+    case 'zoom_out': { f.s = Math.max(0.01, easeOutBack(local / 0.5)); f.a = clamp01(local / 0.12); break; }
+    case 'slide_left': { f.dx = (1 - easeOutExpo(clamp01(local / 0.45))) * W; break; }
+    case 'slide_right': { f.dx = -(1 - easeOutExpo(clamp01(local / 0.45))) * W; break; }
+    case 'drop': { f.dy = -(1 - easeOutBounce(local / 0.8)) * H; break; }
+    case 'rise': { f.dy = (1 - easeOutExpo(clamp01(local / 0.45))) * H * 0.7; f.a = clamp01(local / 0.25); break; }
+    case 'flip': { f.sx = Math.max(0.02, easeOutBack(local / 0.6)); f.a = clamp01(local / 0.1); break; }
+    case 'spin': {
+      const e = easeOutCubic(local / 0.7);
+      f.rot = (1 - e) * -Math.PI * 2;
+      f.s = Math.max(0.01, e);
+      f.a = clamp01(local / 0.2);
+      break;
+    }
+    case 'typewriter': { f.reveal = clamp01(local / 0.9); break; }
+    case 'glitch': {
+      if (local < 0.6) {
+        const k = Math.floor(local * 30);
+        f.dx = (rand(k + 1) - 0.5) * 16;
+        f.dy = (rand(k + 2) - 0.5) * 6;
+        f.sx = 1 + (rand(k + 3) - 0.5) * 0.25;
+        f.a = rand(k + 4) < 0.25 ? 0.35 : 1;
+        f.ghost = true;
+      }
+      break;
+    }
+    case 'fade': { f.a = clamp01(local / 0.5); break; }
+    default: {
+      const e = easeOutExpo(clamp01(local / 0.35));
+      f.s = 1.5 - 0.5 * e;
+      f.a = clamp01(e * 1.3);
+    }
+  }
+  const m = local - 0.8;
+  if (m > 0) {
+    if (motion === 'pulse') f.s *= 1 + 0.05 * Math.sin(m * Math.PI * 2 * 1.1);
+    else if (motion === 'float') f.dy += 2.5 * Math.sin(m * Math.PI * 2 * 0.6);
+    else if (motion === 'zoom') f.s *= 1 + 0.09 * clamp01(m / Math.max(1, dur - 0.8));
+    else if (motion === 'swing') f.rot += 0.06 * Math.sin(m * Math.PI * 2 * 0.7);
+    else if (motion === 'shake') { const ph = m % 1.4; if (ph < 0.3) f.dx += Math.sin(ph * 90) * 2.5; }
+    else if (motion === 'blink') { if (Math.floor(m * 2.5) % 4 === 3) f.a *= 0.2; }
+  }
+  return f;
+}
+
+// Draws `draw` centered on (cx, cy) with the slide's entrance and motion applied.
+function withFx(ctx2d, slide, local, dur, cx, cy, draw) {
+  const f = fxState(slide.enter || 'zoom_in', slide.motion || 'none', local, dur);
+  if (f.a <= 0.001) return;
+  ctx2d.save();
+  ctx2d.globalAlpha *= f.a;
+  ctx2d.translate(cx + f.dx, cy + f.dy);
+  if (f.rot) ctx2d.rotate(f.rot);
+  ctx2d.scale(f.s * f.sx, f.s);
+  if (f.ghost) {
+    ctx2d.save();
+    ctx2d.globalAlpha *= 0.45;
+    ctx2d.translate(3, 0);
+    draw();
+    ctx2d.restore();
+  }
+  if (f.reveal < 1) {
+    const x = -W / 2 - 2 + (W + 4) * f.reveal;
+    ctx2d.save();
+    ctx2d.beginPath();
+    ctx2d.rect(-W, -H, x + W, 2 * H);
+    ctx2d.clip();
+    draw();
+    ctx2d.restore();
+    ctx2d.fillStyle = '#FFFFFF';
+    ctx2d.fillRect(x, -16, 2, 32);
+  } else {
+    draw();
+  }
+  ctx2d.restore();
+}
+
+// ---------- Layouts (each draws its group around the origin) ----------
+function drawSlam(ctx2d, slide, t, dur, c1, acc) {
+  const l1 = String(slide.line1 || '').toUpperCase().trim();
+  const opts = String(slide.line2 || '').toUpperCase().split(',').map((s) => s.trim()).filter(Boolean);
+  const share = dur / Math.max(1, opts.length);
+  const wi = Math.max(0, Math.min(opts.length - 1, Math.floor(t / share)));
+  const word = opts.length ? opts[wi] : '';
+  const kWord = wi > 0 ? easeOutExpo(clamp01((t - wi * share) / 0.3)) : 1;
+  const big = Math.round(H * 0.4);
+  let longest = word;
+  opts.forEach((o) => { if (o.length > longest.length) longest = o; });
+  const oneSz = fitFont(ctx2d, (l1 ? l1 + ' ' : '') + longest, W - 12, big, 8, PRO_FONT);
+  const stacked = l1 && word && oneSz < Math.round(H * 0.24);
+  withFx(ctx2d, slide, t, dur, W / 2, H * 0.47, () => {
+    const alpha = ctx2d.globalAlpha;
+    if (!stacked) {
+      ctx2d.font = '900 ' + oneSz + 'px ' + PRO_FONT;
+      const w1 = l1 ? ctx2d.measureText(l1 + ' ').width : 0;
+      const w2 = ctx2d.measureText(word).width;
+      let x = -(w1 + w2) / 2;
+      ctx2d.textAlign = 'left';
+      if (l1) { ctx2d.fillStyle = c1; ctx2d.fillText(l1, x, 0); x += w1; }
+      ctx2d.globalAlpha = alpha * kWord;
+      ctx2d.fillStyle = acc;
+      ctx2d.fillText(word, x, Math.round((1 - kWord) * 10));
+      ctx2d.textAlign = 'center';
+    } else {
+      const s1 = fitFont(ctx2d, l1, W - 12, big, 8, PRO_FONT);
+      ctx2d.fillStyle = c1;
+      ctx2d.fillText(l1, 0, -Math.round(s1 * 0.55));
+      const s2 = fitFont(ctx2d, longest, W - 12, big, 8, PRO_FONT);
+      ctx2d.font = '900 ' + s2 + 'px ' + PRO_FONT;
+      ctx2d.globalAlpha = alpha * kWord;
+      ctx2d.fillStyle = acc;
+      ctx2d.fillText(word, 0, Math.round(s2 * 0.55) + Math.round((1 - kWord) * 10));
+    }
+    ctx2d.globalAlpha = alpha;
+  });
+}
+
+function drawSwap(ctx2d, slide, t, dur, c1, acc) {
+  const lines = [String(slide.line1 || '').toUpperCase().trim(), String(slide.line2 || '').toUpperCase().trim()].filter(Boolean);
+  if (!lines.length) return;
+  const swapAt = lines.length > 1 ? dur * 0.45 : dur + 1;
+  const showB = t >= swapAt;
+  const txt = showB ? lines[1] : lines[0];
+  const local = showB ? t - swapAt : t;
+  withFx(ctx2d, slide, local, showB ? dur - swapAt : swapAt, W / 2, Math.round(H * 0.48), () => {
+    const sz = fitFont(ctx2d, txt, W - 12, Math.round(H * 0.4), 10, PRO_FONT);
+    ctx2d.fillStyle = showB ? acc : c1;
+    ctx2d.fillText(txt, 0, 0);
+    if (showB) {
+      const words = txt.split(/\s+/);
+      const last = words[words.length - 1];
+      const full = ctx2d.measureText(txt).width;
+      const lw = ctx2d.measureText(last).width;
+      const u = easeOutExpo(clamp01((local - 0.35) / 0.5));
+      ctx2d.fillStyle = c1;
+      ctx2d.fillRect(Math.round(full / 2 - lw), Math.round(sz * 0.5 + 2), Math.round(lw * u), 2);
+    }
+  });
 }
 
 function starPath(ctx2d, cx, cy, r) {
@@ -95,10 +479,86 @@ function starPath(ctx2d, cx, cy, r) {
   ctx2d.closePath();
 }
 
+function drawRating(ctx2d, slide, t, dur, c1, acc) {
+  const l1 = String(slide.line1 || '').toUpperCase().trim();
+  const l2 = String(slide.line2 || '').toUpperCase().trim();
+  const m = l1.match(/\d+(\.\d+)?/);
+  const rating = Math.max(0, Math.min(5, m ? Number(m[0]) : 5));
+  withFx(ctx2d, slide, t, dur, W / 2, H / 2, () => {
+    const alpha = ctx2d.globalAlpha;
+    for (let i = 0; i < 5; i++) {
+      const k = easeOutBack(clamp01((t - 0.15 - i * 0.12) / 0.35));
+      if (k <= 0) continue;
+      ctx2d.save();
+      ctx2d.translate((i - 2) * 24, -38);
+      ctx2d.scale(Math.max(0.01, k), Math.max(0.01, k));
+      starPath(ctx2d, 0, 0, 10);
+      ctx2d.fillStyle = '#3A3A3A';
+      ctx2d.fill();
+      const fill = clamp01(rating - i);
+      if (fill > 0) {
+        ctx2d.clip();
+        ctx2d.fillStyle = acc;
+        ctx2d.fillRect(-10, -10, 20 * fill, 20);
+      }
+      ctx2d.restore();
+    }
+    ctx2d.globalAlpha = alpha * clamp01((t - 0.5) / 0.4);
+    if (l1) { fitFont(ctx2d, l1, W - 12, 30, 10, PRO_FONT); ctx2d.fillStyle = c1; ctx2d.fillText(l1, 0, -2); }
+    if (l2) { fitFont(ctx2d, l2, W - 12, 24, 9, PRO_FONT); ctx2d.fillStyle = acc; ctx2d.fillText(l2, 0, 30); }
+    ctx2d.globalAlpha = alpha;
+  });
+}
+
+function drawPrice(ctx2d, slide, t, dur, c1, acc) {
+  const label = String(slide.line1 || '').toUpperCase().trim();
+  const price = String(slide.line2 || '').toUpperCase().trim();
+  const was = String(slide.foot || '').toUpperCase().trim();
+  const yL = was ? -34 : -26;
+  const yP = was ? 2 : 12;
+  withFx(ctx2d, slide, t, dur, W / 2, H / 2, () => {
+    if (label) { fitFont(ctx2d, label, W - 16, 20, 9, PRO_FONT); ctx2d.fillStyle = c1; ctx2d.fillText(label, 0, yL); }
+    if (price) { fitFont(ctx2d, price, W - 10, 46, 12, PRO_FONT); ctx2d.fillStyle = acc; ctx2d.fillText(price, 0, yP); }
+    if (was) {
+      fitFont(ctx2d, was, W - 40, 15, 8, NUM_FONT);
+      ctx2d.fillStyle = c1;
+      ctx2d.fillText(was, 0, 38);
+      const w = ctx2d.measureText(was).width;
+      ctx2d.fillStyle = '#FF2D2D';
+      ctx2d.fillRect(-w / 2 - 2, 37, w + 4, 2);
+    }
+  });
+}
+
+function drawTicker(ctx2d, slide, t, c1, acc) {
+  const a = String(slide.line1 || '').toUpperCase().trim();
+  const b = String(slide.line2 || '').toUpperCase().trim();
+  const size = Math.round(H * 0.42);
+  ctx2d.font = '900 ' + size + 'px ' + PRO_FONT;
+  const gap = '   ';
+  const sep = '  •  ';
+  const parts = [[a, c1], [b ? gap + b : '', acc], [sep, '#FFFFFF']].filter((p) => p[0]);
+  const widths = parts.map((p) => ctx2d.measureText(p[0]).width);
+  const total = widths.reduce((x, y) => x + y, 0) || W;
+  const offset = (t * 60) % total;
+  ctx2d.save();
+  ctx2d.globalAlpha *= clamp01(t / 0.3);
+  ctx2d.textAlign = 'left';
+  for (let x0 = W - offset - total * Math.ceil((W - offset) / total); x0 < W; x0 += total) {
+    let x = x0;
+    parts.forEach((p, i) => {
+      ctx2d.fillStyle = p[1];
+      ctx2d.fillText(p[0], x, H * 0.5);
+      x += widths[i];
+    });
+  }
+  ctx2d.restore();
+}
+
 function drawBrand(ctx2d, slide, t, assets) {
   const parts = String(slide.foot || TAMPA).split(/[·|]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
   const mark = assets.ubcMark;
-  const kIn = easeOutExpo(Math.min(1, t / 0.75));
+  const kIn = easeOutExpo(clamp01(t / 0.75));
   let y = Math.round(H * 0.06);
   if (mark && mark.complete && mark.naturalWidth > 0) {
     const mh = Math.round(H * 0.41);
@@ -116,7 +576,7 @@ function drawBrand(ctx2d, slide, t, assets) {
   const sizes = [Math.round(H * 0.19), Math.round(H * 0.12)];
   const colors = ['#FFFFFF', '#38BDF8'];
   parts.slice(0, 2).forEach((txt, i) => {
-    const k = easeOutExpo(Math.min(1, Math.max(0, t - 0.35 - i * 0.25) / 0.55));
+    const k = easeOutExpo(clamp01((t - 0.35 - i * 0.25) / 0.55));
     const sz = fitFont(ctx2d, txt, W - 12, sizes[i], 7, NUM_FONT);
     ctx2d.save();
     ctx2d.globalAlpha = k;
@@ -127,134 +587,27 @@ function drawBrand(ctx2d, slide, t, assets) {
   });
 }
 
-function drawSwap(ctx2d, slide, t, dur, accent) {
-  const lines = [String(slide.line1 || '').toUpperCase().trim(), String(slide.line2 || '').toUpperCase().trim()].filter(Boolean);
-  if (!lines.length) return;
-  const swapAt = lines.length > 1 ? dur * 0.42 : dur + 1;
-  const showB = t >= swapAt;
-  const txt = showB ? lines[1] : lines[0];
-  const local = showB ? t - swapAt : t;
-  const k = easeOutExpo(Math.min(1, local / 0.4));
-  const sz = fitFont(ctx2d, txt, W - 12, Math.round(H * 0.4), 10, PRO_FONT);
-  const cy = Math.round(H * 0.48);
-  ctx2d.save();
-  ctx2d.globalAlpha = k;
-  ctx2d.fillStyle = '#FFFFFF';
-  ctx2d.fillText(txt, W / 2, cy + Math.round((1 - k) * 14));
-  ctx2d.restore();
-  if (showB) {
-    const words = txt.split(/\s+/);
-    const last = words[words.length - 1];
-    const full = ctx2d.measureText(txt).width;
-    const lw = ctx2d.measureText(last).width;
-    const u = easeOutExpo(Math.min(1, Math.max(0, local - 0.3) / 0.5));
-    ctx2d.fillStyle = accent;
-    ctx2d.fillRect(Math.round(W / 2 + full / 2 - lw), Math.round(cy + sz * 0.5 + 2), Math.round(lw * u), 2);
-  }
-}
-
-function drawRating(ctx2d, slide, t, accent) {
-  const l1 = String(slide.line1 || '').toUpperCase().trim();
-  const l2 = String(slide.line2 || '').toUpperCase().trim();
-  const m = l1.match(/\d+(\.\d+)?/);
-  const rating = Math.max(0, Math.min(5, m ? Number(m[0]) : 5));
-  const r = 10;
-  const gap = 24;
-  const cy = 18;
-  for (let i = 0; i < 5; i++) {
-    const cx = W / 2 + (i - 2) * gap;
-    const k = easeOutExpo(Math.min(1, Math.max(0, t - i * 0.12) / 0.35));
-    if (k <= 0) continue;
-    ctx2d.save();
-    ctx2d.globalAlpha = k;
-    ctx2d.translate(cx, cy);
-    ctx2d.scale(0.4 + 0.6 * k, 0.4 + 0.6 * k);
-    starPath(ctx2d, 0, 0, r);
-    ctx2d.fillStyle = '#3A3A3A';
-    ctx2d.fill();
-    const fill = Math.max(0, Math.min(1, rating - i));
-    if (fill > 0) {
-      ctx2d.save();
-      ctx2d.clip();
-      ctx2d.fillStyle = accent;
-      ctx2d.fillRect(-r, -r, 2 * r * fill, 2 * r);
-      ctx2d.restore();
-    }
-    ctx2d.restore();
-  }
-  const kText = easeOutExpo(Math.min(1, Math.max(0, t - 0.6) / 0.45));
-  ctx2d.save();
-  ctx2d.globalAlpha = kText;
-  if (l1) {
-    fitFont(ctx2d, l1, W - 12, 30, 10, PRO_FONT);
-    ctx2d.fillStyle = '#FFFFFF';
-    ctx2d.fillText(l1, W / 2, 54 + Math.round((1 - kText) * 8));
-  }
-  if (l2) {
-    fitFont(ctx2d, l2, W - 12, 24, 9, PRO_FONT);
-    ctx2d.fillStyle = accent;
-    ctx2d.fillText(l2, W / 2, 86 + Math.round((1 - kText) * 8));
-  }
-  ctx2d.restore();
-}
-
-function drawSlam(ctx2d, slide, t, dur, accent) {
-  const l1 = String(slide.line1 || '').toUpperCase().trim();
-  const opts = String(slide.line2 || '').toUpperCase().split(',').map((s) => s.trim()).filter(Boolean);
-  const share = dur / Math.max(1, opts.length);
-  const wi = Math.max(0, Math.min(opts.length - 1, Math.floor(t / share)));
-  const word = opts.length ? opts[wi] : '';
-  const kIn = easeOutExpo(Math.min(1, t / 0.35));
-  const kWord = wi > 0 ? easeOutExpo(Math.min(1, (t - wi * share) / 0.3)) : kIn;
-  const big = Math.round(H * 0.4);
-
-  // one line if every rotating word fits big enough, otherwise stack the two lines
-  let longest = word;
-  opts.forEach((o) => { if (o.length > longest.length) longest = o; });
-  const oneSz = fitFont(ctx2d, (l1 ? l1 + ' ' : '') + longest, W - 12, big, 8, PRO_FONT);
-  const stacked = l1 && word && oneSz < Math.round(H * 0.24);
-
-  ctx2d.save();
-  const sc = 1.28 - 0.28 * kIn;
-  ctx2d.translate(W / 2, H * 0.47);
-  ctx2d.scale(sc, sc);
-  const alpha = Math.min(1, kIn * 1.2);
-  ctx2d.globalAlpha = alpha;
-  if (!stacked) {
-    ctx2d.font = '900 ' + oneSz + 'px ' + PRO_FONT;
-    const w1 = l1 ? ctx2d.measureText(l1 + ' ').width : 0;
-    const w2 = ctx2d.measureText(word).width;
-    let x = -(w1 + w2) / 2;
-    ctx2d.textAlign = 'left';
-    if (l1) { ctx2d.fillStyle = '#FFFFFF'; ctx2d.fillText(l1, x, 0); x += w1; }
-    ctx2d.globalAlpha = alpha * kWord;
-    ctx2d.fillStyle = accent;
-    ctx2d.fillText(word, x, Math.round((1 - kWord) * 10));
-  } else {
-    const s1 = fitFont(ctx2d, l1, W - 12, big, 8, PRO_FONT);
-    ctx2d.fillStyle = '#FFFFFF';
-    ctx2d.fillText(l1, 0, -Math.round(s1 * 0.55));
-    const s2 = fitFont(ctx2d, longest, W - 12, big, 8, PRO_FONT);
-    ctx2d.font = '900 ' + s2 + 'px ' + PRO_FONT;
-    ctx2d.globalAlpha = alpha * kWord;
-    ctx2d.fillStyle = accent;
-    ctx2d.fillText(word, 0, Math.round(s2 * 0.55) + Math.round((1 - kWord) * 10));
-  }
-  ctx2d.restore();
-}
-
-function drawSlide(ctx2d, slide, t, assets, railSec) {
+function drawSlide(ctx2d, slide, t, assets, rs) {
   const accent = (COLORS[slide.palette] || COLORS.blue_red_white).primary;
   const dur = slideSeconds(slide);
-  ctx2d.fillStyle = '#000000';
-  ctx2d.fillRect(0, 0, W, H);
+  let bg = slide.bg || 'black';
+  if (slide.layout === 'brand' && bg === 'flood') bg = 'tint';
+  let c1 = (COLORS[slide.color] || COLORS.white).primary;
+  let acc = accent;
+  if (bg === 'flood') {
+    if (isLight(accent)) { c1 = '#000000'; acc = '#000000'; }
+    else { c1 = '#FFFFFF'; acc = '#000000'; }
+  }
+  drawBackground(ctx2d, bg, rs, accent);
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
   if (slide.layout === 'brand') drawBrand(ctx2d, slide, t, assets);
-  else if (slide.layout === 'swap') drawSwap(ctx2d, slide, t, dur, accent);
-  else if (slide.layout === 'rating') drawRating(ctx2d, slide, t, accent);
-  else drawSlam(ctx2d, slide, t, dur, accent);
-  drawRail(ctx2d, railSec);
+  else if (slide.layout === 'swap') drawSwap(ctx2d, slide, t, dur, c1, acc);
+  else if (slide.layout === 'rating') drawRating(ctx2d, slide, t, dur, c1, acc);
+  else if (slide.layout === 'price') drawPrice(ctx2d, slide, t, dur, c1, acc);
+  else if (slide.layout === 'ticker') drawTicker(ctx2d, slide, t, c1, acc);
+  else drawSlam(ctx2d, slide, t, dur, c1, acc);
+  drawDeco(ctx2d, slide.deco || 'rail', rs, bg === 'flood' ? (isLight(accent) ? '#000000' : '#FFFFFF') : accent);
 }
 
 const bufs = {};
@@ -267,7 +620,7 @@ function buffer(key) {
   return bufs[key];
 }
 
-// Draws the whole ad at time `sec` (loops), with a 0.3 s crossfade between slides.
+// Draws the whole ad at time `sec` (loops); each slide's transition plays into the next one.
 function drawFrame(ctx2d, slides, sec, assets) {
   const total = totalSeconds(slides);
   let rem = sec % Math.max(1, total);
@@ -279,20 +632,50 @@ function drawFrame(ctx2d, slides, sec, assets) {
   }
   const cur = slides[idx];
   const dur = slideSeconds(cur);
-  const trans = slides.length > 1 ? 0.3 : 0;
-  if (trans && rem > dur - trans) {
-    const k = easeInOutCubic((rem - (dur - trans)) / trans);
+  const kind = cur.trans || 'fade';
+  if (slides.length > 1 && kind !== 'cut' && rem > dur - TRANS_SEC) {
+    const k = easeInOutCubic((rem - (dur - TRANS_SEC)) / TRANS_SEC);
     const a = buffer('a');
     const b = buffer('b');
     drawSlide(a.getContext('2d'), cur, rem, assets, sec);
-    drawSlide(b.getContext('2d'), slides[(idx + 1) % slides.length], 0.01, assets, sec);
+    drawSlide(b.getContext('2d'), slides[(idx + 1) % slides.length], 0.001, assets, sec);
+    ctx2d.save();
     ctx2d.fillStyle = '#000000';
     ctx2d.fillRect(0, 0, W, H);
-    ctx2d.save();
-    ctx2d.globalAlpha = 1 - k;
-    ctx2d.drawImage(a, 0, 0);
-    ctx2d.globalAlpha = k;
-    ctx2d.drawImage(b, 0, 0);
+    if (kind === 'push_left') {
+      ctx2d.drawImage(a, -Math.round(k * W), 0);
+      ctx2d.drawImage(b, W - Math.round(k * W), 0);
+    } else if (kind === 'push_up') {
+      ctx2d.drawImage(a, 0, -Math.round(k * H));
+      ctx2d.drawImage(b, 0, H - Math.round(k * H));
+    } else if (kind === 'zoom') {
+      const sa = 1 + k * 0.8;
+      ctx2d.globalAlpha = 1 - k;
+      ctx2d.drawImage(a, (W - W * sa) / 2, (H - H * sa) / 2, W * sa, H * sa);
+      const sb = 0.5 + 0.5 * k;
+      ctx2d.globalAlpha = k;
+      ctx2d.drawImage(b, (W - W * sb) / 2, (H - H * sb) / 2, W * sb, H * sb);
+    } else if (kind === 'wipe') {
+      const x = Math.round(k * (W + 8));
+      ctx2d.drawImage(a, 0, 0);
+      ctx2d.beginPath();
+      ctx2d.rect(0, 0, x, H);
+      ctx2d.clip();
+      ctx2d.drawImage(b, 0, 0);
+      ctx2d.restore();
+      ctx2d.save();
+      ctx2d.fillStyle = (COLORS[cur.palette] || COLORS.blue_red_white).primary;
+      ctx2d.fillRect(x - 6, 0, 6, H);
+    } else if (kind === 'flash') {
+      ctx2d.drawImage(k < 0.5 ? a : b, 0, 0);
+      ctx2d.fillStyle = 'rgba(255,255,255,' + (1 - Math.abs(k - 0.5) * 2).toFixed(3) + ')';
+      ctx2d.fillRect(0, 0, W, H);
+    } else {
+      ctx2d.globalAlpha = 1 - k;
+      ctx2d.drawImage(a, 0, 0);
+      ctx2d.globalAlpha = k;
+      ctx2d.drawImage(b, 0, 0);
+    }
     ctx2d.restore();
     return;
   }
@@ -312,6 +695,18 @@ function downloadBlob(blob, name) {
 
 function slugify(name) {
   return String(name || 'ad').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'ad';
+}
+
+const pick = (list) => list[Math.floor(Math.random() * list.length)][0];
+function randomStyle() {
+  return {
+    bg: pick(BGS),
+    enter: pick(ENTERS),
+    motion: pick(MOTIONS),
+    deco: pick(DECOS),
+    trans: pick(TRANS),
+    palette: pick(Object.keys(COLORS).filter((k) => k !== 'white').map((k) => [k])),
+  };
 }
 
 export async function renderLedSign(ctx) {
@@ -428,6 +823,12 @@ export async function renderLedSign(ctx) {
       foot: String(s.foot || '').slice(0, 80),
       palette: COLORS[s.palette] ? s.palette : 'blue_red_white',
       seconds: slideSeconds(s),
+      bg: s.bg || 'black',
+      enter: s.enter || 'zoom_in',
+      motion: s.motion || 'none',
+      deco: s.deco || 'rail',
+      trans: s.trans || 'fade',
+      color: COLORS[s.color] ? s.color : 'white',
     }));
   }
 
@@ -439,9 +840,10 @@ export async function renderLedSign(ctx) {
   async function loadList(selectId) {
     try {
       let res = await ctx.api.ledTemplates();
-      if (!res.seeded) {
+      if (!res.seeded || (res.seededVersion || 1) < BUILTIN_VERSION) {
         try {
-          res = await ctx.api.seedLedTemplates(builtinPayload(), false);
+          res = await ctx.api.seedLedTemplates(builtinPayload(), false, BUILTIN_VERSION);
+          if (res.refreshed) toast('UBC templates updated to the new styles (' + res.refreshed + ')', 'ok');
         } catch (err) {
           if (!isForbidden(err)) throw err;
           st.readOnly = true;
@@ -511,7 +913,7 @@ export async function renderLedSign(ctx) {
 
   async function restoreDefaults() {
     try {
-      const res = await ctx.api.seedLedTemplates(builtinPayload(), true);
+      const res = await ctx.api.seedLedTemplates(builtinPayload(), true, BUILTIN_VERSION);
       toast(res.added ? 'Restored ' + res.added + ' UBC template' + (res.added === 1 ? '' : 's') : 'All UBC templates are already in the list', 'ok');
       await loadList(st.cur.id);
     } catch (err) {
@@ -622,6 +1024,21 @@ export async function renderLedSign(ctx) {
 
     const colorSel = h('select', { onchange: (e) => { cur.palette = e.target.value; markDirty(); } },
       Object.keys(COLORS).map((k) => h('option', { value: k, selected: cur.palette === k }, COLORS[k].label)));
+    const textSel = h('select', { onchange: (e) => { cur.color = e.target.value; markDirty(); } },
+      Object.keys(COLORS).map((k) => h('option', { value: k, selected: (cur.color || 'white') === k }, COLORS[k].label)));
+    const styleSel = (label, key, list, def, replay) => h('label.led-field', h('span.small.muted', label),
+      h('select', {
+        onchange: (e) => {
+          cur[key] = e.target.value;
+          if (replay) replayHint();
+          markDirty();
+        },
+      }, list.map(([v, lbl]) => h('option', { value: v, selected: (cur[key] || def) === v }, lbl))));
+    const replayHint = () => {
+      // jump the preview to the start of this slide so the new effect is visible at once
+      const before = slides.slice(0, st.activeIdx).reduce((a, s) => a + slideSeconds(s), 0);
+      startTs = performance.now() - before * 1000;
+    };
 
     const secSel = h('select', {
       onchange: (e) => { cur.seconds = Number(e.target.value) || 5; afterStructureChange(); },
@@ -645,21 +1062,48 @@ export async function renderLedSign(ctx) {
         field('Rating line', 'line1', '4.8 STARS', 'The number fills the stars (4.8 = 4 full + 80%).'),
         field('Reviews line (accent color)', 'line2', '1,100+ REVIEWS'),
       ];
+    } else if (layout === 'price') {
+      fields = [
+        field('Label (small, on top)', 'line1', 'TUNE-UPS FROM'),
+        field('Price or big text (accent color)', 'line2', '$100'),
+        field('Old price (crossed out, optional)', 'foot', 'WAS $1,299'),
+      ];
+    } else if (layout === 'ticker') {
+      fields = [field('Text 1', 'line1', 'FREE SHIPPING'), field('Text 2 (accent color)', 'line2', 'ON $50+', 'Scrolls across the sign in a loop.')];
     } else if (layout === 'swap') {
       fields = [field('First line', 'line1', 'WALK IN TODAY'), field('Second line (last word underlined)', 'line2', 'READY IN 24H')];
     } else {
       fields = [
-        field('Line 1 (white)', 'line1', 'WE FIX'),
+        field('Line 1 (main text color)', 'line1', 'WE FIX'),
         field('Line 2 (accent color)', 'line2', 'BIKES, E-BIKES, SCOOTERS', 'Use commas to rotate several words.'),
       ];
     }
+
+    const surprise = () => {
+      Object.assign(cur, randomStyle());
+      replayHint();
+      markDirty();
+      renderSlideEditor();
+    };
 
     mount(editorHost,
       h('div.led-form-grid',
         h('label.led-field', h('span.small.muted', 'Slide type'), layoutSel),
         h('label.led-field', h('span.small.muted', 'Time on screen'), secSel),
-        fields,
-        layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Accent color'), colorSel) : null),
+        fields),
+      h('div.led-style-head',
+        h('strong.small', 'Style of this slide'),
+        h('div.led-tpl-row',
+          h('button.btn.sm', { type: 'button', onclick: surprise }, '🎲 Surprise me'),
+          h('button.btn.sm', { type: 'button', onclick: () => { replayHint(); } }, '▶ Replay slide'))),
+      h('div.led-form-grid',
+        styleSel('Background', 'bg', BGS, 'black', false),
+        layout !== 'brand' && layout !== 'ticker' ? styleSel('Entrance', 'enter', ENTERS, 'zoom_in', true) : null,
+        layout !== 'brand' && layout !== 'ticker' ? styleSel('Motion while on screen', 'motion', MOTIONS, 'none', false) : null,
+        styleSel('Decoration', 'deco', DECOS, 'rail', false),
+        styleSel('Transition to next slide', 'trans', TRANS, 'fade', false),
+        layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Accent color'), colorSel) : null,
+        layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Main text color'), textSel) : null),
       h('div.led-tpl-row',
         h('button.btn.sm', { type: 'button', disabled: st.activeIdx === 0, onclick: () => move(-1) }, '← Move'),
         h('button.btn.sm', { type: 'button', disabled: st.activeIdx === slides.length - 1, onclick: () => move(1) }, 'Move →'),

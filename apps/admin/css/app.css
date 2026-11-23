@@ -1569,3 +1569,12 @@ input.lss-inp.is-invalid {
   }
 }
 
+.led-style-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}

@@ -1,8 +1,8 @@
 import { h, mount, clear, debounce } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, errorBox, loading, pageHead, pager, progressBar, searchableDropdown, toast, watchJob } from '../ui/components.js';
 import { adjustmentLabel, campaignBadge, channelBadge, dateTime, LINE_STATUS, money, pct, POS_EVENT_LABELS, REASON_LABELS } from '../ui/format.js';
-import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=85';
-import { sessionStorageSafeGet } from './products.js?v=85';
+import { cleanFilter, describeFilter, dollarsToCents } from './common.js?v=86';
+import { sessionStorageSafeGet } from './products.js?v=86';
 
 const PRESETS = {
   online: { key: 'online', kicker: 'Web Promo', title: 'Online Promo', sub: '15% off · Exact price · Online Store', name: 'Online Sale', channel: 'online', event: null, pct: 15, rounding: 'none', featured: true },

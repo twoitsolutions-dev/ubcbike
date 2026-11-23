@@ -1,7 +1,7 @@
 import { h } from '../ui/dom.js';
 import { card, confirmDialog, dataTable, pageHead, toast, watchJob } from '../ui/components.js';
 import { dateTime } from '../ui/format.js';
-import { settingsWorkspaceTabs } from './settings.js?v=85';
+import { settingsWorkspaceTabs } from './settings.js?v=86';
 
 const SUPPLIER_META = {
   qbp: {

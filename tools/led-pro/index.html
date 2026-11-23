@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>UBC Street Sign — Pro (214x112)</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Inter:wght@700;900&display=block");
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 214px; height: 112px; overflow: hidden; background: #000; }
+  </style>
+</head>
+<body>
+  <div
+    id="main"
+    data-composition-id="ubc-pro"
+    data-start="0"
+    data-duration="20"
+    data-width="214"
+    data-height="112"
+  >
+    <style>
+      /* UBC brand tokens — every catalog block reads these */
+      [data-composition-id="ubc-pro"] {
+        --bg: #000000;
+        --fg: #FFFFFF;
+        --muted: #E2E8F0;
+        --brand: #FF2D2D;      /* "green" slot  -> UBC red   */
+        --accent: #38BDF8;
+        --accent-2: #38BDF8;   /* "violet" slot -> light blue */
+        --font-display: "Montserrat", "Inter", system-ui, sans-serif;
+        --font-body: "Inter", system-ui, sans-serif;
+        position: relative;
+        width: 214px;
+        height: 112px;
+        overflow: hidden;
+        background: #000;
+      }
+      /* Rolling word hugs the prefix instead of floating in the widest-word slot */
+      [data-composition-id="ubc-pro"] .kts-word { justify-self: start !important; }
+      /* LED legibility: heavier weights + larger contact lines on the brand close */
+      [data-composition-id="ubc-pro"] .lbc-wordmark { font-weight: 900 !important; }
+      [data-composition-id="ubc-pro"] .lbc-tagline {
+        font-family: var(--font-display) !important;
+        font-size: 15px !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.02em !important;
+        margin-top: 2px !important;
+      }
+      [data-composition-id="ubc-pro"] .lbc-url {
+        font-family: var(--font-display) !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.14em !important;
+        color: #38BDF8 !important;
+        margin-top: 4px !important;
+      }
+      /* Thin light-blue rail that sweeps along the bottom edge for the whole film */
+      #rail {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 2px;
+        width: 214px;
+        background: linear-gradient(90deg, transparent 0%, #38BDF8 35%, #FF2D2D 65%, transparent 100%);
+        opacity: 0.9;
+        z-index: 20;
+      }
+    </style>
+
+    <!-- 1 · 0s–4.5s  Headline slam: product hook -->
+    <div
+      id="scene-ebikes"
+      data-composition-id="headline-slam"
+      data-composition-src="compositions/components/headline-slam.html"
+      data-start="0"
+      data-duration="4.5"
+      data-track-index="1"
+      data-variable-values='{"text":"NEW E-BIKES","accent_word_index":1,"accent":"violet","shadow":false}'
+    ></div>
+
+    <!-- 2 · 4.5s–10.5s  Kinetic swap: what we service -->
+    <div
+      id="scene-we-fix"
+      data-composition-id="kinetic-type-swap"
+      data-composition-src="compositions/components/kinetic-type-swap.html"
+      data-start="4.5"
+      data-duration="6"
+      data-track-index="1"
+      data-variable-values='{"prefix":"WE FIX","options":"E-BIKES,SCOOTERS,ALL BRANDS","suffix":"","cues":"2.1,3.9","accent":"green","exit":"fade"}'
+    ></div>
+
+    <!-- 3 · 10.5s–15.5s  Line swap: walk-in promise -->
+    <div
+      id="scene-walk-in"
+      data-composition-id="line-swap"
+      data-composition-src="compositions/components/line-swap.html"
+      data-start="10.5"
+      data-duration="5"
+      data-track-index="1"
+      data-variable-values='{"line_a":"WALK-INS WELCOME","line_b":"READY IN 24H","swap_at":2.1,"underline_word":"24H","accent":"violet","exit":"up"}'
+    ></div>
+
+    <!-- 4 · 15.5s–20s  Brand close: identity + contact, holds dead still -->
+    <div
+      id="scene-brand"
+      data-composition-id="logo-brand-close"
+      data-composition-src="compositions/components/logo-brand-close.html"
+      data-start="15.5"
+      data-duration="4.5"
+      data-track-index="1"
+      data-variable-values='{"wordmark":"UBC","tagline":"(813) 971-2277","url":"UBCBIKE.COM","accent":"green","exit":"none"}'
+    ></div>
+
+    <div id="rail" class="clip" data-start="0" data-duration="20" data-track-index="2"></div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#rail", { xPercent: -100 }, { xPercent: 100, duration: 3.5, ease: "none", repeat: 5 }, 0);
+      window.__timelines["ubc-pro"] = tl;
+    </script>
+  </div>
+</body>
+</html>

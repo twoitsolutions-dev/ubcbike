@@ -1067,6 +1067,59 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     return { entries: r.rows };
   });
 
+  // ---------- LED Sign Studio: saved templates ----------
+  const ledSlideSchema = z.object({
+    layout: z.enum(['slam', 'swap', 'rating', 'brand']),
+    line1: z.string().max(60).default(''),
+    line2: z.string().max(120).default(''),
+    foot: z.string().max(80).default(''),
+    palette: z.string().max(30),
+    seconds: z.number().int().min(2).max(10),
+  });
+  const ledTemplateSchema = z.object({ name: z.string().trim().min(1).max(60), slides: z.array(ledSlideSchema).min(1).max(6) });
+  const ledRow = (r: { id: string; name: string; slides: unknown; updated_at: Date; author: string | null }) =>
+    ({ id: String(r.id), name: r.name, slides: r.slides, updatedAt: r.updated_at, author: r.author });
+
+  app.get('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const r = await ctx.pool.query(
+      `SELECT t.id, t.name, t.slides, t.updated_at, u.name AS author FROM led_templates t LEFT JOIN users u ON u.id = t.created_by
+       WHERE t.company_id = $1 ORDER BY t.updated_at DESC LIMIT 100`, [req.session!.companyId]);
+    return { templates: r.rows.map(ledRow) };
+  });
+
+  app.post('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = ledTemplateSchema.parse(req.body);
+    const s = req.session!;
+    const r = await ctx.pool.query(
+      `INSERT INTO led_templates (company_id, name, slides, created_by) VALUES ($1, $2, $3, $4)
+       RETURNING id, name, slides, updated_at, NULL::text AS author`,
+      [s.companyId, body.name, JSON.stringify(body.slides), s.userId]);
+    await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'led_template.created', detail: { name: body.name } });
+    return ledRow(r.rows[0]);
+  });
+
+  app.put('/api/led-templates/:id', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const id = z.coerce.number().int().positive().parse((req.params as { id: string }).id);
+    const body = ledTemplateSchema.parse(req.body);
+    const s = req.session!;
+    const r = await ctx.pool.query(
+      `UPDATE led_templates SET name = $3, slides = $4, updated_at = now() WHERE id = $1 AND company_id = $2
+       RETURNING id, name, slides, updated_at, NULL::text AS author`,
+      [id, s.companyId, body.name, JSON.stringify(body.slides)]);
+    if (!r.rowCount) throw notFound('LED template');
+    await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'led_template.updated', detail: { id, name: body.name } });
+    return ledRow(r.rows[0]);
+  });
+
+  app.delete('/api/led-templates/:id', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const id = z.coerce.number().int().positive().parse((req.params as { id: string }).id);
+    const s = req.session!;
+    const r = await ctx.pool.query(`DELETE FROM led_templates WHERE id = $1 AND company_id = $2 RETURNING name`, [id, s.companyId]);
+    if (!r.rowCount) throw notFound('LED template');
+    await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'led_template.deleted', detail: { id, name: r.rows[0].name } });
+    return { ok: true };
+  });
+
   app.get('/api/settings', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => getSettings(ctx.pool, req.session!.companyId));
 
   app.put('/api/settings', { preHandler: requireAuth(ctx, 'settings.manage') }, async (req) => {

@@ -1,7 +1,7 @@
 import { h } from '../ui/dom.js';
 import { card, dataTable, pageHead } from '../ui/components.js';
 import { availabilityBadge, ago } from '../ui/format.js';
-import { catalogTable, itemSearchTabs } from './products.js?v=83';
+import { catalogTable, itemSearchTabs } from './products.js?v=84';
 
 export async function renderInventory(ctx) {
   const loc = await ctx.api.locations();

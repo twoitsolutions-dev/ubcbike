@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { createHttpDriver } from './drivers/http.js?v=83';
+import { createHttpDriver } from './drivers/http.js?v=84';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=83';
+import { matchRoute } from './router.js?v=84';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
@@ -29,7 +29,7 @@ const NAV = [
     group: 'Pricing & System',
     items: [
       ['#/promotions', 'Promotions / Price Rules', 'tag'],
-      ['#/led-sign', 'LED Sign (214×112)', 'tag'],
+      ['#/led-sign', 'LED Sign', 'sign'],
       ['#/settings', 'Settings & Sync', 'settings', 'openErrors'],
       ['#/help', 'Help & Guides', 'clipboard'],
     ],
@@ -53,7 +53,7 @@ function navParentFor(hash) {
 
 async function loadDriver() {
   if (CONFIG.driver === 'demo') {
-    const mod = await import('./drivers/demo.js?v=83');
+    const mod = await import('./drivers/demo.js?v=84');
     return mod.createDemoDriver();
   }
   return createHttpDriver();

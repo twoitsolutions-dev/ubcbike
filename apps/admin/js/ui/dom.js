@@ -73,6 +73,7 @@ const ICONS = {
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
   refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
   plus: 'M12 5v14M5 12h14',
+  sign: 'M2 3h20v12H2zM8 15v6M16 15v6M6 7h.01M10 7h.01M14 7h.01M18 7h.01M6 11h12',
 };
 
 export function icon(name) {

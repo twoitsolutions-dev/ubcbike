@@ -544,6 +544,26 @@ export function createDemoDriver() {
     async resolveError(eid) { can('audit.read'); const e = state.errors.find((x) => x.id === eid); if (e) e.resolved_at = nowIso(); audit('error.resolved', 'error', String(eid)); save(); return { ok: true }; },
     async audit() { can('audit.read'); return { entries: clone(state.audit) }; },
     async settings() { return clone(state.settings); },
+    async ledTemplates() { can('catalog.read'); return { templates: clone(state.ledTemplates || []) }; },
+    async createLedTemplate(t) {
+      const u = can('catalog.write');
+      state.ledTemplates = state.ledTemplates || [];
+      const row = { id: String(Date.now()), name: String(t.name || '').trim().slice(0, 60) || 'Untitled', slides: clone(t.slides || []), updatedAt: nowIso(), author: u.name };
+      state.ledTemplates.unshift(row); audit('led_template.created', null, null, { name: row.name }); save(); return clone(row);
+    },
+    async updateLedTemplate(id, t) {
+      can('catalog.write');
+      const row = (state.ledTemplates || []).find((x) => x.id === String(id)); if (!row) fail(404, 'NOT_FOUND', 'LED template not found');
+      row.name = String(t.name || row.name).trim().slice(0, 60); row.slides = clone(t.slides || []); row.updatedAt = nowIso();
+      audit('led_template.updated', null, null, { id, name: row.name }); save(); return clone(row);
+    },
+    async deleteLedTemplate(id) {
+      can('catalog.write');
+      const before = (state.ledTemplates || []).length;
+      state.ledTemplates = (state.ledTemplates || []).filter((x) => x.id !== String(id));
+      if (state.ledTemplates.length === before) fail(404, 'NOT_FOUND', 'LED template not found');
+      audit('led_template.deleted', null, null, { id }); save(); return { ok: true };
+    },
     async saveSettings(s) { can('settings.manage'); audit('settings.updated', null, null, { before: state.settings, after: s }); state.settings = clone(s); state.settings.campaignRules.excludeWithoutCost = true; save(); return clone(state.settings); },
 
     async campaigns() {

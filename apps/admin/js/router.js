@@ -1,20 +1,20 @@
-import { renderDashboard } from './views/dashboard.js?v=83';
-import { renderReports } from './views/reports.js?v=83';
-import { renderPipeline } from './views/pipeline.js?v=83';
-import { renderProducts, renderProductDetail } from './views/products.js?v=83';
-import { renderInventory } from './views/inventory.js?v=83';
-import { renderSuppliers } from './views/suppliers.js?v=83';
-import { renderPricing } from './views/pricing.js?v=83';
-import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=83';
-import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=83';
-import { renderOrders, renderOrderDetail } from './views/orders.js?v=83';
-import { renderPurchasing } from './views/purchasing.js?v=83';
-import { renderIntegrations } from './views/integrations.js?v=83';
-import { renderActivity } from './views/activity.js?v=83';
-import { renderSettings } from './views/settings.js?v=83';
-import { renderUpcReview } from './views/upc-review.js?v=83';
-import { renderLedSign } from './views/led-sign.js?v=83';
-import { renderHelp } from './views/help.js?v=83';
+import { renderDashboard } from './views/dashboard.js?v=84';
+import { renderReports } from './views/reports.js?v=84';
+import { renderPipeline } from './views/pipeline.js?v=84';
+import { renderProducts, renderProductDetail } from './views/products.js?v=84';
+import { renderInventory } from './views/inventory.js?v=84';
+import { renderSuppliers } from './views/suppliers.js?v=84';
+import { renderPricing } from './views/pricing.js?v=84';
+import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=84';
+import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=84';
+import { renderOrders, renderOrderDetail } from './views/orders.js?v=84';
+import { renderPurchasing } from './views/purchasing.js?v=84';
+import { renderIntegrations } from './views/integrations.js?v=84';
+import { renderActivity } from './views/activity.js?v=84';
+import { renderSettings } from './views/settings.js?v=84';
+import { renderUpcReview } from './views/upc-review.js?v=84';
+import { renderLedSign } from './views/led-sign.js?v=84';
+import { renderHelp } from './views/help.js?v=84';
 
 export const routes = [
   { path: '/dashboard', title: 'Dashboard', render: renderDashboard },
@@ -36,7 +36,7 @@ export const routes = [
   { path: '/integrations', title: 'Settings & Sync · Connections', render: renderIntegrations },
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
   { path: '/settings', title: 'Settings & Sync', render: renderSettings },
-  { path: '/led-sign', title: 'LED Sign Studio (214×112)', render: renderLedSign },
+  { path: '/led-sign', title: 'LED Sign Studio', render: renderLedSign },
   { path: '/help', title: 'Help & Guides', render: renderHelp },
 ];
 

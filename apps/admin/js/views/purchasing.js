@@ -1,7 +1,7 @@
 import { h, mount, clear } from '../ui/dom.js';
 import { card, dataTable, pageHead } from '../ui/components.js';
 import { money } from '../ui/format.js';
-import { B2B_PORTALS, copyToClipboard } from './orders.js?v=83';
+import { B2B_PORTALS, copyToClipboard } from './orders.js?v=84';
 
 const PO_BADGE = { awaiting_approval: 'warn', approved: 'info', submitted: 'info', confirmed: 'info', in_transit: 'info', received: 'ok', cancelled: '', exception: 'bad' };
 

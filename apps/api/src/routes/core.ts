@@ -1118,7 +1118,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = z.object({
       restore: z.boolean().default(false),
       version: z.number().int().min(1).max(1000).default(1),
-      templates: z.array(ledTemplateSchema).min(1).max(30),
+      templates: z.array(ledTemplateSchema.extend({ since: z.number().int().min(1).max(1000).default(1) })).min(1).max(30),
     }).parse(req.body);
     const s = req.session!;
     let added = 0;
@@ -1128,6 +1128,16 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       const seeded = await c.query(`SELECT version FROM led_template_seeds WHERE company_id = $1`, [s.companyId]);
       if (seeded.rowCount && !body.restore) {
         if ((seeded.rows[0].version ?? 1) >= body.version) return;
+        const stored = seeded.rows[0].version ?? 1;
+        // templates introduced after the stored version are new: add them (deleted older ones stay deleted)
+        const existing = await c.query(`SELECT lower(name) AS n FROM led_templates WHERE company_id = $1`, [s.companyId]);
+        const have = new Set(existing.rows.map((r: { n: string }) => r.n));
+        for (const [i, t] of body.templates.entries()) {
+          if (t.since <= stored || have.has(t.name.toLowerCase())) continue;
+          await c.query(`INSERT INTO led_templates (company_id, name, slides, created_by, sort_order) VALUES ($1, $2, $3, $4, $5)`,
+            [s.companyId, t.name, JSON.stringify(t.slides), s.userId, i]);
+          added++;
+        }
         // newer UBC design: refresh only the defaults nobody has edited
         for (const t of body.templates) {
           const u = await c.query(
@@ -1137,7 +1147,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
           refreshed += u.rowCount ?? 0;
         }
         await c.query(`UPDATE led_template_seeds SET version = $2 WHERE company_id = $1`, [s.companyId, body.version]);
-        if (refreshed) await audit(c, { companyId: s.companyId, userId: s.userId, action: 'led_template.refreshed', detail: { refreshed, version: body.version } });
+        if (refreshed || added) await audit(c, { companyId: s.companyId, userId: s.userId, action: 'led_template.refreshed', detail: { refreshed, added, version: body.version } });
         return;
       }
       const existing = await c.query(`SELECT lower(name) AS n FROM led_templates WHERE company_id = $1`, [s.companyId]);

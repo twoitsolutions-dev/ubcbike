@@ -553,6 +553,14 @@ export function createDemoDriver() {
       let refreshed = 0;
       if (state.ledSeeded && !restore) {
         if ((state.ledSeedVersion || 1) < ver) {
+          const stored = state.ledSeedVersion || 1;
+          const have = new Set(state.ledTemplates.map((x) => x.name.toLowerCase()));
+          (templates || []).forEach((t, i) => {
+            if ((t.since || 1) <= stored || have.has(String(t.name).toLowerCase())) return;
+            state.ledTemplates.push({ id: 'd' + Date.now() + '-n' + i, name: t.name, slides: clone(t.slides), updatedAt: nowIso(), author: u.name, sort: i });
+            added++;
+          });
+          state.ledTemplates.sort((x, y) => (x.sort === undefined ? 1000 : x.sort) - (y.sort === undefined ? 1000 : y.sort));
           (templates || []).forEach((t) => {
             const row = state.ledTemplates.find((x) => x.name.toLowerCase() === String(t.name).toLowerCase() && !x.edited);
             if (row) { row.slides = clone(t.slides); row.updatedAt = nowIso(); refreshed++; }

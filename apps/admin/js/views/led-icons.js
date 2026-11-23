@@ -23,6 +23,9 @@ export const ICONS = [
   ['pin', 'Location pin'],
   ['phone', 'Phone'],
   ['star', 'Star'],
+  ['grad', 'Graduation cap'],
+  ['flag', 'US flag'],
+  ['badge', 'Police badge'],
 ];
 
 const TAU = Math.PI * 2;
@@ -260,6 +263,56 @@ export function drawIcon(ctx, name, size, t, main, accent) {
       const rad = (i % 2 === 0 ? 0.95 : 0.42) * r;
       const a = -Math.PI / 2 + (i * Math.PI) / 5;
       ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (name === 'grad') {
+    ctx.translate(0, Math.sin(t * 3) * 1.2);
+    ctx.beginPath();
+    [[-0.95, -0.25], [0, -0.68], [0.95, -0.25], [0, 0.18]].forEach(([x, y], i) => (i ? ctx.lineTo(x * r, y * r) : ctx.moveTo(x * r, y * r)));
+    ctx.closePath();
+    ctx.fill();
+    line(ctx, [[-0.55, -0.05], [-0.55, 0.42], [0, 0.66], [0.55, 0.42], [0.55, -0.05]], r);
+    ctx.strokeStyle = accent;
+    const sw = Math.sin(t * 4) * 0.08;
+    line(ctx, [[0.8, -0.3], [0.8 + sw, 0.35]], r); // tassel
+    ctx.fillStyle = accent;
+    circle(ctx, 0.8 + sw, 0.42, 0.1, r, true);
+  } else if (name === 'flag') {
+    ctx.save();
+    const wave = (x) => Math.sin(t * 5 + x * 3) * 0.06;
+    ctx.lineWidth = Math.max(1, size / 22);
+    line(ctx, [[-0.9, -0.85], [-0.9, 0.9]], r); // pole
+    for (let i = 0; i < 7; i++) {
+      ctx.strokeStyle = i % 2 === 0 ? '#FF2D2D' : '#FFFFFF';
+      const y = -0.72 + i * 0.16;
+      ctx.lineWidth = Math.max(2, size * 0.075);
+      ctx.beginPath();
+      for (let k = 0; k <= 8; k++) {
+        const x = -0.8 + k * 0.21;
+        const Y = (y + wave(x)) * r;
+        if (k) ctx.lineTo(x * r, Y);
+        else ctx.moveTo(x * r, Y);
+      }
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#1E4FD8';
+    ctx.fillRect(-0.8 * r, (-0.8 + wave(-0.6)) * r, 0.7 * r, 0.56 * r);
+    ctx.fillStyle = '#FFFFFF';
+    for (let i = 0; i < 6; i++) circle(ctx, -0.7 + (i % 3) * 0.24, -0.66 + Math.floor(i / 3) * 0.24 + wave(-0.6), 0.04, r, true);
+    ctx.restore();
+  } else if (name === 'badge') {
+    ctx.rotate(Math.sin(t * 2.5) * 0.06);
+    ctx.beginPath();
+    [[0, -0.95], [0.78, -0.62], [0.72, 0.15], [0, 0.95], [-0.72, 0.15], [-0.78, -0.62]].forEach(([x, y], i) => (i ? ctx.lineTo(x * r, y * r) : ctx.moveTo(x * r, y * r)));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const rad = (i % 2 === 0 ? 0.46 : 0.2) * r;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad - 0.02 * r);
     }
     ctx.closePath();
     ctx.fill();

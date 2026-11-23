@@ -1,7 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=88';
-import { ICONS, drawIcon, iconEntrance } from './led-icons.js?v=88';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=89';
+import { ICONS, drawIcon, iconEntrance } from './led-icons.js?v=89';
 
 // UBC street sign: 214 x 112 pixels, 15 fps, audio-free .AVI.
 const W = 214;
@@ -69,7 +69,7 @@ const ic = (icon, iconSide) => ({ icon, iconSide: iconSide || 'left' });
 
 // Built-in templates (version 3: each has its own look, clean backgrounds only).
 // Copy only uses facts published on ubcbike.com or given by UBC.
-const BUILTIN_VERSION = 4;
+const BUILTIN_VERSION = 5;
 const BUILTIN = [
   { name: 'Street Ad', slides: [
     S('slam', 'NEW', 'E-BIKES', 'blue_red_white', 5, '', Object.assign(st_('spotlight', 'zoom_in', 'pulse', 'rail', 'push_left'), ic('ebike', 'left'))),
@@ -111,6 +111,13 @@ const BUILTIN = [
     S('swap', 'GET CREDIT', 'UPGRADE TODAY', 'lime', 5, '', st_('tint', 'rise', 'none', 'rider', 'push_up')),
     S('slam', 'WE', 'PRICE MATCH', 'red_white', 4, '', st_('flood', 'zoom_in', 'shake', 'none', 'flash')),
     S('brand', '', '', 'cyan_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'chase', 'fade'))] },
+  { name: 'Student, Veteran & Police Discounts', since: 5, slides: [
+    S('slam', 'SPECIAL', 'DISCOUNTS', 'gold', 4, '', Object.assign(st_('spotlight', 'zoom_out', 'pulse', 'sparkle', 'push_left'), ic('tag', 'left'))),
+    S('slam', 'FOR', 'STUDENTS', 'blue_red_white', 4, '', Object.assign(st_('tint', 'slide_left', 'none', 'corners', 'push_left'), ic('grad', 'left'))),
+    S('slam', 'FOR', 'VETERANS', 'red_white', 4, '', Object.assign(st_('black', 'slide_left', 'none', 'bars', 'push_left'), ic('flag', 'left'))),
+    S('slam', 'FOR', 'POLICE', 'blue_red_white', 4, '', Object.assign(st_('tint', 'drop', 'none', 'chase', 'flash'), ic('badge', 'left'))),
+    S('swap', 'THANK YOU', 'ASK IN STORE', 'gold', 5, '', Object.assign(st_('stars', 'rise', 'float', 'sparkle', 'fade'), ic('star', 'right'))),
+    S('brand', '', '', 'blue_red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'rail', 'fade'))] },
   { name: 'Since 1972', slides: [
     S('slam', 'SINCE', '1972', 'gold', 4, '', st_('stars', 'zoom_out', 'zoom', 'sparkle', 'push_left')),
     S('slam', 'TAMPA', 'BIKE SHOP', 'blue_red_white', 5, '', Object.assign(st_('gradient', 'typewriter', 'none', 'rail', 'wipe'), ic('wheel', 'left'))),
@@ -812,7 +819,7 @@ export async function renderLedSign(ctx) {
     }));
   }
 
-  const builtinPayload = () => BUILTIN.map((t) => ({ name: t.name, slides: cloneSlides(t.slides) }));
+  const builtinPayload = () => BUILTIN.map((t) => ({ name: t.name, since: t.since || 1, slides: cloneSlides(t.slides) }));
   const localDefaults = () => BUILTIN.map((t) => ({ id: null, name: t.name, slides: t.slides }));
   const isForbidden = (err) => err && (err.status === 403 || /cannot perform|forbidden/i.test(err.message || ''));
 
@@ -823,6 +830,7 @@ export async function renderLedSign(ctx) {
       if (!res.seeded || (res.seededVersion || 1) < BUILTIN_VERSION) {
         try {
           res = await ctx.api.seedLedTemplates(builtinPayload(), false, BUILTIN_VERSION);
+          if (res.added && res.seededVersion) toast('New UBC template' + (res.added === 1 ? '' : 's') + ' added (' + res.added + ')', 'ok');
           if (res.refreshed) toast('UBC templates updated to the new styles (' + res.refreshed + ')', 'ok');
         } catch (err) {
           if (!isForbidden(err)) throw err;

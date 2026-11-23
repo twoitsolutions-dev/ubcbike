@@ -1,8 +1,8 @@
 import { h, mount } from '../ui/dom.js';
 import { modal, pageHead, toast } from '../ui/components.js';
 import { availabilityBadge, margin, money, pct, REASON_LABELS } from '../ui/format.js';
-import { catalogTable, itemSearchTabs, renderItemPriceCell, sessionStorageSafeSet } from './products.js?v=88';
-import { dollarsToCents } from './common.js?v=88';
+import { catalogTable, itemSearchTabs, renderItemPriceCell, sessionStorageSafeSet } from './products.js?v=89';
+import { dollarsToCents } from './common.js?v=89';
 
 /** Single-item price editor. Shows margin/MAP impact live; the server enforces the rules. */
 export function openPriceEditor(ctx, item, onSaved) {

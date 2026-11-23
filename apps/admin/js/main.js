@@ -29,6 +29,7 @@ const NAV = [
     group: 'Pricing & System',
     items: [
       ['#/promotions', 'Promotions / Price Rules', 'tag'],
+      ['#/led-sign', 'LED Sign (224×212)', 'tag'],
       ['#/settings', 'Settings & Sync', 'settings', 'openErrors'],
       ['#/help', 'Help & Guides', 'clipboard'],
     ],
@@ -41,6 +42,7 @@ function navParentFor(hash) {
   if (path.indexOf('#/pipeline') === 0 || path.indexOf('#/suppliers') === 0) return '#/suppliers';
   if (path.indexOf('#/integrations') === 0 || path.indexOf('#/activity') === 0 || path.indexOf('#/settings') === 0) return '#/settings';
   if (path.indexOf('#/promotions') === 0) return '#/promotions';
+  if (path.indexOf('#/led-sign') === 0) return '#/led-sign';
   if (path.indexOf('#/orders') === 0) return '#/orders';
   if (path.indexOf('#/purchasing') === 0) return '#/purchasing';
   if (path.indexOf('#/upc-matches') === 0) return '#/upc-matches';

@@ -1489,3 +1489,81 @@ input.lss-inp.is-invalid {
   }
   .lss-undo { min-height: 34px !important; padding: 4px 10px !important; }
 }
+
+/* LED Sign Studio (224x212 .AVI) */
+.led-tpl-row, .led-slide-tabs, .led-catalog-hits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.led-catalog-search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.led-catalog-search input {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.led-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.led-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.led-field input, .led-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.led-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+}
+.led-prev-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.led-canvas-1x {
+  width: 224px;
+  height: 212px;
+  background: #000;
+  border-radius: 8px;
+  border: 2px solid #1E293B;
+  image-rendering: pixelated;
+}
+.led-canvas-2x {
+  width: 336px;
+  height: 318px;
+  max-width: 100%;
+  background: #000;
+  border-radius: 10px;
+  border: 2px solid #1E293B;
+  image-rendering: pixelated;
+}
+.led-export-opts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 720px) {
+  .led-form-grid, .led-export-opts {
+    grid-template-columns: 1fr;
+  }
+}

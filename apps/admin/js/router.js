@@ -36,7 +36,7 @@ export const routes = [
   { path: '/integrations', title: 'Settings & Sync · Connections', render: renderIntegrations },
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
   { path: '/settings', title: 'Settings & Sync', render: renderSettings },
-  { path: '/led-sign', title: 'LED Sign Studio (224×212)', render: renderLedSign },
+  { path: '/led-sign', title: 'LED Sign Studio (214×112)', render: renderLedSign },
   { path: '/help', title: 'Help & Guides', render: renderHelp },
 ];
 

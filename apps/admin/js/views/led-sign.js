@@ -3,15 +3,18 @@ import { card, pageHead, toast } from '../ui/components.js';
 import { money } from '../ui/format.js';
 import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=81';
 
-const W = 224;
-const H = 212;
+const SIZES = {
+  '214x112': { w: 214, h: 112, label: '214 × 112 (UBC Sign)' },
+  '224x112': { w: 224, h: 112, label: '224 × 112 (Wide Module)' },
+  '224x212': { w: 224, h: 212, label: '224 × 212 (Tall)' },
+};
 
 const PALETTES = {
-  blue_red_white: { label: 'Light Blue + Red + White', primary: '#38BDF8', secondary: '#FFFFFF', badgeBg: '#FF1E1E', badgeFg: '#FFFFFF', border: '#38BDF8', glow: '#00E5FF' },
-  cyan_white: { label: 'Electric Cyan + White', primary: '#00E5FF', secondary: '#FFFFFF', badgeBg: '#00E5FF', badgeFg: '#000000', border: '#00E5FF', glow: '#FFFFFF' },
-  red_white: { label: 'Vibrant Red + White', primary: '#FF1E1E', secondary: '#FFFFFF', badgeBg: '#FF1E1E', badgeFg: '#FFFFFF', border: '#FF1E1E', glow: '#38BDF8' },
-  yellow_cyan: { label: 'Neon Yellow + Light Blue', primary: '#FFE600', secondary: '#00E5FF', badgeBg: '#FFE600', badgeFg: '#000000', border: '#00E5FF', glow: '#FFFFFF' },
-  green_white: { label: 'Neon Green + White', primary: '#00FF66', secondary: '#FFFFFF', badgeBg: '#00FF66', badgeFg: '#000000', border: '#00FF66', glow: '#FFFFFF' },
+  blue_red_white: { label: 'Light Blue + Red + White', primary: '#38BDF8', secondary: '#FFFFFF', badgeBg: '#FF1E1E', badgeFg: '#FFFFFF', border: '#38BDF8' },
+  cyan_white: { label: 'Electric Cyan + White', primary: '#00E5FF', secondary: '#FFFFFF', badgeBg: '#00E5FF', badgeFg: '#000000', border: '#00E5FF' },
+  red_white: { label: 'Vibrant Red + White', primary: '#FF1E1E', secondary: '#FFFFFF', badgeBg: '#FF1E1E', badgeFg: '#FFFFFF', border: '#FF1E1E' },
+  yellow_cyan: { label: 'Neon Yellow + Light Blue', primary: '#FFE600', secondary: '#00E5FF', badgeBg: '#FFE600', badgeFg: '#000000', border: '#00E5FF' },
+  green_white: { label: 'Neon Green + White', primary: '#00FF66', secondary: '#FFFFFF', badgeBg: '#00FF66', badgeFg: '#000000', border: '#00FF66' },
 };
 
 const ICONS = [
@@ -35,8 +38,8 @@ const TEMPLATES = [
     name: 'UBC Logo + Service Center',
     anim: 'laser',
     slides: [
-      { badge: 'TAMPA · SINCE 1972', line1: 'UNIVERSITY', line2: 'BICYCLE CTR', foot: '1220 E FLETCHER AVE · USF', palette: 'blue_red_white', logo: 'ubc', icon: 'wheel', seconds: 3 },
-      { badge: 'WALK-IN SERVICE CENTER', line1: 'SAME-DAY', line2: 'BIKE REPAIR', foot: 'MOST IN 24H · (813) 971-2277', palette: 'cyan_white', logo: 'none', icon: 'wrench', seconds: 3 },
+      { badge: 'TAMPA · SINCE 1972', line1: 'WALK-IN', line2: 'SERVICE CENTER', foot: '1220 E FLETCHER · (813) 971-2277', palette: 'blue_red_white', logo: 'ubc', icon: 'wheel', seconds: 3 },
+      { badge: 'ALL BRANDS WELCOME', line1: 'TUNE-UPS', line2: 'FROM $100', foot: 'MOST REPAIRS IN 24 HOURS', palette: 'cyan_white', logo: 'none', icon: 'wrench', seconds: 3 },
     ],
   },
   {
@@ -44,7 +47,7 @@ const TEMPLATES = [
     name: 'E-Bikes + 0% APR',
     anim: 'scan',
     slides: [
-      { badge: 'IN STOCK TODAY', line1: 'E-BIKES &', line2: 'ROAD BIKES', foot: 'TEST RIDE TODAY ON FLETCHER', palette: 'cyan_white', logo: 'ubc', icon: 'bolt', seconds: 3 },
+      { badge: 'IN STOCK TODAY', line1: 'BIKES &', line2: 'E-BIKES', foot: 'TEST RIDE TODAY ON FLETCHER', palette: 'cyan_white', logo: 'ubc', icon: 'bolt', seconds: 3 },
       { badge: 'EASY FINANCING', line1: '0% APR', line2: 'AVAILABLE', foot: 'INSTANT BIKE TRADE-IN CREDIT', palette: 'yellow_cyan', logo: 'none', icon: 'bolt', seconds: 3 },
     ],
   },
@@ -62,7 +65,7 @@ const TEMPLATES = [
     name: 'USF, Veterans & Police',
     anim: 'ticker',
     slides: [
-      { badge: 'EVERYDAY DISCOUNTS', line1: 'USF · VETS', line2: '& POLICE', foot: 'SHOW VALID ID IN STORE FOR INSTANT SAVINGS · SINCE 1972', palette: 'blue_red_white', logo: 'ubc', icon: 'star', seconds: 4 },
+      { badge: 'EVERYDAY SAVINGS', line1: 'USF · VETS', line2: '& POLICE', foot: 'SHOW VALID ID IN STORE FOR INSTANT SAVINGS · SINCE 1972', palette: 'blue_red_white', logo: 'ubc', icon: 'star', seconds: 4 },
       { badge: '5 MIN FROM USF', line1: 'HELMETS', line2: '& REPAIRS', foot: 'BIKES · E-SCOOTERS · LOCKS · LIGHTS · (813) 971-2277', palette: 'cyan_white', logo: 'none', icon: 'wheel', seconds: 3 },
     ],
   },
@@ -72,7 +75,7 @@ const TEMPLATES = [
     anim: 'laser',
     slides: [
       { badge: 'ALAFIA RIVER PARK', line1: 'MTB & E-MTB', line2: 'RENTALS', foot: '20+ MILES OF SINGLETRACK', palette: 'green_white', logo: 'ubc', icon: 'wheel', seconds: 3 },
-      { badge: 'OPEN SAT & SUN 8AM', line1: 'RESERVE', line2: 'AT UBCBIKE', foot: 'CALL (813) 459-8293', palette: 'cyan_white', logo: 'none', icon: 'bolt', seconds: 3 },
+      { badge: 'SAT & SUN 8AM', line1: 'RESERVE', line2: 'AT UBCBIKE', foot: 'CALL (813) 459-8293', palette: 'cyan_white', logo: 'none', icon: 'bolt', seconds: 3 },
     ],
   },
 ];
@@ -100,7 +103,7 @@ function fitText(ctx2d, text, maxWidth, startSize, minSize, weight) {
   while (size > minSize) {
     ctx2d.font = weight + ' ' + size + 'px "Arial Black", Impact, Arial, sans-serif';
     if (ctx2d.measureText(clean).width <= maxWidth) break;
-    size -= 2;
+    size -= 1;
   }
   return size;
 }
@@ -118,36 +121,36 @@ function drawVectorIcon(ctx2d, type, cx, cy, r, phase, pal) {
   if (type === 'wheel') {
     const angle = phase * Math.PI * 2;
     ctx2d.strokeStyle = pal.primary;
-    ctx2d.lineWidth = 2.6;
+    ctx2d.lineWidth = 2.2;
     ctx2d.beginPath();
     ctx2d.arc(0, 0, r, 0, Math.PI * 2);
     ctx2d.stroke();
     ctx2d.strokeStyle = pal.secondary;
-    ctx2d.lineWidth = 1.4;
+    ctx2d.lineWidth = 1.2;
     for (let i = 0; i < 6; i++) {
       const a = angle + (i * Math.PI) / 3;
       ctx2d.beginPath();
       ctx2d.moveTo(0, 0);
-      ctx2d.lineTo(Math.cos(a) * (r - 2), Math.sin(a) * (r - 2));
+      ctx2d.lineTo(Math.cos(a) * (r - 1.5), Math.sin(a) * (r - 1.5));
       ctx2d.stroke();
     }
     ctx2d.fillStyle = pal.badgeBg;
     ctx2d.beginPath();
-    ctx2d.arc(0, 0, 3.2, 0, Math.PI * 2);
+    ctx2d.arc(0, 0, 2.4, 0, Math.PI * 2);
     ctx2d.fill();
   } else if (type === 'bolt') {
     const sc = 0.92 + 0.14 * Math.sin(phase * Math.PI * 6);
     ctx2d.scale(sc, sc);
     ctx2d.fillStyle = '#FFE600';
     ctx2d.strokeStyle = '#FFFFFF';
-    ctx2d.lineWidth = 1.4;
+    ctx2d.lineWidth = 1.2;
     ctx2d.beginPath();
-    ctx2d.moveTo(3, -r);
-    ctx2d.lineTo(-r * 0.65, 2);
-    ctx2d.lineTo(0, 2);
-    ctx2d.lineTo(-3, r);
-    ctx2d.lineTo(r * 0.65, -2);
-    ctx2d.lineTo(0, -2);
+    ctx2d.moveTo(2, -r);
+    ctx2d.lineTo(-r * 0.65, 1.5);
+    ctx2d.lineTo(0, 1.5);
+    ctx2d.lineTo(-2, r);
+    ctx2d.lineTo(r * 0.65, -1.5);
+    ctx2d.lineTo(0, -1.5);
     ctx2d.closePath();
     ctx2d.fill();
     ctx2d.stroke();
@@ -155,14 +158,14 @@ function drawVectorIcon(ctx2d, type, cx, cy, r, phase, pal) {
     const tilt = Math.sin(phase * Math.PI * 4) * 0.35;
     ctx2d.rotate(tilt);
     ctx2d.strokeStyle = pal.secondary;
-    ctx2d.lineWidth = 3.2;
+    ctx2d.lineWidth = 2.6;
     ctx2d.lineCap = 'round';
     ctx2d.beginPath();
     ctx2d.moveTo(-r * 0.7, r * 0.7);
     ctx2d.lineTo(r * 0.45, -r * 0.45);
     ctx2d.stroke();
     ctx2d.strokeStyle = pal.primary;
-    ctx2d.lineWidth = 2.6;
+    ctx2d.lineWidth = 2.2;
     ctx2d.beginPath();
     ctx2d.arc(r * 0.52, -r * 0.52, r * 0.42, 0.4, Math.PI * 1.65);
     ctx2d.stroke();
@@ -171,7 +174,7 @@ function drawVectorIcon(ctx2d, type, cx, cy, r, phase, pal) {
     ctx2d.scale(sc, sc);
     ctx2d.fillStyle = pal.badgeBg === '#000000' ? '#FF1E1E' : pal.badgeBg;
     ctx2d.strokeStyle = '#FFFFFF';
-    ctx2d.lineWidth = 1.5;
+    ctx2d.lineWidth = 1.2;
     ctx2d.beginPath();
     for (let i = 0; i < 10; i++) {
       const rad = i % 2 === 0 ? r : r * 0.44;
@@ -187,7 +190,7 @@ function drawVectorIcon(ctx2d, type, cx, cy, r, phase, pal) {
     ctx2d.scale(sc, sc);
     ctx2d.fillStyle = '#FF1E1E';
     ctx2d.strokeStyle = '#FFFFFF';
-    ctx2d.lineWidth = 1.5;
+    ctx2d.lineWidth = 1.2;
     ctx2d.beginPath();
     ctx2d.moveTo(-r * 0.85, -r * 0.5);
     ctx2d.lineTo(r * 0.2, -r * 0.5);
@@ -201,21 +204,20 @@ function drawVectorIcon(ctx2d, type, cx, cy, r, phase, pal) {
   ctx2d.restore();
 }
 
-function drawBorderEffect(ctx2d, animMode, phase01, pal) {
+function drawBorderEffect(ctx2d, W, H, animMode, phase01, pal) {
   if (animMode === 'laser') {
-    // Dim base border + 2 bright chasing neon bars around the perimeter
     ctx2d.strokeStyle = '#1E293B';
-    ctx2d.lineWidth = 3;
-    ctx2d.strokeRect(2, 2, W - 4, H - 4);
-    const perim = 2 * ((W - 4) + (H - 4));
-    const segLen = 96;
+    ctx2d.lineWidth = 2;
+    ctx2d.strokeRect(1.5, 1.5, W - 3, H - 3);
+    const perim = 2 * ((W - 3) + (H - 3));
+    const segLen = Math.round(W * 0.35);
     [0, perim / 2].forEach((offset, idx) => {
       ctx2d.save();
       ctx2d.strokeStyle = idx === 0 ? pal.primary : pal.badgeBg;
-      ctx2d.lineWidth = 4;
+      ctx2d.lineWidth = 3;
       ctx2d.setLineDash([segLen, perim - segLen]);
       ctx2d.lineDashOffset = -((phase01 * perim * 2 + offset) % perim);
-      ctx2d.strokeRect(2, 2, W - 4, H - 4);
+      ctx2d.strokeRect(1.5, 1.5, W - 3, H - 3);
       ctx2d.restore();
     });
     return;
@@ -224,27 +226,27 @@ function drawBorderEffect(ctx2d, animMode, phase01, pal) {
   ctx2d.save();
   ctx2d.globalAlpha = pulse;
   ctx2d.strokeStyle = pal.border;
-  ctx2d.lineWidth = 4;
-  ctx2d.strokeRect(2, 2, W - 4, H - 4);
+  ctx2d.lineWidth = 3;
+  ctx2d.strokeRect(1.5, 1.5, W - 3, H - 3);
   ctx2d.restore();
 }
 
-function drawSlideFrame(ctx2d, slide, phase01, animMode, assets) {
+function drawSlideFrame(ctx2d, W, H, slide, phase01, animMode, assets) {
   const pal = PALETTES[slide.palette] || PALETTES.blue_red_white;
-  // Pure black background maximizes contrast on aging outdoor LEDs
+  const isWide = H <= 130;
+
   ctx2d.fillStyle = '#000000';
   ctx2d.fillRect(0, 0, W, H);
 
-  drawBorderEffect(ctx2d, animMode, phase01, pal);
+  drawBorderEffect(ctx2d, W, H, animMode, phase01, pal);
 
-  // Kinetic entrance transform
   let scale = 1;
   let offsetY = 0;
   if (animMode === 'pop' && phase01 < 0.2) {
-    scale = 0.72 + 0.28 * easeOutBack(phase01 / 0.2);
+    scale = 0.76 + 0.24 * easeOutBack(phase01 / 0.2);
   } else if ((animMode === 'slide' || animMode === 'ticker') && phase01 < 0.16) {
     const k = 1 - phase01 / 0.16;
-    offsetY = Math.round(k * k * 24);
+    offsetY = Math.round(k * k * (isWide ? 14 : 24));
   }
 
   ctx2d.save();
@@ -252,8 +254,13 @@ function drawSlideFrame(ctx2d, slide, phase01, animMode, assets) {
   ctx2d.scale(scale, scale);
   ctx2d.translate(-W / 2, -H / 2);
 
-  // Top Header: Official UBC Logo, Custom Uploaded Image, or Bright Pill Banner
-  let contentTop = 44;
+  // Adaptive vertical proportions for 214x112 (wide) vs 224x212 (tall)
+  const topPad = isWide ? 5 : 8;
+  const headerH = isWide ? 22 : 36;
+  const footH = isWide ? 20 : 32;
+  const footY = H - footH - (isWide ? 5 : 8);
+  let contentTop = topPad + headerH + (isWide ? 3 : 8);
+
   const activeImg = slide.logo === 'ubc'
     ? assets.ubcLogo
     : slide.logo === 'custom'
@@ -261,113 +268,112 @@ function drawSlideFrame(ctx2d, slide, phase01, animMode, assets) {
       : null;
 
   if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
-    const maxW = slide.icon && slide.icon !== 'none' ? 132 : 168;
-    const maxH = 38;
+    const maxW = slide.icon && slide.icon !== 'none' ? Math.round(W * 0.56) : Math.round(W * 0.72);
+    const maxH = isWide ? 20 : 36;
     const ratio = Math.min(maxW / activeImg.naturalWidth, maxH / activeImg.naturalHeight);
     const dw = Math.round(activeImg.naturalWidth * ratio);
     const dh = Math.round(activeImg.naturalHeight * ratio);
-    const dx = slide.icon && slide.icon !== 'none' ? 14 : Math.round((W - dw) / 2);
-    const dy = 10 + Math.round((maxH - dh) / 2);
+    const dx = slide.icon && slide.icon !== 'none' ? 10 : Math.round((W - dw) / 2);
+    const dy = topPad + Math.round((headerH - dh) / 2);
     ctx2d.drawImage(activeImg, dx, dy, dw, dh);
     if (slide.icon && slide.icon !== 'none') {
-      drawVectorIcon(ctx2d, slide.icon, W - 30, 29, 15, phase01, pal);
+      drawVectorIcon(ctx2d, slide.icon, W - (isWide ? 18 : 28), topPad + Math.round(headerH / 2), isWide ? 9 : 14, phase01, pal);
     }
-    // Thin bright divider under logo
     ctx2d.fillStyle = pal.badgeBg;
-    ctx2d.fillRect(10, 52, W - 20, 3);
-    contentTop = 58;
+    ctx2d.fillRect(6, topPad + headerH + 1, W - 12, 2);
+    contentTop = topPad + headerH + 5;
   } else {
     const badge = String(slide.badge || '').toUpperCase().trim();
     if (badge) {
       ctx2d.fillStyle = pal.badgeBg;
-      ctx2d.fillRect(8, 8, W - 16, 30);
+      ctx2d.fillRect(6, topPad, W - 12, headerH);
       ctx2d.fillStyle = pal.badgeFg;
-      const bMax = slide.icon && slide.icon !== 'none' ? W - 56 : W - 26;
-      const bSize = fitText(ctx2d, badge, bMax, 16, 10, '900');
+      const bMax = slide.icon && slide.icon !== 'none' ? W - 44 : W - 20;
+      const bSize = fitText(ctx2d, badge, bMax, isWide ? 12 : 16, 8, '900');
       ctx2d.font = '900 ' + bSize + 'px Arial, sans-serif';
       ctx2d.textAlign = 'center';
       ctx2d.textBaseline = 'middle';
-      ctx2d.fillText(badge, slide.icon && slide.icon !== 'none' ? (W - 28) / 2 : W / 2, 24);
+      ctx2d.fillText(badge, slide.icon && slide.icon !== 'none' ? (W - 22) / 2 : W / 2, topPad + headerH / 2 + 0.5);
     }
     if (slide.icon && slide.icon !== 'none') {
-      drawVectorIcon(ctx2d, slide.icon, W - 24, 23, 12, phase01, pal);
+      drawVectorIcon(ctx2d, slide.icon, W - (isWide ? 17 : 24), topPad + Math.round(headerH / 2), isWide ? 8 : 12, phase01, pal);
     }
-    contentTop = 44;
   }
 
-  // Main Headlines (extra bold high-contrast for 40mph visibility)
+  // Main Headlines
   const l1 = String(slide.line1 || '').toUpperCase().trim();
   const l2 = String(slide.line2 || '').toUpperCase().trim();
-  const centerMid = Math.round((contentTop + (H - 42)) / 2);
+  const centerMid = Math.round((contentTop + footY) / 2);
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
 
   if (l1 && l2) {
-    const y1 = centerMid - 23;
-    const y2 = centerMid + 23;
-    const s1 = fitText(ctx2d, l1, W - 18, 40, 18, '900');
+    const gap = isWide ? 13 : 23;
+    const maxStart = isWide ? 24 : 40;
+    const minSz = isWide ? 12 : 18;
+    const s1 = fitText(ctx2d, l1, W - 16, maxStart, minSz, '900');
     ctx2d.font = '900 ' + s1 + 'px "Arial Black", Impact, Arial, sans-serif';
     ctx2d.fillStyle = pal.secondary;
-    ctx2d.fillText(l1, W / 2, y1);
+    ctx2d.fillText(l1, W / 2, centerMid - gap);
 
-    const s2 = fitText(ctx2d, l2, W - 18, 40, 18, '900');
+    const s2 = fitText(ctx2d, l2, W - 16, maxStart, minSz, '900');
     ctx2d.font = '900 ' + s2 + 'px "Arial Black", Impact, Arial, sans-serif';
     ctx2d.fillStyle = pal.primary;
-    ctx2d.fillText(l2, W / 2, y2);
+    ctx2d.fillText(l2, W / 2, centerMid + gap);
   } else if (l1 || l2) {
     const single = l1 || l2;
-    ctx2d.font = '900 34px "Arial Black", Impact, Arial, sans-serif';
-    const lines = wrapLines(ctx2d, single, W - 20).slice(0, 2);
+    ctx2d.font = '900 ' + (isWide ? 22 : 34) + 'px "Arial Black", Impact, Arial, sans-serif';
+    const lines = wrapLines(ctx2d, single, W - 18).slice(0, 2);
     lines.forEach((ln, idx) => {
-      const sz = fitText(ctx2d, ln, W - 20, 38, 18, '900');
+      const sz = fitText(ctx2d, ln, W - 18, isWide ? 24 : 38, 12, '900');
       ctx2d.font = '900 ' + sz + 'px "Arial Black", Impact, Arial, sans-serif';
       ctx2d.fillStyle = idx === 0 ? pal.secondary : pal.primary;
-      ctx2d.fillText(ln, W / 2, lines.length === 1 ? centerMid : (idx === 0 ? centerMid - 21 : centerMid + 21));
+      const g = isWide ? 12 : 21;
+      ctx2d.fillText(ln, W / 2, lines.length === 1 ? centerMid : (idx === 0 ? centerMid - g : centerMid + g));
     });
   }
 
-  // Bottom Bar (Scrolling Marquee Ticker or High-Contrast Static Bar)
+  // Bottom Bar / Scrolling Ticker
   const foot = String(slide.foot || '').toUpperCase().trim();
   if (foot) {
     ctx2d.fillStyle = '#0B1320';
-    ctx2d.fillRect(8, H - 40, W - 16, 32);
+    ctx2d.fillRect(6, footY, W - 12, footH);
     ctx2d.strokeStyle = pal.primary;
-    ctx2d.lineWidth = 2;
-    ctx2d.strokeRect(8, H - 40, W - 16, 32);
+    ctx2d.lineWidth = 1.5;
+    ctx2d.strokeRect(6, footY, W - 12, footH);
 
     ctx2d.save();
     ctx2d.beginPath();
-    ctx2d.rect(10, H - 39, W - 20, 30);
+    ctx2d.rect(8, footY + 1, W - 16, footH - 2);
     ctx2d.clip();
 
     if (animMode === 'ticker') {
-      ctx2d.font = '900 16px Arial, sans-serif';
+      ctx2d.font = '900 ' + (isWide ? 11 : 15) + 'px Arial, sans-serif';
       const tw = ctx2d.measureText(foot + '   ★   ').width;
       const shift = (phase01 * Math.max(tw, W)) % Math.max(tw, 1);
       ctx2d.textAlign = 'left';
       ctx2d.fillStyle = '#FFFFFF';
-      for (let rx = 14 - shift; rx < W; rx += Math.max(tw, 120)) {
-        ctx2d.fillText(foot + '   ★   ', rx, H - 23);
+      for (let rx = 10 - shift; rx < W; rx += Math.max(tw, 110)) {
+        ctx2d.fillText(foot + '   ★   ', rx, footY + footH / 2 + 0.5);
       }
     } else {
-      const fSize = fitText(ctx2d, foot, W - 26, 15, 10, '800');
+      const fSize = fitText(ctx2d, foot, W - 18, isWide ? 11 : 15, 8, '800');
       ctx2d.font = '800 ' + fSize + 'px Arial, sans-serif';
       ctx2d.textAlign = 'center';
       ctx2d.fillStyle = '#FFFFFF';
-      ctx2d.fillText(foot, W / 2, H - 23);
+      ctx2d.fillText(foot, W / 2, footY + footH / 2 + 0.5);
     }
     ctx2d.restore();
   }
 
-  // Neon Scan Light Sweep overlay
   if (animMode === 'scan') {
-    const sx = -80 + phase01 * (W + 180);
-    const grad = ctx2d.createLinearGradient(sx, 0, sx + 70, H);
+    const sx = -60 + phase01 * (W + 140);
+    const grad = ctx2d.createLinearGradient(sx, 0, sx + 55, H);
     grad.addColorStop(0, 'rgba(0,229,255,0)');
     grad.addColorStop(0.5, 'rgba(255,255,255,0.28)');
     grad.addColorStop(1, 'rgba(0,229,255,0)');
     ctx2d.fillStyle = grad;
-    ctx2d.fillRect(4, 4, W - 8, H - 8);
+    ctx2d.fillRect(3, 3, W - 6, H - 6);
   }
 
   ctx2d.restore();
@@ -379,6 +385,7 @@ export async function renderLedSign(ctx) {
   const assets = { ubcLogo, customImg: null, customName: '' };
 
   const st = {
+    sizeKey: '214x112',
     slides: TEMPLATES[0].slides.map((s) => Object.assign({}, s)),
     activeIdx: 0,
     animMode: TEMPLATES[0].anim || 'laser',
@@ -387,17 +394,32 @@ export async function renderLedSign(ctx) {
     exporting: false,
   };
 
-  const canvas1x = h('canvas.led-canvas-1x', { width: W, height: H });
-  const canvas2x = h('canvas.led-canvas-2x', { width: W, height: H });
+  const canvas1x = h('canvas.led-canvas-1x', { width: 214, height: 112 });
+  const canvas2x = h('canvas.led-canvas-2x', { width: 214, height: 112 });
   const ctx1 = canvas1x.getContext('2d', { willReadFrequently: true });
   const ctx2 = canvas2x.getContext('2d', { willReadFrequently: true });
+  const label1x = h('span.small.muted', 'Actual Pixels (214×112)');
 
   const slidesHost = h('div.stack-sm');
   const editorHost = h('div.stack-sm');
-  const exportBtn = h('button.btn.primary', { type: 'button' }, 'Download 224×212 .AVI');
-  const exportStatus = h('span.small.muted', 'Audio-free 224×212 AVI ready for outdoor LED signs');
+  const exportBtn = h('button.btn.primary', { type: 'button' }, 'Download 214×112 .AVI');
+  const exportStatus = h('span.small.muted', 'Audio-free 214×112 AVI ready for outdoor LED signs');
   const catalogHost = h('div.led-catalog-hits');
   const uploadStatus = h('span.small.muted', 'No custom image uploaded yet');
+
+  function syncCanvasSize() {
+    const dim = SIZES[st.sizeKey] || SIZES['214x112'];
+    canvas1x.width = dim.w;
+    canvas1x.height = dim.h;
+    canvas2x.width = dim.w;
+    canvas2x.height = dim.h;
+    canvas1x.style.width = dim.w + 'px';
+    canvas1x.style.height = dim.h + 'px';
+    canvas2x.style.width = Math.min(428, dim.w * 2) + 'px';
+    canvas2x.style.height = Math.round(Math.min(428, dim.w * 2) * (dim.h / dim.w)) + 'px';
+    label1x.textContent = 'Actual Pixels (' + dim.w + '×' + dim.h + ')';
+    exportBtn.textContent = 'Download ' + dim.w + '×' + dim.h + ' .AVI';
+  }
 
   let rafId = null;
   let startTs = performance.now();
@@ -407,6 +429,7 @@ export async function renderLedSign(ctx) {
       if (rafId) window.cancelAnimationFrame(rafId);
       return;
     }
+    const dim = SIZES[st.sizeKey] || SIZES['214x112'];
     const totalMs = st.slides.reduce((a, s) => a + Math.max(1, Number(s.seconds) || 3) * 1000, 0);
     let elapsed = (now - startTs) % Math.max(1000, totalMs);
     let slide = st.slides[0];
@@ -420,7 +443,7 @@ export async function renderLedSign(ctx) {
       }
       elapsed -= dur;
     }
-    drawSlideFrame(ctx1, slide, phase, st.animMode, assets);
+    drawSlideFrame(ctx1, dim.w, dim.h, slide, phase, st.animMode, assets);
     ctx2.drawImage(canvas1x, 0, 0);
     rafId = window.requestAnimationFrame(drawPreviewLoop);
   }
@@ -488,11 +511,11 @@ export async function renderLedSign(ctx) {
         field('Top Banner (when Text Only)', 'badge', 'e.g. IN STOCK TODAY'),
         h('label.led-field', h('span.small.muted', 'Slide Duration'), secSel),
         field('Big Headline 1', 'line1', 'e.g. WALK-IN'),
-        field('Big Headline 2 (Accent)', 'line2', 'e.g. BIKE REPAIR'),
+        field('Big Headline 2 (Accent)', 'line2', 'e.g. SERVICE CENTER'),
         field('Bottom Line (Phone / Ticker)', 'foot', 'e.g. CALL (813) 971-2277'),
         h('label.led-field', h('span.small.muted', 'Vibrant LED Colors'), palSel),
       ),
-      delBtn ? h('div.row-between', h('span.small.muted', 'Pure black background + high-contrast cyan/red/white shines best on aging LEDs.'), delBtn) : null);
+      delBtn ? h('div.row-between', h('span.small.muted', 'Pure black background + bright cyan/red/white shines best on aging LEDs.'), delBtn) : null);
   }
 
   async function canvasToJpegBytes(canvas) {
@@ -508,10 +531,11 @@ export async function renderLedSign(ctx) {
     if (st.exporting) return;
     st.exporting = true;
     exportBtn.disabled = true;
+    const dim = SIZES[st.sizeKey] || SIZES['214x112'];
     try {
       const off = document.createElement('canvas');
-      off.width = W;
-      off.height = H;
+      off.width = dim.w;
+      off.height = dim.h;
       const octx = off.getContext('2d', { willReadFrequently: true });
       const frames = [];
       const fps = st.fps;
@@ -522,10 +546,10 @@ export async function renderLedSign(ctx) {
         const s = st.slides[si];
         const count = Math.max(1, Number(s.seconds) || 3) * fps;
         for (let f = 0; f < count; f++) {
-          drawSlideFrame(octx, s, f / count, st.animMode, assets);
+          drawSlideFrame(octx, dim.w, dim.h, s, f / count, st.animMode, assets);
           if (st.codec === 'rgb24') {
-            const imgData = octx.getImageData(0, 0, W, H);
-            frames.push(rgbaToBgr24BottomUp(imgData.data, W, H));
+            const imgData = octx.getImageData(0, 0, dim.w, dim.h);
+            frames.push(rgbaToBgr24BottomUp(imgData.data, dim.w, dim.h));
           } else {
             frames.push(await canvasToJpegBytes(off));
           }
@@ -538,20 +562,21 @@ export async function renderLedSign(ctx) {
       }
 
       const aviBlob = st.codec === 'rgb24'
-        ? encodeRgb24Avi(frames, W, H, fps)
-        : encodeMjpegAvi(frames, W, H, fps);
+        ? encodeRgb24Avi(frames, dim.w, dim.h, fps)
+        : encodeMjpegAvi(frames, dim.w, dim.h, fps);
 
+      const fname = 'ubc-led-sign-' + dim.w + 'x' + dim.h + '-' + st.codec + '.avi';
       const url = URL.createObjectURL(aviBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'ubc-led-sign-224x212-' + st.codec + '.avi';
+      a.download = fname;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       const kb = Math.round(aviBlob.size / 1024);
-      exportStatus.textContent = 'Downloaded ubc-led-sign-224x212-' + st.codec + '.avi (' + kb + ' KB, ' + totalFrames + ' frames)';
-      toast('224×212 .AVI ready (' + kb + ' KB)', 'ok');
+      exportStatus.textContent = 'Downloaded ' + fname + ' (' + kb + ' KB, ' + totalFrames + ' frames)';
+      toast(dim.w + '×' + dim.h + ' .AVI ready (' + kb + ' KB)', 'ok');
     } catch (err) {
       toast(err.message || 'AVI export failed', 'bad');
       exportStatus.textContent = 'Export failed — try MJPEG .avi';
@@ -633,6 +658,9 @@ export async function renderLedSign(ctx) {
     },
   });
 
+  const sizeSel = h('select', { onchange: (e) => { st.sizeKey = e.target.value; syncCanvasSize(); } },
+    Object.keys(SIZES).map((k) => h('option', { value: k, selected: st.sizeKey === k }, SIZES[k].label)));
+
   const animSel = h('select', { onchange: (e) => { st.animMode = e.target.value; } },
     h('option', { value: 'laser', selected: true }, 'Laser Corner Chase'),
     h('option', { value: 'scan' }, 'Neon Light Sweep'),
@@ -649,12 +677,13 @@ export async function renderLedSign(ctx) {
     h('option', { value: '15', selected: true }, '15 fps (Recommended for LED)'),
     h('option', { value: '24' }, '24 fps (Smooth)'));
 
+  syncCanvasSize();
   renderSlidesBar();
   renderSlideEditor();
   rafId = window.requestAnimationFrame(drawPreviewLoop);
 
   return h('div.stack.led-root',
-    pageHead('LED Sign Studio (224×212 .AVI)', 'Modern animations, official UBC logo, custom brand logos & vibrant outdoor LED colors.'),
+    pageHead('LED Sign Studio (214×112 .AVI)', 'Modern wide-format street sign ads in vibrant Light Blue, Red & White for aging outdoor LEDs.'),
     card('1. Quick Templates, Custom Logo Upload & Catalog Picker', h('div.stack-sm',
       tplBar,
       h('div.led-form-grid',
@@ -668,11 +697,12 @@ export async function renderLedSign(ctx) {
           catalogHost)))),
     h('div.grid.grid-2',
       card('2. Slide Editor', h('div.stack-sm', slidesHost, editorHost)),
-      card('3. Live 224×212 Preview & Export', h('div.stack-sm',
+      card('3. Live 214×112 Preview & Export', h('div.stack-sm',
         h('div.led-previews',
-          h('div.led-prev-box', h('span.small.muted', 'Actual Pixels (224×212)'), canvas1x),
+          h('div.led-prev-box', label1x, canvas1x),
           h('div.led-prev-box', h('span.small.muted', '2× Street Preview'), canvas2x)),
         h('div.led-export-opts',
+          h('label.led-field', h('span.small.muted', 'Sign Resolution'), sizeSel),
           h('label.led-field', h('span.small.muted', 'Modern Animation'), animSel),
           h('label.led-field', h('span.small.muted', 'AVI Format'), codecSel),
           h('label.led-field', h('span.small.muted', 'Frame Rate'), fpsSel)),

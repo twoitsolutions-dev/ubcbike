@@ -29,7 +29,7 @@ const NAV = [
     group: 'Pricing & System',
     items: [
       ['#/promotions', 'Promotions / Price Rules', 'tag'],
-      ['#/led-sign', 'LED Sign (224×212)', 'tag'],
+      ['#/led-sign', 'LED Sign (214×112)', 'tag'],
       ['#/settings', 'Settings & Sync', 'settings', 'openErrors'],
       ['#/help', 'Help & Guides', 'clipboard'],
     ],

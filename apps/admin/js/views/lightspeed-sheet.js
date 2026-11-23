@@ -1,6 +1,6 @@
 import { h, mount } from '../ui/dom.js';
 import { card, confirmDialog, errorBox, loading, pageHead, pager, toast } from '../ui/components.js';
-import { itemSearchTabs } from './products.js?v=82';
+import { itemSearchTabs } from './products.js?v=83';
 
 function centsToInput(c) {
   if (c === null || c === undefined || Number.isNaN(Number(c))) return '';

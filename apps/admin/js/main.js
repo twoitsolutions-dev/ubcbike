@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { createHttpDriver } from './drivers/http.js?v=82';
+import { createHttpDriver } from './drivers/http.js?v=83';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=82';
+import { matchRoute } from './router.js?v=83';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
@@ -53,7 +53,7 @@ function navParentFor(hash) {
 
 async function loadDriver() {
   if (CONFIG.driver === 'demo') {
-    const mod = await import('./drivers/demo.js?v=82');
+    const mod = await import('./drivers/demo.js?v=83');
     return mod.createDemoDriver();
   }
   return createHttpDriver();

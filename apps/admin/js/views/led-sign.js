@@ -1,7 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
 import { money } from '../ui/format.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=82';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=83';
 
 const SIZES = {
   '214x112': { w: 214, h: 112, label: '214 × 112 (UBC Sign)' },

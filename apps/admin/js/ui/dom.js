@@ -74,6 +74,7 @@ const ICONS = {
   refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
   plus: 'M12 5v14M5 12h14',
   sign: 'M2 3h20v12H2zM8 15v6M16 15v6M6 7h.01M10 7h.01M14 7h.01M18 7h.01M6 11h12',
+  star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
 };
 
 export function icon(name) {

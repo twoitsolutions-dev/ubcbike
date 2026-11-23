@@ -10,6 +10,18 @@ import { buildWhere, getItem, getSettings, itemFilterSchema, listItems, loadAllM
 import { conflict, HttpError, notFound, type AppContext } from '../services/context.js';
 import { enqueue } from '../services/jobs.js';
 import { rulesSchema } from '../services/campaigns.js';
+import {
+  addManualReview,
+  deleteReview,
+  getReviewsState,
+  manualReviewSchema,
+  publishReviewsToShopify,
+  reviewSourcesUpdateSchema,
+  syncGoogleReviews,
+  toggleReviewSchema,
+  updateReviewFlags,
+  updateReviewSources,
+} from '../services/google-reviews.js';
 
 const pageSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -1195,4 +1207,35 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'settings.updated', detail: { before, after: body } });
     return getSettings(ctx.pool, s.companyId);
   });
+
+  // ---------- Google Reviews & Shopify Theme Publish ----------
+  app.get('/api/reviews', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) =>
+    getReviewsState(ctx.pool, req.session!.companyId));
+
+  app.put('/api/reviews/sources', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = reviewSourcesUpdateSchema.parse(req.body);
+    return updateReviewSources(ctx, req.session!.companyId, req.session!.userId, body);
+  });
+
+  app.post('/api/reviews/sync', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) =>
+    syncGoogleReviews(ctx, req.session!.companyId, req.session!.userId));
+
+  app.post('/api/reviews/manual', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = manualReviewSchema.parse(req.body);
+    return addManualReview(ctx, req.session!.companyId, req.session!.userId, body);
+  });
+
+  app.patch('/api/reviews/:id', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const id = z.string().uuid().parse((req.params as { id: string }).id);
+    const body = toggleReviewSchema.parse(req.body);
+    return updateReviewFlags(ctx, req.session!.companyId, req.session!.userId, id, body);
+  });
+
+  app.delete('/api/reviews/:id', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const id = z.string().uuid().parse((req.params as { id: string }).id);
+    return deleteReview(ctx, req.session!.companyId, req.session!.userId, id);
+  });
+
+  app.post('/api/reviews/publish', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) =>
+    publishReviewsToShopify(ctx, req.session!.companyId, req.session!.userId));
 }

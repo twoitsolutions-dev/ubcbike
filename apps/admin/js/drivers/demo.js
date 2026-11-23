@@ -1082,6 +1082,24 @@ export function createDemoDriver() {
       };
     },
 
+    async reviews() {
+      return {
+        apiConfigured: false,
+        summary: { rating: 0, totalReviews: 0 },
+        sources: [
+          { locationKey: 'tampa', name: 'University Bicycle Center · Tampa', address: '1220 E Fletcher Ave, Tampa, FL 33612', placeId: '', rating: 0, totalReviews: 0, googleMapsUrl: '', syncedAt: null },
+          { locationKey: 'alafia', name: 'UBC at Alafia River State Park', address: '14326 S County Rd 39, Lithia, FL 33547', placeId: '', rating: 0, totalReviews: 0, googleMapsUrl: '', syncedAt: null },
+        ],
+        reviews: [],
+      };
+    },
+    async saveReviewSources() { return api.reviews(); },
+    async syncGoogleReviews() { fail(400, 'NOT_CONFIGURED', 'Google sync runs in live mode.'); },
+    async addManualReview() { fail(400, 'DEMO', 'Demo mode is read-only for Shopify theme publishing.'); },
+    async updateReview() { return {}; },
+    async deleteReview() { return { ok: true }; },
+    async publishReviewsToShopify() { return { count: 0, themesUpdated: 0 }; },
+
     // Demo-only controls
     simulateOutage(on) { state.simulateOutage = !!on; save(); },
     outageOn() { return !!state.simulateOutage; },

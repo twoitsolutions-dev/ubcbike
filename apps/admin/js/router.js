@@ -14,6 +14,7 @@ import { renderActivity } from './views/activity.js?v=88';
 import { renderSettings } from './views/settings.js?v=88';
 import { renderUpcReview } from './views/upc-review.js?v=88';
 import { renderLedSign } from './views/led-sign.js?v=88';
+import { renderReviews } from './views/reviews.js?v=88';
 import { renderHelp } from './views/help.js?v=88';
 
 export const routes = [
@@ -37,6 +38,7 @@ export const routes = [
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
   { path: '/settings', title: 'Settings & Sync', render: renderSettings },
   { path: '/led-sign', title: 'LED Sign Studio', render: renderLedSign },
+  { path: '/reviews', title: 'Reviews & Judge.me', render: renderReviews },
   { path: '/help', title: 'Help & Guides', render: renderHelp },
 ];
 

@@ -108,6 +108,13 @@ export function createHttpDriver() {
     syncLightspeed: (body) => req('POST', '/api/lightspeed/sync', body || {}),
     lightspeedOAuthUrl: (write) => req('GET', '/api/lightspeed/oauth/url' + (write ? '?write=1' : '')),
     integrations: () => req('GET', '/api/integrations'),
+    reviews: () => req('GET', '/api/reviews'),
+    saveReviewSources: (sources) => req('PUT', '/api/reviews/sources', { sources }),
+    syncGoogleReviews: () => req('POST', '/api/reviews/sync', {}),
+    addManualReview: (body) => req('POST', '/api/reviews/manual', body),
+    updateReview: (id, body) => req('PATCH', '/api/reviews/' + id, body),
+    deleteReview: (id) => req('DELETE', '/api/reviews/' + id),
+    publishReviewsToShopify: () => req('POST', '/api/reviews/publish', {}),
     resetDemo: null,
   };
 }

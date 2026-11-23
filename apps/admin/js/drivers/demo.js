@@ -1119,6 +1119,7 @@ export function createDemoDriver() {
     async updateReview() { return {}; },
     async deleteReview() { return { ok: true }; },
     async publishReviewsToShopify() { return { count: 0, themesUpdated: 0 }; },
+    async generateVoice() { fail(400, 'DEMO', 'Voice generation runs in live Hub mode.'); },
 
     // Demo-only controls
     simulateOutage(on) { state.simulateOutage = !!on; save(); },

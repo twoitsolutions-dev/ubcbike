@@ -30,6 +30,7 @@ const NAV = [
     items: [
       ['#/promotions', 'Promotions / Price Rules', 'tag'],
       ['#/led-sign', 'LED Sign', 'sign'],
+      ['#/phone-voice', 'Phone Greetings', 'phone'],
       ['#/reviews', 'Reviews', 'star'],
       ['#/settings', 'Settings & Sync', 'settings', 'openErrors'],
       ['#/help', 'Help & Guides', 'clipboard'],
@@ -44,6 +45,7 @@ function navParentFor(hash) {
   if (path.indexOf('#/integrations') === 0 || path.indexOf('#/activity') === 0 || path.indexOf('#/settings') === 0) return '#/settings';
   if (path.indexOf('#/promotions') === 0) return '#/promotions';
   if (path.indexOf('#/led-sign') === 0) return '#/led-sign';
+  if (path.indexOf('#/phone-voice') === 0) return '#/phone-voice';
   if (path.indexOf('#/reviews') === 0) return '#/reviews';
   if (path.indexOf('#/orders') === 0) return '#/orders';
   if (path.indexOf('#/purchasing') === 0) return '#/purchasing';

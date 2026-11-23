@@ -14,6 +14,7 @@ import { renderActivity } from './views/activity.js?v=91';
 import { renderSettings } from './views/settings.js?v=91';
 import { renderUpcReview } from './views/upc-review.js?v=91';
 import { renderLedSign } from './views/led-sign.js?v=91';
+import { renderPhoneVoice } from './views/phone-voice.js?v=91';
 import { renderReviews } from './views/reviews.js?v=91';
 import { renderHelp } from './views/help.js?v=91';
 
@@ -38,6 +39,7 @@ export const routes = [
   { path: '/activity', title: 'Settings & Sync · Activity & Logs', render: renderActivity },
   { path: '/settings', title: 'Settings & Sync', render: renderSettings },
   { path: '/led-sign', title: 'LED Sign Studio', render: renderLedSign },
+  { path: '/phone-voice', title: 'Phone Greetings', render: renderPhoneVoice },
   { path: '/reviews', title: 'Reviews & Judge.me', render: renderReviews },
   { path: '/help', title: 'Help & Guides', render: renderHelp },
 ];

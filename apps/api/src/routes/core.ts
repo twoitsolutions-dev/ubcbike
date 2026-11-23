@@ -22,6 +22,7 @@ import {
   updateReviewFlags,
   updateReviewSources,
 } from '../services/google-reviews.js';
+import { generatePhoneGreetingAudio, voiceGenerateSchema } from '../services/phone-voice.js';
 
 const pageSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -1273,4 +1274,15 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.post('/api/reviews/publish', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) =>
     publishReviewsToShopify(ctx, req.session!.companyId, req.session!.userId));
+
+  // ---------- Free Phone System Voice Greeting Generator ----------
+  app.post('/api/voice/generate', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req, reply) => {
+    const body = voiceGenerateSchema.parse(req.body);
+    const { buffer, engine } = await generatePhoneGreetingAudio(ctx, req.session!.companyId, req.session!.userId, body);
+    reply
+      .header('Content-Type', 'audio/mpeg')
+      .header('Content-Disposition', 'attachment; filename="ubc-phone-greeting.mp3"')
+      .header('X-UBC-Voice-Engine', engine);
+    return reply.send(buffer);
+  });
 }

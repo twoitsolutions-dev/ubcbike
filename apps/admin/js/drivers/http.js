@@ -116,6 +116,22 @@ export function createHttpDriver() {
     updateReview: (id, body) => req('PATCH', '/api/reviews/' + id, body),
     deleteReview: (id) => req('DELETE', '/api/reviews/' + id),
     publishReviewsToShopify: () => req('POST', '/api/reviews/publish', {}),
+    async generateVoice(body) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (csrf) headers['X-CSRF-Token'] = csrf;
+      const res = await fetch('/api/voice/generate', {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        let msg = 'Voice generation failed (' + res.status + ')';
+        try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) { /* ignore */ }
+        throw new ApiError(res.status, { message: msg });
+      }
+      return res.blob();
+    },
     resetDemo: null,
   };
 }

@@ -206,11 +206,13 @@ export async function renderPhoneVoice(ctx) {
       genBtn.disabled = true;
       previewStatus.textContent = 'Generating voice audio…';
       try {
-        const rawBlob = await api.generateVoice({ text: txt, voice: voiceSel.value, rate: rateSel.value });
+        const res = await api.generateVoice({ text: txt, voice: voiceSel.value, rate: rateSel.value });
+        const rawBlob = res && res.blob ? res.blob : res;
+        const clipId = res && res.clipId ? res.clipId : '';
         const mp3Blob = new window.Blob([await rawBlob.arrayBuffer()], { type: 'audio/mpeg' });
         st.lastBlob = mp3Blob;
-        // Safari iOS frequently fails on blob: URLs in <audio>; a base64 data URL plays reliably.
-        audioEl.src = await blobToDataUrl(mp3Blob);
+        // iOS Safari requires a real HTTP URL supporting 206 byte-range requests.
+        audioEl.src = clipId ? ('/api/voice/clip/' + encodeURIComponent(clipId)) : await blobToDataUrl(mp3Blob);
         audioEl.hidden = false;
         audioEl.load();
         dlMp3Btn.disabled = false;

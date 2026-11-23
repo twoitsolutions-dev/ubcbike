@@ -130,7 +130,9 @@ export function createHttpDriver() {
         try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) { /* ignore */ }
         throw new ApiError(res.status, { message: msg });
       }
-      return res.blob();
+      const clipId = res.headers.get('X-UBC-Clip-Id') || '';
+      const blob = await res.blob();
+      return { blob, clipId };
     },
     resetDemo: null,
   };

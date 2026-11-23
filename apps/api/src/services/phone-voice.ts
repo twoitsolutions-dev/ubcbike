@@ -1,7 +1,38 @@
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { audit, logError } from './audit.js';
 import { HttpError, type AppContext } from './context.js';
+
+const CLIP_TTL_MS = 15 * 60 * 1000;
+const MAX_CLIPS = 30;
+const clipCache = new Map<string, { companyId: string; buffer: Buffer; expiresAt: number }>();
+
+export function saveVoiceClip(companyId: string, buffer: Buffer): string {
+  const now = Date.now();
+  for (const [k, v] of clipCache.entries()) {
+    if (v.expiresAt <= now) clipCache.delete(k);
+  }
+  while (clipCache.size >= MAX_CLIPS) {
+    const oldest = clipCache.keys().next().value;
+    if (!oldest) break;
+    clipCache.delete(oldest);
+  }
+  const id = crypto.randomUUID();
+  clipCache.set(id, { companyId, buffer, expiresAt: now + CLIP_TTL_MS });
+  return id;
+}
+
+export function getVoiceClip(companyId: string, id: string): Buffer | null {
+  const item = clipCache.get(id);
+  if (!item) return null;
+  if (item.expiresAt <= Date.now()) {
+    clipCache.delete(id);
+    return null;
+  }
+  if (item.companyId !== companyId) return null;
+  return item.buffer;
+}
 
 export const ALLOWED_VOICES = [
   'en-US-AndrewMultilingualNeural',

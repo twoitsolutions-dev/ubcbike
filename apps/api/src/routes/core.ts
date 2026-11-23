@@ -22,7 +22,7 @@ import {
   updateReviewFlags,
   updateReviewSources,
 } from '../services/google-reviews.js';
-import { generatePhoneGreetingAudio, voiceGenerateSchema } from '../services/phone-voice.js';
+import { generatePhoneGreetingAudio, getVoiceClip, saveVoiceClip, voiceGenerateSchema } from '../services/phone-voice.js';
 
 const pageSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -1279,10 +1279,35 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/api/voice/generate', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req, reply) => {
     const body = voiceGenerateSchema.parse(req.body);
     const { buffer, engine } = await generatePhoneGreetingAudio(ctx, req.session!.companyId, req.session!.userId, body);
+    const clipId = saveVoiceClip(req.session!.companyId, buffer);
     reply
       .header('Content-Type', 'audio/mpeg')
       .header('Content-Disposition', 'attachment; filename="ubc-phone-greeting.mp3"')
-      .header('X-UBC-Voice-Engine', engine);
+      .header('X-UBC-Voice-Engine', engine)
+      .header('X-UBC-Clip-Id', clipId);
     return reply.send(buffer);
+  });
+
+  // iOS Safari <audio> requires HTTP byte-range (206 Partial Content) responses.
+  app.get('/api/voice/clip/:id', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req, reply) => {
+    const id = z.string().uuid().parse((req.params as { id: string }).id);
+    const buf = getVoiceClip(req.session!.companyId, id);
+    if (!buf) throw notFound('Voice clip');
+    const total = buf.length;
+    const range = req.headers.range;
+    reply.header('Content-Type', 'audio/mpeg').header('Accept-Ranges', 'bytes').header('Cache-Control', 'private, max-age=600');
+    if (range) {
+      const m = /^bytes=(\d+)-(\d*)$/.exec(String(range).trim());
+      if (m) {
+        const start = Math.min(total - 1, Number(m[1]));
+        const end = m[2] ? Math.min(total - 1, Number(m[2])) : total - 1;
+        if (start <= end) {
+          reply.code(206).header('Content-Range', `bytes ${start}-${end}/${total}`).header('Content-Length', String(end - start + 1));
+          return reply.send(buf.subarray(start, end + 1));
+        }
+      }
+    }
+    reply.header('Content-Length', String(total));
+    return reply.send(buf);
   });
 }

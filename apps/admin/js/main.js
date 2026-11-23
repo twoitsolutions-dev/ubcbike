@@ -30,7 +30,7 @@ const NAV = [
     items: [
       ['#/promotions', 'Promotions / Price Rules', 'tag'],
       ['#/led-sign', 'LED Sign', 'sign'],
-      ['#/reviews', 'Reviews & Judge.me', 'star'],
+      ['#/reviews', 'Reviews', 'star'],
       ['#/settings', 'Settings & Sync', 'settings', 'openErrors'],
       ['#/help', 'Help & Guides', 'clipboard'],
     ],
@@ -110,7 +110,7 @@ function renderShell() {
       h('div.who', state.me.user.name),
       h('div.role', roleLabel(state.me.user.role) + ' · ' + state.me.user.email),
       h('button.btn.sm', { onclick: logout }, 'Sign out'),
-      h('div.small', { style: { marginTop: '10px', opacity: '0.78', fontSize: '11px', lineHeight: '1.4' } },
+      h('div.small', { style: { marginTop: '10px', opacity: '0.78', fontSize: '10.5px', lineHeight: '1.4', whiteSpace: 'nowrap' } },
         'Built by ',
         h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
   const scrim = h('div.scrim', { onclick: closeNav });

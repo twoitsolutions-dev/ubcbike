@@ -1,6 +1,6 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=86';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=87';
 
 // UBC street sign: 214 x 112 pixels, 15 fps, audio-free .AVI.
 const W = 214;
@@ -37,9 +37,8 @@ const LAYOUTS = [
   ['brand', 'UBC Close (logo + phone)'],
 ];
 const BGS = [
-  ['black', 'Black'], ['tint', 'Dark color tint'], ['gradient', 'Moving gradient'], ['stripes', 'Moving stripes'],
-  ['rays', 'Spinning rays'], ['spotlight', 'Spotlight sweep'], ['stars', 'Twinkling stars'], ['grid', 'Retro grid'],
-  ['flood', 'Solid color (bold)'],
+  ['black', 'Black'], ['tint', 'Dark color tint'], ['gradient', 'Soft moving glow'], ['spotlight', 'Spotlight sweep'],
+  ['stars', 'Twinkling stars'], ['flood', 'Solid color (bold)'],
 ];
 const ENTERS = [
   ['zoom_in', 'Slam (zoom in)'], ['zoom_out', 'Pop (grow + bounce)'], ['slide_left', 'Slide in from right'],
@@ -66,13 +65,13 @@ const S = (layout, line1, line2, palette, seconds, foot, style) => Object.assign
   style || {});
 const st_ = (bg, enter, motion, deco, trans, color) => ({ bg, enter, motion, deco, trans, color: color || 'white' });
 
-// Built-in templates (version 2: every one has its own look).
+// Built-in templates (version 3: each has its own look, clean backgrounds only).
 // Copy only uses facts published on ubcbike.com or given by UBC.
-const BUILTIN_VERSION = 2;
+const BUILTIN_VERSION = 3;
 const BUILTIN = [
   { name: 'Street Ad', slides: [
-    S('slam', 'NEW', 'E-BIKES', 'blue_red_white', 5, '', st_('rays', 'zoom_in', 'pulse', 'rail', 'push_left')),
-    S('slam', 'WE FIX', 'BIKES, E-BIKES, SCOOTERS', 'red_white', 6, '', st_('stripes', 'slide_left', 'none', 'chase', 'zoom')),
+    S('slam', 'NEW', 'E-BIKES', 'blue_red_white', 5, '', st_('spotlight', 'zoom_in', 'pulse', 'rail', 'push_left')),
+    S('slam', 'WE FIX', 'BIKES, E-BIKES, SCOOTERS', 'red_white', 6, '', st_('tint', 'slide_left', 'none', 'chase', 'zoom')),
     S('swap', 'WALK IN TODAY', 'READY IN 24H', 'blue_red_white', 5, '', st_('spotlight', 'rise', 'float', 'corners', 'wipe')),
     S('brand', '', '', 'blue_red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'sparkle', 'fade'))] },
   { name: '4.8 Stars · 1,100+ Reviews', slides: [
@@ -82,37 +81,37 @@ const BUILTIN = [
     S('brand', '', '', 'gold', 5, TAMPA, st_('stars', 'zoom_in', 'none', 'corners', 'fade'))] },
   { name: 'Black Friday', slides: [
     S('slam', 'BLACK', 'FRIDAY', 'red_white', 4, '', st_('flood', 'glitch', 'shake', 'none', 'flash')),
-    S('price', 'BIKES UP TO', '35% OFF', 'red_white', 5, '', st_('rays', 'zoom_out', 'pulse', 'chase', 'zoom')),
-    S('swap', 'WE PRICE MATCH', 'SHOP IN STORE', 'gold', 5, '', st_('stripes', 'slide_right', 'none', 'bars', 'wipe')),
+    S('price', 'BIKES UP TO', '35% OFF', 'red_white', 5, '', st_('gradient', 'zoom_out', 'pulse', 'chase', 'zoom')),
+    S('swap', 'WE PRICE MATCH', 'SHOP IN STORE', 'gold', 5, '', st_('black', 'slide_right', 'none', 'bars', 'wipe')),
     S('brand', '', '', 'red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'chase', 'fade'))] },
   { name: 'Alafia Rentals', slides: [
-    S('slam', 'ALAFIA', 'BIKE RENTALS', 'green_white', 5, '', st_('grid', 'drop', 'none', 'corners', 'push_left')),
+    S('slam', 'ALAFIA', 'BIKE RENTALS', 'green_white', 5, '', st_('spotlight', 'drop', 'none', 'corners', 'push_left')),
     S('slam', 'RIDE THE', 'TRAILS', 'lime', 5, '', st_('gradient', 'slide_left', 'float', 'rail', 'push_up')),
     S('swap', 'WED-FRI 10-5', 'SAT-SUN 8-5', 'green_white', 5, '', st_('tint', 'flip', 'none', 'bars', 'wipe')),
     S('brand', '', '', 'green_white', 5, ALAFIA, st_('black', 'zoom_in', 'none', 'rail', 'fade'))] },
   { name: 'Shop Online', slides: [
-    S('slam', 'SHOP', 'ONLINE', 'cyan_white', 4, '', st_('grid', 'typewriter', 'none', 'bars', 'zoom')),
+    S('slam', 'SHOP', 'ONLINE', 'cyan_white', 4, '', st_('tint', 'typewriter', 'none', 'bars', 'zoom')),
     S('swap', 'ORDER ONLINE', 'FREE PICKUP', 'purple', 5, '', st_('spotlight', 'rise', 'pulse', 'corners', 'push_left')),
     S('ticker', 'FREE SHIPPING', 'ON $50+', 'cyan_white', 6, '', st_('tint', 'fade', 'none', 'rail', 'wipe')),
     S('brand', '', '', 'cyan_white', 5, 'UBCBIKE.COM · (813) 971-2277', st_('black', 'zoom_in', 'none', 'sparkle', 'fade'))] },
   { name: 'Financing', slides: [
     S('slam', 'EASY', 'FINANCING', 'gold', 4, '', st_('flood', 'zoom_out', 'none', 'none', 'push_up')),
-    S('slam', 'WITH', 'SYNCHRONY, SNAP, ACIMA', 'yellow_cyan', 6, '', st_('stripes', 'slide_right', 'none', 'chase', 'zoom')),
-    S('swap', 'RIDE TODAY', 'PAY OVER TIME', 'yellow_cyan', 5, '', st_('rays', 'spin', 'float', 'sparkle', 'flash')),
+    S('slam', 'WITH', 'SYNCHRONY, SNAP, ACIMA', 'yellow_cyan', 6, '', st_('gradient', 'slide_right', 'none', 'chase', 'zoom')),
+    S('swap', 'RIDE TODAY', 'PAY OVER TIME', 'yellow_cyan', 5, '', st_('black', 'spin', 'float', 'sparkle', 'flash')),
     S('brand', '', '', 'yellow_cyan', 5, TAMPA, st_('black', 'zoom_in', 'none', 'corners', 'fade'))] },
   { name: 'Service & Tune-Ups', slides: [
     S('price', 'TUNE-UPS FROM', '$100', 'blue_red_white', 5, '', st_('spotlight', 'drop', 'pulse', 'corners', 'push_left')),
-    S('swap', 'NO APPOINTMENT', '1 DAY REPAIRS', 'orange', 5, '', st_('stripes', 'slide_left', 'none', 'bars', 'wipe')),
+    S('swap', 'NO APPOINTMENT', '1 DAY REPAIRS', 'orange', 5, '', st_('spotlight', 'slide_left', 'none', 'bars', 'wipe')),
     S('slam', 'WE FIX', 'ROAD, MTB, E-BIKES', 'red_white', 6, '', st_('tint', 'glitch', 'none', 'chase', 'zoom')),
     S('brand', '', '', 'blue_red_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'rail', 'fade'))] },
   { name: 'Trade-In', slides: [
     S('slam', 'TRADE IN', 'YOUR BIKE', 'cyan_white', 5, '', st_('gradient', 'spin', 'none', 'sparkle', 'zoom')),
-    S('swap', 'GET CREDIT', 'UPGRADE TODAY', 'lime', 5, '', st_('grid', 'rise', 'float', 'corners', 'push_up')),
+    S('swap', 'GET CREDIT', 'UPGRADE TODAY', 'lime', 5, '', st_('tint', 'rise', 'float', 'corners', 'push_up')),
     S('slam', 'WE', 'PRICE MATCH', 'red_white', 4, '', st_('flood', 'zoom_in', 'shake', 'none', 'flash')),
     S('brand', '', '', 'cyan_white', 5, TAMPA, st_('black', 'zoom_in', 'none', 'chase', 'fade'))] },
   { name: 'Since 1972', slides: [
     S('slam', 'SINCE', '1972', 'gold', 4, '', st_('stars', 'zoom_out', 'zoom', 'sparkle', 'push_left')),
-    S('slam', 'TAMPA', 'BIKE SHOP', 'blue_red_white', 5, '', st_('rays', 'typewriter', 'none', 'rail', 'wipe')),
+    S('slam', 'TAMPA', 'BIKE SHOP', 'blue_red_white', 5, '', st_('gradient', 'typewriter', 'none', 'rail', 'wipe')),
     S('swap', '1220 E FLETCHER', 'OPEN MON - SAT', 'blue_red_white', 5, '', st_('tint', 'flip', 'none', 'bars', 'zoom')),
     S('brand', '', '', 'gold', 5, TAMPA, st_('stars', 'zoom_in', 'none', 'corners', 'fade'))] },
 ];
@@ -195,29 +194,6 @@ function drawBackground(ctx2d, kind, rs, accent) {
     g.addColorStop(1, rgba(accent, 0.05));
     ctx2d.fillStyle = g;
     ctx2d.fillRect(0, 0, W, H);
-  } else if (kind === 'stripes') {
-    ctx2d.fillStyle = rgba(accent, 0.15);
-    const off = (rs * 22) % 24;
-    for (let x = -H - 24 + off; x < W + 24; x += 24) {
-      ctx2d.beginPath();
-      ctx2d.moveTo(x, H);
-      ctx2d.lineTo(x + 10, H);
-      ctx2d.lineTo(x + 10 + H, 0);
-      ctx2d.lineTo(x + H, 0);
-      ctx2d.closePath();
-      ctx2d.fill();
-    }
-  } else if (kind === 'rays') {
-    ctx2d.translate(W / 2, H / 2);
-    ctx2d.rotate(rs * 0.35);
-    ctx2d.fillStyle = rgba(accent, 0.17);
-    for (let i = 0; i < 12; i++) {
-      ctx2d.beginPath();
-      ctx2d.moveTo(0, 0);
-      ctx2d.arc(0, 0, W, (i * Math.PI) / 6, (i * Math.PI) / 6 + Math.PI / 12);
-      ctx2d.closePath();
-      ctx2d.fill();
-    }
   } else if (kind === 'spotlight') {
     const x = W / 2 + Math.sin(rs * 1.1) * W * 0.42;
     const g = ctx2d.createRadialGradient(x, H * 0.45, 4, x, H * 0.45, 85);
@@ -233,30 +209,6 @@ function drawBackground(ctx2d, kind, rs, accent) {
       const sz = rand(i + 3) > 0.8 ? 2 : 1;
       ctx2d.fillRect(Math.floor(rand(i) * W), Math.floor(rand(i + 100) * H), sz, sz);
     }
-  } else if (kind === 'grid') {
-    const hz = Math.round(H * 0.58);
-    ctx2d.strokeStyle = rgba(accent, 0.45);
-    ctx2d.lineWidth = 1;
-    const ph = (rs * 0.9) % 1;
-    for (let i = 0; i < 7; i++) {
-      const k = (i + ph) / 7;
-      const y = hz + (H - hz) * k * k;
-      ctx2d.beginPath();
-      ctx2d.moveTo(0, y);
-      ctx2d.lineTo(W, y);
-      ctx2d.stroke();
-    }
-    for (let i = -6; i <= 6; i++) {
-      ctx2d.beginPath();
-      ctx2d.moveTo(W / 2 + i * 6, hz);
-      ctx2d.lineTo(W / 2 + i * 40, H);
-      ctx2d.stroke();
-    }
-    const g = ctx2d.createLinearGradient(0, hz - 30, 0, hz);
-    g.addColorStop(0, rgba(accent, 0));
-    g.addColorStop(1, rgba(accent, 0.25));
-    ctx2d.fillStyle = g;
-    ctx2d.fillRect(0, hz - 30, W, 30);
   }
   ctx2d.restore();
 }

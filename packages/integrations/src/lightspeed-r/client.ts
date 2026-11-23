@@ -524,8 +524,9 @@ export class LightspeedRClient {
       }
       if (u.tags !== undefined) {
         const cleanTags = u.tags.map((t) => t.trim()).filter(Boolean);
-        // Lightspeed R-Series V3 requires a plain string when setting 1 tag (single-item array returns 400).
-        putBody.Tags = cleanTags.length === 0 ? {} : { tag: cleanTags.length === 1 ? cleanTags[0] : cleanTags };
+        // Lightspeed R-Series V3 rejects `{}` with HTTP 400 "JSON structure is invalid";
+        // clearing tags requires `{ tag: [] }`, and 1 tag requires a plain string.
+        putBody.Tags = cleanTags.length === 0 ? { tag: [] } : { tag: cleanTags.length === 1 ? cleanTags[0] : cleanTags };
       }
 
       const hasPriceUpdate =

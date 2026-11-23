@@ -25,7 +25,7 @@
         --bg: #000000;
         --fg: #FFFFFF;
         --muted: #E2E8F0;
-        --brand: #FF2D2D;      /* "green" slot  -> UBC red   */
+        --brand: #FF2D2D;      /* "green" slot  -> UBC red    */
         --accent: #38BDF8;
         --accent-2: #38BDF8;   /* "violet" slot -> light blue */
         --font-display: "Montserrat", "Inter", system-ui, sans-serif;
@@ -36,26 +36,71 @@
         overflow: hidden;
         background: #000;
       }
-      /* Rolling word hugs the prefix instead of floating in the widest-word slot */
+
+      /* ---- Bigger type for the street: scale every catalog block's fitted size ---- */
+      [data-composition-id="ubc-pro"] .hs-headline {
+        font-size: calc(var(--hs-font-size, 10.5cqw) * 1.3) !important;
+        width: 98cqw !important;
+        letter-spacing: -0.2cqw !important;
+      }
+      [data-composition-id="ubc-pro"] .kts-sentence {
+        font-size: calc(var(--kts-font-size) * 1.22) !important;
+      }
+      [data-composition-id="ubc-pro"] .kts-sentence > * { font-size: inherit !important; }
       [data-composition-id="ubc-pro"] .kts-word { justify-self: start !important; }
-      /* LED legibility: heavier weights + larger contact lines on the brand close */
-      [data-composition-id="ubc-pro"] .lbc-wordmark { font-weight: 900 !important; }
-      [data-composition-id="ubc-pro"] .lbc-tagline {
-        font-family: var(--font-display) !important;
-        font-size: 15px !important;
-        font-weight: 900 !important;
-        letter-spacing: 0.02em !important;
-        margin-top: 2px !important;
+      [data-composition-id="ubc-pro"] .ls-line,
+      [data-composition-id="ubc-pro"] [class*="ls-"] {
+        --ls-font-size: min(10.4cqw, 30cqh) !important;
       }
-      [data-composition-id="ubc-pro"] .lbc-url {
-        font-family: var(--font-display) !important;
-        font-size: 11px !important;
-        font-weight: 900 !important;
-        letter-spacing: 0.14em !important;
-        color: #38BDF8 !important;
-        margin-top: 4px !important;
+      [data-composition-id="ubc-pro"] .ls-line { font-weight: 900 !important; }
+
+      /* ---- Brand close: official UBC mark + phone + web ---- */
+      #scene-brand {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: #000;
       }
-      /* Thin light-blue rail that sweeps along the bottom edge for the whole film */
+      #brand-mark {
+        display: block;
+        height: 46px;
+        width: auto;
+        will-change: transform, filter, opacity;
+      }
+      #brand-phone {
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 900;
+        line-height: 1;
+        color: #FFFFFF;
+        letter-spacing: 0.01em;
+        margin-top: 4px;
+        will-change: transform, opacity;
+      }
+      #brand-url {
+        font-family: var(--font-display);
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1;
+        color: #38BDF8;
+        letter-spacing: 0.16em;
+        will-change: opacity, letter-spacing;
+      }
+      #brand-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #FF2D2D;
+        margin-left: 3px;
+        vertical-align: baseline;
+      }
+
+      /* Thin rail that sweeps along the bottom edge for the whole film */
       #rail {
         position: absolute;
         left: 0;
@@ -87,7 +132,7 @@
       data-start="4.5"
       data-duration="6"
       data-track-index="1"
-      data-variable-values='{"prefix":"WE FIX","options":"E-BIKES,SCOOTERS,ALL BRANDS","suffix":"","cues":"2.1,3.9","accent":"green","exit":"fade"}'
+      data-variable-values='{"prefix":"WE FIX","options":"BIKES,E-BIKES,SCOOTERS","suffix":"","cues":"2.1,3.9","accent":"green","exit":"fade"}'
     ></div>
 
     <!-- 3 · 10.5s–15.5s  Line swap: walk-in promise -->
@@ -98,26 +143,37 @@
       data-start="10.5"
       data-duration="5"
       data-track-index="1"
-      data-variable-values='{"line_a":"WALK-INS WELCOME","line_b":"READY IN 24H","swap_at":2.1,"underline_word":"24H","accent":"violet","exit":"up"}'
+      data-variable-values='{"line_a":"WALK IN TODAY","line_b":"READY IN 24H","swap_at":2.1,"underline_word":"24H","accent":"violet","exit":"up"}'
     ></div>
 
-    <!-- 4 · 15.5s–20s  Brand close: identity + contact, holds dead still -->
-    <div
-      id="scene-brand"
-      data-composition-id="logo-brand-close"
-      data-composition-src="compositions/components/logo-brand-close.html"
-      data-start="15.5"
-      data-duration="4.5"
-      data-track-index="1"
-      data-variable-values='{"wordmark":"UBC","tagline":"(813) 971-2277","url":"UBCBIKE.COM","accent":"green","exit":"none"}'
-    ></div>
+    <!-- 4 · 15.5s–20s  Brand close: official UBC mark, holds dead still -->
+    <div id="scene-brand" class="clip" data-start="15.5" data-duration="4.5" data-track-index="1">
+      <img id="brand-mark" src="assets/ubc-mark-white.png" alt="UBC">
+      <div id="brand-phone">(813) 971-2277</div>
+      <div id="brand-url">UBCBIKE.COM</div>
+    </div>
 
     <div id="rail" class="clip" data-start="0" data-duration="20" data-track-index="2"></div>
 
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
+
+      // Ambient rail
       tl.fromTo("#rail", { xPercent: -100 }, { xPercent: 100, duration: 3.5, ease: "none", repeat: 5 }, 0);
+
+      // Brand close (local start 15.5s): focus-pull logo, phone rises, URL tracking settles, then dead-still hold
+      const B = 15.5;
+      tl.fromTo("#brand-mark",
+        { opacity: 0, scale: 1.18, filter: "blur(8px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.75, ease: "expo.out" }, B);
+      tl.fromTo("#brand-phone",
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.55, ease: "expo.out" }, B + 0.35);
+      tl.fromTo("#brand-url",
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "expo.out" }, B + 0.6);
+
       window.__timelines["ubc-pro"] = tl;
     </script>
   </div>

@@ -108,8 +108,8 @@ export async function getReviewsState(pool: Pool, companyId: string) {
       `SELECT id, location_key, external_id, author_name, rating, text, relative_time, published_at, source, featured, hidden, created_at
        FROM google_reviews
        WHERE company_id = $1
-       ORDER BY hidden ASC, featured DESC, published_at DESC, created_at DESC
-       LIMIT 100`,
+       ORDER BY hidden ASC, published_at DESC, created_at DESC
+       LIMIT 30`,
       [companyId],
     ),
   ]);
@@ -150,29 +150,112 @@ export async function updateReviewSources(
   return getReviewsState(ctx.pool, companyId);
 }
 
-interface PlacesV1Response {
-  displayName?: { text?: string };
-  rating?: number;
-  userRatingCount?: number;
-  googleMapsUri?: string;
-  reviews?: Array<{
-    name?: string;
-    rating?: number;
-    relativePublishTimeDescription?: string;
-    publishTime?: string;
-    text?: { text?: string };
-    originalText?: { text?: string };
-    authorAttribution?: { displayName?: string };
+interface NormalizedPlaceResult {
+  rating: number | null;
+  totalReviews: number | null;
+  googleMapsUrl: string;
+  reviews: Array<{
+    externalId: string;
+    authorName: string;
+    rating: number;
+    text: string;
+    relativeTime: string;
+    publishedAt: Date;
   }>;
 }
 
-export async function syncGoogleReviews(ctx: AppContext, companyId: string, userId: string) {
+async function fetchNewestPlaceReviews(placeId: string, apiKey: string): Promise<NormalizedPlaceResult> {
+  // Legacy Place Details supports `reviews_sort=newest` to return the 5 most recent Google reviews.
+  const legacyUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=name,rating,user_ratings_total,url,reviews&reviews_sort=newest&key=${encodeURIComponent(apiKey)}`;
+  const legRes = await fetch(legacyUrl);
+  if (legRes.ok) {
+    const leg = (await legRes.json()) as {
+      status?: string;
+      result?: {
+        rating?: number;
+        user_ratings_total?: number;
+        url?: string;
+        reviews?: Array<{
+          author_name?: string;
+          rating?: number;
+          text?: string;
+          relative_time_description?: string;
+          time?: number;
+        }>;
+      };
+    };
+    if (leg.status === 'OK' && leg.result) {
+      return {
+        rating: leg.result.rating ?? null,
+        totalReviews: leg.result.user_ratings_total ?? null,
+        googleMapsUrl: leg.result.url ?? '',
+        reviews: (leg.result.reviews || [])
+          .filter((r) => String(r.text || '').trim() && String(r.author_name || '').trim())
+          .map((r) => ({
+            externalId: `${r.author_name}:${r.time || ''}`.slice(0, 200),
+            authorName: String(r.author_name).trim(),
+            rating: Math.max(1, Math.min(5, Math.round(r.rating || 5))),
+            text: String(r.text).trim(),
+            relativeTime: String(r.relative_time_description || ''),
+            publishedAt: r.time ? new Date(r.time * 1000) : new Date(),
+          })),
+      };
+    }
+  }
+
+  // Fallback to Places API (New) if only Places API (New) is enabled on the GCP project.
+  const v1Url = `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`;
+  const v1Res = await fetch(v1Url, {
+    headers: {
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'displayName,rating,userRatingCount,googleMapsUri,reviews',
+    },
+  });
+  if (!v1Res.ok) {
+    const body = await v1Res.text();
+    throw new Error(`HTTP ${v1Res.status}: ${body.slice(0, 200)}`);
+  }
+  const v1 = (await v1Res.json()) as {
+    rating?: number;
+    userRatingCount?: number;
+    googleMapsUri?: string;
+    reviews?: Array<{
+      name?: string;
+      rating?: number;
+      relativePublishTimeDescription?: string;
+      publishTime?: string;
+      text?: { text?: string };
+      originalText?: { text?: string };
+      authorAttribution?: { displayName?: string };
+    }>;
+  };
+  return {
+    rating: v1.rating ?? null,
+    totalReviews: v1.userRatingCount ?? null,
+    googleMapsUrl: v1.googleMapsUri ?? '',
+    reviews: (v1.reviews || [])
+      .filter((r) => String(r.originalText?.text || r.text?.text || '').trim() && String(r.authorAttribution?.displayName || '').trim())
+      .map((r) => {
+        const dt = r.publishTime ? new Date(r.publishTime) : new Date();
+        return {
+          externalId: String(r.name || `${r.authorAttribution?.displayName}:${r.publishTime || ''}`).slice(0, 200),
+          authorName: String(r.authorAttribution!.displayName).trim(),
+          rating: Math.max(1, Math.min(5, Math.round(r.rating || 5))),
+          text: String(r.originalText?.text || r.text?.text).trim(),
+          relativeTime: String(r.relativePublishTimeDescription || ''),
+          publishedAt: Number.isNaN(dt.getTime()) ? new Date() : dt,
+        };
+      }),
+  };
+}
+
+export async function syncGoogleReviews(ctx: AppContext, companyId: string, userId: string | null) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
   if (!apiKey) {
     throw new HttpError(
       400,
       'NOT_CONFIGURED',
-      'GOOGLE_PLACES_API_KEY is not set on the server. Add it in Hostinger environment variables to sync directly from Google, or add verified Google reviews manually below.',
+      'GOOGLE_PLACES_API_KEY is not set on the server. Add it in Hostinger environment variables to pull the 5 newest Google reviews automatically.',
     );
   }
   const state = await getReviewsState(ctx.pool, companyId);
@@ -185,23 +268,18 @@ export async function syncGoogleReviews(ctx: AppContext, companyId: string, user
   let upsertedReviews = 0;
 
   for (const src of withPlaceId) {
-    const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(src.placeId.trim())}`;
-    const res = await fetch(url, {
-      headers: {
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'displayName,rating,userRatingCount,googleMapsUri,reviews',
-      },
-    });
-    if (!res.ok) {
-      const body = await res.text();
+    let data: NormalizedPlaceResult;
+    try {
+      data = await fetchNewestPlaceReviews(src.placeId.trim(), apiKey);
+    } catch (err) {
       await logError(ctx.pool, {
         companyId,
         source: 'reviews:google_places_sync',
-        message: `Places API HTTP ${res.status} for ${src.locationKey}: ${body.slice(0, 200)}`,
+        message: `Google Places failed for ${src.locationKey}: ${(err as Error).message}`,
       }).catch(() => {});
-      throw new HttpError(502, 'UPSTREAM_ERROR', `Google Places API failed for ${src.name} (HTTP ${res.status}).`);
+      throw new HttpError(502, 'UPSTREAM_ERROR', `Google Places API failed for ${src.name}: ${(err as Error).message}`);
     }
-    const data = (await res.json()) as PlacesV1Response;
+
     await ctx.pool.query(
       `UPDATE google_review_sources
        SET rating = COALESCE($3, rating),
@@ -210,16 +288,11 @@ export async function syncGoogleReviews(ctx: AppContext, companyId: string, user
            synced_at = now(),
            updated_at = now()
        WHERE company_id = $1 AND location_key = $2`,
-      [companyId, src.locationKey, data.rating ?? null, data.userRatingCount ?? null, data.googleMapsUri ?? ''],
+      [companyId, src.locationKey, data.rating, data.totalReviews, data.googleMapsUrl],
     );
     syncedLocations += 1;
 
-    for (const r of data.reviews || []) {
-      const text = String(r.originalText?.text || r.text?.text || '').trim();
-      const author = String(r.authorAttribution?.displayName || '').trim();
-      if (!text || !author) continue;
-      const extId = String(r.name || `${author}:${r.publishTime || ''}`).slice(0, 200);
-      const publishedAt = r.publishTime ? new Date(r.publishTime) : new Date();
+    for (const r of data.reviews) {
       await ctx.pool.query(
         `INSERT INTO google_reviews
            (company_id, location_key, external_id, author_name, rating, text, relative_time, published_at, source, featured, hidden)
@@ -231,16 +304,7 @@ export async function syncGoogleReviews(ctx: AppContext, companyId: string, user
            text = EXCLUDED.text,
            relative_time = EXCLUDED.relative_time,
            published_at = EXCLUDED.published_at`,
-        [
-          companyId,
-          src.locationKey,
-          extId,
-          author,
-          Math.max(1, Math.min(5, Math.round(r.rating || 5))),
-          text,
-          String(r.relativePublishTimeDescription || ''),
-          Number.isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
-        ],
+        [companyId, src.locationKey, r.externalId, r.authorName, r.rating, r.text, r.relativeTime, r.publishedAt],
       );
       upsertedReviews += 1;
     }
@@ -252,7 +316,12 @@ export async function syncGoogleReviews(ctx: AppContext, companyId: string, user
     action: 'reviews.google_synced',
     detail: { syncedLocations, upsertedReviews },
   });
-  return { ...(await getReviewsState(ctx.pool, companyId)), syncedLocations, upsertedReviews };
+
+  let published: { count: number; themesUpdated: number } | null = null;
+  if (ctx.config.mode !== 'live' || ctx.config.env.SHOPIFY_WRITES_ENABLED) {
+    published = await publishReviewsToShopify(ctx, companyId, userId);
+  }
+  return { ...(await getReviewsState(ctx.pool, companyId)), syncedLocations, upsertedReviews, published };
 }
 
 export async function addManualReview(
@@ -305,12 +374,17 @@ export async function deleteReview(ctx: AppContext, companyId: string, userId: s
   return { ok: true };
 }
 
-export async function publishReviewsToShopify(ctx: AppContext, companyId: string, userId: string) {
+export async function publishReviewsToShopify(ctx: AppContext, companyId: string, userId: string | null) {
   if (ctx.config.mode === 'live' && !ctx.config.env.SHOPIFY_WRITES_ENABLED) {
     throw new HttpError(400, 'WRITES_DISABLED', 'SHOPIFY_WRITES_ENABLED is false.');
   }
   const state = await getReviewsState(ctx.pool, companyId);
-  const visible = state.reviews.filter((r) => !r.hidden).slice(0, 24);
+  // Publish the 5 most recent visible reviews so the storefront carousel stays fresh.
+  const latestFive = state.reviews
+    .filter((r) => !r.hidden)
+    .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .slice(0, 5);
+
   const payload = {
     updatedAt: new Date().toISOString(),
     summary: state.summary,
@@ -322,7 +396,7 @@ export async function publishReviewsToShopify(ctx: AppContext, companyId: string
       totalReviews: s.totalReviews,
       googleMapsUrl: s.googleMapsUrl,
     })),
-    reviews: visible.map((r) => ({
+    reviews: latestFive.map((r) => ({
       id: r.id,
       location: r.location_key,
       author: r.author_name,
@@ -330,7 +404,6 @@ export async function publishReviewsToShopify(ctx: AppContext, companyId: string
       text: r.text,
       relativeTime: r.relative_time || 'Verified Google Review',
       source: r.source,
-      featured: r.featured,
     })),
   };
 
@@ -342,7 +415,17 @@ export async function publishReviewsToShopify(ctx: AppContext, companyId: string
     companyId,
     userId,
     action: 'reviews.published_to_shopify',
-    detail: { count: visible.length, themesUpdated },
+    detail: { count: latestFive.length, themesUpdated },
   });
-  return { count: visible.length, themesUpdated, summary: state.summary };
+  return { count: latestFive.length, themesUpdated, summary: state.summary };
+}
+
+export async function syncAllCompaniesGoogleReviews(ctx: AppContext) {
+  if (!process.env.GOOGLE_PLACES_API_KEY?.trim()) return;
+  const rows = await ctx.pool.query<{ company_id: string }>(
+    `SELECT DISTINCT company_id FROM google_review_sources WHERE place_id <> ''`,
+  );
+  for (const r of rows.rows) {
+    await syncGoogleReviews(ctx, r.company_id, null).catch(() => {});
+  }
 }

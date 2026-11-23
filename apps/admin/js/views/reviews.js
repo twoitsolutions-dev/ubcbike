@@ -26,72 +26,29 @@ export async function renderReviews(ctx) {
     draw();
   }
 
-  function renderSummaryBanner() {
+  function renderAutoSyncCard() {
     const s = state.summary || { rating: 0, totalReviews: 0 };
     const apiBadge = state.apiConfigured
-      ? h('span.badge.ok', 'Google Places API key connected')
-      : h('span.badge.warn', 'Manual / Pending GOOGLE_PLACES_API_KEY');
-    return h('div.row-between', { style: { flexWrap: 'wrap', gap: '12px' } },
-      h('div.stack-xs',
-        h('div.row', { style: { gap: '10px', alignItems: 'center' } },
-          h('strong', { style: { fontSize: '20px' } }, s.totalReviews > 0 ? (s.rating + ' ★') : 'No rating synced yet'),
-          h('span.muted', s.totalReviews > 0 ? (s.totalReviews.toLocaleString() + ' total Google reviews') : 'Add Place IDs or real reviews below'),
-          apiBadge),
-        h('div.small.muted', 'Only real Google reviews from Tampa & Alafia are stored and published to assets/ubc-reviews.json.')),
-      h('div.row', { style: { gap: '8px', flexWrap: 'wrap' } },
-        h('button.btn', {
-          type: 'button',
-          disabled: !state.apiConfigured,
-          title: state.apiConfigured ? 'Fetch latest reviews from Google Places API' : 'Set GOOGLE_PLACES_API_KEY on Hostinger first',
-          onclick: async (e) => {
-            const btn = e.currentTarget;
-            btn.disabled = true;
-            try {
-              const res = await api.syncGoogleReviews();
-              toast('Synced ' + (res.upsertedReviews || 0) + ' Google reviews from ' + (res.syncedLocations || 0) + ' location(s)', 'ok');
-              await load();
-            } catch (err) {
-              toast(err.message || 'Google sync failed', 'bad');
-            } finally {
-              btn.disabled = !state.apiConfigured;
-            }
-          },
-        }, 'Sync from Google'),
-        h('button.btn.primary', {
-          type: 'button',
-          onclick: async (e) => {
-            const btn = e.currentTarget;
-            btn.disabled = true;
-            try {
-              const res = await api.publishReviewsToShopify();
-              toast('Published ' + res.count + ' reviews to ' + res.themesUpdated + ' Shopify theme(s)', 'ok');
-            } catch (err) {
-              toast(err.message || 'Publish failed', 'bad');
-            } finally {
-              btn.disabled = false;
-            }
-          },
-        }, 'Publish to Shopify Theme')));
-  }
+      ? h('span.badge.ok', 'Auto-sync active (every 12h)')
+      : h('span.badge.warn', 'Needs GOOGLE_PLACES_API_KEY on Hostinger');
 
-  function renderSourcesCard() {
     const inputs = {};
     const rows = state.sources.map((src) => {
       const placeIn = h('input', { type: 'text', value: src.placeId || '', placeholder: 'ChIJ... (Google Place ID)' });
-      const ratingIn = h('input', { type: 'number', step: '0.1', min: '0', max: '5', value: String(src.rating || 0) });
-      const countIn = h('input', { type: 'number', step: '1', min: '0', value: String(src.totalReviews || 0) });
       const urlIn = h('input', { type: 'url', value: src.googleMapsUrl || '', placeholder: 'https://www.google.com/maps/...' });
-      inputs[src.locationKey] = { placeIn, ratingIn, countIn, urlIn };
+      inputs[src.locationKey] = { placeIn, urlIn, rating: src.rating || 0, totalReviews: src.totalReviews || 0 };
 
       return h('div.card', { style: { padding: '12px', background: 'var(--bg-soft, rgba(0,0,0,0.02))' } },
         h('div.row-between', { style: { marginBottom: '8px', flexWrap: 'wrap', gap: '8px' } },
-          h('div', h('strong', src.name), h('div.small.muted', src.address)),
-          h('span.small.muted', 'Last API sync: ' + fmtDate(src.syncedAt))),
+          h('div',
+            h('strong', src.name),
+            h('div.small.muted', src.address)),
+          h('div.small.muted',
+            (src.totalReviews > 0 ? (src.rating + ' ★ · ' + src.totalReviews + ' reviews · ') : '') +
+            'Last sync: ' + fmtDate(src.syncedAt))),
         h('div.grid.grid-2', { style: { gap: '10px' } },
           h('label.field', h('span.small.muted', 'Google Place ID'), placeIn),
-          h('label.field', h('span.small.muted', 'Google Maps Link'), urlIn),
-          h('label.field', h('span.small.muted', 'Rating (e.g. 4.8)'), ratingIn),
-          h('label.field', h('span.small.muted', 'Total Google Reviews'), countIn)));
+          h('label.field', h('span.small.muted', 'Google Maps Link'), urlIn)));
     });
 
     const saveBtn = h('button.btn', {
@@ -102,12 +59,12 @@ export async function renderReviews(ctx) {
           const sources = Object.keys(inputs).map((k) => ({
             locationKey: k,
             placeId: inputs[k].placeIn.value.trim(),
-            rating: Number(inputs[k].ratingIn.value) || 0,
-            totalReviews: Math.max(0, Math.round(Number(inputs[k].countIn.value) || 0)),
+            rating: inputs[k].rating,
+            totalReviews: inputs[k].totalReviews,
             googleMapsUrl: inputs[k].urlIn.value.trim(),
           }));
           await api.saveReviewSources(sources);
-          toast('Google locations saved', 'ok');
+          toast('Place IDs saved', 'ok');
           await load();
         } catch (err) {
           toast(err.message || 'Save failed', 'bad');
@@ -115,134 +72,87 @@ export async function renderReviews(ctx) {
           saveBtn.disabled = false;
         }
       },
-    }, 'Save Locations');
+    }, 'Save Place IDs');
 
-    return card('1. Google Business Locations (Tampa & Alafia)',
-      h('div.stack-sm',
-        renderSummaryBanner(),
-        h('div.stack-sm', rows),
-        h('div.row-between',
-          h('span.small.muted', 'Find Place IDs at developers.google.com/maps/documentation/places/web-service/place-id'),
-          saveBtn)));
-  }
-
-  function renderAddManualCard() {
-    const locSel = h('select',
-      h('option', { value: 'tampa' }, 'Tampa · Fletcher Ave'),
-      h('option', { value: 'alafia' }, 'Alafia River State Park'));
-    const authorIn = h('input', { type: 'text', placeholder: 'Customer name as shown on Google', required: true });
-    const ratingSel = h('select',
-      h('option', { value: '5' }, '5 stars'),
-      h('option', { value: '4' }, '4 stars'),
-      h('option', { value: '3' }, '3 stars'),
-      h('option', { value: '2' }, '2 stars'),
-      h('option', { value: '1' }, '1 star'));
-    const timeIn = h('input', { type: 'text', placeholder: 'e.g. 2 weeks ago / Oct 2026' });
-    const textIn = h('textarea', { rows: '3', placeholder: 'Paste exact verified review text from Google Maps…', required: true });
-
-    const form = h('form.stack-sm', {
-      onsubmit: async (e) => {
-        e.preventDefault();
+    const syncBtn = h('button.btn.primary', {
+      type: 'button',
+      disabled: !state.apiConfigured,
+      title: state.apiConfigured ? 'Pull the 5 newest Google reviews and rotate them on Shopify' : 'Add GOOGLE_PLACES_API_KEY in Hostinger first',
+      onclick: async () => {
+        syncBtn.disabled = true;
         try {
-          await api.addManualReview({
-            locationKey: locSel.value,
-            authorName: authorIn.value.trim(),
-            rating: Number(ratingSel.value),
-            relativeTime: timeIn.value.trim(),
-            text: textIn.value.trim(),
-            featured: true,
-          });
-          authorIn.value = '';
-          timeIn.value = '';
-          textIn.value = '';
-          toast('Real review added — click Publish to Shopify Theme when ready', 'ok');
+          const res = await api.syncGoogleReviews();
+          toast('Synced & published ' + ((res.published && res.published.count) || 5) + ' newest Google reviews to Shopify', 'ok');
           await load();
         } catch (err) {
-          toast(err.message || 'Could not add review', 'bad');
+          toast(err.message || 'Google sync failed', 'bad');
+        } finally {
+          syncBtn.disabled = !state.apiConfigured;
         }
       },
-    },
-    h('div.grid.grid-2', { style: { gap: '10px' } },
-      h('label.field', h('span.small.muted', 'Store Location'), locSel),
-      h('label.field', h('span.small.muted', 'Reviewer Name'), authorIn),
-      h('label.field', h('span.small.muted', 'Stars'), ratingSel),
-      h('label.field', h('span.small.muted', 'Date / Relative Time'), timeIn)),
-    h('label.field', h('span.small.muted', 'Exact Google Review Text'), textIn),
-    h('div.row-between',
-      h('span.small.muted', 'Only paste real reviews from Google Maps (no fabricated testimonials).'),
-      h('button.btn', { type: 'submit' }, '+ Add Verified Review')));
+    }, 'Sync & Publish Newest 5 Now');
 
-    return card('2. Add / Curate Google Reviews (' + state.reviews.length + ')',
-      h('div.stack',
-        form,
-        state.reviews.length === 0
-          ? h('div.notice.info', 'No reviews stored yet. Add your Google Place IDs + API key above, or paste real Google reviews here.')
-          : h('div.stack-xs', state.reviews.map((r) => h('div.card', {
-              style: { padding: '10px 12px', opacity: r.hidden ? '0.55' : '1' },
-            },
+    return card('1. Google Reviews Auto-Sync (5 Newest Rotating on Homepage)',
+      h('div.stack-sm',
+        h('div.row-between', { style: { flexWrap: 'wrap', gap: '12px' } },
+          h('div.stack-xs',
+            h('div.row', { style: { gap: '10px', alignItems: 'center' } },
+              h('strong', { style: { fontSize: '20px' } }, s.totalReviews > 0 ? (s.rating + ' ★') : 'Waiting for Google API sync'),
+              h('span.muted', s.totalReviews > 0 ? (s.totalReviews.toLocaleString() + ' total Google reviews') : 'Reads directly from Google Places API'),
+              apiBadge),
+            h('div.small.muted', 'Automatically fetches the 5 most recent Google reviews from Tampa & Alafia every 12 hours and updates the rotating carousel on UBC Dawn V34.')),
+          h('div.row', { style: { gap: '8px', flexWrap: 'wrap' } }, saveBtn, syncBtn)),
+        h('div.stack-sm', rows),
+        !state.apiConfigured
+          ? h('div.notice.info',
+              'To enable automatic reading from Google: add ',
+              h('code', 'GOOGLE_PLACES_API_KEY'),
+              ' in Hostinger Node.js environment variables and save the Tampa & Alafia Google Place IDs above.')
+          : null));
+  }
+
+  function renderLatestFiveCard() {
+    const latest = state.reviews.filter((r) => !r.hidden).slice(0, 5);
+    return card('2. Newest 5 Reviews Currently Rotating on Storefront (' + latest.length + ')',
+      latest.length === 0
+        ? h('div.notice.info', 'No Google reviews synced yet. Once GOOGLE_PLACES_API_KEY and Place IDs are set, the 5 newest reviews will appear here and rotate on the homepage.')
+        : h('div.stack-xs', latest.map((r) => h('div.card', { style: { padding: '10px 12px' } },
             h('div.row-between', { style: { gap: '8px', flexWrap: 'wrap' } },
               h('div',
                 h('strong', r.author_name),
                 ' ',
                 h('span', { style: { color: '#D97706' } }, starsText(r.rating)),
                 ' ',
-                h('span.badge', r.location_key === 'alafia' ? 'Alafia' : 'Tampa'),
-                ' ',
-                h('span.small.muted', r.relative_time || r.source)),
-              h('div.row', { style: { gap: '6px' } },
-                h('button.btn.sm', {
-                  type: 'button',
-                  onclick: async () => {
-                    await api.updateReview(r.id, { featured: !r.featured });
-                    await load();
-                  },
-                }, r.featured ? '★ Featured' : '☆ Feature'),
-                h('button.btn.sm', {
-                  type: 'button',
-                  onclick: async () => {
-                    await api.updateReview(r.id, { hidden: !r.hidden });
-                    await load();
-                  },
-                }, r.hidden ? 'Show' : 'Hide'),
-                h('button.btn.sm.danger', {
-                  type: 'button',
-                  onclick: async () => {
-                    await api.deleteReview(r.id);
-                    await load();
-                  },
-                }, 'Delete'))),
-            h('p', { style: { margin: '6px 0 0', lineHeight: '1.45' } }, r.text))))));
+                h('span.badge', r.location_key === 'alafia' ? 'Alafia' : 'Tampa')),
+              h('span.small.muted', r.relative_time || fmtDate(r.published_at))),
+            h('p', { style: { margin: '6px 0 0', lineHeight: '1.45' } }, r.text)))));
   }
 
   function renderJudgemeCard() {
     return card('3. Judge.me Product Reviews (Verified Buyers)',
       h('div.stack-sm',
         h('p', { style: { margin: 0 } },
-          'Google Reviews cover your two physical stores (Tampa & Alafia). For individual bikes, parts, and accessories on product pages, install ',
-          h('strong', 'Judge.me Product Reviews'),
-          ' (Free plan includes automatic post-purchase review emails, photo reviews, Verified Buyer badges, and Google SEO star snippets).'),
-        h('ol', { style: { margin: '4px 0', paddingLeft: '20px', lineHeight: '1.6' } },
-          h('li', 'Open Shopify App Store and install ', h('strong', 'Judge.me Product Reviews'), ' on ', h('code', 'z5wxyn-uc.myshopify.com'), '.'),
-          h('li', 'Inside Judge.me onboarding, enable ', h('strong', 'App Embeds'), ' in the active theme (', h('strong', 'UBC Dawn V34'), ') so stars appear on collection & product cards automatically.'),
-          h('li', 'Enable ', h('strong', 'Review Request Emails'), ' (send 7–10 days after fulfillment) and turn on ', h('strong', 'SEO Rich Snippets'), '.')),
+          'Judge.me handles individual product reviews from real buyers. Since it is already installed, make sure its App Embed is switched ON in ',
+          h('strong', 'UBC Dawn V34'),
+          '.'),
         h('div.row', { style: { gap: '10px', flexWrap: 'wrap' } },
           h('a.btn.primary', {
-            href: 'https://apps.shopify.com/judgeme',
-            target: '_blank',
-            rel: 'noopener',
-          }, 'Open Judge.me on Shopify App Store ↗'),
-          h('a.btn', {
             href: 'https://admin.shopify.com/store/z5wxyn-uc/themes/194100855101/editor?context=apps',
             target: '_blank',
             rel: 'noopener',
-          }, 'Open UBC Dawn V34 App Embeds ↗'))));
+          }, 'Enable Judge.me in UBC Dawn V34 ↗'),
+          h('a.btn', {
+            href: 'https://admin.shopify.com/store/z5wxyn-uc/apps/judge-me-reviews',
+            target: '_blank',
+            rel: 'noopener',
+          }, 'Open Judge.me Settings ↗'))));
   }
 
   function draw() {
     mount(host,
-      pageHead('Reviews & Social Proof', 'Sync real Google Reviews for Tampa & Alafia into Shopify, and manage Judge.me product reviews.'),
-      renderSourcesCard(),
-      renderAddManualCard(),
+      pageHead('Reviews & Social Proof', 'Automatic rotating Google Reviews (5 newest) + Judge.me product reviews.'),
+      renderAutoSyncCard(),
+      renderLatestFiveCard(),
       renderJudgemeCard());
   }
 

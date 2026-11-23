@@ -5,6 +5,7 @@ import { createPool, runMigrations } from '@ubc/database';
 import { buildApp } from './app.js';
 import { loadConfig } from './config/env.js';
 import { resolveLiveStoreConfigFromDb } from './services/connectors.js';
+import { syncAllCompaniesGoogleReviews } from './services/google-reviews.js';
 import { startWorkerLoop } from './workers/runner.js';
 
 async function main() {
@@ -22,7 +23,9 @@ async function main() {
   if (process.env.RUN_WORKER !== 'false') startWorkerLoop(ctx, { log: (m) => app.log.info(m) });
   await app.listen({ port: config.env.PORT, host: config.env.HOST });
   app.log.info(`UBC Commerce Hub API listening in ${config.mode.toUpperCase()} mode`);
-  const shutdown = async () => { await app.close(); await pool.end(); process.exit(0); };
+  const reviewsTimer = setInterval(() => { void syncAllCompaniesGoogleReviews(ctx); }, 12 * 60 * 60 * 1000);
+  reviewsTimer.unref();
+  const shutdown = async () => { clearInterval(reviewsTimer); await app.close(); await pool.end(); process.exit(0); };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 }

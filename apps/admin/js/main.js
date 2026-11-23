@@ -114,7 +114,7 @@ function renderShell() {
       h('button.btn.sm', { onclick: logout }, 'Sign out'),
       h('div.small', { style: { marginTop: '10px', opacity: '0.78', fontSize: '10.5px', lineHeight: '1.4', whiteSpace: 'nowrap' } },
         'Built by ',
-        h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
+        h('a', { href: 'https://www.twoitsolutions.com', target: '_blank', rel: 'noopener', style: { display: 'inline', padding: '0', minHeight: '0', color: '#CCBB8D', textDecoration: 'underline' } }, 'TwoIT Solutions LLC'))));
   const scrim = h('div.scrim', { onclick: closeNav });
   const crumbs = h('div.crumbs#crumbs');
   const topbar = h('header.topbar',

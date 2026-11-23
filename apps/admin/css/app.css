@@ -82,6 +82,7 @@ img { max-width: 100%; display: block; }
   display: grid; place-items: center; font-weight: 800; letter-spacing: 0.04em; flex: 0 0 auto;
 }
 .boot-error h1 { color: var(--bad); }
+.boot-logo { width: 180px; max-width: 72vw; height: auto; display: block; }
 
 /* ---------- Shell & Sidebar ---------- */
 .shell {
@@ -143,6 +144,11 @@ img { max-width: 100%; display: block; }
   border-color: rgba(204, 187, 141, 0.25); color: #FEFDF3;
 }
 .nav-foot .btn:hover { background: rgba(254, 253, 243, 0.14); }
+.nav-foot a {
+  display: inline; padding: 0; min-height: 0; font-size: inherit;
+  color: #CCBB8D; text-decoration: underline;
+}
+.nav-foot a:hover { background: transparent; color: #FDE68A; text-decoration: underline; }
 
 /* ---------- Topbar & Main Content ---------- */
 .main {

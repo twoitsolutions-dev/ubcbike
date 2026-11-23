@@ -37,6 +37,7 @@
     "lint": "eslint apps/admin/js",
     "db:reset-demo": "node scripts/reset-demo-db.mjs",
     "theme:check": "node scripts/theme-check-fable.mjs",
+    "led:render": "node scripts/render-led-hyperframes.mjs",
     "upc:link": "node --env-file-if-exists=.env scripts/link-shopify-store.mjs",
     "upc:audit": "node --env-file-if-exists=.env scripts/audit-matrices-upc.mjs"
   },

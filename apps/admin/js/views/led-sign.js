@@ -480,6 +480,7 @@ export async function renderLedSign(ctx) {
   const slidesHost = h('div.stack-sm');
   const editorHost = h('div.stack-sm');
   const exportBtn = h('button.btn.primary', { type: 'button' }, 'Download 214×112 .AVI');
+  const exportHfBtn = h('button.btn.sm', { type: 'button' }, 'Export HyperFrames .HTML');
   const exportStatus = h('span.small.muted', '5s reading time per slide · Audio-free 214×112 AVI');
   const catalogHost = h('div.led-catalog-hits');
   const uploadStatus = h('span.small.muted', 'No custom image uploaded yet');
@@ -592,6 +593,51 @@ export async function renderLedSign(ctx) {
       }, 'image/jpeg', 0.94);
     });
   }
+
+  exportHfBtn.addEventListener('click', () => {
+    const dim = SIZES[st.sizeKey] || SIZES['214x112'];
+    const totalSec = st.slides.reduce((a, s) => a + Math.max(2, Number(s.seconds) || 5), 0);
+    let cursor = 0;
+    const escHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const sections = st.slides.map((s, idx) => {
+      const dur = Math.max(2, Number(s.seconds) || 5);
+      const pal = PALETTES[s.palette] || PALETTES.blue_red_white;
+      const start = cursor;
+      cursor += dur;
+      return `    <section id="scene-${idx + 1}" class="clip" data-start="${start}" data-duration="${dur}" data-track-index="1" style="position:absolute;inset:0;background:#000;border:2px solid ${pal.border};display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;text-align:center;">
+      <div style="background:${pal.badgeBg};color:${pal.badgeFg};font-size:10px;font-weight:900;padding:2px 6px;text-transform:uppercase;">${escHtml(s.badge || 'UBC TAMPA')}</div>
+      <div>
+        <div style="color:${pal.secondary};font-size:21px;font-weight:900;line-height:1.05;text-transform:uppercase;">${escHtml(s.line1)}</div>
+        <div style="color:${pal.primary};font-size:20px;font-weight:900;line-height:1.05;text-transform:uppercase;">${escHtml(s.line2)}</div>
+      </div>
+      <div style="background:#0B1320;border:1.5px solid ${pal.primary};color:#FFF;font-size:10px;font-weight:900;padding:2px 4px;text-transform:uppercase;">${escHtml(s.foot)}</div>
+    </section>`;
+    }).join('\n');
+
+    const doc = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>UBC LED Sign (${dim.w}x${dim.h})</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}html,body{width:${dim.w}px;height:${dim.h}px;overflow:hidden;background:#000;font-family:"Arial Black",Arial,sans-serif}#main{position:relative;width:${dim.w}px;height:${dim.h}px}</style>
+</head>
+<body>
+  <div id="main" data-composition-id="ubc-led-sign" data-start="0" data-duration="${totalSec}" data-width="${dim.w}" data-height="${dim.h}" data-no-timeline>
+${sections}
+  </div>
+</body>
+</html>`;
+    const blob = new Blob([doc], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast('HyperFrames index.html downloaded (' + dim.w + '×' + dim.h + ', ' + totalSec + 's)', 'ok');
+  });
 
   exportBtn.addEventListener('click', async () => {
     if (st.exporting) return;
@@ -767,5 +813,5 @@ export async function renderLedSign(ctx) {
           h('label.led-field', h('span.small.muted', 'Motion / Transitions'), animSel),
           h('label.led-field', h('span.small.muted', 'AVI Format'), codecSel),
           h('label.led-field', h('span.small.muted', 'Frame Rate'), fpsSel)),
-        h('div.row-between', exportStatus, exportBtn)))));
+        h('div.row-between', exportStatus, h('div.led-tpl-row', exportHfBtn, exportBtn))))));
 }

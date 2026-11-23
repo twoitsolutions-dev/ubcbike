@@ -45,6 +45,83 @@ const TEMPLATES = [
     ],
   },
   {
+    id: 'pro_black_friday',
+    name: 'Pro · Black Friday',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'BLACK', line2: 'FRIDAY', foot: '', palette: 'red_white', logo: 'none', icon: 'none', seconds: 4 },
+      { layout: 'slam', badge: '', line1: 'BIKES UP TO', line2: '35% OFF', foot: '', palette: 'red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'swap', badge: '', line1: 'WE PRICE MATCH', line2: 'SHOP IN STORE', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 971-2277 · UBCBIKE.COM', palette: 'red_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
+    id: 'pro_alafia',
+    name: 'Pro · Alafia Rentals',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'ALAFIA', line2: 'BIKE RENTALS', foot: '', palette: 'green_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'slam', badge: '', line1: 'RIDE THE', line2: 'TRAILS', foot: '', palette: 'green_white', logo: 'none', icon: 'none', seconds: 6 },
+      { layout: 'swap', badge: '', line1: 'WED-FRI 10-5', line2: 'SAT-SUN 8-5', foot: '', palette: 'green_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 459-8293 · UBCBIKE.COM', palette: 'green_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
+    id: 'pro_website',
+    name: 'Pro · Shop Online',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'SHOP', line2: 'ONLINE', foot: '', palette: 'cyan_white', logo: 'none', icon: 'none', seconds: 4 },
+      { layout: 'swap', badge: '', line1: 'ORDER ONLINE', line2: 'FREE PICKUP', foot: '', palette: 'cyan_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'slam', badge: '', line1: 'FREE SHIPPING', line2: '$50+', foot: '', palette: 'cyan_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: 'UBCBIKE.COM · (813) 971-2277', palette: 'cyan_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
+    id: 'pro_financing',
+    name: 'Pro · Financing',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'EASY', line2: 'FINANCING', foot: '', palette: 'yellow_cyan', logo: 'none', icon: 'none', seconds: 4 },
+      { layout: 'slam', badge: '', line1: 'WITH', line2: 'SYNCHRONY, SNAP, ACIMA', foot: '', palette: 'yellow_cyan', logo: 'none', icon: 'none', seconds: 6 },
+      { layout: 'swap', badge: '', line1: 'RIDE TODAY', line2: 'PAY OVER TIME', foot: '', palette: 'yellow_cyan', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 971-2277 · UBCBIKE.COM', palette: 'yellow_cyan', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
+    id: 'pro_service',
+    name: 'Pro · Service & Tune-Ups',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'TUNE-UPS', line2: 'FROM $100', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'swap', badge: '', line1: 'NO APPOINTMENT', line2: '1 DAY REPAIRS', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'slam', badge: '', line1: 'WE FIX', line2: 'ROAD, MTB, E-BIKES', foot: '', palette: 'red_white', logo: 'none', icon: 'none', seconds: 6 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 971-2277 · UBCBIKE.COM', palette: 'blue_red_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
+    id: 'pro_trade_in',
+    name: 'Pro · Trade-In',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'TRADE IN', line2: 'YOUR BIKE', foot: '', palette: 'cyan_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'swap', badge: '', line1: 'GET CREDIT', line2: 'UPGRADE TODAY', foot: '', palette: 'cyan_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'slam', badge: '', line1: 'WE', line2: 'PRICE MATCH', foot: '', palette: 'red_white', logo: 'none', icon: 'none', seconds: 4 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 971-2277 · UBCBIKE.COM', palette: 'cyan_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
+    id: 'pro_since_1972',
+    name: 'Pro · Since 1972',
+    anim: 'pro',
+    slides: [
+      { layout: 'slam', badge: '', line1: 'SINCE', line2: '1972', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 4 },
+      { layout: 'slam', badge: '', line1: 'TAMPA', line2: 'BIKE SHOP', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'swap', badge: '', line1: '1220 E FLETCHER', line2: 'OPEN MON - SAT', foot: '', palette: 'blue_red_white', logo: 'none', icon: 'none', seconds: 5 },
+      { layout: 'brand', badge: '', line1: '', line2: '', foot: '(813) 971-2277 · UBCBIKE.COM', palette: 'blue_red_white', logo: 'ubc', icon: 'none', seconds: 5 },
+    ],
+  },
+  {
     id: 'brand_service',
     name: 'UBC Logo + Service Center',
     anim: 'motion_push',

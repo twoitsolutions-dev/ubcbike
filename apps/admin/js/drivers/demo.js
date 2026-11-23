@@ -596,6 +596,18 @@ export function createDemoDriver() {
       row.name = String(t.name || row.name).trim().slice(0, 60); row.slides = clone(t.slides || []); row.settings = clone(t.settings || {}); row.updatedAt = nowIso(); row.edited = true;
       audit('led_template.updated', null, null, { id, name: row.name }); save(); return clone(row);
     },
+    async applyLedSettings(input) {
+      can('catalog.write');
+      const ids = (input.ids || []).map(String);
+      if (!input.all && !ids.length) fail(400, 'NO_TEMPLATES', 'Choose at least one template');
+      let updated = 0;
+      (state.ledTemplates || []).forEach((t) => {
+        if (input.all || ids.indexOf(String(t.id)) >= 0) { t.settings = clone(input.settings || {}); updated++; }
+      });
+      audit('led_template.settings_applied', null, null, { all: !!input.all, ids, updated });
+      save();
+      return { updated };
+    },
     async deleteLedTemplate(id) {
       can('catalog.write');
       const before = (state.ledTemplates || []).length;

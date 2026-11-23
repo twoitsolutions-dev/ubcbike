@@ -1,7 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=90';
-import { ICONS, drawIcon, iconEntrance } from './led-icons.js?v=90';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=91';
+import { ICONS, drawIcon, iconEntrance } from './led-icons.js?v=91';
 
 // UBC street sign: 214 x 112 pixels, 15 fps, audio-free .AVI.
 const W = 214;
@@ -743,6 +743,8 @@ export async function renderLedSign(ctx) {
     loading: true,
     cur: { id: null, name: BUILTIN[0].name, slides: cloneSlides(BUILTIN[0].slides), settings: {} },
     guides: true,
+    fitScope: 'this',
+    fitPick: null,
     activeIdx: 0,
     dirty: false,
     confirmDelete: false,
@@ -834,7 +836,8 @@ export async function renderLedSign(ctx) {
   }
 
   function newTemplate() {
-    openTemplate({ id: null, name: 'New template', slides: blankSlides() });
+    const keep = Object.assign({}, st.cur.settings || {});
+    openTemplate({ id: null, name: 'New template', slides: blankSlides(), settings: keep });
     nameInput.focus();
     nameInput.select();
   }
@@ -1180,7 +1183,7 @@ export async function renderLedSign(ctx) {
     };
     mount(fitHost,
       h('div.row-between',
-        h('strong.small', 'Sign fit (margins, whole template)'),
+        h('strong.small', 'Sign fit (margins)'),
         h('label.small.muted.led-guides',
           h('input', { type: 'checkbox', checked: st.guides, onchange: (e) => { st.guides = e.target.checked; } }),
           ' Show guides')),
@@ -1194,7 +1197,73 @@ export async function renderLedSign(ctx) {
             h('button.btn.sm', { type: 'button', disabled: st.readOnly || val >= MAX_MARGIN, 'aria-label': label + ' margin plus', onclick: () => setVal(key, val + 1) }, '+'))))),
       st.readOnly ? null : h('div.led-tpl-row',
         h('button.btn.sm', { type: 'button', onclick: () => { st.cur.settings = { padL: 4, padR: 4, padT: 3, padB: 3 }; markDirty(); renderFit(); } }, 'Small margin all around'),
-        h('button.btn.sm', { type: 'button', disabled: !f.active, onclick: () => { st.cur.settings = {}; markDirty(); renderFit(); } }, 'Reset to 0')));
+        h('button.btn.sm', { type: 'button', disabled: !f.active, onclick: () => { st.cur.settings = {}; markDirty(); renderFit(); } }, 'Reset to 0')),
+      st.readOnly ? null : renderApplyScope(f));
+  }
+
+  // Where the margins go: this template (Save changes), all templates, or the chosen ones.
+  function renderApplyScope(f) {
+    const saved = st.list.filter((t) => t.id !== null && t.id !== undefined);
+    const scopeSel = h('select', {
+      onchange: (e) => {
+        st.fitScope = e.target.value;
+        if (st.fitScope === 'some' && !st.fitPick) st.fitPick = st.cur.id !== null ? [st.cur.id] : [];
+        renderFit();
+      },
+    },
+    h('option', { value: 'this', selected: st.fitScope === 'this' }, 'Only this template'),
+    h('option', { value: 'all', selected: st.fitScope === 'all' }, 'All templates (' + saved.length + ')'),
+    h('option', { value: 'some', selected: st.fitScope === 'some' }, 'Choose templates…'));
+
+    let body = null;
+    if (st.fitScope === 'this') {
+      body = h('span.small.muted', st.cur.id === null ? 'Saved with this template when you press "Create template".' : 'Saved with this template when you press "Save changes".');
+    } else if (st.fitScope === 'all') {
+      body = h('button.btn.sm.primary', { type: 'button', onclick: () => applyFit(true, []) },
+        'Apply ' + fitLabel(f) + ' to all ' + saved.length + ' templates');
+    } else {
+      const pick = st.fitPick || [];
+      body = h('div.stack-sm',
+        h('div.led-pick-list',
+          saved.map((t) => h('label.led-pick',
+            h('input', {
+              type: 'checkbox',
+              checked: pick.indexOf(t.id) >= 0,
+              onchange: (e) => {
+                const next = (st.fitPick || []).filter((x) => x !== t.id);
+                if (e.target.checked) next.push(t.id);
+                st.fitPick = next;
+                renderFit();
+              },
+            }),
+            ' ' + t.name))),
+        h('div.led-tpl-row',
+          h('button.btn.sm', { type: 'button', onclick: () => { st.fitPick = saved.map((t) => t.id); renderFit(); } }, 'Select all'),
+          h('button.btn.sm', { type: 'button', onclick: () => { st.fitPick = []; renderFit(); } }, 'Select none'),
+          h('button.btn.sm.primary', { type: 'button', disabled: !pick.length, onclick: () => applyFit(false, pick) },
+            'Apply ' + fitLabel(f) + ' to ' + pick.length + ' template' + (pick.length === 1 ? '' : 's'))));
+    }
+    return h('div.stack-sm.led-apply',
+      h('label.led-field', h('span.small.muted', 'Apply these margins to'), scopeSel),
+      body);
+  }
+
+  function fitLabel(f) {
+    return f.active ? 'T' + f.T + ' B' + f.B + ' L' + f.L + ' R' + f.R : 'no margins';
+  }
+
+  async function applyFit(all, ids) {
+    const settings = settingsPayload();
+    try {
+      const res = await ctx.api.applyLedSettings({ all, ids, settings });
+      st.list.forEach((t) => {
+        if (all || ids.indexOf(t.id) >= 0) t.settings = Object.assign({}, settings);
+      });
+      toast('Margins applied to ' + res.updated + ' template' + (res.updated === 1 ? '' : 's'), 'ok');
+      renderFit();
+    } catch (err) {
+      toast(err.message || 'Could not apply the margins', 'bad');
+    }
   }
 
   function renderAll() {

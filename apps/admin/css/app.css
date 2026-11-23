@@ -1613,3 +1613,28 @@ input.lss-inp.is-invalid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.led-apply {
+  padding-top: 6px;
+}
+.led-pick-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  max-height: 180px;
+  overflow: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.led-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .led-pick-list {
+    grid-template-columns: 1fr;
+  }
+}

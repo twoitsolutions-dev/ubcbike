@@ -1195,6 +1195,24 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     return ledRow(r.rows[0]);
   });
 
+  // Copy the sign-fit margins to all templates or to the chosen ones (slides are untouched,
+  // and updated_at is kept so UBC default templates still receive design refreshes).
+  app.post('/api/led-templates/apply-settings', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = z.object({
+      all: z.boolean().default(false),
+      ids: z.array(z.coerce.number().int().positive()).max(200).default([]),
+      settings: ledSettingsSchema,
+    }).parse(req.body);
+    if (!body.all && !body.ids.length) throw new HttpError(400, 'NO_TEMPLATES', 'Choose at least one template');
+    const s = req.session!;
+    const r = body.all
+      ? await ctx.pool.query(`UPDATE led_templates SET settings = $2 WHERE company_id = $1`, [s.companyId, JSON.stringify(body.settings)])
+      : await ctx.pool.query(`UPDATE led_templates SET settings = $2 WHERE company_id = $1 AND id = ANY($3::bigint[])`,
+        [s.companyId, JSON.stringify(body.settings), body.ids]);
+    await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'led_template.settings_applied', detail: { all: body.all, ids: body.ids, settings: body.settings, updated: r.rowCount } });
+    return { updated: r.rowCount ?? 0 };
+  });
+
   app.delete('/api/led-templates/:id', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
     const id = z.coerce.number().int().positive().parse((req.params as { id: string }).id);
     const s = req.session!;

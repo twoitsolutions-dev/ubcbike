@@ -2,8 +2,29 @@
   "sections": {
     "main": {
       "type": "ubc-ws-page",
-      "settings": { "page_kind": "about" }
+      "settings": {
+        "page_kind": "about",
+        "about_part": "top"
+      }
+    },
+    "meet_the_team": {
+      "type": "fable-family-story",
+      "settings": {
+        "is_standalone_page": false,
+        "is_about_embed": true
+      }
+    },
+    "about_details": {
+      "type": "ubc-ws-page",
+      "settings": {
+        "page_kind": "about",
+        "about_part": "bottom"
+      }
     }
   },
-  "order": ["main"]
+  "order": [
+    "main",
+    "meet_the_team",
+    "about_details"
+  ]
 }

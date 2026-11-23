@@ -2291,7 +2291,7 @@
     'Instant Decision': 'Decisión al Instante',
     'Buy Now, Pay Later': 'Paga Después',
     'All Credit Welcome': 'Todo Crédito Bienvenido',
-    'Ideal for bikes, electric scooters, accessories or major workshop builds — apply online in minutes with instant approval decisions.': 'Ideal para bicis, scooters eléctricos, accesorios o trabajos de taller — solicita en minutos con respuesta inmediata.',
+    'Ideal for bikes, electric scooters, accessories or major service center builds — apply online in minutes with instant approval decisions.': 'Ideal para bicis, scooters eléctricos, accesorios o trabajos de taller — solicita en minutos con respuesta inmediata.',
     'Apply Online at Snap': 'Aplicar en Línea con Snap',
     'Instant Credit': 'Crédito Inmediato',
     'Bike Trade-In': 'Trade-In de Bicicletas',
@@ -2310,7 +2310,7 @@
     'AXS, Di2, suspension & tubeless builds.': 'AXS, Di2, suspensión y tubeless.',
     'Tough & Custom Fixes': 'Retos y Restauración',
     'Hand-built wheels & vintage restorations.': 'Ruedas a mano y restauraciones clásicas.',
-    'Tampa Pro Workshop · Since 1972': 'Taller Pro en Tampa · Desde 1972',
+    'Tampa Service Center · Since 1972': 'Taller Pro en Tampa · Desde 1972',
     '13–28+ Yrs Techs': 'Técnicos 13–28+ Años',
     'Maps & Trails': 'Mapas y Senderos',
     'TAMPA BAY RIDE GUIDE / LIVE GPS & PRINTABLE MAPS / SINCE 1972': 'GUÍA DE TAMPA BAY / MAPAS GPS Y DESCARGABLES / DESDE 1972',
@@ -2367,7 +2367,7 @@
     'Lock In Black Friday Pricing. Pick Up Christmas Eve.': 'Asegura Precio Black Friday. Retira en Nochebuena.',
     'Shop Black Friday 2026 Bikes →': 'Ver Bicis Black Friday 2026 →',
     'Ask About Hold': 'Consultar Apartado',
-    'Workshop Bonus & Rider Gifts': 'Bono de Taller y Regalos Ciclistas',
+    'Service Center Bonus & Rider Gifts': 'Bono de Taller y Regalos Ciclistas',
     '$25 Off Overhauls & Up to 60% Off Gifts': '$25 Off en Overhauls y Hasta 60% Off en Regalos',
     'Text the Shop (Ikeono)': 'Escribir a la Tienda (Ikeono)',
     'Authorized Dealer': 'Distribuidor Autorizado',
@@ -2388,7 +2388,7 @@
     'Ready-to-wrap rider gifts in stock at UBC Tampa': 'Regalos ciclistas listos para envolver en UBC Tampa',
     'SRAM AXS, Troy Lee Designs, Supacaz & tires': 'SRAM AXS, Troy Lee Designs, Supacaz y llantas',
     "Reserve any in-stock Black Friday 2026 bike or e-bike today at Black Friday markdowns up to $3,500 off. Manny & Ashton's mechanics assemble, safety-check, and store it hidden in our Tampa warehouse until you're ready.": 'Reserva hoy cualquier bici o e-bike Black Friday 2026 en stock con descuentos de hasta $3,500. Los mecánicos de Manny y Ashton la arman, revisan y guardan en nuestra bodega de Tampa hasta que estés listo.',
-    'Pair 40%–60% off MIPS helmets, Sidi/Shimano shoes, and Troy Lee apparel with our Black Friday Workshop Bonus: $25 off Level 3 Overhauls, free drivetrain wash on Level 2, plus Alafia Trailhead Rental Passes.': 'Combina 40%–60% de descuento en cascos MIPS, zapatos Sidi/Shimano y ropa Troy Lee con nuestro Bono de Taller Black Friday: $25 de descuento en Overhaul Nivel 3, lavado de transmisión gratis en Nivel 2 y pases de renta en Alafia.',
+    'Pair 40%–60% off MIPS helmets, Sidi/Shimano shoes, and Troy Lee apparel with our Black Friday Service Center Bonus: $25 off Level 3 Overhauls, free drivetrain wash on Level 2, plus Alafia Trailhead Rental Passes.': 'Combina 40%–60% de descuento en cascos MIPS, zapatos Sidi/Shimano y ropa Troy Lee con nuestro Bono de Taller Black Friday: $25 de descuento en Overhaul Nivel 3, lavado de transmisión gratis en Nivel 2 y pases de renta en Alafia.',
     'Find an identical in-stock bike or gear item for less at an authorized dealer and we beat the difference by 10%.': 'Si encuentras una bici o accesorio idéntico en stock a menor precio en un distribuidor autorizado, mejoramos la diferencia en un 10%.',
     'Split your Black Friday bike or e-bike purchase into easy monthly payments with promotional 0% APR options.': 'Divide tu compra de bici o e-bike Black Friday en cómodos pagos mensuales con opciones promocionales 0% APR.',
     'Every bike bought at UBC Tampa is built by certified mechanics and includes free lifetime adjustments for the original owner.': 'Cada bici comprada en UBC Tampa es armada por mecánicos certificados e incluye ajustes gratis de por vida para el dueño original.',
@@ -2599,7 +2599,7 @@
       name: 'Classic',
       dot: '#CCBB8D',
       heroSlide: 0,
-      topEn: '<b>Free shipping $50+</b> &middot; Walk-in repair workshop open all day in Tampa',
+      topEn: '<b>Free shipping $50+</b> &middot; Walk-in service center open all day in Tampa',
       topEs: '<b>Envío gratis $50+</b> &middot; Taller sin cita abierto todo el día en Tampa',
       navEn: 'Deals & New',
       navEs: 'Promos y Nuevo',
@@ -2640,7 +2640,7 @@
       promos: [
         { pill: ['Up to $500 OFF', 'Hasta $500 Off'], kicker: ['Bikes & E-Bikes', 'Bicis y E-Bikes'], h3: ['In-Stock Turbo, Carbon & MTB Deals', 'Doorbusters en Ruta, Trail y Turbo'], p: ['Direct showroom markdowns + 0% APR financing & pro assembly.', 'Descuentos directos en piso + financiamiento 0% APR y armado pro.'], cta: ['See Bike Deals', 'Ver Bicis en Oferta'] },
         { pill: ['20% – 30% OFF', '20% – 30% Off'], kicker: ['Gear, Tires & Parts', 'Cascos, Llantas y Piezas'], h3: ['MIPS Helmets, GP5000 & Pro Saddles', 'Cascos MIPS, GP5000 y Accesorios'], p: ['Black Friday pricing on 5-star helmets, lights, fuel & OEM parts.', 'Precios Black Friday en cascos 5 estrellas, luces y nutrición.'], cta: ['Filter BF Deals', 'Filtrar Ofertas'] },
-        { pill: ['$25 Workshop Bonus', 'Bono de Taller'], kicker: ['Walk-In Service', 'Sin Cita · Tampa'], h3: ['Free Drivetrain Wash or $25 Off Overhaul', 'Lavado Pro Gratis o $25 Off Overhaul'], p: ['Drop off any bike, scooter or e-bike this week — no appointment needed.', 'Trae tu bici, scooter o e-bike sin cita esta semana al taller.'], cta: ['Visit Workshop', 'Ir al Taller'] }
+        { pill: ['$25 Service Bonus', 'Bono de Taller'], kicker: ['Walk-In Service', 'Sin Cita · Tampa'], h3: ['Free Drivetrain Wash or $25 Off Overhaul', 'Lavado Pro Gratis o $25 Off Overhaul'], p: ['Drop off any bike, scooter or e-bike this week — no appointment needed.', 'Trae tu bici, scooter o e-bike sin cita esta semana al taller.'], cta: ['Service Center', 'Ir al Taller'] }
       ]
     },
     christmas: {
@@ -2712,7 +2712,7 @@
       promos: [
         { pill: ['Spring Sale', 'Oferta Primavera'], kicker: ['Road, Gravel & E-Bike', 'Ruta, Gravel y E-Bike'], h3: ['Specialized & Surly Spring Markdowns', 'Descuentos de Primavera en Piso'], p: ['Assembled carbon road, gravel & commuter e-bikes ready to roll today.', 'Bicis de carbono, gravel y e-bikes armadas listas para rodar hoy.'], cta: ['Browse Spring Bikes', 'Ver Bicis'] },
         { pill: ['Alafia Peak Season', 'Temporada Alafia'], kicker: ['Trailhead Rentals', 'Alquiler en Parque'], h3: ['Full-Suspension MTB & E-MTB Rentals', 'Alquiler de MTB y E-MTB en Alafia'], p: ['Best trail weather of the year — pick up right inside Alafia State Park.', 'El mejor clima del año en senderos directo desde nuestra sede Alafia.'], cta: ['Explore Alafia', 'Ver Alafia'] },
-        { pill: ['Spring Tune-Up', 'Puesta a Punto'], kicker: ['Walk-In Workshop', 'Sin Cita · Tampa'], h3: ['Pre-Summer Drivetrain & Brake Tune-Up', 'Mantenimiento Completo de Primavera'], p: ['Get your bike dialed by Manny & Ashton — walk right in, all brands welcome.', 'Deja tu bici impecable sin cita previa en nuestro taller de Tampa.'], cta: ['See Tune-Ups', 'Ver Taller'] }
+        { pill: ['Spring Tune-Up', 'Puesta a Punto'], kicker: ['Walk-In Service Center', 'Sin Cita · Tampa'], h3: ['Pre-Summer Drivetrain & Brake Tune-Up', 'Mantenimiento Completo de Primavera'], p: ['Get your bike dialed by Manny & Ashton — walk right in, all brands welcome.', 'Deja tu bici impecable sin cita previa en nuestro taller de Tampa.'], cta: ['See Tune-Ups', 'Ver Taller'] }
       ]
     },
     campus: {
@@ -2736,7 +2736,7 @@
       promos: [
         { pill: ['USF Student Perks', 'Descuento USF'], kicker: ['Valid Student ID', 'Con Carnet Estudiantil'], h3: ['Student Discount on Gear, Parts & Service', 'Descuento Estudiantil en Equipo y Taller'], p: ['Show your valid USF or student ID on E Fletcher Ave for instant savings on helmets, U-locks, lights & tune-ups.', 'Presenta tu carnet de USF o estudiante en Fletcher Ave para ahorrar en cascos, candados, luces y taller.'], cta: ['Shop Commuter Gear', 'Ver Equipo'] },
         { pill: ['USF Commuters', 'Movilidad USF'], kicker: ['E-Bikes & Scooters', 'E-Bikes y Scooters'], h3: ['Class-to-Dorm E-Bikes & Hybrids Ready Today', 'E-Bikes, Scooters e Híbridas en Stock'], p: ['Skip campus parking permits — test ride right down E Fletcher Ave.', 'Olvídate de permisos de parqueo — pruébalas hoy en Fletcher Ave.'], cta: ['Find Campus Ride', 'Elegir Bici'] },
-        { pill: ['Same-Day Flat Fix', 'Pinchazos Hoy'], kicker: ['5 Min From USF', 'A 5 Min de USF'], h3: ['Walk-In Flat Tire & E-Scooter Repair All Day', 'Reparación Sin Cita de Bicis y Scooters'], p: ['Caught a flat before lecture? Walk right in — we service bikes & e-scooters.', '¿Pinchazo antes de clase? Pasa sin cita — reparamos bicis y scooters.'], cta: ['Workshop Info', 'Ver Taller'] }
+        { pill: ['Same-Day Flat Fix', 'Pinchazos Hoy'], kicker: ['5 Min From USF', 'A 5 Min de USF'], h3: ['Walk-In Flat Tire & E-Scooter Repair All Day', 'Reparación Sin Cita de Bicis y Scooters'], p: ['Caught a flat before lecture? Walk right in — we service bikes & e-scooters.', '¿Pinchazo antes de clase? Pasa sin cita — reparamos bicis y scooters.'], cta: ['Service Info', 'Ver Taller'] }
       ]
     },
     veterans: {
@@ -2760,7 +2760,7 @@
       promos: [
         { pill: ['U.S. Veterans', 'Veteranos EE.UU.'], kicker: ['Founded by Manny · 1972', 'Fundada por Manny'], h3: ['Military & Veteran In-Store Appreciation', 'Descuento Permanente a Veteranos y Militares'], p: ['As a Veteran-founded Tampa shop since 1972, Manny & our family proudly honor all U.S. Veterans & active-duty service members.', 'Como tienda fundada en 1972 por Manny (Veterano), honramos a todos los veteranos y militares activos con descuento en tienda.'], cta: ['Browse Bikes', 'Ver Bicis'] },
         { pill: ['Police & Officers', 'Policías'], kicker: ['Law Enforcement', 'Fuerzas del Orden'], h3: ['Everyday Police & Law Enforcement Discounts', 'Descuento Permanente a Policías en Tienda'], p: ['Special everyday in-store savings on gear, helmets, parts, accessories & priority walk-in repair bay service in Tampa.', 'Descuentos permanentes en tienda sobre cascos, accesorios, repuestos y atención prioritaria sin cita en nuestro taller.'], cta: ['Shop Pro-Shop', 'Ver Tienda'] },
-        { pill: ['Walk-In Workshop', 'Taller Sin Cita'], kicker: ['Tampa & Alafia', 'Todas las Marcas'], h3: ['Assembled Floor Bikes & Same-Day Tune-Ups', 'Bicis Armadas Hoy y Taller Sin Cita'], p: ['Built and torque-checked by senior Tampa mechanics — backed by full factory warranty & 0% APR financing.', 'Armadas y ajustadas por mecánicos expertos en Tampa con garantía oficial de fábrica y financiamiento 0% APR.'], cta: ['Visit Workshop', 'Ver Taller'] }
+        { pill: ['Walk-In Service Center', 'Taller Sin Cita'], kicker: ['Tampa & Alafia', 'Todas las Marcas'], h3: ['Assembled Floor Bikes & Same-Day Tune-Ups', 'Bicis Armadas Hoy y Taller Sin Cita'], p: ['Built and torque-checked by senior Tampa mechanics — backed by full factory warranty & 0% APR financing.', 'Armadas y ajustadas por mecánicos expertos en Tampa con garantía oficial de fábrica y financiamiento 0% APR.'], cta: ['Service Center', 'Ver Taller'] }
       ]
     }
   };

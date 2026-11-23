@@ -188,16 +188,16 @@
           {%- if ws_photo != blank -%}
             {{ ws_photo | image_url: width: 1100 | image_tag: alt: 'University Bicycle Center Tampa mechanic truing a bicycle wheel', loading: 'lazy' }}
           {%- else -%}
-            <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="University Bicycle Center Workshop" loading="lazy" width="1200" height="800">
+            <img src="{{ 'alafia-mtb-action.jpg' | asset_url }}" alt="University Bicycle Center Service Center" loading="lazy" width="1200" height="800">
           {%- endif -%}
           <div class="ubc-wsp-photo-bar">
-            <span class="ubc-wsp-pill">Tampa Pro Workshop &middot; Since 1972</span>
+            <span class="ubc-wsp-pill">Tampa Service Center &middot; Since 1972</span>
             <span class="ubc-wsp-pill ubc-wsp-pill--gold">13&ndash;28+ Yrs Techs</span>
           </div>
         </div>
       </div>
 
-      {%- comment -%} Compact Tune-Up Pricing + Collapsible Checklist + Direct Ikeono SMS Workshop Action {%- endcomment -%}
+      {%- comment -%} Compact Tune-Up Pricing + Collapsible Checklist + Direct Ikeono SMS Service Center Action {%- endcomment -%}
       <div class="ws-bar reveal">
         <div class="ws-tiers">
           <div class="ws-tier">
@@ -243,11 +243,11 @@
             <button
               type="button"
               class="fb-btn coral sm"
-              data-ws-ikeono="Hi UBC Workshop! I have a repair / tune-up question (bike / scooter / e-bike):"
+              data-ws-ikeono="Hi UBC Service Center! I have a repair / tune-up question (bike / scooter / e-bike):"
               data-ws-ikeono-es="Hola Taller UBC, tengo una consulta de reparación o tune-up (bici / scooter / e-bike):"
             >
               <svg aria-hidden="true"><use href="#i-chat"/></svg>
-              <span data-es="Enviar Texto / Foto al Taller">Text the Workshop (Ikeono)</span>
+              <span data-es="Enviar Texto / Foto al Taller">Text Service Center (Ikeono)</span>
             </button>
             <a class="fb-btn outline sm" href="tel:{{ ws_tel }}">
               <svg aria-hidden="true"><use href="#i-phone"/></svg>
@@ -262,18 +262,18 @@
 
 {% schema %}
 {
-  "name": "UBC Walk-In Workshop",
+  "name": "UBC Service Center",
   "settings": [
     {
       "type": "text",
       "id": "live_status",
-      "label": "Workshop status badge",
+      "label": "Service Center status badge",
       "default": "Walk-In All Day · No Appointment · ~24h Standard Turnaround"
     },
     {
       "type": "text",
       "id": "phone",
-      "label": "Workshop phone number",
+      "label": "Service Center phone number",
       "default": "(813) 971-2277"
     },
     {
@@ -297,7 +297,7 @@
   ],
   "presets": [
     {
-      "name": "UBC Walk-In Workshop"
+      "name": "UBC Service Center"
     }
   ]
 }

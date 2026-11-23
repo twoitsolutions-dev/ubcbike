@@ -235,7 +235,7 @@
               </div>
               <div>
                 {%- if pkg.footnote.value != blank -%}<p class="ubc-ws-note">{{ pkg.footnote.value }}</p>{%- endif -%}
-                <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule {{ pkg.name.value | escape }}." data-es="Contáctanos">Contact Us</button>
+                <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Service Center! I'd like to schedule {{ pkg.name.value | escape }}." data-es="Contáctanos">Contact Us</button>
               </div>
             </article>
           {%- endfor -%}
@@ -264,7 +264,7 @@
             </div>
             <div>
               <p class="ubc-ws-note">Additional parts not included</p>
-              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule a Level 1 Tune-Up." data-es="Contáctanos">Contact Us</button>
+              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Service Center! I'd like to schedule a Level 1 Tune-Up." data-es="Contáctanos">Contact Us</button>
             </div>
           </article>
           {%- endif -%}
@@ -285,7 +285,7 @@
             </div>
             <div>
               <p class="ubc-ws-note">Additional parts not included</p>
-              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule a Level 2 Tune-Up." data-es="Contáctanos">Contact Us</button>
+              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Service Center! I'd like to schedule a Level 2 Tune-Up." data-es="Contáctanos">Contact Us</button>
             </div>
           </article>
           {%- endif -%}
@@ -307,7 +307,7 @@
             </div>
             <div>
               <p class="ubc-ws-note">Additional parts not included</p>
-              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Workshop! I'd like to schedule a Complete Overhaul." data-es="Contáctanos">Contact Us</button>
+              <button type="button" class="ubc-ws-btn" data-ws-ikeono="Hi UBC Service Center! I'd like to schedule a Complete Overhaul." data-es="Contáctanos">Contact Us</button>
             </div>
           </article>
           {%- endif -%}
@@ -385,7 +385,7 @@
           <p class="ubc-ws-lead" data-es="Visita cualquiera de nuestras dos tiendas en Tampa Bay para bicis nuevas, taller profesional, rentas y asesoría local de senderos.">Visit either of our two Tampa Bay locations for new bikes, professional walk-in repairs, trailhead rentals, and expert local riding advice.</p>
           <div class="ubc-ws-pills">
             <span class="ubc-ws-pill" data-es="2 Tiendas en Tampa Bay">2 Tampa Bay Locations</span>
-            <span class="ubc-ws-pill" data-es="Taller Sin Cita · Tampa">Walk-In Workshop · Tampa</span>
+            <span class="ubc-ws-pill" data-es="Taller Sin Cita · Tampa">Walk-In Service Center · Tampa</span>
             <span class="ubc-ws-pill" data-es="Rentas en Senderos · Alafia">Trailhead Rentals · Alafia</span>
           </div>
         </div>
@@ -460,7 +460,7 @@
           <article class="ubc-ws-card ubc-ws-card--location">
             <div class="ubc-ws-loc-body">
               <div class="ubc-ws-loc-top">
-                <span class="ubc-ws-kicker" data-es="Tienda Principal y Taller">Main Store &amp; Workshop</span>
+                <span class="ubc-ws-kicker" data-es="Tienda Principal y Taller">Main Store &amp; Service Center</span>
                 <span class="ubc-ws-badge" data-es="A 5 min de USF">5 min from USF</span>
               </div>
               <h2 class="ubc-ws-h2">University Bicycle Center</h2>
@@ -486,7 +486,7 @@
 
               <ul class="ubc-ws-list">
                 <li data-es="Salón completo de bicis, e-bikes, cascos y accesorios">Full showroom of bikes, e-bikes, helmets &amp; gear</li>
-                <li data-es="Taller profesional sin cita para todas las marcas">Walk-in repair workshop servicing all brands</li>
+                <li data-es="Taller profesional sin cita para todas las marcas">Walk-in Service Center servicing all brands</li>
               </ul>
             </div>
             <div class="ubc-ws-actions">
@@ -612,12 +612,12 @@
             </div>
 
             <article class="ubc-ws-card ubc-ws-card--dark">
-              <span class="ubc-ws-kicker" data-es="Taller Sin Cita">Walk-In Workshop</span>
+              <span class="ubc-ws-kicker" data-es="Taller Sin Cita">Walk-In Service Center</span>
               <h3 data-es="¿Necesitas servicio hoy?">Need Bike Service Today?</h3>
               <p class="ubc-ws-note" data-es="Pasa sin cita en Tampa para pinchazos, ajustes de frenos/cambios o tune-up completo.">Walk right in during business hours for flat fixes, brake/gear adjustments, or full tune-ups — most repairs completed within 24 hours.</p>
               <div class="ubc-ws-actions">
                 <a class="ubc-ws-btn ubc-ws-btn--light" href="/pages/bike-service-repair" data-es="Ver Servicio y Precios">Service &amp; Pricing</a>
-                <button type="button" class="ubc-ws-btn ubc-ws-btn--light" data-ws-ikeono="Hi UBC Workshop! I need bike service." data-es="Envíanos un Texto">Text Us</button>
+                <button type="button" class="ubc-ws-btn ubc-ws-btn--light" data-ws-ikeono="Hi UBC Service Center! I need bike service." data-es="Envíanos un Texto">Text Us</button>
               </div>
             </article>
 
@@ -678,6 +678,7 @@
 
     {%- when 'about' -%}
       {%- liquid
+        assign about_part = section.settings.about_part | default: 'full'
         assign abt_down = page.content | downcase
         assign show_warranty = true
         assign show_price_match = true
@@ -694,6 +695,7 @@
           endunless
         endif
       -%}
+      {%- if about_part != 'bottom' -%}
       {%- assign hero_img = images['ubc-difference-storefront.jpg'] -%}
       <section class="ubc-ws-hero{% unless hero_img %} ubc-ws-hero--text-only{% endunless %}">
         <div>
@@ -707,7 +709,8 @@
             <span class="ubc-ws-pill" data-es="Ajustes Gratis de por Vida">Complimentary Adjustments</span>
           </div>
           <div class="ubc-ws-actions">
-            <a class="ubc-ws-btn" href="/collections/bikes" data-es="Ver Bicicletas">Shop Bikes</a>
+            <a class="ubc-ws-btn" href="#family" data-es="Conoce al Equipo">Meet the Team</a>
+            <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/collections/bikes" data-es="Ver Bicicletas">Shop Bikes</a>
             <a class="ubc-ws-btn ubc-ws-btn--ghost" href="/pages/why-shop-at-ubc" data-es="5 Razones UBC">5 Reasons to Buy at UBC</a>
           </div>
         </div>
@@ -764,12 +767,14 @@
             <div style="padding:20px 22px 22px;display:flex;flex-direction:column;gap:6px;">
               <span class="ubc-ws-kicker" style="margin:0;color:#E04F33;" data-es="Hoy · Tampa y Alafia">Today &middot; Tampa &amp; Alafia</span>
               <h3 style="margin:0;" data-es="Showroom Pro y Parque Alafia">Pro Showroom &amp; Alafia Park</h3>
-              <p class="ubc-ws-note" style="margin:0;" data-es="Hoy seguimos en 1220 E Fletcher Ave con más de 20,000 artículos, taller experto sin cita y nuestra tienda de rentas dentro de Alafia River State Park.">Today we serve riders at 1220 E Fletcher Ave with 20,000+ items, a walk-in pro workshop, and our trailhead rental shop inside Alafia River State Park.</p>
+              <p class="ubc-ws-note" style="margin:0;" data-es="Hoy seguimos en 1220 E Fletcher Ave con más de 20,000 artículos, taller experto sin cita y nuestra tienda de rentas dentro de Alafia River State Park.">Today we serve riders at 1220 E Fletcher Ave with 20,000+ items, a walk-in Service Center, and our trailhead rental shop inside Alafia River State Park.</p>
             </div>
           </article>
         </div>
       </section>
+      {%- endif -%}
 
+      {%- if about_part != 'top' -%}
       {%- if page.content != blank -%}
       <section class="ubc-ws-section ubc-diff-wrap">
         <style>
@@ -848,7 +853,7 @@
           {%- if show_warranty -%}
           <article class="ubc-ws-card">
             <span class="ubc-ws-kicker" data-es="Qué Incluye Cada Inspección">What Each Inspection Covers</span>
-            <h3 data-es="Lista Completa de Taller">Workshop Inspection Checklist</h3>
+            <h3 data-es="Lista Completa de Taller">Service Center Inspection Checklist</h3>
             <ul class="ubc-ws-list">
               <li data-es="Ajuste de manijas de freno, calipers, rotores y cambios">Brake lever, caliper, rotor &amp; shifting adjustments</li>
               <li data-es="Torques de bielas, platos, pedales, potencia y manubrio">Crank-arm, chainring, pedal, stem &amp; handlebar torque checks</li>
@@ -877,6 +882,7 @@
           {%- endif -%}
         </div>
       </section>
+      {%- endif -%}
       {%- endif -%}
       {%- endif -%}
 
@@ -1329,6 +1335,17 @@
         { "value": "reasons", "label": "Why Shop At UBC (5 Reasons)" },
         { "value": "financing", "label": "Financing" },
         { "value": "guide", "label": "Buyer's Guide" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "about_part",
+      "label": "About Us Section Slice",
+      "default": "full",
+      "options": [
+        { "value": "full", "label": "Full About Us page" },
+        { "value": "top", "label": "Top only (Hero + 1972-Today Timeline)" },
+        { "value": "bottom", "label": "Bottom only (Commitments, Warranty & Safety)" }
       ]
     },
     {

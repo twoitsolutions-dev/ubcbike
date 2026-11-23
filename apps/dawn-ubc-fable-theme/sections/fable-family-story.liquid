@@ -8,6 +8,7 @@
 {%- endcomment -%}
 {%- liquid
   assign is_page = section.settings.is_standalone_page
+  assign is_about = section.settings.is_about_embed
   assign story_url = '/pages/our-story'
   if pages['our-story'] != blank
     assign story_url = pages['our-story'].url
@@ -27,10 +28,14 @@
 
       <div class="fb-sec-head split">
         <div>
-          <span class="eyebrow reveal" data-es="3 Generaciones + Equipo UBC &middot; Desde 1972">3 Generations + The UBC Crew &middot; Since 1972</span>
-          {%- if is_page -%}
+          {%- if is_about -%}
+            <span class="eyebrow reveal" data-es="Conoce al Equipo &middot; 3 Generaciones Desde 1972">Meet the Team &middot; 3 Generations Since 1972</span>
+            <h2 class="h2 reveal" data-es="Conoce al equipo. <em>Tres generaciones y una familia ciclista.</em>">Meet the Team. <em>Three generations &amp; one crew.</em></h2>
+          {%- elsif is_page -%}
+            <span class="eyebrow reveal" data-es="3 Generaciones + Equipo UBC &middot; Desde 1972">3 Generations + The UBC Crew &middot; Since 1972</span>
             <h1 class="h2 reveal" data-es="La familia y el equipo <em>detrás del mostrador.</em>">The family &amp; crew <em>behind the counter.</em></h1>
           {%- else -%}
+            <span class="eyebrow reveal" data-es="3 Generaciones + Equipo UBC &middot; Desde 1972">3 Generations + The UBC Crew &middot; Since 1972</span>
             <h2 class="h2 reveal" data-es="Conoce el alma de UBC. <em>Tres generaciones y un gran equipo.</em>">Meet the heart of UBC. <em>Three generations &amp; one crew.</em></h2>
           {%- endif -%}
         </div>
@@ -139,7 +144,7 @@
             data-ubc-acct="@ubcbike.tampa"
             data-ubc-title="Meet Manny · 47 ½ Years Building UBC"
             data-ubc-title-es="Conoce a Manny · 47 ½ Años Construyendo UBC"
-            data-ubc-caption="Manny is the owner and soul of UBC — nearly 5 decades of cycling wisdom, still hands-on in the workshop every day."
+            data-ubc-caption="Manny is the owner and soul of UBC — nearly 5 decades of cycling wisdom, still hands-on in the service center every day."
             data-ubc-caption-es="Manny es el fundador y corazón de UBC: casi 5 décadas de historias y conocimiento mecánico al frente del taller."
           >
             {%- if section.settings.manny_photo != blank -%}
@@ -151,7 +156,7 @@
                 width="540"
                 height="958"
                 loading="lazy"
-                alt="Manny building a wheel in the UBC Tampa repair workshop alongside grandson Ashton"
+                alt="Manny building a wheel in the UBC Tampa Service Center alongside grandson Ashton"
                 style="object-position: 50% 34%;"
               >
             {%- endif -%}
@@ -171,11 +176,11 @@
           <div class="fam-body">
             <div class="fam-badges">
               <span class="fam-badge fam-badge--gold" data-es="1ra Generación &middot; Fundador">1st Generation &middot; Founder</span>
-              <span class="fam-badge" data-es="Jefe del Taller en Tampa">Head of Repair Workshop</span>
+              <span class="fam-badge" data-es="Jefe del Taller en Tampa">Head of Service Center</span>
             </div>
             <h3 data-es="Manny &mdash; El alma de UBC y maestro del taller">Manny &mdash; Founder, Master Mechanic &amp; Soul of UBC</h3>
             <p data-es="Con casi cinco décadas construyendo UBC, nadie conoce más sobre reparación de bicicletas y el oficio ciclista que Manny. Hoy sigue exactamente donde más disfruta estar: al frente del taller, resolviendo desde ajustes diarios hasta retos mecánicos que nadie más logra reparar.">
-              With 47 &frac12;+ years building University Bicycle Center, nobody knows bicycle mechanics or the cycling craft better than Manny. Today he remains right where he loves to be — leading the repair workshop hands-on every day and solving challenges other shops turn away.
+              With 47 &frac12;+ years building University Bicycle Center, nobody knows bicycle mechanics or the cycling craft better than Manny. Today he remains right where he loves to be — leading the Service Center hands-on every day and solving challenges other shops turn away.
             </p>
             <div class="fam-reel-row">
               <button
@@ -290,7 +295,7 @@
                 width="540"
                 height="959"
                 loading="lazy"
-                alt="Ashton — Grandson and Lead MTB & Road Mechanic in the UBC workshop"
+                alt="Ashton — Grandson and Lead MTB & Road Mechanic in the UBC Service Center"
                 style="object-position: 50% 24%;"
               >
             {%- endif -%}
@@ -533,7 +538,7 @@
               <span>3rd Gen + Crew</span>
               <h3 data-es="Ashton, Alec y un equipo de expertos">Ashton, Alec &amp; Seasoned Crew</h3>
               <p data-es="La tercera generación lidera hoy el taller de precisión y las ventas, hombro a hombro con mecánicos y asesores de larga trayectoria.">
-                Grandsons Ashton and Alec lead modern workshop precision and rider sales alongside veteran mechanics and trailhead staff.
+                Grandsons Ashton and Alec lead modern Service Center precision and rider sales alongside veteran mechanics and trailhead staff.
               </p>
             </article>
           </div>
@@ -591,7 +596,7 @@
                 <span class="fam-rc-top"><span>05 &middot; @ubcbike.tampa</span><span class="fam-rc-play"><svg><use href="#i-play"/></svg></span></span>
                 <span class="fam-rc-bot">
                   <strong data-es="Manny presenta el área de servicio">Manny Presents the Service Bay</strong>
-                  <small data-es="Taller sin cita todo el día">All-Day Walk-In Workshop</small>
+                  <small data-es="Taller sin cita todo el día">All-Day Walk-In Service Center</small>
                 </span>
               </button>
 
@@ -637,6 +642,12 @@
       "type": "checkbox",
       "id": "is_standalone_page",
       "label": "Render full Our Story page layout + 8-Reel gallery",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "is_about_embed",
+      "label": "Use 'Meet the Team' heading (for About Us page)",
       "default": false
     },
     {

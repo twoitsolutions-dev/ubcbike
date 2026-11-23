@@ -1,6 +1,6 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=84';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=85';
 
 // UBC street sign: 214 x 112 pixels, 15 fps, audio-free .AVI.
 const W = 214;
@@ -327,11 +327,18 @@ export async function renderLedSign(ctx) {
     fontReady = ff.load().then((f) => { document.fonts.add(f); }).catch(() => {});
   }
 
+  const blankSlides = () => [S('slam', 'NEW', 'MESSAGE', 'blue_red_white', 5), S('brand', '', '', 'blue_red_white', 5, TAMPA)];
+
+  // st.cur = the template open in the editor. id === null means "not saved yet".
   const st = {
-    slides: cloneSlides(BUILTIN[0].slides),
+    list: [],
+    readOnly: false,
+    loading: true,
+    cur: { id: null, name: BUILTIN[0].name, slides: cloneSlides(BUILTIN[0].slides) },
     activeIdx: 0,
-    source: { kind: 'builtin', id: BUILTIN[0].id, name: BUILTIN[0].name },
-    custom: [],
+    dirty: false,
+    confirmDelete: false,
+    confirmSwitch: null,
     codec: 'mjpeg',
     exporting: false,
   };
@@ -345,14 +352,20 @@ export async function renderLedSign(ctx) {
   const ctx1 = canvas1x.getContext('2d');
   const ctx2 = canvas2x.getContext('2d');
 
-  const builtinHost = h('div.led-tpl-row');
-  const customHost = h('div.led-tpl-row');
-  const saveHost = h('div.led-tpl-row');
+  const listHost = h('div.led-tpl-row');
+  const listActions = h('div.led-tpl-row');
+  const tplBar = h('div.stack-sm');
   const slidesHost = h('div.led-slide-tabs');
   const editorHost = h('div.stack-sm');
   const exportBtn = h('button.btn.primary', { type: 'button' }, 'Download .AVI');
   const exportStatus = h('span.small.muted', '');
-  const nameInput = h('input.led-name', { type: 'text', maxlength: '60', placeholder: 'Template name, e.g. Christmas Sale' });
+  const stateLabel = h('span.small');
+  const nameInput = h('input.led-name', {
+    type: 'text',
+    maxlength: '60',
+    placeholder: 'Template name',
+    oninput: (e) => { st.cur.name = e.target.value; markDirty(); },
+  });
 
   let rafId = null;
   let startTs = performance.now();
@@ -363,66 +376,52 @@ export async function renderLedSign(ctx) {
       if (rafId) window.cancelAnimationFrame(rafId);
       return;
     }
-    drawFrame(ctx1, st.slides, (now - startTs) / 1000, assets);
+    drawFrame(ctx1, st.cur.slides, (now - startTs) / 1000, assets);
     ctx2.drawImage(canvas1x, 0, 0);
     rafId = window.requestAnimationFrame(drawPreviewLoop);
   }
 
   function updateStatus() {
-    exportStatus.textContent = st.slides.length + ' slides · ' + totalSeconds(st.slides) + ' s loop · ' + W + '×' + H + ' · ' + FPS + ' fps · no audio';
+    const sl = st.cur.slides;
+    exportStatus.textContent = sl.length + ' slides · ' + totalSeconds(sl) + ' s loop · ' + W + '×' + H + ' · ' + FPS + ' fps · no audio';
   }
 
-  function loadTemplate(kind, tpl) {
-    st.slides = cloneSlides(tpl.slides);
+  function updateStateLabel() {
+    let text = '✓ Saved';
+    if (st.readOnly) text = 'View only: your role cannot save templates.';
+    else if (st.cur.id === null) text = '● New template, not saved yet';
+    else if (st.dirty) text = '● Unsaved changes';
+    stateLabel.textContent = text;
+    stateLabel.className = 'small ' + (!st.readOnly && (st.dirty || st.cur.id === null) ? 'led-unsaved' : 'muted');
+  }
+
+  function markDirty() {
+    const first = !st.dirty;
+    st.dirty = true;
+    st.confirmDelete = false;
+    updateStateLabel();
+    if (first) renderTemplateBar();
+  }
+
+  function openTemplate(t) {
+    st.cur = { id: t.id === undefined ? null : t.id, name: t.name, slides: cloneSlides(t.slides) };
     st.activeIdx = 0;
-    st.source = { kind, id: tpl.id, name: tpl.name };
-    nameInput.value = kind === 'custom' ? tpl.name : '';
+    st.dirty = false;
+    st.confirmDelete = false;
+    st.confirmSwitch = null;
+    nameInput.value = t.name;
     restartPreview();
     renderAll();
   }
 
-  function renderTemplates() {
-    const isOn = (kind, id) => st.source.kind === kind && st.source.id === id;
-    mount(builtinHost, BUILTIN.map((t) => h('button.btn.sm', {
-      type: 'button',
-      class: isOn('builtin', t.id) ? 'primary' : '',
-      onclick: () => loadTemplate('builtin', t),
-    }, t.name)));
-    mount(customHost, st.custom.length
-      ? st.custom.map((t) => h('span.led-custom-chip',
-        h('button.btn.sm', {
-          type: 'button',
-          class: isOn('custom', t.id) ? 'primary' : '',
-          title: t.author ? 'Saved by ' + t.author : '',
-          onclick: () => loadTemplate('custom', t),
-        }, t.name),
-        h('button.btn.sm.danger', {
-          type: 'button',
-          title: 'Delete template',
-          'aria-label': 'Delete ' + t.name,
-          onclick: () => deleteTemplate(t),
-        }, '×')))
-      : h('span.small.muted', 'No saved templates yet. Edit the slides, write a name and press "Save as new template".'));
-    const editingCustom = st.source.kind === 'custom';
-    mount(saveHost,
-      nameInput,
-      h('button.btn.sm.primary', { type: 'button', onclick: () => saveTemplate(false) }, 'Save as new template'),
-      editingCustom ? h('button.btn.sm', { type: 'button', onclick: () => saveTemplate(true) }, 'Update "' + st.source.name + '"') : null,
-      h('button.btn.sm', {
-        type: 'button',
-        onclick: () => {
-          st.slides = [S('slam', 'NEW', 'MESSAGE', 'blue_red_white', 5), S('brand', '', '', 'blue_red_white', 5, TAMPA)];
-          st.activeIdx = 0;
-          st.source = { kind: 'new', id: null, name: '' };
-          nameInput.value = '';
-          restartPreview();
-          renderAll();
-        },
-      }, 'Start blank'));
+  function newTemplate() {
+    openTemplate({ id: null, name: 'New template', slides: blankSlides() });
+    nameInput.focus();
+    nameInput.select();
   }
 
   function slidePayload() {
-    return st.slides.map((s) => ({
+    return st.cur.slides.map((s) => ({
       layout: s.layout || 'slam',
       line1: String(s.line1 || '').slice(0, 60),
       line2: String(s.line2 || '').slice(0, 120),
@@ -432,104 +431,210 @@ export async function renderLedSign(ctx) {
     }));
   }
 
-  async function loadCustom() {
+  const builtinPayload = () => BUILTIN.map((t) => ({ name: t.name, slides: cloneSlides(t.slides) }));
+  const localDefaults = () => BUILTIN.map((t) => ({ id: null, name: t.name, slides: t.slides }));
+  const isForbidden = (err) => err && (err.status === 403 || /cannot perform|forbidden/i.test(err.message || ''));
+
+  // ---------- Read (the first visit copies UBC's templates into the list) ----------
+  async function loadList(selectId) {
     try {
-      const res = await ctx.api.ledTemplates();
-      st.custom = res.templates || [];
+      let res = await ctx.api.ledTemplates();
+      if (!res.seeded) {
+        try {
+          res = await ctx.api.seedLedTemplates(builtinPayload(), false);
+        } catch (err) {
+          if (!isForbidden(err)) throw err;
+          st.readOnly = true;
+        }
+      }
+      st.list = res.templates || [];
+      if (st.readOnly && !st.list.length) st.list = localDefaults();
     } catch (err) {
-      st.custom = [];
-      toast('Could not load saved templates: ' + (err.message || err), 'bad');
+      st.list = localDefaults();
+      st.readOnly = true;
+      toast('Could not load templates: ' + (err.message || err), 'bad');
     }
-    renderTemplates();
+    st.loading = false;
+    const pick = selectId ? st.list.find((t) => t.id === selectId) : null;
+    if (pick) openTemplate(pick);
+    else if (!st.dirty && st.list.length && (st.cur.id === null || !st.list.some((t) => t.id === st.cur.id))) openTemplate(st.list[0]);
+    else renderAll();
   }
 
-  async function saveTemplate(update) {
-    const name = nameInput.value.trim() || (update ? st.source.name : '');
+  // ---------- Create / Update ----------
+  async function save(asCopy) {
+    let name = (nameInput.value || '').trim();
     if (!name) {
       toast('Write a name for the template first.', 'bad');
       nameInput.focus();
       return;
     }
+    const creating = asCopy || st.cur.id === null;
+    if (asCopy && st.list.some((t) => t.name.toLowerCase() === name.toLowerCase())) name = (name + ' (copy)').slice(0, 60);
     try {
       const body = { name, slides: slidePayload() };
-      const saved = update ? await ctx.api.updateLedTemplate(st.source.id, body) : await ctx.api.createLedTemplate(body);
-      st.source = { kind: 'custom', id: saved.id, name: saved.name };
-      nameInput.value = saved.name;
-      toast((update ? 'Updated' : 'Saved') + ' template "' + saved.name + '"', 'ok');
-      await loadCustom();
+      const saved = creating ? await ctx.api.createLedTemplate(body) : await ctx.api.updateLedTemplate(st.cur.id, body);
+      toast((creating ? 'Created' : 'Saved') + ' "' + saved.name + '"', 'ok');
+      st.dirty = false;
+      await loadList(saved.id);
     } catch (err) {
       toast(err.message || 'Could not save the template', 'bad');
     }
   }
 
-  async function deleteTemplate(t) {
-    customHost.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-    try {
-      await ctx.api.deleteLedTemplate(t.id);
-      if (st.source.kind === 'custom' && st.source.id === t.id) st.source = { kind: 'new', id: null, name: '' };
-      toast('Deleted template "' + t.name + '"', 'ok');
-    } catch (err) {
-      toast(err.message || 'Could not delete the template', 'bad');
+  // ---------- Delete (asks to confirm with a second click) ----------
+  async function removeTemplate() {
+    if (st.cur.id === null) {
+      if (st.list.length) openTemplate(st.list[0]);
+      else newTemplate();
+      return;
     }
-    await loadCustom();
+    if (!st.confirmDelete) {
+      st.confirmDelete = true;
+      renderTemplateBar();
+      return;
+    }
+    const gone = st.cur;
+    try {
+      await ctx.api.deleteLedTemplate(gone.id);
+      toast('Deleted template "' + gone.name + '"', 'ok');
+      st.dirty = false;
+      st.cur = { id: null, name: '', slides: blankSlides() };
+      await loadList();
+      if (!st.list.length) newTemplate();
+    } catch (err) {
+      st.confirmDelete = false;
+      toast(err.message || 'Could not delete the template', 'bad');
+      renderTemplateBar();
+    }
+  }
+
+  async function restoreDefaults() {
+    try {
+      const res = await ctx.api.seedLedTemplates(builtinPayload(), true);
+      toast(res.added ? 'Restored ' + res.added + ' UBC template' + (res.added === 1 ? '' : 's') : 'All UBC templates are already in the list', 'ok');
+      await loadList(st.cur.id);
+    } catch (err) {
+      toast(err.message || 'Could not restore the templates', 'bad');
+    }
+  }
+
+  // ---------- Template list ----------
+  function renderList() {
+    if (st.loading) {
+      mount(listHost, h('span.small.muted', 'Loading templates…'));
+      mount(listActions);
+      return;
+    }
+    mount(listHost, st.list.length
+      ? st.list.map((t) => {
+        const on = st.cur.id !== null && t.id === st.cur.id;
+        const asking = st.confirmSwitch !== null && st.confirmSwitch === t.name;
+        return h('button.btn.sm', {
+          type: 'button',
+          class: on ? 'primary' : asking ? 'danger' : '',
+          title: t.author ? 'Last saved by ' + t.author : '',
+          onclick: () => {
+            if (on) return;
+            if (st.dirty && !asking) {
+              st.confirmSwitch = t.name;
+              renderList();
+              toast('You have unsaved changes. Save them, or click that template again to open it without saving.', 'bad');
+              return;
+            }
+            openTemplate(t);
+          },
+        }, asking ? 'Open "' + t.name + '" without saving?' : t.name);
+      })
+      : h('span.small.muted', 'No templates yet. Create one with "+ New template".'));
+    const names = new Set(st.list.map((t) => String(t.name).toLowerCase()));
+    const missing = BUILTIN.filter((t) => !names.has(t.name.toLowerCase())).length;
+    mount(listActions,
+      st.readOnly ? null : h('button.btn.sm.primary', { type: 'button', onclick: newTemplate }, '+ New template'),
+      !st.readOnly && missing ? h('button.btn.sm', { type: 'button', onclick: restoreDefaults }, 'Restore UBC templates (' + missing + ')') : null);
+  }
+
+  // ---------- Editor header: name + Save / Save as copy / Discard / Delete ----------
+  function renderTemplateBar() {
+    renderList();
+    nameInput.disabled = st.readOnly;
+    updateStateLabel();
+    const stored = st.cur.id !== null ? st.list.find((t) => t.id === st.cur.id) : null;
+    mount(tplBar,
+      h('label.led-field', h('span.small.muted', 'Template name'), nameInput),
+      stateLabel,
+      st.readOnly ? null : h('div.led-tpl-row',
+        h('button.btn.sm.primary', { type: 'button', onclick: () => save(false) }, st.cur.id === null ? 'Create template' : 'Save changes'),
+        st.cur.id !== null ? h('button.btn.sm', { type: 'button', onclick: () => save(true) }, 'Save as copy') : null,
+        st.dirty && stored ? h('button.btn.sm', { type: 'button', onclick: () => openTemplate(stored) }, 'Discard changes') : null,
+        h('button.btn.sm.danger', { type: 'button', onclick: removeTemplate },
+          st.cur.id === null ? 'Cancel new template' : st.confirmDelete ? 'Yes, delete "' + st.cur.name + '"' : 'Delete template'),
+        st.confirmDelete ? h('button.btn.sm', { type: 'button', onclick: () => { st.confirmDelete = false; renderTemplateBar(); } }, 'Keep it') : null));
   }
 
   function layoutName(layout) {
     return (LAYOUTS.find((l) => l[0] === layout) || LAYOUTS[0])[1].split(' (')[0];
   }
 
+  function afterStructureChange() {
+    restartPreview();
+    markDirty();
+    renderSlidesBar();
+    renderSlideEditor();
+    updateStatus();
+  }
+
   function renderSlidesBar() {
+    const slides = st.cur.slides;
     mount(slidesHost,
-      st.slides.map((s, idx) => h('button.rep-tab', {
+      slides.map((s, idx) => h('button.rep-tab', {
         type: 'button',
         class: idx === st.activeIdx ? 'on' : '',
         onclick: () => { st.activeIdx = idx; renderSlidesBar(); renderSlideEditor(); },
       }, (idx + 1) + '. ' + layoutName(s.layout) + ' · ' + slideSeconds(s) + 's')),
-      st.slides.length < MAX_SLIDES ? h('button.btn.sm', {
+      slides.length < MAX_SLIDES ? h('button.btn.sm', {
         type: 'button',
         onclick: () => {
-          st.slides.splice(st.activeIdx + 1, 0, S('slam', 'NEW', 'MESSAGE', 'blue_red_white', 5));
+          slides.splice(st.activeIdx + 1, 0, S('slam', 'NEW', 'MESSAGE', 'blue_red_white', 5));
           st.activeIdx += 1;
-          restartPreview();
-          renderAll();
+          afterStructureChange();
         },
       }, '+ Slide') : null);
   }
 
   function renderSlideEditor() {
-    const cur = st.slides[st.activeIdx] || st.slides[0];
+    const slides = st.cur.slides;
+    if (st.activeIdx >= slides.length) st.activeIdx = slides.length - 1;
+    const cur = slides[st.activeIdx];
     const layout = cur.layout || 'slam';
     const field = (label, key, placeholder, hint) => h('label.led-field',
       h('span.small.muted', label),
-      h('input', { type: 'text', value: cur[key] || '', placeholder, oninput: (e) => { cur[key] = e.target.value; } }),
+      h('input', { type: 'text', value: cur[key] || '', placeholder, oninput: (e) => { cur[key] = e.target.value; markDirty(); } }),
       hint ? h('span.small.muted', hint) : null);
 
     const layoutSel = h('select', {
       onchange: (e) => {
         cur.layout = e.target.value;
         if (cur.layout === 'brand' && !cur.foot) cur.foot = TAMPA;
-        restartPreview();
-        renderSlidesBar();
-        renderSlideEditor();
+        afterStructureChange();
       },
     }, LAYOUTS.map(([v, lbl]) => h('option', { value: v, selected: layout === v }, lbl)));
 
-    const colorSel = h('select', { onchange: (e) => { cur.palette = e.target.value; } },
+    const colorSel = h('select', { onchange: (e) => { cur.palette = e.target.value; markDirty(); } },
       Object.keys(COLORS).map((k) => h('option', { value: k, selected: cur.palette === k }, COLORS[k].label)));
 
     const secSel = h('select', {
-      onchange: (e) => { cur.seconds = Number(e.target.value) || 5; restartPreview(); renderSlidesBar(); updateStatus(); },
+      onchange: (e) => { cur.seconds = Number(e.target.value) || 5; afterStructureChange(); },
     }, [3, 4, 5, 6, 7, 8].map((sec) => h('option', { value: String(sec), selected: slideSeconds(cur) === sec }, sec + ' seconds')));
 
     const move = (dir) => {
       const j = st.activeIdx + dir;
-      if (j < 0 || j >= st.slides.length) return;
-      const tmp = st.slides[j];
-      st.slides[j] = st.slides[st.activeIdx];
-      st.slides[st.activeIdx] = tmp;
+      if (j < 0 || j >= slides.length) return;
+      const tmp = slides[j];
+      slides[j] = slides[st.activeIdx];
+      slides[st.activeIdx] = tmp;
       st.activeIdx = j;
-      restartPreview();
-      renderAll();
+      afterStructureChange();
     };
 
     let fields;
@@ -557,20 +662,29 @@ export async function renderLedSign(ctx) {
         layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Accent color'), colorSel) : null),
       h('div.led-tpl-row',
         h('button.btn.sm', { type: 'button', disabled: st.activeIdx === 0, onclick: () => move(-1) }, '← Move'),
-        h('button.btn.sm', { type: 'button', disabled: st.activeIdx === st.slides.length - 1, onclick: () => move(1) }, 'Move →'),
-        st.slides.length > 1 ? h('button.btn.sm.danger', {
+        h('button.btn.sm', { type: 'button', disabled: st.activeIdx === slides.length - 1, onclick: () => move(1) }, 'Move →'),
+        h('button.btn.sm', {
+          type: 'button',
+          disabled: slides.length >= MAX_SLIDES,
+          onclick: () => {
+            slides.splice(st.activeIdx + 1, 0, Object.assign({}, cur));
+            st.activeIdx += 1;
+            afterStructureChange();
+          },
+        }, 'Duplicate slide'),
+        slides.length > 1 ? h('button.btn.sm.danger', {
           type: 'button',
           onclick: () => {
-            st.slides.splice(st.activeIdx, 1);
+            slides.splice(st.activeIdx, 1);
             st.activeIdx = Math.max(0, st.activeIdx - 1);
-            restartPreview();
-            renderAll();
+            afterStructureChange();
           },
-        }, 'Remove slide') : null));
+        }, 'Remove slide') : null),
+      st.readOnly ? null : h('span.small.muted', 'Slide edits are stored when you press "Save changes".'));
   }
 
   function renderAll() {
-    renderTemplates();
+    renderTemplateBar();
     renderSlidesBar();
     renderSlideEditor();
     updateStatus();
@@ -595,11 +709,12 @@ export async function renderLedSign(ctx) {
       off.width = W;
       off.height = H;
       const octx = off.getContext('2d', { willReadFrequently: true });
-      const total = totalSeconds(st.slides);
+      const slides = st.cur.slides;
+      const total = totalSeconds(slides);
       const frames = [];
       const count = Math.round(total * FPS);
       for (let f = 0; f < count; f++) {
-        drawFrame(octx, st.slides, f / FPS, assets);
+        drawFrame(octx, slides, f / FPS, assets);
         if (st.codec === 'rgb24') frames.push(rgbaToBgr24BottomUp(octx.getImageData(0, 0, W, H).data, W, H));
         else frames.push(await canvasToJpegBytes(off));
         if ((f + 1) % 15 === 0 || f + 1 === count) {
@@ -608,7 +723,7 @@ export async function renderLedSign(ctx) {
         }
       }
       const blob = st.codec === 'rgb24' ? encodeRgb24Avi(frames, W, H, FPS) : encodeMjpegAvi(frames, W, H, FPS);
-      const fname = 'ubc-led-' + slugify(st.source.name || nameInput.value) + '-' + W + 'x' + H + '.avi';
+      const fname = 'ubc-led-' + slugify(st.cur.name) + '-' + W + 'x' + H + '.avi';
       downloadBlob(blob, fname);
       const kb = Math.round(blob.size / 1024);
       exportStatus.textContent = 'Downloaded ' + fname + ' (' + kb + ' KB, ' + total + ' s)';
@@ -626,21 +741,17 @@ export async function renderLedSign(ctx) {
     h('option', { value: 'mjpeg', selected: true }, 'MJPEG .avi (standard, small file)'),
     h('option', { value: 'rgb24' }, 'Uncompressed .avi (older LED controllers)'));
 
+  nameInput.value = st.cur.name;
   renderAll();
-  loadCustom();
+  loadList();
   fontReady.then(restartPreview);
   rafId = window.requestAnimationFrame(drawPreviewLoop);
 
   return h('div.stack.led-root',
-    pageHead('LED Sign Studio', 'Ads for the 214×112 street sign. Pick a template, edit the slides, save your own templates and download the .AVI.'),
-    card('1. Templates', h('div.stack-sm',
-      h('span.small.muted', 'UBC templates'),
-      builtinHost,
-      h('span.small.muted', 'Saved by the team'),
-      customHost,
-      saveHost)),
+    pageHead('LED Sign Studio', 'Ads for the 214×112 street sign. Open a template, edit it, save it and download the .AVI.'),
+    card('1. Templates', h('div.stack-sm', listHost, listActions)),
     h('div.grid.grid-2',
-      card('2. Slides', h('div.stack-sm', slidesHost, editorHost)),
+      card('2. Edit template', h('div.stack-sm', tplBar, h('hr.led-sep'), slidesHost, editorHost)),
       card('3. Preview & download', h('div.stack-sm',
         h('div.led-previews',
           h('div.led-prev-box', h('span.small.muted', 'Actual size'), canvas1x),

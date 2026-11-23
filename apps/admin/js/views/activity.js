@@ -1,8 +1,8 @@
 import { h, mount } from '../ui/dom.js';
 import { card, dataTable, pageHead, toast, errorBox } from '../ui/components.js';
 import { dateTime } from '../ui/format.js';
-import { settingsWorkspaceTabs } from './settings.js?v=84';
-import { JOB_LABELS } from './dashboard.js?v=84';
+import { settingsWorkspaceTabs } from './settings.js?v=85';
+import { JOB_LABELS } from './dashboard.js?v=85';
 
 export async function renderActivity(ctx) {
   const tabHost = h('div');

@@ -1080,11 +1080,39 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   const ledRow = (r: { id: string; name: string; slides: unknown; updated_at: Date; author: string | null }) =>
     ({ id: String(r.id), name: r.name, slides: r.slides, updatedAt: r.updated_at, author: r.author });
 
-  app.get('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
-    const r = await ctx.pool.query(
+  const listLedTemplates = async (q: { query: typeof ctx.pool.query }, companyId: string) => {
+    const r = await q.query(
       `SELECT t.id, t.name, t.slides, t.updated_at, u.name AS author FROM led_templates t LEFT JOIN users u ON u.id = t.created_by
-       WHERE t.company_id = $1 ORDER BY t.updated_at DESC LIMIT 100`, [req.session!.companyId]);
-    return { templates: r.rows.map(ledRow) };
+       WHERE t.company_id = $1 ORDER BY t.sort_order, t.created_at, t.id LIMIT 200`, [companyId]);
+    const seeded = await q.query(`SELECT 1 FROM led_template_seeds WHERE company_id = $1`, [companyId]);
+    return { templates: r.rows.map(ledRow), seeded: (seeded.rowCount ?? 0) > 0 };
+  };
+
+  app.get('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) =>
+    listLedTemplates(ctx.pool, req.session!.companyId));
+
+  // Copies UBC's default templates into the company's list. First time: once (seeded flag).
+  // restore=true: re-adds any default whose name is missing (after someone deleted it).
+  app.post('/api/led-templates/seed', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const body = z.object({ restore: z.boolean().default(false), templates: z.array(ledTemplateSchema).min(1).max(30) }).parse(req.body);
+    const s = req.session!;
+    let added = 0;
+    await withTransaction(ctx.pool, async (c) => {
+      await c.query(`SELECT pg_advisory_xact_lock(hashtext('led_templates:' || $1::text))`, [s.companyId]);
+      const seeded = await c.query(`SELECT 1 FROM led_template_seeds WHERE company_id = $1`, [s.companyId]);
+      if (seeded.rowCount && !body.restore) return;
+      const existing = await c.query(`SELECT lower(name) AS n FROM led_templates WHERE company_id = $1`, [s.companyId]);
+      const have = new Set(existing.rows.map((r: { n: string }) => r.n));
+      for (const [i, t] of body.templates.entries()) {
+        if (have.has(t.name.toLowerCase())) continue;
+        await c.query(`INSERT INTO led_templates (company_id, name, slides, created_by, sort_order) VALUES ($1, $2, $3, $4, $5)`,
+          [s.companyId, t.name, JSON.stringify(t.slides), s.userId, i]);
+        added++;
+      }
+      await c.query(`INSERT INTO led_template_seeds (company_id) VALUES ($1) ON CONFLICT (company_id) DO NOTHING`, [s.companyId]);
+      if (added) await audit(c, { companyId: s.companyId, userId: s.userId, action: body.restore ? 'led_template.restored' : 'led_template.seeded', detail: { added } });
+    });
+    return { ...(await listLedTemplates(ctx.pool, s.companyId)), added };
   });
 
   app.post('/api/led-templates', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {

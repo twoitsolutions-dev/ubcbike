@@ -544,12 +544,31 @@ export function createDemoDriver() {
     async resolveError(eid) { can('audit.read'); const e = state.errors.find((x) => x.id === eid); if (e) e.resolved_at = nowIso(); audit('error.resolved', 'error', String(eid)); save(); return { ok: true }; },
     async audit() { can('audit.read'); return { entries: clone(state.audit) }; },
     async settings() { return clone(state.settings); },
-    async ledTemplates() { can('catalog.read'); return { templates: clone(state.ledTemplates || []) }; },
+    async ledTemplates() { can('catalog.read'); return { templates: clone(state.ledTemplates || []), seeded: !!state.ledSeeded }; },
+    async seedLedTemplates(templates, restore) {
+      const u = can('catalog.write');
+      state.ledTemplates = state.ledTemplates || [];
+      let added = 0;
+      if (!state.ledSeeded || restore) {
+        const have = new Set(state.ledTemplates.map((t) => t.name.toLowerCase()));
+        const fresh = [];
+        (templates || []).forEach((t, i) => {
+          if (have.has(String(t.name).toLowerCase())) return;
+          fresh.push({ id: 'd' + Date.now() + '-' + i, name: t.name, slides: clone(t.slides), updatedAt: nowIso(), author: u.name, sort: i });
+          added++;
+        });
+        state.ledTemplates = fresh.concat(state.ledTemplates).sort((a, b) => (a.sort === undefined ? 1000 : a.sort) - (b.sort === undefined ? 1000 : b.sort));
+        state.ledSeeded = true;
+        if (added) audit(restore ? 'led_template.restored' : 'led_template.seeded', null, null, { added });
+        save();
+      }
+      return { templates: clone(state.ledTemplates), seeded: true, added };
+    },
     async createLedTemplate(t) {
       const u = can('catalog.write');
       state.ledTemplates = state.ledTemplates || [];
       const row = { id: String(Date.now()), name: String(t.name || '').trim().slice(0, 60) || 'Untitled', slides: clone(t.slides || []), updatedAt: nowIso(), author: u.name };
-      state.ledTemplates.unshift(row); audit('led_template.created', null, null, { name: row.name }); save(); return clone(row);
+      state.ledTemplates.push(row); audit('led_template.created', null, null, { name: row.name }); save(); return clone(row);
     },
     async updateLedTemplate(id, t) {
       can('catalog.write');

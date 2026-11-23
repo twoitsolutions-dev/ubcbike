@@ -1497,12 +1497,17 @@ input.lss-inp.is-invalid {
   gap: 8px;
   align-items: center;
 }
-.led-custom-chip {
-  display: inline-flex;
-  gap: 2px;
+.led-unsaved {
+  color: #B45309;
+  font-weight: 600;
+}
+.led-sep {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
 }
 .led-name {
-  flex: 1 1 220px;
+  width: 100%;
   min-width: 0;
   padding: 8px 11px;
   border: 1px solid var(--border);

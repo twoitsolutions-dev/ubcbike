@@ -70,6 +70,7 @@ export function createHttpDriver() {
     saveSettings: (s) => req('PUT', '/api/settings', s),
     ledTemplates: () => req('GET', '/api/led-templates'),
     createLedTemplate: (t) => req('POST', '/api/led-templates', t),
+    seedLedTemplates: (templates, restore) => req('POST', '/api/led-templates/seed', { templates, restore: !!restore }),
     updateLedTemplate: (id, t) => req('PUT', '/api/led-templates/' + id, t),
     deleteLedTemplate: (id) => req('DELETE', '/api/led-templates/' + id),
     campaigns: () => req('GET', '/api/campaigns'),

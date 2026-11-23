@@ -20,11 +20,11 @@ export const voiceGenerateSchema = z.object({
   rate: z.enum(['-15%', '-10%', '0%', '+10%']).default('-10%'),
 });
 
-async function synthesizeWithEdge(text: string, voice: string, rate: string): Promise<Buffer> {
+async function synthesizeWithEdge(text: string, voice: string): Promise<Buffer> {
   const tts = new MsEdgeTTS();
   try {
     await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-    const { audioStream } = tts.toStream(text, { rate });
+    const { audioStream } = tts.toStream(text);
     const chunks: Buffer[] = [];
     for await (const chunk of audioStream) {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -73,7 +73,7 @@ export async function generatePhoneGreetingAudio(
   let buffer: Buffer;
   let engine: 'edge' | 'google' = 'edge';
   try {
-    buffer = await synthesizeWithEdge(input.text, input.voice, input.rate);
+    buffer = await synthesizeWithEdge(input.text, input.voice);
   } catch (err) {
     const lang = input.voice.startsWith('es-') ? 'es' : 'en';
     try {

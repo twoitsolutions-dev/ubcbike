@@ -13,10 +13,7 @@ const VOICES = [
 ];
 
 const RATES = [
-  ['-10%', 'Phone Clear (-10% slower, recommended)'],
-  ['0%', 'Normal speed'],
-  ['-15%', 'Extra clear (-15% slower)'],
-  ['+10%', 'Slightly faster (+10%)'],
+  ['0%', 'Natural phone pace (recommended)'],
 ];
 
 const PRESETS = [
@@ -49,6 +46,15 @@ const PRESETS = [
 
 function slugify(s) {
   return String(s || 'greeting').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'greeting';
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new window.FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read audio'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 function downloadBlob(blob, filename) {
@@ -114,10 +120,9 @@ export async function renderPhoneVoice(ctx) {
   const st = {
     presetName: PRESETS[0].name,
     voice: PRESETS[0].voice,
-    rate: '-10%',
+    rate: '0%',
     text: PRESETS[0].text,
     lastBlob: null,
-    lastUrl: null,
     generating: false,
   };
 
@@ -201,19 +206,19 @@ export async function renderPhoneVoice(ctx) {
       genBtn.disabled = true;
       previewStatus.textContent = 'Generating voice audio…';
       try {
-        const blob = await api.generateVoice({ text: txt, voice: voiceSel.value, rate: rateSel.value });
-        if (st.lastUrl) window.URL.revokeObjectURL(st.lastUrl);
-        st.lastBlob = blob;
-        st.lastUrl = window.URL.createObjectURL(blob);
-        audioEl.src = st.lastUrl;
+        const rawBlob = await api.generateVoice({ text: txt, voice: voiceSel.value, rate: rateSel.value });
+        const mp3Blob = new window.Blob([await rawBlob.arrayBuffer()], { type: 'audio/mpeg' });
+        st.lastBlob = mp3Blob;
+        // Safari iOS frequently fails on blob: URLs in <audio>; a base64 data URL plays reliably.
+        audioEl.src = await blobToDataUrl(mp3Blob);
         audioEl.hidden = false;
+        audioEl.load();
         dlMp3Btn.disabled = false;
         dlWav16Btn.disabled = false;
         dlWav8Btn.disabled = false;
-        const kb = Math.round(blob.size / 1024);
+        const kb = Math.round(mp3Blob.size / 1024);
         previewStatus.textContent = 'Ready (' + kb + ' KB MP3). Press play to preview or download MP3/WAV below.';
         toast('Phone greeting ready', 'ok');
-        audioEl.play().catch(() => {});
       } catch (err) {
         previewStatus.textContent = err.message || 'Could not generate audio.';
         toast(err.message || 'Voice generation failed', 'bad');

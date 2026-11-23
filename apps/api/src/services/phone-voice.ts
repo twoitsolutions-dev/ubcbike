@@ -51,6 +51,12 @@ export const voiceGenerateSchema = z.object({
   rate: z.enum(['-15%', '-10%', '0%', '+10%']).default('-10%'),
 });
 
+// Florida pronunciation fixes: keep "Alafia" spelled normally in the UI,
+// while speaking it phonetically as "Alafaya" (/ˌæləˈfaɪə/) for TTS engines.
+function normalizeSpeechText(text: string): string {
+  return text.replace(/\balafia\b/gi, 'Alafaya');
+}
+
 async function synthesizeWithEdge(text: string, voice: string): Promise<Buffer> {
   const tts = new MsEdgeTTS();
   try {
@@ -101,14 +107,15 @@ export async function generatePhoneGreetingAudio(
   userId: string,
   input: z.infer<typeof voiceGenerateSchema>,
 ): Promise<{ buffer: Buffer; engine: 'edge' | 'google' }> {
+  const spokenText = normalizeSpeechText(input.text);
   let buffer: Buffer;
   let engine: 'edge' | 'google' = 'edge';
   try {
-    buffer = await synthesizeWithEdge(input.text, input.voice);
+    buffer = await synthesizeWithEdge(spokenText, input.voice);
   } catch (err) {
     const lang = input.voice.startsWith('es-') ? 'es' : 'en';
     try {
-      buffer = await synthesizeWithGoogleFallback(input.text, lang);
+      buffer = await synthesizeWithGoogleFallback(spokenText, lang);
       engine = 'google';
     } catch (fallbackErr) {
       await logError(ctx.pool, {

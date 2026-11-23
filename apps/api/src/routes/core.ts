@@ -168,8 +168,26 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     ]);
     const syncs = await ctx.pool.query(`SELECT type, status, finished_at, created_at FROM jobs WHERE company_id = $1 ORDER BY created_at DESC LIMIT 8`, [c]);
     const shopifySync = ctx.config.env.SHOPIFY_SYNC_MODE === 'update_only' ? await shopifySyncStats(ctx, c).catch(() => null) : null;
+    const healthRes = await ctx.pool.query<{ negative_margin: number; map_violations: number; missing_cost: number }>(
+      `SELECT
+         count(*) FILTER (WHERE c.cost_cents > 0 AND c.price_cents < c.cost_cents)::int AS negative_margin,
+         count(*) FILTER (
+           WHERE c.map_cents > 0 AND c.price_cents < c.map_cents
+             AND NOT EXISTS (SELECT 1 FROM map_exceptions me WHERE me.company_id = c.company_id AND me.variant_id = c.id AND me.valid_until > now())
+         )::int AS map_violations,
+         count(*) FILTER (WHERE c.cost_cents IS NULL OR c.cost_cents <= 0)::int AS missing_cost
+       FROM catalog_items c
+       WHERE c.company_id = $1 AND c.physical_qty > 0`,
+      [c],
+    ).catch(() => ({ rows: [{ negative_margin: 0, map_violations: 0, missing_cost: 0 }] }));
+    const hRow = healthRes.rows[0] || { negative_margin: 0, map_violations: 0, missing_cost: 0 };
     const payload = {
       shopifySync,
+      catalogHealth: {
+        negativeMargin: hRow.negative_margin,
+        mapViolations: hRow.map_violations,
+        missingCost: hRow.missing_cost,
+      },
       storeUrl: ctx.config.env.SHOPIFY_STORE_URL || (ctx.config.env.SHOPIFY_SHOP_DOMAIN ? `https://${ctx.config.env.SHOPIFY_SHOP_DOMAIN}` : null),
       counts: { ...counts, orders, pendingSpecial, awaitingApproval, activeCampaigns, openErrors, deadJobs, pendingMatchReviews: reviews, upcReview },
       recentJobs: syncs.rows,
@@ -640,49 +658,60 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const companyId = req.session!.companyId;
     const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
     const [totals, rows] = await Promise.all([
-      ctx.pool.query<{ no_cost: number; neg_margin: number }>(
+      ctx.pool.query<{ no_cost: number; neg_margin: number; map_violation: number }>(
         `SELECT count(*) FILTER (WHERE c.cost_cents IS NULL OR c.cost_cents <= 0)::int AS no_cost,
-                count(*) FILTER (WHERE c.cost_cents > 0 AND c.price_cents < c.cost_cents)::int AS neg_margin
+                count(*) FILTER (WHERE c.cost_cents > 0 AND c.price_cents < c.cost_cents)::int AS neg_margin,
+                count(*) FILTER (
+                  WHERE c.map_cents > 0 AND c.price_cents < c.map_cents
+                    AND NOT EXISTS (SELECT 1 FROM map_exceptions me WHERE me.company_id = c.company_id AND me.variant_id = c.id AND me.valid_until > now())
+                )::int AS map_violation
          FROM catalog_items c
-         WHERE c.company_id = $1 AND c.physical_qty > 0
-           AND EXISTS (
-             SELECT 1 FROM shopify_variant_links svl
-             WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
-               AND ($2 = '' OR svl.shop_domain = $2)
-           )`,
-        [companyId, shop],
+         WHERE c.company_id = $1 AND c.physical_qty > 0`,
+        [companyId],
       ),
       ctx.pool.query<{
-        id: string; title: string; brand: string; category: string; sku: string; price_cents: number; cost_cents: number | null; physical_qty: number; shopify_product_id: string | null;
+        id: string; title: string; brand: string; category: string; sku: string;
+        price_cents: number; cost_cents: number | null; map_cents: number | null; physical_qty: number;
+        shopify_product_id: string | null; has_map_exc: boolean;
       }>(
-        `SELECT c.id, c.title, c.brand, c.category, c.sku, c.price_cents, c.cost_cents, c.physical_qty,
+        `SELECT c.id, c.title, c.brand, c.category, c.sku, c.price_cents, c.cost_cents, c.map_cents, c.physical_qty,
+                EXISTS (SELECT 1 FROM map_exceptions me WHERE me.company_id = c.company_id AND me.variant_id = c.id AND me.valid_until > now()) AS has_map_exc,
                 (SELECT svl.shopify_product_id FROM shopify_variant_links svl
                  WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
                    AND ($2 = '' OR svl.shop_domain = $2)
                  LIMIT 1) AS shopify_product_id
          FROM catalog_items c
          WHERE c.company_id = $1 AND c.physical_qty > 0
-           AND (c.cost_cents IS NULL OR c.cost_cents <= 0 OR c.price_cents < c.cost_cents)
-           AND EXISTS (
-             SELECT 1 FROM shopify_variant_links svl
-             WHERE svl.company_id = c.company_id AND svl.variant_id = c.id
-               AND ($2 = '' OR svl.shop_domain = $2)
+           AND (
+             (c.cost_cents > 0 AND c.price_cents < c.cost_cents)
+             OR (c.map_cents > 0 AND c.price_cents < c.map_cents AND NOT EXISTS (SELECT 1 FROM map_exceptions me WHERE me.company_id = c.company_id AND me.variant_id = c.id AND me.valid_until > now()))
+             OR c.cost_cents IS NULL OR c.cost_cents <= 0
            )
-         ORDER BY (CASE WHEN c.cost_cents > 0 AND c.price_cents < c.cost_cents THEN 0 ELSE 1 END), c.physical_qty DESC, c.title ASC
-         LIMIT 1000`,
+         ORDER BY
+           (CASE
+             WHEN c.cost_cents > 0 AND c.price_cents < c.cost_cents THEN 0
+             WHEN c.map_cents > 0 AND c.price_cents < c.map_cents THEN 1
+             ELSE 2
+           END),
+           c.physical_qty DESC,
+           c.title ASC
+         LIMIT 1200`,
         [companyId, shop],
       ),
     ]);
-    const t = totals.rows[0] || { no_cost: 0, neg_margin: 0 };
+    const t = totals.rows[0] || { no_cost: 0, neg_margin: 0, map_violation: 0 };
     return {
       generatedAt: new Date().toISOString(),
       summary: {
-        totalIssues: t.no_cost + t.neg_margin,
+        totalIssues: t.no_cost + t.neg_margin + t.map_violation,
         noCostCount: t.no_cost,
         negativeMarginCount: t.neg_margin,
+        mapViolationCount: t.map_violation,
       },
       items: rows.rows.map((r) => {
         const hasCost = r.cost_cents !== null && r.cost_cents > 0;
+        const isNeg = hasCost && r.price_cents < r.cost_cents!;
+        const isMap = !isNeg && !r.has_map_exc && r.map_cents !== null && r.map_cents > 0 && r.price_cents < r.map_cents;
         const marginPct = hasCost && r.price_cents > 0 ? (r.price_cents - r.cost_cents!) / r.price_cents : null;
         const numId = r.shopify_product_id ? r.shopify_product_id.split('/').pop() : '';
         return {
@@ -693,10 +722,184 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
           sku: r.sku,
           priceCents: r.price_cents,
           costCents: r.cost_cents,
+          mapCents: r.map_cents,
           marginPct,
           physicalQty: r.physical_qty,
-          issue: hasCost ? 'negative_margin' : 'no_cost',
+          shopifyLinked: Boolean(r.shopify_product_id),
+          issue: isNeg ? 'negative_margin' : isMap ? 'map_violation' : 'no_cost',
           adminUrl: shop && numId ? `https://${shop}/admin/products/${numId}` : '',
+        };
+      }),
+    };
+  });
+
+  app.get('/api/reports/sales-profitability', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const rawDays = String((req.query as Record<string, unknown>).days || '30');
+    const days = rawDays === 'all' ? 0 : Math.max(1, Math.min(3650, Number(rawDays) || 30));
+
+    const [summaryRes, topSkusRes, campaignsRes] = await Promise.all([
+      ctx.pool.query<{
+        order_count: number;
+        special_orders: number;
+        units_sold: number;
+        revenue_cents: number;
+        known_cost_cents: number;
+        known_cost_revenue_cents: number;
+        lines_with_cost: number;
+        total_lines: number;
+      }>(
+        `SELECT
+           count(DISTINCT o.id)::int AS order_count,
+           count(DISTINCT o.id) FILTER (WHERE o.is_special_order)::int AS special_orders,
+           COALESCE(sum(ol.qty), 0)::int AS units_sold,
+           COALESCE(sum(ol.price_cents::bigint * ol.qty), 0)::bigint AS revenue_cents,
+           COALESCE(sum(CASE WHEN COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0 THEN COALESCE(ol.quoted_cost_cents, v.cost_cents)::bigint * ol.qty ELSE 0 END), 0)::bigint AS known_cost_cents,
+           COALESCE(sum(CASE WHEN COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0 THEN ol.price_cents::bigint * ol.qty ELSE 0 END), 0)::bigint AS known_cost_revenue_cents,
+           count(ol.id) FILTER (WHERE COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0)::int AS lines_with_cost,
+           count(ol.id)::int AS total_lines
+         FROM orders o
+         JOIN order_lines ol ON ol.order_id = o.id
+         LEFT JOIN variants v ON v.id = ol.variant_id
+         WHERE o.company_id = $1
+           AND o.internal_status <> 'cancelled'
+           AND ($2 = 0 OR o.created_at >= now() - make_interval(days => $2))`,
+        [companyId, days],
+      ),
+      ctx.pool.query<{
+        sku: string;
+        title: string;
+        variant_id: string | null;
+        units_sold: number;
+        revenue_cents: number;
+        cost_cents: number;
+        known_cost_revenue_cents: number;
+        orders_count: number;
+      }>(
+        `SELECT
+           ol.sku,
+           max(ol.title) AS title,
+           ol.variant_id::text AS variant_id,
+           sum(ol.qty)::int AS units_sold,
+           sum(ol.price_cents::bigint * ol.qty)::bigint AS revenue_cents,
+           sum(CASE WHEN COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0 THEN COALESCE(ol.quoted_cost_cents, v.cost_cents)::bigint * ol.qty ELSE 0 END)::bigint AS cost_cents,
+           sum(CASE WHEN COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0 THEN ol.price_cents::bigint * ol.qty ELSE 0 END)::bigint AS known_cost_revenue_cents,
+           count(DISTINCT o.id)::int AS orders_count
+         FROM orders o
+         JOIN order_lines ol ON ol.order_id = o.id
+         LEFT JOIN variants v ON v.id = ol.variant_id
+         WHERE o.company_id = $1
+           AND o.internal_status <> 'cancelled'
+           AND ($2 = 0 OR o.created_at >= now() - make_interval(days => $2))
+         GROUP BY ol.sku, ol.variant_id
+         ORDER BY revenue_cents DESC, units_sold DESC
+         LIMIT 50`,
+        [companyId, days],
+      ),
+      ctx.pool.query<{
+        id: string;
+        name: string;
+        channel: string;
+        status: string;
+        starts_at: Date | null;
+        ends_at: Date | null;
+        orders_count: number;
+        units_sold: number;
+        revenue_cents: number;
+        cost_cents: number;
+        known_cost_revenue_cents: number;
+      }>(
+        `SELECT
+           c.id,
+           c.name,
+           c.channel,
+           c.status,
+           COALESCE(c.starts_at, c.approved_at, c.created_at) AS starts_at,
+           c.ends_at,
+           count(DISTINCT o.id)::int AS orders_count,
+           COALESCE(sum(ol.qty), 0)::int AS units_sold,
+           COALESCE(sum(ol.price_cents::bigint * ol.qty), 0)::bigint AS revenue_cents,
+           COALESCE(sum(CASE WHEN COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0 THEN COALESCE(ol.quoted_cost_cents, v.cost_cents)::bigint * ol.qty ELSE 0 END), 0)::bigint AS cost_cents,
+           COALESCE(sum(CASE WHEN COALESCE(ol.quoted_cost_cents, v.cost_cents) > 0 THEN ol.price_cents::bigint * ol.qty ELSE 0 END), 0)::bigint AS known_cost_revenue_cents
+         FROM campaigns c
+         LEFT JOIN campaign_lines cl ON cl.campaign_id = c.id AND cl.status IN ('ok','warning')
+         LEFT JOIN order_lines ol ON ol.variant_id = cl.variant_id
+         LEFT JOIN orders o ON o.id = ol.order_id
+           AND o.company_id = c.company_id
+           AND o.internal_status <> 'cancelled'
+           AND o.created_at >= COALESCE(c.starts_at, c.approved_at, c.created_at)
+           AND (c.ends_at IS NULL OR o.created_at <= c.ends_at)
+           AND ($2 = 0 OR o.created_at >= now() - make_interval(days => $2))
+         LEFT JOIN variants v ON v.id = ol.variant_id
+         WHERE c.company_id = $1
+           AND c.status IN ('active','restored','applying','restoring')
+         GROUP BY c.id
+         ORDER BY c.created_at DESC
+         LIMIT 25`,
+        [companyId, days],
+      ),
+    ]);
+
+    const s = summaryRes.rows[0] || {
+      order_count: 0, special_orders: 0, units_sold: 0, revenue_cents: 0,
+      known_cost_cents: 0, known_cost_revenue_cents: 0, lines_with_cost: 0, total_lines: 0,
+    };
+    const rev = Number(s.revenue_cents || 0);
+    const knownCost = Number(s.known_cost_cents || 0);
+    const knownRev = Number(s.known_cost_revenue_cents || 0);
+    const grossProfitCents = knownRev - knownCost;
+    const marginPct = knownRev > 0 ? grossProfitCents / knownRev : null;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      days,
+      summary: {
+        orderCount: Number(s.order_count || 0),
+        specialOrdersCount: Number(s.special_orders || 0),
+        inStockOrdersCount: Math.max(0, Number(s.order_count || 0) - Number(s.special_orders || 0)),
+        unitsSold: Number(s.units_sold || 0),
+        revenueCents: rev,
+        knownCostCents: knownCost,
+        grossProfitCents,
+        marginPct,
+        linesWithCost: Number(s.lines_with_cost || 0),
+        totalLines: Number(s.total_lines || 0),
+      },
+      campaigns: campaignsRes.rows.map((r) => {
+        const cRev = Number(r.revenue_cents || 0);
+        const cCost = Number(r.cost_cents || 0);
+        const cKnownRev = Number(r.known_cost_revenue_cents || 0);
+        const cProfit = cKnownRev - cCost;
+        return {
+          id: r.id,
+          name: r.name,
+          channel: r.channel,
+          status: r.status,
+          startsAt: r.starts_at,
+          endsAt: r.ends_at,
+          ordersCount: Number(r.orders_count || 0),
+          unitsSold: Number(r.units_sold || 0),
+          revenueCents: cRev,
+          costCents: cCost,
+          grossProfitCents: cProfit,
+          marginPct: cKnownRev > 0 ? cProfit / cKnownRev : null,
+        };
+      }),
+      topSkus: topSkusRes.rows.map((r) => {
+        const sRev = Number(r.revenue_cents || 0);
+        const sCost = Number(r.cost_cents || 0);
+        const sKnownRev = Number(r.known_cost_revenue_cents || 0);
+        const sProfit = sKnownRev - sCost;
+        return {
+          sku: r.sku,
+          title: r.title,
+          variantId: r.variant_id,
+          ordersCount: Number(r.orders_count || 0),
+          unitsSold: Number(r.units_sold || 0),
+          revenueCents: sRev,
+          costCents: sCost,
+          grossProfitCents: sProfit,
+          marginPct: sKnownRev > 0 ? sProfit / sKnownRev : null,
         };
       }),
     };

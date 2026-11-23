@@ -23,6 +23,7 @@ export const JOB_LABELS = {
   'lightspeed.sync_special_orders': 'Read Lightspeed special orders',
   'shopify.reconcile_links': 'Check Shopify prices & stock',
   'shopify.link_store': 'Find new UPC matches',
+  'shopify.refresh_sku_index': 'Refresh web SKU/UPC search index',
 };
 
 function pctOf(a, b) {
@@ -88,6 +89,9 @@ export async function renderDashboard(ctx) {
   const s = d.shopifySync || null;
 
   const attention = [];
+  const health = d.catalogHealth || {};
+  if (health.negativeMargin) attention.push(['Negative Margin (Cost > Retail)', health.negativeMargin, '#/reports?report=margin', 'bad']);
+  if (health.mapViolations) attention.push(['MAP Floor Violations', health.mapViolations, '#/reports?report=margin', 'bad']);
   if (c.awaitingApproval) attention.push(['Special Orders waiting PO', c.awaitingApproval, '#/orders?status=awaiting_approval', 'warn']);
   const exc = orders.orders.filter((o) => o.internal_status === 'exception').length;
   if (exc) attention.push(['Orders in Exception', exc, '#/orders?status=exception', 'bad']);

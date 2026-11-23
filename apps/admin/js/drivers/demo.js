@@ -949,6 +949,10 @@ export function createDemoDriver() {
     async syncShopify() { const job = startJob('shopify.sync_catalog', {}, async () => ({ seen: ds.items.length })); return { jobId: job.id }; },
     async setupShopifyMetafields() { return { created: [], existing: ['ubc.availability', 'ubc.lead_time_days', 'ubc.click_and_collect_only'] }; },
     async setupShopifyCollections() { return { created: [], existing: ['electric-bikes', 'road-bikes', 'mountain-bikes', 'hybrid-bikes', 'helmets', 'tires-tubes', 'hydration-nutrition', 'parts-components'] }; },
+    async refreshSkuIndex() {
+      const job = startJob('shopify.refresh_sku_index', {}, async () => ({ indexedTuples: ds.items.length, themesUpdated: 1 }));
+      return { jobId: job.id };
+    },
     async syncLightspeed() { const job = startJob('lightspeed.sync_catalog', {}, async () => ({ status: 'awaiting_oauth_credentials', seen: 0 })); return { jobId: job.id }; },
     async lightspeedOAuthUrl() { return { url: 'https://cloud.lightspeedapp.com/oauth/authorize.php?demo=1', demo: true }; },
     async updateCampaign(id, input) {
@@ -971,7 +975,60 @@ export function createDemoDriver() {
     },
     async reportsMarginIssues() {
       can('catalog.read');
-      return { underMap: [], lowMargin: [], missingCost: ds.items.filter((i) => !i.costCents).slice(0, 50) };
+      const items = ds.items.filter((i) => !i.costCents || i.priceCents < i.costCents).slice(0, 50).map((i) => ({
+        id: i.id, title: i.title, brand: i.brand, category: i.category, sku: i.sku,
+        priceCents: i.priceCents, costCents: i.costCents, mapCents: i.mapCents,
+        marginPct: i.costCents && i.priceCents ? (i.priceCents - i.costCents) / i.priceCents : null,
+        physicalQty: i.physicalQty || 1, shopifyLinked: true,
+        issue: !i.costCents ? 'no_cost' : 'negative_margin', adminUrl: '',
+      }));
+      return {
+        generatedAt: nowIso(),
+        summary: { totalIssues: items.length, noCostCount: items.filter((x) => x.issue === 'no_cost').length, negativeMarginCount: items.filter((x) => x.issue === 'negative_margin').length, mapViolationCount: 0 },
+        items,
+      };
+    },
+    async reportsSalesProfitability(days) {
+      can('catalog.read');
+      const activeOrders = (state.orders || []).filter((o) => o.internal_status !== 'cancelled');
+      let revenueCents = 0;
+      let knownCostCents = 0;
+      let unitsSold = 0;
+      const skuMap = new Map();
+      activeOrders.forEach((o) => {
+        (o.lines || []).forEach((l) => {
+          unitsSold += l.qty || 1;
+          const rev = (l.price_cents || 0) * (l.qty || 1);
+          const cost = (l.quoted_cost_cents || 0) * (l.qty || 1);
+          revenueCents += rev;
+          knownCostCents += cost;
+          const cur = skuMap.get(l.sku) || { sku: l.sku, title: l.title, variantId: l.variant_id, ordersCount: 0, unitsSold: 0, revenueCents: 0, costCents: 0 };
+          cur.ordersCount += 1;
+          cur.unitsSold += l.qty || 1;
+          cur.revenueCents += rev;
+          cur.costCents += cost;
+          skuMap.set(l.sku, cur);
+        });
+      });
+      const grossProfitCents = revenueCents - knownCostCents;
+      return {
+        generatedAt: nowIso(),
+        days: days === 'all' ? 0 : Number(days) || 30,
+        summary: {
+          orderCount: activeOrders.length,
+          specialOrdersCount: activeOrders.filter((o) => o.is_special_order).length,
+          inStockOrdersCount: activeOrders.filter((o) => !o.is_special_order).length,
+          unitsSold,
+          revenueCents,
+          knownCostCents,
+          grossProfitCents,
+          marginPct: revenueCents > 0 ? grossProfitCents / revenueCents : null,
+          linesWithCost: activeOrders.length,
+          totalLines: activeOrders.length,
+        },
+        campaigns: [],
+        topSkus: Array.from(skuMap.values()).map((x) => Object.assign(x, { grossProfitCents: x.revenueCents - x.costCents, marginPct: x.revenueCents > 0 ? (x.revenueCents - x.costCents) / x.revenueCents : null })),
+      };
     },
 
     // Demo-only controls

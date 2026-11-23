@@ -419,6 +419,17 @@ export async function runPipelineWatchdogAndSchedules(ctx: AppContext, now: Date
           idempotencyKey: `sched:shopify:link_store:${every}:${lkBucket}`,
         });
         if (j3.created) jobsScheduled++;
+
+        // Every 6 hours: rebuild the storefront SKU/MPN search index (`assets/ubc-sku-index.json`) so newly linked items are searchable.
+        const skuBucket = Math.floor(now.getTime() / (6 * 60 * 60_000));
+        const j5 = await enqueue(ctx.pool, {
+          companyId: comp.id,
+          type: 'shopify.refresh_sku_index',
+          payload: {},
+          idempotencyKey: `sched:shopify:sku_index:${skuBucket}`,
+        });
+        if (j5.created) jobsScheduled++;
+        if (j3.created) jobsScheduled++;
       }
     }
   }

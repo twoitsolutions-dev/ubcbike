@@ -10,6 +10,7 @@ import { syncFromLightspeedJob, syncLightspeedSpecialOrdersJob } from '../servic
 import { cancelShopifyOrderFromWebhook, ingestShopifyOrder, onPoSubmitDead, reviewOrderJob, submitPoJob } from '../services/orders.js';
 import { flushStagedToShopifyJob, reconcileShopifyLinksJob, runPipelineWatchdogAndSchedules } from '../services/pipeline.js';
 import { linkStoreByUpcJob } from '../services/shopify-links.js';
+import { refreshStorefrontSkuIndexJob } from '../services/shopify-sku-index.js';
 import { syncStoreTagsJob } from '../services/shopify-tags.js';
 import { syncFromShopifyJob } from '../services/shopify-sync.js';
 import { importFeedJob, promoteUnmatchedOffersJob } from '../services/suppliers.js';
@@ -37,6 +38,7 @@ export const handlers: Record<string, Handler> = {
   'shopify.reconcile_links': (ctx, j) => reconcileShopifyLinksJob(ctx, j.company_id),
   'shopify.link_store': (ctx, j) => linkStoreByUpcJob(ctx, j.company_id),
   'shopify.sync_tags': (ctx, j) => syncStoreTagsJob(ctx, j.company_id),
+  'shopify.refresh_sku_index': (ctx, j) => refreshStorefrontSkuIndexJob(ctx, j.company_id),
 
   'shopify.order_created': async (ctx, j) => {
     const ev = await ctx.pool.query<{ payload: ShopifyOrderWebhook }>(`SELECT payload FROM sync_events WHERE id = $1 AND company_id = $2`, [j.payload.syncEventId, j.company_id]);

@@ -44,6 +44,8 @@ export function createHttpDriver() {
     reportsCollectionGap: (refresh) => req('GET', '/api/reports/collections-gap' + (refresh ? '?refresh=1' : '')),
     reportsNoUpc: () => req('GET', '/api/reports/no-upc'),
     reportsMarginIssues: () => req('GET', '/api/reports/margin-issues'),
+    reportsSalesProfitability: (days) => req('GET', '/api/reports/sales-profitability' + qs({ days })),
+    refreshSkuIndex: () => req('POST', '/api/shopify/refresh-sku-index', {}),
     items: (q) => req('GET', '/api/items' + qs(q)),
     lightspeedSheet: (q) => req('GET', '/api/lightspeed/sheet' + qs(q)),
     lightspeedSetMode: (paused) => req('POST', '/api/lightspeed/mode', { paused }),

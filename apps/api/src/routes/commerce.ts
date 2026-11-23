@@ -443,6 +443,16 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     return res;
   });
 
+  app.post('/api/shopify/refresh-sku-index', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const job = await enqueue(ctx.pool, {
+      companyId: req.session!.companyId,
+      type: 'shopify.refresh_sku_index',
+      payload: {},
+      createdBy: req.session!.userId,
+    });
+    return { jobId: job.id };
+  });
+
   app.post('/api/lightspeed/sync', { preHandler: requireAuth(ctx, 'integrations.manage') }, async (req, reply) => {
     const body = z.object({
       full: z.boolean().default(false),

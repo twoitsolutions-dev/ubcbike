@@ -117,6 +117,14 @@ export interface ShopifyAdminPort {
     tags: string[];
     collections: { handle: string; title: string }[];
   }[]>;
+  fetchLinkedProductsForSkuIndex(productIds: string[]): Promise<{
+    id: string;
+    handle: string;
+    status: string;
+    publishedAt: string | null;
+    variants: { id: string; sku: string; mpnMeta: string }[];
+  }[]>;
+  upsertThemeAsset(filename: string, content: string): Promise<{ themesUpdated: number }>;
 }
 
 /** One store variant as read by `bulkReadVariants` (compare-at only when above price). */
@@ -909,6 +917,88 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     }
     return out;
   }
+
+  async fetchLinkedProductsForSkuIndex(productIds: string[]) {
+    type R = {
+      nodes: ({
+        id: string;
+        handle: string;
+        status: string;
+        publishedAt: string | null;
+        variants: { nodes: { id: string; sku: string | null; metafield: { value: string } | null }[] };
+      } | null)[];
+    };
+    const out: {
+      id: string;
+      handle: string;
+      status: string;
+      publishedAt: string | null;
+      variants: { id: string; sku: string; mpnMeta: string }[];
+    }[] = [];
+    const uniq = [...new Set(productIds.filter(Boolean))];
+    for (let i = 0; i < uniq.length; i += 60) {
+      const chunk = uniq.slice(i, i + 60);
+      const r = await this.client.query<R>(
+        `query LinkedSkuIndex($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id handle status publishedAt
+              variants(first: 100) {
+                nodes {
+                  id sku
+                  metafield(namespace: "ubc", key: "mpn") { value }
+                }
+              }
+            }
+          }
+        }`,
+        { ids: chunk },
+      );
+      for (const n of r.nodes || []) {
+        if (!n || !n.id || !n.handle) continue;
+        out.push({
+          id: n.id,
+          handle: n.handle,
+          status: n.status,
+          publishedAt: n.publishedAt,
+          variants: (n.variants?.nodes || []).map((v) => ({
+            id: v.id,
+            sku: (v.sku || '').trim(),
+            mpnMeta: (v.metafield?.value || '').trim(),
+          })),
+        });
+      }
+    }
+    return out;
+  }
+
+  async upsertThemeAsset(filename: string, content: string) {
+    type ThemesR = { themes: { nodes: { id: string; name: string; role: string }[] } };
+    const tRes = await this.client.query<ThemesR>(`{ themes(first: 20) { nodes { id name role } } }`);
+    const targets = (tRes.themes?.nodes || []).filter(
+      (t) => t.role === 'MAIN' || /^MAIN:|^UBC\s/i.test(t.name || ''),
+    );
+    type UpsertR = { themeFilesUpsert: { userErrors: { filename?: string; message: string }[] } };
+    let themesUpdated = 0;
+    for (const theme of targets) {
+      const r = await this.client.mutate<UpsertR>(
+        `mutation UpsertAsset($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+          themeFilesUpsert(themeId: $themeId, files: $files) {
+            userErrors { filename message }
+          }
+        }`,
+        {
+          themeId: theme.id,
+          files: [{ filename, body: { type: 'TEXT', value: content } }],
+        },
+      );
+      if (r.themeFilesUpsert?.userErrors?.length) {
+        throw new Error(`Shopify themeFilesUpsert (${theme.name}): ${r.themeFilesUpsert.userErrors.map((e) => e.message).join('; ')}`);
+      }
+      themesUpdated++;
+    }
+    return { themesUpdated };
+  }
 }
 
 /** DEMO adapter: records calls in memory so tests and the demo can assert what would have been sent. */
@@ -954,4 +1044,6 @@ export class MockShopifyAdmin implements ShopifyAdminPort {
   async ensureUbcMetafieldDefinitions() { this.calls.push({ op: 'ensureUbcMetafieldDefinitions', args: null }); return { created: ['ubc.availability', 'ubc.lead_time_days', 'ubc.click_and_collect_only'], existing: [] }; }
   async ensureSmartCollections() { this.calls.push({ op: 'ensureSmartCollections', args: null }); return { created: ['electric-bikes', 'road-bikes', 'mountain-bikes', 'helmets', 'tires-tubes'], existing: [] }; }
   async listActiveStockCollectionCoverage() { this.calls.push({ op: 'listActiveStockCollectionCoverage', args: null }); return []; }
+  async fetchLinkedProductsForSkuIndex(productIds: string[]) { this.calls.push({ op: 'fetchLinkedProductsForSkuIndex', args: { count: productIds.length } }); return []; }
+  async upsertThemeAsset(filename: string, content: string) { this.calls.push({ op: 'upsertThemeAsset', args: { filename, bytes: content.length } }); return { themesUpdated: 1 }; }
 }

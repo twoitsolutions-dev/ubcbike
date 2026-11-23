@@ -1,5 +1,5 @@
 import { h, mount } from '../ui/dom.js';
-import { card, dataTable, errorBox, loading, pageHead, pager } from '../ui/components.js';
+import { card, dataTable, errorBox, loading, pageHead, pager, toast } from '../ui/components.js';
 import { dateTime, money, pct } from '../ui/format.js';
 
 const PAGE_SIZE = 25;
@@ -20,8 +20,9 @@ function kpiBox(label, value, cls) {
 }
 
 export async function renderReports(ctx) {
-  const cache = { shopify: null, noUpc: null, margin: null };
+  const cache = { shopify: null, noUpc: null, margin: null, sales: {} };
   let activeReport = ctx.query.report || 'collections';
+  let salesDays = ctx.query.days || '30';
   const tabsHost = h('div.rep-tabs');
   const bodyHost = h('div.stack.rep-body', loading('Loading report…'));
 
@@ -29,7 +30,8 @@ export async function renderReports(ctx) {
     ['collections', 'Collections'],
     ['photos', 'No Photos'],
     ['no_upc', 'No UPC'],
-    ['margin', 'Cost & Margin'],
+    ['margin', 'Cost, MAP & Margin'],
+    ['sales', 'Sales & Margin'],
   ];
 
   const drawTabs = () => {
@@ -63,6 +65,12 @@ export async function renderReports(ctx) {
     return cache.margin;
   }
 
+  async function ensureSales(days, refresh) {
+    if (!refresh && cache.sales[days]) return cache.sales[days];
+    cache.sales[days] = await ctx.api.reportsSalesProfitability(days);
+    return cache.sales[days];
+  }
+
   async function loadActive(refresh) {
     mount(bodyHost, loading('Loading report…'));
     try {
@@ -82,6 +90,10 @@ export async function renderReports(ctx) {
         const r = await ensureMargin(refresh);
         if (!ctx.isCurrent()) return;
         renderMarginReport(r);
+      } else if (activeReport === 'sales') {
+        const r = await ensureSales(salesDays, refresh);
+        if (!ctx.isCurrent()) return;
+        renderSalesReport(r);
       }
     } catch (e) {
       if (!ctx.isCurrent()) return;
@@ -306,7 +318,7 @@ export async function renderReports(ctx) {
   }
 
   function renderMarginReport(r) {
-    const s = r.summary || { totalIssues: 0, noCostCount: 0, negativeMarginCount: 0 };
+    const s = r.summary || { totalIssues: 0, noCostCount: 0, negativeMarginCount: 0, mapViolationCount: 0 };
     const items = r.items || [];
     let filterMode = 'all';
     let q = '';
@@ -315,8 +327,9 @@ export async function renderReports(ctx) {
       onchange: (e) => { filterMode = e.target.value; list.redraw(); },
     },
     h('option', { value: 'all' }, 'All issues (' + s.totalIssues + ')'),
-    h('option', { value: 'neg' }, 'Negative Margin (' + s.negativeMarginCount + ')'),
-    h('option', { value: 'nocost' }, 'Missing Cost (' + s.noCostCount + ')'));
+    h('option', { value: 'neg' }, 'Negative Margin (' + (s.negativeMarginCount || 0) + ')'),
+    h('option', { value: 'map' }, 'MAP Violation (' + (s.mapViolationCount || 0) + ')'),
+    h('option', { value: 'nocost' }, 'Missing Cost (' + (s.noCostCount || 0) + ')'));
 
     const searchInput = h('input.rep-search', {
       type: 'search',
@@ -325,11 +338,12 @@ export async function renderReports(ctx) {
     });
 
     const list = renderPaginatedCard({
-      title: 'Shopify-matched: missing cost & negative margin',
+      title: 'In-stock catalog health: Cost > Retail, MAP floor & missing cost',
       meta: s.totalIssues.toLocaleString('en-US') + ' items',
       toolbar: h('div.rep-filters', searchInput, modeSelect),
       getRows: () => items.filter((it) => {
         if (filterMode === 'neg' && it.issue !== 'negative_margin') return false;
+        if (filterMode === 'map' && it.issue !== 'map_violation') return false;
         if (filterMode === 'nocost' && it.issue !== 'no_cost') return false;
         if (q && !(it.title + ' ' + it.brand + ' ' + it.sku).toLowerCase().includes(q)) return false;
         return true;
@@ -337,37 +351,146 @@ export async function renderReports(ctx) {
       columns: [
         {
           key: 'title',
-          label: 'Matched item',
+          label: 'Item',
           cls: 'title-cell',
           render: (it) => h('div',
             h('a', { href: '#/products/' + it.id }, h('strong', it.title)),
-            h('div.sku', (it.brand || '—') + ' · Qty ' + it.physicalQty)),
+            h('div.sku', (it.brand || '—') + ' · SKU ' + it.sku + ' · Qty ' + it.physicalQty)),
         },
         { key: 'price', label: 'Price', num: true, render: (it) => money(it.priceCents) },
         { key: 'cost', label: 'Cost', num: true, opt: true, render: (it) => (it.costCents && it.costCents > 0 ? money(it.costCents) : h('span.badge.warn', 'No cost')) },
-        { key: 'margin', label: 'Margin', num: true, render: (it) => (it.marginPct === null ? h('span.badge.warn', 'No cost') : h('span.badge.bad', pct(it.marginPct))) },
+        { key: 'map', label: 'MAP', num: true, opt: true, render: (it) => (it.mapCents && it.mapCents > 0 ? money(it.mapCents) : '—') },
+        {
+          key: 'margin',
+          label: 'Alert / Margin',
+          num: true,
+          render: (it) => (it.issue === 'map_violation'
+            ? h('span.badge.bad', 'Below MAP')
+            : it.marginPct === null
+              ? h('span.badge.warn', 'No cost')
+              : h('span.badge.bad', pct(it.marginPct))),
+        },
+        {
+          key: 'fix',
+          label: 'Action',
+          render: (it) => h('a.btn.sm', { href: '#/lightspeed-sheet?stock=physical&q=' + encodeURIComponent(it.sku) }, 'Bulk Sheet →'),
+        },
       ],
-      empty: 'No missing cost or negative margin items among Shopify-matched stock!',
+      empty: 'No negative margin, MAP violation, or missing cost items in stock!',
       onCsv: (rows) => downloadCsv(
-        'shopify-matched-margin-and-cost-issues.csv',
-        ['Title', 'Brand', 'SKU', 'In-Store Qty', 'Price', 'Cost', 'Issue', 'Shopify Admin URL'],
-        rows.map((it) => [it.title, it.brand, it.sku, it.physicalQty, (it.priceCents / 100).toFixed(2), it.costCents ? (it.costCents / 100).toFixed(2) : '', it.issue, it.adminUrl || '']),
+        'catalog-health-margin-and-map-issues.csv',
+        ['Title', 'Brand', 'SKU', 'In-Store Qty', 'Price', 'Cost', 'MAP', 'Issue', 'Shopify Admin URL'],
+        rows.map((it) => [it.title, it.brand, it.sku, it.physicalQty, (it.priceCents / 100).toFixed(2), it.costCents ? (it.costCents / 100).toFixed(2) : '', it.mapCents ? (it.mapCents / 100).toFixed(2) : '', it.issue, it.adminUrl || '']),
       ),
     });
 
     mount(bodyHost,
       h('div.kpis.dash-kpis',
-        kpiBox('Negative margin', s.negativeMarginCount, s.negativeMarginCount ? 'bad' : ''),
-        kpiBox('Missing cost', s.noCostCount, s.noCostCount ? 'attn' : ''),
-        kpiBox('Total issues', s.totalIssues)),
+        kpiBox('Negative margin', s.negativeMarginCount || 0, s.negativeMarginCount ? 'bad' : ''),
+        kpiBox('MAP violations', s.mapViolationCount || 0, s.mapViolationCount ? 'bad' : ''),
+        kpiBox('Missing cost', s.noCostCount || 0, s.noCostCount ? 'attn' : ''),
+        kpiBox('Total issues', s.totalIssues || 0)),
       list.el);
   }
+
+  function renderSalesReport(r) {
+    const s = r.summary || { orderCount: 0, unitsSold: 0, revenueCents: 0, knownCostCents: 0, grossProfitCents: 0, marginPct: null };
+    const topSkus = r.topSkus || [];
+    const camps = r.campaigns || [];
+    let q = '';
+
+    const rangeSel = h('select.rep-select', {
+      onchange: (e) => { salesDays = e.target.value; loadActive(true); },
+    },
+    h('option', { value: '7', selected: salesDays === '7' }, 'Last 7 days'),
+    h('option', { value: '30', selected: salesDays === '30' }, 'Last 30 days'),
+    h('option', { value: '90', selected: salesDays === '90' }, 'Last 90 days'),
+    h('option', { value: 'all', selected: salesDays === 'all' }, 'All time'));
+
+    const searchInput = h('input.rep-search', {
+      type: 'search',
+      placeholder: 'Filter SKU or product title…',
+      oninput: (e) => { q = (e.target.value || '').trim().toLowerCase(); skuCard.redraw(); },
+    });
+
+    const campCard = card('Campaign Profitability (Online + POS Promos)', camps.length
+      ? dataTable({
+        columns: [
+          { key: 'name', label: 'Promotion', render: (c) => h('a', { href: '#/promotions/' + c.id }, h('strong', c.name)) },
+          { key: 'status', label: 'Status', render: (c) => h('span.badge', { class: c.status === 'active' ? 'ok' : '' }, c.status) },
+          { key: 'orders', label: 'Orders', num: true, render: (c) => String(c.ordersCount || 0) },
+          { key: 'units', label: 'Units', num: true, render: (c) => String(c.unitsSold || 0) },
+          { key: 'rev', label: 'Revenue', num: true, render: (c) => money(c.revenueCents) },
+          { key: 'profit', label: 'Est. Profit', num: true, opt: true, render: (c) => money(c.grossProfitCents) },
+          { key: 'margin', label: 'Margin', num: true, render: (c) => (c.marginPct === null ? '—' : pct(c.marginPct)) },
+        ],
+        rows: camps,
+      })
+      : h('div.dash-empty', h('span.muted', 'No active or completed promotions in this window yet.')),
+    { flush: !!camps.length });
+
+    const skuCard = renderPaginatedCard({
+      title: 'Top Selling Web SKUs & Margin',
+      meta: topSkus.length + ' SKUs',
+      toolbar: h('div.rep-filters', rangeSel, searchInput),
+      getRows: () => (!q ? topSkus : topSkus.filter((it) => (it.sku + ' ' + it.title).toLowerCase().includes(q))),
+      columns: [
+        {
+          key: 'title',
+          label: 'Product / SKU',
+          cls: 'title-cell',
+          render: (it) => h('div',
+            it.variantId ? h('a', { href: '#/products/' + it.variantId }, h('strong', it.title)) : h('strong', it.title),
+            h('div.sku', 'SKU ' + it.sku + ' · ' + it.ordersCount + ' order(s)')),
+        },
+        { key: 'units', label: 'Units', num: true, render: (it) => String(it.unitsSold || 0) },
+        { key: 'rev', label: 'Revenue', num: true, render: (it) => money(it.revenueCents) },
+        { key: 'cost', label: 'Est. Cost', num: true, opt: true, render: (it) => (it.costCents ? money(it.costCents) : '—') },
+        { key: 'margin', label: 'Margin', num: true, render: (it) => (it.marginPct === null ? '—' : h('span.badge', { class: it.marginPct < 0.15 ? 'warn' : 'ok' }, pct(it.marginPct))) },
+      ],
+      empty: 'No Shopify web orders recorded in this period yet.',
+      onCsv: (rows) => downloadCsv(
+        'ubc-web-sales-profitability.csv',
+        ['SKU', 'Title', 'Orders', 'Units', 'Revenue ($)', 'Est Cost ($)', 'Est Profit ($)', 'Margin %'],
+        rows.map((it) => [it.sku, it.title, it.ordersCount, it.unitsSold, (it.revenueCents / 100).toFixed(2), (it.costCents / 100).toFixed(2), (it.grossProfitCents / 100).toFixed(2), it.marginPct === null ? '' : (it.marginPct * 100).toFixed(1) + '%']),
+      ),
+    });
+
+    mount(bodyHost,
+      h('div.kpis.dash-kpis',
+        kpiBox('Web orders', s.orderCount || 0),
+        kpiBox('Gross revenue', money(s.revenueCents || 0)),
+        kpiBox('Est. gross profit', money(s.grossProfitCents || 0), s.grossProfitCents > 0 ? 'ok' : ''),
+        kpiBox('Avg. margin', s.marginPct === null ? '—' : pct(s.marginPct))),
+      campCard,
+      skuCard.el);
+  }
+
+  const refreshBtn = ctx.api.refreshSkuIndex && (!ctx.can || ctx.can('catalog.write'))
+    ? h('button.btn.sm', {
+      type: 'button',
+      onclick: async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = 'Refreshing…';
+        try {
+          await ctx.api.refreshSkuIndex();
+          toast('Web SKU/MPN search index refresh queued — live in ~10s.', 'ok');
+        } catch (err) {
+          toast(err.message || 'Could not queue index refresh', 'bad');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '↻ Search Index';
+        }
+      },
+    }, '↻ Search Index')
+    : null;
 
   drawTabs();
   loadActive(false);
 
   return h('div.stack.rep-root',
-    pageHead('Reports', 'Shopify-matched catalog health — Collections, Photos, UPCs & Margins'),
+    pageHead('Reports', 'Catalog health, Cost/MAP alerts, Web Sales & Campaign Profitability', refreshBtn ? [refreshBtn] : []),
     tabsHost,
     bodyHost);
 }

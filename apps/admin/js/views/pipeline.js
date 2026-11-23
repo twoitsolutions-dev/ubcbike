@@ -1,7 +1,7 @@
 import { h, icon, mount } from '../ui/dom.js';
 import { card, chips, confirmDialog, dataTable, errorBox, loading, pageHead, toast, watchJob } from '../ui/components.js';
 import { ago, dateTime, money, pct } from '../ui/format.js';
-import { vendorCatalogTabs } from './suppliers.js?v=87';
+import { vendorCatalogTabs } from './suppliers.js?v=88';
 
 const HOLD_LABELS = {
   map_above_published_price: 'MAP exceeds published Shopify price',

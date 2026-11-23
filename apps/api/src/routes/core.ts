@@ -1082,6 +1082,8 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     deco: z.string().max(20).optional(),
     trans: z.string().max(20).optional(),
     color: z.string().max(30).optional(),
+    icon: z.string().max(20).optional(),
+    iconSide: z.enum(['left', 'right']).optional(),
   });
   const ledTemplateSchema = z.object({ name: z.string().trim().min(1).max(60), slides: z.array(ledSlideSchema).min(1).max(6) });
   const ledRow = (r: { id: string; name: string; slides: unknown; updated_at: Date; author: string | null }) =>

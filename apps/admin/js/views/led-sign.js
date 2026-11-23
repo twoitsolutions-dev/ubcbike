@@ -1,7 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, pageHead, toast } from '../ui/components.js';
-import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=89';
-import { ICONS, drawIcon, iconEntrance } from './led-icons.js?v=89';
+import { encodeMjpegAvi, encodeRgb24Avi, rgbaToBgr24BottomUp } from '../ui/avi-encoder.js?v=90';
+import { ICONS, drawIcon, iconEntrance } from './led-icons.js?v=90';
 
 // UBC street sign: 214 x 112 pixels, 15 fps, audio-free .AVI.
 const W = 214;
@@ -173,8 +173,11 @@ function isLight(hex) {
   return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 > 0.6;
 }
 
+// Text size of the slide being drawn (per-slide "Text size" control, 1 = 100 %).
+let TEXT_SCALE = 1;
+
 function fitFont(ctx2d, text, maxWidth, startSize, minSize, family) {
-  let size = startSize;
+  let size = Math.max(minSize, Math.round(startSize * TEXT_SCALE));
   while (size > minSize) {
     ctx2d.font = '900 ' + size + 'px ' + family;
     if (ctx2d.measureText(text).width <= maxWidth) break;
@@ -503,7 +506,7 @@ function drawPrice(ctx2d, slide, t, dur, c1, acc) {
 function drawTicker(ctx2d, slide, t, c1, acc) {
   const a = String(slide.line1 || '').toUpperCase().trim();
   const b = String(slide.line2 || '').toUpperCase().trim();
-  const size = Math.round(H * 0.42);
+  const size = Math.round(H * 0.42 * TEXT_SCALE);
   ctx2d.font = '900 ' + size + 'px ' + PRO_FONT;
   const gap = '   ';
   const sep = '  •  ';
@@ -557,7 +560,22 @@ function drawBrand(ctx2d, slide, t, assets) {
   });
 }
 
-function drawSlide(ctx2d, slide, t, assets, rs) {
+// Sign fit: margins (px) around the content. The content is scaled uniformly into the
+// remaining area; backgrounds still cover the whole sign.
+const MAX_MARGIN = 30;
+function normFit(settings) {
+  const c = (v) => Math.max(0, Math.min(MAX_MARGIN, Math.round(Number(v) || 0)));
+  const L = c(settings && settings.padL);
+  const R = c(settings && settings.padR);
+  const T = c(settings && settings.padT);
+  const B = c(settings && settings.padB);
+  const aw = W - L - R;
+  const ah = H - T - B;
+  const sc = Math.min(aw / W, ah / H);
+  return { L, R, T, B, active: L + R + T + B > 0, s: sc, ox: L + (aw - W * sc) / 2, oy: T + (ah - H * sc) / 2 };
+}
+
+function drawSlide(ctx2d, slide, t, assets, rs, fit) {
   const accent = (COLORS[slide.palette] || COLORS.blue_red_white).primary;
   const dur = slideSeconds(slide);
   let bg = slide.bg || 'black';
@@ -569,6 +587,12 @@ function drawSlide(ctx2d, slide, t, assets, rs) {
     else { c1 = '#FFFFFF'; acc = '#000000'; }
   }
   drawBackground(ctx2d, bg, rs, accent);
+  ctx2d.save();
+  if (fit && fit.active) {
+    ctx2d.translate(fit.ox, fit.oy);
+    ctx2d.scale(fit.s, fit.s);
+  }
+  TEXT_SCALE = Math.max(0.6, Math.min(1.4, (Number(slide.size) || 100) / 100));
   ctx2d.textAlign = 'center';
   ctx2d.textBaseline = 'middle';
   const icon = ICON_LAYOUTS.indexOf(slide.layout || 'slam') >= 0 ? (slide.icon || 'none') : 'none';
@@ -591,6 +615,8 @@ function drawSlide(ctx2d, slide, t, assets, rs) {
   else drawSlam(ctx2d, slide, t, dur, c1, acc);
   AREA = FULL_AREA;
   drawDeco(ctx2d, slide.deco || 'rail', rs, bg === 'flood' ? (isLight(accent) ? '#000000' : '#FFFFFF') : accent);
+  ctx2d.restore();
+  TEXT_SCALE = 1;
 }
 
 const bufs = {};
@@ -604,7 +630,8 @@ function buffer(key) {
 }
 
 // Draws the whole ad at time `sec` (loops); each slide's transition plays into the next one.
-function drawFrame(ctx2d, slides, sec, assets) {
+function drawFrame(ctx2d, slides, sec, assets, settings) {
+  const fit = normFit(settings);
   const total = totalSeconds(slides);
   let rem = sec % Math.max(1, total);
   let idx = 0;
@@ -620,8 +647,8 @@ function drawFrame(ctx2d, slides, sec, assets) {
     const k = easeInOutCubic((rem - (dur - TRANS_SEC)) / TRANS_SEC);
     const a = buffer('a');
     const b = buffer('b');
-    drawSlide(a.getContext('2d'), cur, rem, assets, sec);
-    drawSlide(b.getContext('2d'), slides[(idx + 1) % slides.length], 0.001, assets, sec);
+    drawSlide(a.getContext('2d'), cur, rem, assets, sec, fit);
+    drawSlide(b.getContext('2d'), slides[(idx + 1) % slides.length], 0.001, assets, sec, fit);
     ctx2d.save();
     ctx2d.fillStyle = '#000000';
     ctx2d.fillRect(0, 0, W, H);
@@ -662,7 +689,7 @@ function drawFrame(ctx2d, slides, sec, assets) {
     ctx2d.restore();
     return;
   }
-  drawSlide(ctx2d, cur, rem, assets, sec);
+  drawSlide(ctx2d, cur, rem, assets, sec, fit);
 }
 
 function downloadBlob(blob, name) {
@@ -714,7 +741,8 @@ export async function renderLedSign(ctx) {
     list: [],
     readOnly: false,
     loading: true,
-    cur: { id: null, name: BUILTIN[0].name, slides: cloneSlides(BUILTIN[0].slides) },
+    cur: { id: null, name: BUILTIN[0].name, slides: cloneSlides(BUILTIN[0].slides), settings: {} },
+    guides: true,
     activeIdx: 0,
     dirty: false,
     confirmDelete: false,
@@ -735,6 +763,7 @@ export async function renderLedSign(ctx) {
   const listHost = h('div.led-tpl-row');
   const listActions = h('div.led-tpl-row');
   const tplBar = h('div.stack-sm');
+  const fitHost = h('div.stack-sm.led-fit');
   const slidesHost = h('div.led-slide-tabs');
   const editorHost = h('div.stack-sm');
   const exportBtn = h('button.btn.primary', { type: 'button' }, 'Download .AVI');
@@ -756,8 +785,18 @@ export async function renderLedSign(ctx) {
       if (rafId) window.cancelAnimationFrame(rafId);
       return;
     }
-    drawFrame(ctx1, st.cur.slides, (now - startTs) / 1000, assets);
+    drawFrame(ctx1, st.cur.slides, (now - startTs) / 1000, assets, st.cur.settings);
     ctx2.drawImage(canvas1x, 0, 0);
+    const fit = normFit(st.cur.settings);
+    if (st.guides && fit.active) {
+      // guide only on the zoomed preview (never exported): the area the content fits into
+      ctx2.save();
+      ctx2.strokeStyle = 'rgba(255,0,200,0.9)';
+      ctx2.lineWidth = 1;
+      ctx2.setLineDash([3, 2]);
+      ctx2.strokeRect(fit.L + 0.5, fit.T + 0.5, W - fit.L - fit.R - 1, H - fit.T - fit.B - 1);
+      ctx2.restore();
+    }
     rafId = window.requestAnimationFrame(drawPreviewLoop);
   }
 
@@ -784,7 +823,7 @@ export async function renderLedSign(ctx) {
   }
 
   function openTemplate(t) {
-    st.cur = { id: t.id === undefined ? null : t.id, name: t.name, slides: cloneSlides(t.slides) };
+    st.cur = { id: t.id === undefined ? null : t.id, name: t.name, slides: cloneSlides(t.slides), settings: Object.assign({}, t.settings || {}) };
     st.activeIdx = 0;
     st.dirty = false;
     st.confirmDelete = false;
@@ -816,7 +855,13 @@ export async function renderLedSign(ctx) {
       color: COLORS[s.color] ? s.color : 'white',
       icon: s.icon || 'none',
       iconSide: s.iconSide === 'right' ? 'right' : 'left',
+      size: Math.max(60, Math.min(140, Math.round(Number(s.size) || 100))),
     }));
+  }
+
+  function settingsPayload() {
+    const f = normFit(st.cur.settings);
+    return { padL: f.L, padR: f.R, padT: f.T, padB: f.B };
   }
 
   const builtinPayload = () => BUILTIN.map((t) => ({ name: t.name, since: t.since || 1, slides: cloneSlides(t.slides) }));
@@ -862,7 +907,7 @@ export async function renderLedSign(ctx) {
     const creating = asCopy || st.cur.id === null;
     if (asCopy && st.list.some((t) => t.name.toLowerCase() === name.toLowerCase())) name = (name + ' (copy)').slice(0, 60);
     try {
-      const body = { name, slides: slidePayload() };
+      const body = { name, slides: slidePayload(), settings: settingsPayload() };
       const saved = creating ? await ctx.api.createLedTemplate(body) : await ctx.api.updateLedTemplate(st.cur.id, body);
       toast((creating ? 'Created' : 'Saved') + ' "' + saved.name + '"', 'ok');
       st.dirty = false;
@@ -889,7 +934,7 @@ export async function renderLedSign(ctx) {
       await ctx.api.deleteLedTemplate(gone.id);
       toast('Deleted template "' + gone.name + '"', 'ok');
       st.dirty = false;
-      st.cur = { id: null, name: '', slides: blankSlides() };
+      st.cur = { id: null, name: '', slides: blankSlides(), settings: {} };
       await loadList();
       if (!st.list.length) newTemplate();
     } catch (err) {
@@ -1095,7 +1140,10 @@ export async function renderLedSign(ctx) {
         styleSel('Decoration', 'deco', DECOS, 'rail', false),
         styleSel('Transition to next slide', 'trans', TRANS, 'fade', false),
         layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Accent color'), colorSel) : null,
-        layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Main text color'), textSel) : null),
+        layout !== 'brand' ? h('label.led-field', h('span.small.muted', 'Main text color'), textSel) : null,
+        h('label.led-field', h('span.small.muted', 'Text size'),
+          h('select', { onchange: (e) => { cur.size = Number(e.target.value) || 100; markDirty(); } },
+            [70, 80, 90, 100, 110, 120, 130].map((v) => h('option', { value: String(v), selected: (Number(cur.size) || 100) === v }, v + ' %' + (v === 100 ? ' (auto fit)' : '')))))),
       h('div.led-tpl-row',
         h('button.btn.sm', { type: 'button', disabled: st.activeIdx === 0, onclick: () => move(-1) }, '← Move'),
         h('button.btn.sm', { type: 'button', disabled: st.activeIdx === slides.length - 1, onclick: () => move(1) }, 'Move →'),
@@ -1119,7 +1167,38 @@ export async function renderLedSign(ctx) {
       st.readOnly ? null : h('span.small.muted', 'Slide edits are stored when you press "Save changes".'));
   }
 
+  // ---------- Sign fit (margins for the whole template) ----------
+  function renderFit() {
+    const f = normFit(st.cur.settings);
+    const sides = [['padT', 'Top', f.T], ['padB', 'Bottom', f.B], ['padL', 'Left', f.L], ['padR', 'Right', f.R]];
+    const setVal = (key, v) => {
+      const next = Object.assign({}, st.cur.settings);
+      next[key] = Math.max(0, Math.min(MAX_MARGIN, v));
+      st.cur.settings = next;
+      markDirty();
+      renderFit();
+    };
+    mount(fitHost,
+      h('div.row-between',
+        h('strong.small', 'Sign fit (margins, whole template)'),
+        h('label.small.muted.led-guides',
+          h('input', { type: 'checkbox', checked: st.guides, onchange: (e) => { st.guides = e.target.checked; } }),
+          ' Show guides')),
+      h('span.small.muted', 'If the sign cuts an edge or the text looks tight, add margin on that side. The pink dashed box in the 2x preview is where the content fits.'),
+      h('div.led-fit-grid',
+        sides.map(([key, label, val]) => h('div.led-fit-side',
+          h('span.small.muted', label),
+          h('div.led-stepper',
+            h('button.btn.sm', { type: 'button', disabled: st.readOnly || val <= 0, 'aria-label': label + ' margin minus', onclick: () => setVal(key, val - 1) }, '−'),
+            h('span.led-fit-val', val + ' px'),
+            h('button.btn.sm', { type: 'button', disabled: st.readOnly || val >= MAX_MARGIN, 'aria-label': label + ' margin plus', onclick: () => setVal(key, val + 1) }, '+'))))),
+      st.readOnly ? null : h('div.led-tpl-row',
+        h('button.btn.sm', { type: 'button', onclick: () => { st.cur.settings = { padL: 4, padR: 4, padT: 3, padB: 3 }; markDirty(); renderFit(); } }, 'Small margin all around'),
+        h('button.btn.sm', { type: 'button', disabled: !f.active, onclick: () => { st.cur.settings = {}; markDirty(); renderFit(); } }, 'Reset to 0')));
+  }
+
   function renderAll() {
+    renderFit();
     renderTemplateBar();
     renderSlidesBar();
     renderSlideEditor();
@@ -1150,7 +1229,7 @@ export async function renderLedSign(ctx) {
       const frames = [];
       const count = Math.round(total * FPS);
       for (let f = 0; f < count; f++) {
-        drawFrame(octx, slides, f / FPS, assets);
+        drawFrame(octx, slides, f / FPS, assets, st.cur.settings);
         if (st.codec === 'rgb24') frames.push(rgbaToBgr24BottomUp(octx.getImageData(0, 0, W, H).data, W, H));
         else frames.push(await canvasToJpegBytes(off));
         if ((f + 1) % 15 === 0 || f + 1 === count) {
@@ -1192,6 +1271,7 @@ export async function renderLedSign(ctx) {
         h('div.led-previews',
           h('div.led-prev-box', h('span.small.muted', 'Actual size'), canvas1x),
           h('div.led-prev-box', h('span.small.muted', '2× zoom'), canvas2x)),
+        fitHost,
         h('div.led-export-opts', h('label.led-field', h('span.small.muted', 'File format'), codecSel)),
         h('div.row-between', exportStatus, exportBtn)))));
 }

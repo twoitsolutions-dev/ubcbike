@@ -587,13 +587,13 @@ export function createDemoDriver() {
     async createLedTemplate(t) {
       const u = can('catalog.write');
       state.ledTemplates = state.ledTemplates || [];
-      const row = { id: String(Date.now()), name: String(t.name || '').trim().slice(0, 60) || 'Untitled', slides: clone(t.slides || []), updatedAt: nowIso(), author: u.name };
+      const row = { id: String(Date.now()), name: String(t.name || '').trim().slice(0, 60) || 'Untitled', slides: clone(t.slides || []), settings: clone(t.settings || {}), updatedAt: nowIso(), author: u.name };
       state.ledTemplates.push(row); audit('led_template.created', null, null, { name: row.name }); save(); return clone(row);
     },
     async updateLedTemplate(id, t) {
       can('catalog.write');
       const row = (state.ledTemplates || []).find((x) => x.id === String(id)); if (!row) fail(404, 'NOT_FOUND', 'LED template not found');
-      row.name = String(t.name || row.name).trim().slice(0, 60); row.slides = clone(t.slides || []); row.updatedAt = nowIso(); row.edited = true;
+      row.name = String(t.name || row.name).trim().slice(0, 60); row.slides = clone(t.slides || []); row.settings = clone(t.settings || {}); row.updatedAt = nowIso(); row.edited = true;
       audit('led_template.updated', null, null, { id, name: row.name }); save(); return clone(row);
     },
     async deleteLedTemplate(id) {

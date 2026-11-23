@@ -1096,14 +1096,21 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     color: z.string().max(30).optional(),
     icon: z.string().max(20).optional(),
     iconSide: z.enum(['left', 'right']).optional(),
+    size: z.number().int().min(60).max(140).optional(),
   });
-  const ledTemplateSchema = z.object({ name: z.string().trim().min(1).max(60), slides: z.array(ledSlideSchema).min(1).max(6) });
-  const ledRow = (r: { id: string; name: string; slides: unknown; updated_at: Date; author: string | null }) =>
-    ({ id: String(r.id), name: r.name, slides: r.slides, updatedAt: r.updated_at, author: r.author });
+  const ledSettingsSchema = z.object({
+    padL: z.number().int().min(0).max(30).default(0),
+    padR: z.number().int().min(0).max(30).default(0),
+    padT: z.number().int().min(0).max(30).default(0),
+    padB: z.number().int().min(0).max(30).default(0),
+  }).default({ padL: 0, padR: 0, padT: 0, padB: 0 });
+  const ledTemplateSchema = z.object({ name: z.string().trim().min(1).max(60), slides: z.array(ledSlideSchema).min(1).max(6), settings: ledSettingsSchema });
+  const ledRow = (r: { id: string; name: string; slides: unknown; settings?: unknown; updated_at: Date; author: string | null }) =>
+    ({ id: String(r.id), name: r.name, slides: r.slides, settings: r.settings ?? {}, updatedAt: r.updated_at, author: r.author });
 
   const listLedTemplates = async (q: { query: typeof ctx.pool.query }, companyId: string) => {
     const r = await q.query(
-      `SELECT t.id, t.name, t.slides, t.updated_at, u.name AS author FROM led_templates t LEFT JOIN users u ON u.id = t.created_by
+      `SELECT t.id, t.name, t.slides, t.settings, t.updated_at, u.name AS author FROM led_templates t LEFT JOIN users u ON u.id = t.created_by
        WHERE t.company_id = $1 ORDER BY t.sort_order, t.created_at, t.id LIMIT 200`, [companyId]);
     const seeded = await q.query(`SELECT version FROM led_template_seeds WHERE company_id = $1`, [companyId]);
     return { templates: r.rows.map(ledRow), seeded: (seeded.rowCount ?? 0) > 0, seededVersion: seeded.rows[0]?.version ?? 0 };
@@ -1168,9 +1175,9 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = ledTemplateSchema.parse(req.body);
     const s = req.session!;
     const r = await ctx.pool.query(
-      `INSERT INTO led_templates (company_id, name, slides, created_by) VALUES ($1, $2, $3, $4)
-       RETURNING id, name, slides, updated_at, NULL::text AS author`,
-      [s.companyId, body.name, JSON.stringify(body.slides), s.userId]);
+      `INSERT INTO led_templates (company_id, name, slides, settings, created_by) VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, slides, settings, updated_at, NULL::text AS author`,
+      [s.companyId, body.name, JSON.stringify(body.slides), JSON.stringify(body.settings), s.userId]);
     await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'led_template.created', detail: { name: body.name } });
     return ledRow(r.rows[0]);
   });
@@ -1180,9 +1187,9 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = ledTemplateSchema.parse(req.body);
     const s = req.session!;
     const r = await ctx.pool.query(
-      `UPDATE led_templates SET name = $3, slides = $4, updated_at = now() WHERE id = $1 AND company_id = $2
-       RETURNING id, name, slides, updated_at, NULL::text AS author`,
-      [id, s.companyId, body.name, JSON.stringify(body.slides)]);
+      `UPDATE led_templates SET name = $3, slides = $4, settings = $5, updated_at = now() WHERE id = $1 AND company_id = $2
+       RETURNING id, name, slides, settings, updated_at, NULL::text AS author`,
+      [id, s.companyId, body.name, JSON.stringify(body.slides), JSON.stringify(body.settings)]);
     if (!r.rowCount) throw notFound('LED template');
     await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'led_template.updated', detail: { id, name: body.name } });
     return ledRow(r.rows[0]);

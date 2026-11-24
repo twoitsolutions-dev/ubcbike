@@ -770,10 +770,10 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
 .mega .fb-wrap {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
-  padding-block: 24px 28px;
+  gap: 20px;
+  padding-block: 16px 20px;
   align-items: start;
-  max-height: 75vh;
+  max-height: 82vh;
   overflow-y: auto;
 }
 
@@ -783,18 +783,22 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
 
 .mega h4 {
   font-family: var(--label);
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 10px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--gold);
+  display: inline-block;
 }
 
 .mega li a {
   display: block;
-  padding: 4px 0;
-  font-size: 14px;
+  padding: 2px 0;
+  font-size: 13px;
+  line-height: 1.35;
   font-weight: 500;
   color: var(--ink);
   transition: transform 180ms var(--ease-out), color 160ms ease;

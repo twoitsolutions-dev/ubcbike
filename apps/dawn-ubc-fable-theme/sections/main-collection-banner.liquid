@@ -2,6 +2,37 @@
 {{ 'component-collection-hero.css' | asset_url | stylesheet_tag }}
 
 {%- style -%}
+  .ubc-col-banner-wrap {
+    background: #FEFDF3;
+    padding: 2.2rem 1.5rem 0.6rem;
+  }
+  @media screen and (min-width: 990px) {
+    .ubc-col-banner-wrap {
+      max-width: calc(var(--page-width) + 28rem);
+      margin: 0 auto;
+      padding: 2.6rem 5rem 0.8rem;
+    }
+  }
+  .ubc-col-banner-wrap .ubc-ws-hero {
+    margin-bottom: 0;
+  }
+  .ubc-col-banner-wrap .ubc-ws-title {
+    font-family: var(--ubc-font-display, "Anton", sans-serif) !important;
+    font-weight: 400 !important;
+    font-size: clamp(3.2rem, 4.6vw, 4.8rem) !important;
+    line-height: 1.04 !important;
+    color: #14202D !important;
+    margin: 0 0 0.8rem !important;
+    letter-spacing: 0.01em !important;
+  }
+  .ubc-col-banner-wrap .ubc-ws-lead {
+    font-family: var(--ubc-font-body, "Barlow", sans-serif) !important;
+    font-size: 1.55rem;
+    line-height: 1.55;
+    color: #4A5A6A;
+    margin: 0;
+    max-width: 68ch;
+  }
   @media screen and (max-width: 749px) {
     .collection-hero--with-image .collection-hero__inner {
       padding-bottom: calc({{ settings.media_shadow_vertical_offset | at_least: 0 }}px + 2rem);
@@ -9,29 +40,33 @@
   }
 {%- endstyle -%}
 
-<div class="collection-hero{% if section.settings.show_collection_image and collection.image %} collection-hero--with-image{% endif %} color-{{ section.settings.color_scheme }} gradient">
-  <div class="collection-hero__inner page-width {% if settings.animations_reveal_on_scroll %} scroll-trigger animate--fade-in{% endif %}">
-    <div class="collection-hero__text-wrapper">
-      <h1 class="collection-hero__title">
+<div class="ubc-col-banner-wrap">
+  <header class="ubc-ws-hero{% unless section.settings.show_collection_image and collection.image %} ubc-ws-hero--text-only{% endunless %} ubc-ws-hero--compact">
+    <div>
+      <span class="ubc-ws-kicker">
+        {%- if collection.handle == 'black-friday-deals' or collection.handle == 'sales-closeouts' or collection.handle == 'eoy-2026' -%}
+          LIMITED-TIME DEALS &amp; CLEARANCE &middot; TAMPA &amp; ALAFIA
+        {%- else -%}
+          UNIVERSITY BICYCLE CENTER &middot; TAMPA &amp; ALAFIA SINCE 1972
+        {%- endif -%}
+      </span>
+      <h1 class="ubc-ws-title">
         <span class="visually-hidden">{{ 'sections.collection_template.title' | t }}: </span>
         {{- collection.title | escape -}}
       </h1>
 
-      {%- if section.settings.show_collection_description -%}
-        <div class="collection-hero__description rte">{{ collection.description }}</div>
+      {%- if section.settings.show_collection_description and collection.description != blank -%}
+        <div class="ubc-ws-lead rte">{{ collection.description }}</div>
       {%- endif -%}
     </div>
 
     {%- if section.settings.show_collection_image and collection.image -%}
-      <div class="collection-hero__image-container media gradient">
+      <div class="ubc-ws-hero-media">
         <img
           srcset="
-            {%- if collection.image.width >= 165 -%}{{ collection.image | image_url: width: 165 }} 165w,{%- endif -%}
             {%- if collection.image.width >= 360 -%}{{ collection.image | image_url: width: 360 }} 360w,{%- endif -%}
-            {%- if collection.image.width >= 535 -%}{{ collection.image | image_url: width: 535 }} 535w,{%- endif -%}
             {%- if collection.image.width >= 750 -%}{{ collection.image | image_url: width: 750 }} 750w,{%- endif -%}
             {%- if collection.image.width >= 1070 -%}{{ collection.image | image_url: width: 1070 }} 1070w,{%- endif -%}
-            {%- if collection.image.width >= 1500 -%}{{ collection.image | image_url: width: 1500 }} 1500w,{%- endif -%}
             {{ collection.image | image_url }} {{ collection.image.width }}w
           "
           src="{{ collection.image | image_url: width: 750 }}"
@@ -42,7 +77,7 @@
         >
       </div>
     {%- endif -%}
-  </div>
+  </header>
 </div>
 
 {% schema %}

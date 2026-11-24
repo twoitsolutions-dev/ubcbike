@@ -1,0 +1,73 @@
+Order,Department,Type,Tag 1 (Department),Tag 2 (Category),Tag 3 (Subcategory / Gender),Tag 4 (Subcategory / Gender),Tag 5 (Subcategory),Notes
+1,Bikes,Road Bikes,cat:bikes,subcat:road-bikes,,,,Preserves dept-road-bikes
+2,Bikes,Mountain Bikes,cat:bikes,subcat:mountain-bikes,,,,Preserves dept-mountain-bikes
+3,Bikes,Cyclocross Bikes,cat:bikes,subcat:cyclocross-bikes,,,,
+4,Bikes,Commuter & Urban Bikes,cat:bikes,subcat:commuter-urban-bikes,,,,
+5,Bikes,Hybrid Comfort & Fitness Bikes,cat:bikes,subcat:hybrid-bikes,,,,Preserves dept-hybrid-bikes
+6,Bikes,Children's & Youth Bikes,cat:bikes,subcat:kids-bikes,,,,Preserves dept-kids-bikes
+7,Bikes,BMX Bikes,cat:bikes,subcat:bmx-bikes,,,,
+8,Bikes,Tricycles,cat:bikes,subcat:tricycles,,,,
+9,Bikes,Recumbent Bikes,cat:bikes,subcat:recumbent-bikes,,,,
+10,Bikes,Unicycles,cat:bikes,subcat:unicycles,,,,
+11,Bikes,Used Bikes,cat:bikes,subcat:used-bikes,condition:used,,,
+12,Bikes,Electric Road Bikes,cat:bikes,subcat:electric-bikes,subsub:electric-road-bikes,,,Preserves dept-electric-bikes
+13,Bikes,Electric Mountain Bikes,cat:bikes,subcat:electric-bikes,subsub:electric-mountain-bikes,,,Preserves dept-electric-bikes
+14,Bikes,Electric City & Recreation Bikes,cat:bikes,subcat:electric-bikes,subsub:electric-city-recreation,,,Preserves dept-electric-bikes
+15,Bikes,Electric Tricycles,cat:bikes,subcat:electric-bikes,subsub:electric-tricycles,,,Preserves dept-electric-bikes
+16,Components,Bar Ends,cat:components,subcat:bar-ends,,,,Preserves dept-parts
+17,Components,BMX Components,cat:components,subcat:bmx-components,,,,Preserves dept-parts
+18,Components,Brakes,cat:components,subcat:brakes,subsub:brake-levers,subsub:brake-pads,,Preserves dept-parts
+19,Components,Cables,cat:components,subcat:cables,subsub:gear-cables,subsub:brake-cables,,Preserves dept-parts
+20,Components,Cassettes & Freewheels,cat:components,subcat:cassettes-freewheels,,,,Preserves dept-parts
+21,Components,Chainrings,cat:components,subcat:chainrings,,,,Preserves dept-parts
+22,Components,Chains,cat:components,subcat:chains,,,,Preserves dept-parts
+23,Components,Cranksets,cat:components,subcat:cranksets,,,,Preserves dept-parts
+24,Components,Derailleurs,cat:components,subcat:derailleurs,subsub:front-derailleurs,subsub:rear-derailleurs,,Preserves dept-parts
+25,Components,Frame Parts,cat:components,subcat:frame-parts,subsub:derailleur-hangers,,,Preserves dept-parts
+26,Components,Forks,cat:components,subcat:forks,,,,Preserves dept-parts
+27,Components,Groupsets,cat:components,subcat:groupsets,,,,Preserves dept-parts
+28,Components,Handlebar Grips & Tape,cat:components,subcat:grips-tape,subsub:handlebar-grips,subsub:handlebar-tape,,Preserves dept-parts
+29,Components,Handlebars,cat:components,subcat:handlebars,,,,Preserves dept-parts
+30,Components,Headsets,cat:components,subcat:headsets,,,,Preserves dept-parts
+31,Components,Pedals,cat:components,subcat:pedals,,,,Preserves dept-pedals
+32,Components,Saddles,cat:components,subcat:saddles,,,,Preserves dept-parts
+33,Components,Seatposts,cat:components,subcat:seatposts,,,,Preserves dept-parts
+34,Components,Shifters,cat:components,subcat:shifters,,,,Preserves dept-parts
+35,Components,Shocks,cat:components,subcat:shocks,,,,Preserves dept-parts
+36,Components,Stems,cat:components,subcat:stems,,,,Preserves dept-parts
+37,Components,Other Components,cat:components,subcat:other-components,,,,Preserves dept-parts
+38,Components,Tires & Tubes,cat:components,subcat:tires-tubes,subsub:bicycle-tires,subsub:bicycle-tubes,,Preserves dept-tires-tubes / dept-tubes
+39,Components,Wheels,cat:components,subcat:wheels,,,,Preserves dept-parts
+40,Accessories,Body Care,cat:accessories,subcat:body-care,,,,Preserves dept-accessories
+41,Accessories,Car Racks,cat:accessories,subcat:car-racks,,,,Preserves dept-accessories
+42,Accessories,Children's Bike Accessories,cat:accessories,subcat:childrens-bike-accessories,subsub:training-wheels,subsub:streamers,,Preserves dept-accessories
+43,Accessories,Child Seats,cat:accessories,subcat:child-seats,,,,Preserves dept-accessories
+44,Accessories,Electric Motor Kits,cat:accessories,subcat:electric-motor-kits,,,,Preserves dept-accessories
+45,Accessories,Electronics,cat:accessories,subcat:electronics,subsub:gps,subsub:cycling-computers,,Preserves dept-accessories
+46,Accessories,Eyewear,cat:accessories,subcat:eyewear,,,,Preserves dept-eyewear
+47,Accessories,Fenders,cat:accessories,subcat:fenders,,,,Preserves dept-accessories
+48,Accessories,Helmets,cat:accessories,subcat:helmets,subsub:adult-helmets,subsub:kids-helmets,,Preserves dept-helmets
+49,Accessories,Hydration,cat:accessories,subcat:hydration,subsub:bottles,subsub:bottle-cages,subsub:hydration-packs,Preserves dept-hydration / dept-bottles-cages
+50,Accessories,Lighting,cat:accessories,subcat:lighting,,,,Preserves dept-accessories
+51,Accessories,Locks & Security,cat:accessories,subcat:locks-security,subsub:u-locks,subsub:cable-locks,,Preserves dept-accessories
+52,Accessories,Nutrition,cat:accessories,subcat:nutrition,,,,Preserves dept-accessories
+53,Accessories,Packs & Bags,cat:accessories,subcat:packs-bags,,,,Preserves dept-accessories
+54,Accessories,Bicycle Racks,cat:accessories,subcat:bicycle-racks,,,,Preserves dept-accessories
+55,Accessories,Bicycle Baskets,cat:accessories,subcat:bicycle-baskets,,,,Preserves dept-accessories
+56,Accessories,Pumps & Inflation,cat:accessories,subcat:pumps-inflation,subsub:floor-pumps,subsub:hand-pumps,,Preserves dept-tools
+57,Accessories,Bicycle Bells & Mirrors,cat:accessories,subcat:bells-mirrors,subsub:bicycle-bells,subsub:bicycle-mirrors,,Preserves dept-accessories
+58,Accessories,Protective & Armor Gear,cat:accessories,subcat:protective-armor-gear,,,,Preserves dept-accessories
+59,Accessories,Bicycle Storage Solutions,cat:accessories,subcat:storage-solutions,,,,Preserves dept-accessories
+60,Accessories,Tools & Maintenance,cat:accessories,subcat:tools-maintenance,subsub:bike-lubes,subsub:bike-tools,subsub:bicycle-workstands,Preserves dept-tools
+61,Accessories,Trailers & Strollers,cat:accessories,subcat:trailers-strollers,,,,Preserves dept-accessories
+62,Accessories,Bicycle Trainers,cat:accessories,subcat:trainers,,,,Preserves dept-accessories
+63,Accessories,Travel Cases,cat:accessories,subcat:travel-cases,,,,Preserves dept-accessories
+64,Accessories,Other Accessories,cat:accessories,subcat:other-accessories,,,,Preserves dept-accessories
+65,Clothing,Apparel Accessories,cat:apparel,subcat:apparel-accessories,,,,Preserves dept-clothing
+66,Clothing,Gloves,cat:apparel,subcat:gloves,gender:mens,gender:womens,gender:youth,Fixed duplicate Mens Clothing
+67,Clothing,Jerseys & Tops,cat:apparel,subcat:jerseys-tops,gender:mens,gender:womens,gender:youth,Fixed duplicate Mens Clothing
+68,Clothing,Outerwear,cat:apparel,subcat:outerwear,gender:mens,gender:womens,gender:youth,Fixed duplicate Mens Clothing
+69,Clothing,Shorts & Bottoms,cat:apparel,subcat:shorts-bottoms,gender:mens,gender:womens,gender:youth,Fixed duplicate Mens Clothing
+70,Clothing,Socks,cat:apparel,subcat:socks,,,,Preserves dept-clothing
+71,Clothing,Undergarments,cat:apparel,subcat:undergarments,gender:mens,gender:womens,gender:youth,Fixed duplicate Mens Clothing
+72,Clothing,Cycling Shoes,cat:apparel,subcat:shoes,subsub:road-shoes,subsub:mountain-casual-shoes,,Preserves dept-shoes

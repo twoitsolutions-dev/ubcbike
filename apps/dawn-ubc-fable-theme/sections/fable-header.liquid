@@ -203,8 +203,9 @@
       </div>
 
       <ul class="fb-nav" id="fbNav">
-        {%- if section.settings.menu != blank and section.settings.menu.links.size > 3 -%}
-          {%- for link in section.settings.menu.links -%}
+        {%- assign primary_menu = section.settings.menu | default: linklists['main-menu'] -%}
+        {%- if primary_menu != blank and primary_menu.links.size > 0 -%}
+          {%- for link in primary_menu.links -%}
             {%- if link.links != blank -%}
               <li class="has-mega">
                 <button type="button" aria-expanded="false" aria-controls="megaNav-{{ forloop.index }}">

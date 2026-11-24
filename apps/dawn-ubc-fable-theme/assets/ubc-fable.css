@@ -769,10 +769,16 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
 
 .mega .fb-wrap {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(300px, 1.35fr);
-  gap: 28px;
-  padding-block: 28px 32px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  padding-block: 24px 28px;
   align-items: start;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.mega .fb-wrap:has(.mega-card) {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(300px, 1.35fr);
 }
 
 .mega h4 {
@@ -782,12 +788,13 @@ body[data-ubc-edition] .fb-scope .on-dark .h2 em {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .mega li a {
   display: block;
-  padding: 6px 0;
+  padding: 4px 0;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink);
   transition: transform 180ms var(--ease-out), color 160ms ease;

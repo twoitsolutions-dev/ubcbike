@@ -53,8 +53,8 @@ function readHiddenLine(promptText) {
 }
 
 const pw = await readHiddenLine(`Nueva contrasena para ${targetEmail} (entrada oculta): `);
-if (pw.length < 8) {
-  console.error('La contrasena debe tener al menos 8 caracteres.');
+if (pw.length < 12) {
+  console.error('La contrasena debe tener al menos 12 caracteres.');
   process.exit(1);
 }
 

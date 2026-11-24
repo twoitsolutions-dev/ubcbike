@@ -117,6 +117,60 @@ async function shopifySyncStats(ctx: AppContext, companyId: string) {
 export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/health', async () => ({ ok: true }));
 
+  app.get('/privacy', async (_req, reply) => {
+    reply.header('Content-Type', 'text/html; charset=utf-8');
+    return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy · BikeShop Sync by TwoIT Solutions LLC</title>
+  <style>
+    body{margin:0;background:#FAF9F4;color:#14202D;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+    main{max-width:760px;margin:40px auto;padding:32px;background:#fff;border:1px solid rgba(20,32,45,.1);border-radius:16px}
+    .brand{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-weight:700;font-size:15px}
+    h1{margin:0 0 8px;font-size:26px}
+    h2{margin:24px 0 8px;font-size:18px;color:#14202D}
+    .muted{color:#475569;font-size:14px}
+    ul{padding-left:20px}
+    a{color:#14202D}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="border-radius:6px">
+        <rect width="32" height="32" rx="7" fill="#0F172A"/>
+        <path d="M8.5 9.5L15.5 15.5L8.5 21.5" stroke="#F1F5F9" stroke-width="3.2" stroke-linecap="square"/>
+        <rect x="16.5" y="19.5" width="7.5" height="3.2" fill="#FBBF24"/>
+      </svg>
+      <span>BikeShop Sync · TwoIT Solutions LLC</span>
+    </div>
+    <h1>Privacy Policy</h1>
+    <p class="muted">Effective date: November 24, 2026</p>
+    <p><strong>TwoIT Solutions LLC</strong> operates <strong>BikeShop Sync</strong>, a retail operations hub connecting Shopify stores with point-of-sale systems (Lightspeed R-Series) and cycling suppliers.</p>
+    <h2>1. Customer Data Processed</h2>
+    <ul>
+      <li><strong>Order identification only:</strong> When processing Shopify orders for special-order and pickup fulfillment, the Hub stores only the customer's <strong>first and last name</strong> alongside order totals and line items.</li>
+      <li><strong>No sensitive contact or payment data stored:</strong> The Hub does not store customer email addresses, phone numbers, street addresses, or payment card details from Shopify.</li>
+    </ul>
+    <h2>2. Purpose &amp; Sharing</h2>
+    <p>Data is used solely to synchronize inventory, pricing, and order fulfillment for the merchant. TwoIT Solutions LLC never sells, rents, or shares customer data with third parties or advertising networks.</p>
+    <h2>3. Security &amp; Encryption</h2>
+    <ul>
+      <li>All traffic is encrypted in transit via <strong>HTTPS / TLS</strong>.</li>
+      <li>Database records and backups are encrypted at rest (<strong>AES-256</strong>) in PostgreSQL (Supabase), with strict multi-tenant isolation by merchant (<code>company_id</code>).</li>
+      <li>Staff access requires authenticated accounts with minimum 12-character <code>scrypt</code>-hashed passwords, CSRF protection, role-based access control (RBAC), and audit logging of order views and state changes.</li>
+    </ul>
+    <h2>4. Retention &amp; Deletion</h2>
+    <p>Merchant and order data is retained only while the merchant account is active and is deleted upon merchant request or store disconnection.</p>
+    <h2>5. Contact</h2>
+    <p>For privacy or data deletion requests, contact <a href="https://www.twoitsolutions.com" target="_blank" rel="noopener">TwoIT Solutions LLC</a>.</p>
+  </main>
+</body>
+</html>`;
+  });
+
   app.get('/api/system', async () => {
     let dbLsActive = false;
     try {

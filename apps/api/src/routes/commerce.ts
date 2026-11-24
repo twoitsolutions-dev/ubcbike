@@ -130,6 +130,13 @@ export function registerCommerceRoutes(app: FastifyInstance, ctx: AppContext) {
     const c = req.session!.companyId;
     const o = await ctx.pool.query(`SELECT * FROM orders WHERE company_id = $1 AND id = $2`, [c, id]);
     if (!o.rows[0]) throw notFound('Order');
+    await audit(ctx.pool, {
+      companyId: c,
+      userId: req.session!.userId,
+      action: 'order.viewed',
+      entityType: 'order',
+      entityId: id,
+    });
     const [lines, events, pos] = await Promise.all([
       ctx.pool.query(
         `SELECT ol.*, s.code AS supplier_code,

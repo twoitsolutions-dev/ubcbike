@@ -74,8 +74,6 @@ const shopNode = colItem('SHOP', 'all', [
     colItem('Shifters', 'shifters'),
     colItem('Stems', 'stems'),
     colItem('Tires/Tubes', 'tires-tubes'),
-    colItem('Tires', 'bicycle-tires'),
-    colItem('Tubes', 'tubes'),
     colItem('Wheels', 'wheels'),
     colItem('Other', 'other-components'),
   ]),

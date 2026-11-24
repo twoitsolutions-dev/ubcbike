@@ -340,55 +340,6 @@
       {%- render 'ubc-breadcrumbs' -%}
 
       <div class="ubc-side" aria-label="Filters">
-      {%- if collection.handle != 'special-order-catalog' -%}
-        {%- liquid
-          assign non_store_suffix = ''
-          if active_brand_tag != ''
-            assign non_store_suffix = active_brand_tag
-          endif
-          if active_price_tag != ''
-            if non_store_suffix != ''
-              assign non_store_suffix = non_store_suffix | append: '+' | append: active_price_tag
-            else
-              assign non_store_suffix = active_price_tag
-            endif
-          endif
-          assign both_href = base_col_url
-          if non_store_suffix != ''
-            assign both_href = base_col_url | append: '/' | append: non_store_suffix
-          endif
-          assign tampa_href = base_col_url | append: '/ubc-tampa-stock'
-          if non_store_suffix != ''
-            assign tampa_href = tampa_href | append: '+' | append: non_store_suffix
-          endif
-          assign alafia_href = base_col_url | append: '/ubc-alafia-stock'
-          if non_store_suffix != ''
-            assign alafia_href = alafia_href | append: '+' | append: non_store_suffix
-          endif
-        -%}
-        <div class="ubc-store-bar" role="region" aria-label="Filter by store location">
-          <span class="ubc-store-label">Shop Location:</span>
-          <a
-            class="ubc-store-btn{% if active_store_tag == '' %} is-active{% endif %}"
-            href="{{ both_href }}"
-          >
-            Both Stores
-          </a>
-          <a
-            class="ubc-store-btn{% if active_store_tag == 'ubc-tampa-stock' %} is-active{% endif %}"
-            href="{{ tampa_href }}"
-          >
-            UBC Tampa Showroom{% if tampa_total > 0 and collection.handle == 'all' or collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia' %} ({{ tampa_total }}){% endif %}
-          </a>
-          <a
-            class="ubc-store-btn ubc-store-btn--alafia{% if active_store_tag == 'ubc-alafia-stock' %} is-active{% endif %}"
-            href="{{ alafia_href }}"
-          >
-            UBC Alafia River Park{% if alafia_total > 0 and collection.handle == 'all' or collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia' %} ({{ alafia_total }}){% endif %}
-          </a>
-        </div>
-      {%- endif -%}
-
       {%- if show_back_all or ubc_dept_handles.size > 0 -%}
       <nav class="ubc-dept-pills" aria-label="Store departments">
         {%- if show_back_all -%}

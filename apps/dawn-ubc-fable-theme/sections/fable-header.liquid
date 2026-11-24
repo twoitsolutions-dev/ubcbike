@@ -203,9 +203,9 @@
       </div>
 
       <ul class="fb-nav" id="fbNav">
-        {%- assign primary_menu = section.settings.menu | default: linklists['main-menu'] -%}
-        {%- if primary_menu != blank and primary_menu.links.size > 0 -%}
-          {%- for link in primary_menu.links -%}
+        {%- assign shop_menu = linklists['main-menu'].links.first -%}
+        {%- if section.settings.menu != blank and section.settings.menu.links.size > 3 -%}
+          {%- for link in section.settings.menu.links -%}
             {%- if link.links != blank -%}
               <li class="has-mega">
                 <button type="button" aria-expanded="false" aria-controls="megaNav-{{ forloop.index }}">
@@ -254,6 +254,24 @@
             </button>
             <div class="mega" id="megaBikes">
               <div class="fb-wrap">
+                {%- if shop_menu != blank and shop_menu.links.size >= 4 -%}
+                  {%- for childlink in shop_menu.links -%}
+                    <div>
+                      <h4><a href="{{ childlink.url }}">{{ childlink.title | escape }}</a></h4>
+                      {%- if childlink.links != blank -%}
+                        <ul>
+                          {%- for grandchildlink in childlink.links -%}
+                            <li>
+                              <a href="{{ grandchildlink.url }}"{% if grandchildlink.current %} aria-current="page"{% endif %}>
+                                {{ grandchildlink.title | escape }}
+                              </a>
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      {%- endif -%}
+                    </div>
+                  {%- endfor -%}
+                {%- else -%}
                 <div>
                   <h4 data-es="Bicicletas y Eléctricas">Bikes &amp; Electric</h4>
                   <ul>
@@ -298,6 +316,7 @@
                     <span class="mega-cta"><span data-es="Ver todo el catálogo">Browse All Items</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
                   </div>
                 </a>
+                {%- endif -%}
               </div>
             </div>
           </li>
@@ -501,8 +520,7 @@
     {
       "type": "link_list",
       "id": "menu",
-      "label": "Primary navigation menu (Shopify Navigation)",
-      "default": "main-menu"
+      "label": "Primary navigation menu (Shopify Navigation)"
     },
     {
       "type": "link_list",

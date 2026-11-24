@@ -387,6 +387,50 @@ export class LightspeedRClient {
     }
   }
 
+  /**
+   * Read-only iteration of completed Lightspeed R-Series sales (`/Sale.json`) with `SaleLines`.
+   * Yields `{ itemID, soldAt }` pairs for non-voided sales with positive quantity.
+   */
+  async *iterateCompletedSales(sinceTimestamp?: string): AsyncGenerator<{ itemID: string; soldAt: string }[]> {
+    const params = new URLSearchParams({
+      completed: 'true',
+      archived: 'false',
+      load_relations: '["SaleLines"]',
+      limit: '100',
+    });
+    if (sinceTimestamp) params.set('completeTime', `>=,${sinceTimestamp}`);
+    let next: string | null = `/Sale.json?${params.toString()}`;
+    while (next) {
+      type LsSaleLine = { itemID?: string; unitQuantity?: string };
+      type LsSale = {
+        voided?: string | boolean;
+        completeTime?: string;
+        timeStamp?: string;
+        SaleLines?: { SaleLine?: LsSaleLine | LsSaleLine[] };
+      };
+      type Page = { '@attributes'?: { next?: string }; Sale?: LsSale | LsSale[] };
+      const page: Page = await this.get<Page>(next);
+      const sales = page.Sale ? (Array.isArray(page.Sale) ? page.Sale : [page.Sale]) : [];
+      const out: { itemID: string; soldAt: string }[] = [];
+      for (const s of sales) {
+        if (s.voided === true || s.voided === 'true') continue;
+        const soldAt = s.completeTime || s.timeStamp;
+        if (!soldAt) continue;
+        const rawLines = s.SaleLines?.SaleLine;
+        const lines = rawLines ? (Array.isArray(rawLines) ? rawLines : [rawLines]) : [];
+        for (const l of lines) {
+          const itemID = l.itemID ? String(l.itemID).trim() : '';
+          if (!itemID || itemID === '0') continue;
+          const qty = Number(l.unitQuantity ?? '1');
+          if (!Number.isFinite(qty) || qty <= 0) continue;
+          out.push({ itemID, soldAt });
+        }
+      }
+      if (out.length) yield out;
+      next = page['@attributes']?.next || null;
+    }
+  }
+
   /** Attribute set names per `itemAttributeSetID` (e.g. "1" → ["Color","Size",""]). Read-only. */
   async listItemAttributeSets(): Promise<Map<string, [string, string, string]>> {
     type Row = { itemAttributeSetID: string; attributeName1?: string; attributeName2?: string; attributeName3?: string };

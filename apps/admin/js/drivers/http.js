@@ -46,6 +46,7 @@ export function createHttpDriver() {
     reportsMarginIssues: () => req('GET', '/api/reports/margin-issues'),
     reportsSalesProfitability: (days) => req('GET', '/api/reports/sales-profitability' + qs({ days })),
     reportsDaysWithoutSales: (minDays) => req('GET', '/api/reports/days-without-sales' + qs({ minDays })),
+    reportsSyncLightspeedSales: () => req('POST', '/api/reports/days-without-sales/sync', {}),
     refreshSkuIndex: () => req('POST', '/api/shopify/refresh-sku-index', {}),
     items: (q) => req('GET', '/api/items' + qs(q)),
     lightspeedSheet: (q) => req('GET', '/api/lightspeed/sheet' + qs(q)),

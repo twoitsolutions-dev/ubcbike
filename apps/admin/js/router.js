@@ -1,11 +1,11 @@
 import { renderDashboard } from './views/dashboard.js?v=94';
-import { renderReports } from './views/reports.js?v=96';
+import { renderReports } from './views/reports.js?v=97';
 import { renderPipeline } from './views/pipeline.js?v=94';
 import { renderProducts, renderProductDetail } from './views/products.js?v=94';
 import { renderInventory } from './views/inventory.js?v=94';
 import { renderSuppliers } from './views/suppliers.js?v=94';
 import { renderPricing } from './views/pricing.js?v=94';
-import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=96';
+import { renderLightspeedSheet } from './views/lightspeed-sheet.js?v=97';
 import { renderPromotions, renderPromotionNew, renderPromotionDetail } from './views/promotions.js?v=94';
 import { renderOrders, renderOrderDetail } from './views/orders.js?v=94';
 import { renderPurchasing } from './views/purchasing.js?v=94';

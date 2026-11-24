@@ -512,18 +512,42 @@ export async function renderReports(ctx) {
     const sheetBtn = h('a.btn.sm.primary', {
       href: '#/lightspeed-sheet?stock=physical&minDays=' + encodeURIComponent(agingDays),
     }, 'Edit in Bulk Sheet →');
+    const syncSalesBtn = ctx.api.reportsSyncLightspeedSales
+      ? h('button.btn.sm', {
+        type: 'button',
+        onclick: async (e) => {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          btn.textContent = 'Syncing Lightspeed…';
+          try {
+            const res = await ctx.api.reportsSyncLightspeedSales();
+            if (res.status === 'missing_sales_scope') {
+              toast('Lightspeed token lacks sales read scope (403). Re-authorize with Sales read if needed.', 'bad');
+            } else {
+              toast('Synced ' + (res.salesLinesSeen || 0) + ' Lightspeed sale lines (' + (res.variantsUpdated || 0) + ' items updated).', 'ok');
+              loadActive(true);
+            }
+          } catch (err) {
+            toast(err.message || 'Could not sync Lightspeed sales', 'bad');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = '↻ Sync Lightspeed Sales';
+          }
+        },
+      }, '↻ Sync Lightspeed Sales')
+      : null;
 
     const agingCard = renderPaginatedCard({
       title: 'In-Stock Inventory · Days Without Sales (Top 500 by Capital Tied Up)',
       meta: 'Generated ' + dateTime(r.generatedAt),
-      toolbar: [h('span.small.muted', 'Days ≥'), dayInput, dayApplyBtn, daySel, sheetBtn],
+      toolbar: [h('span.small.muted', 'Days ≥'), dayInput, dayApplyBtn, daySel, syncSalesBtn, sheetBtn],
       getRows: (q) => (r.rows || []).filter((it) => !q || (it.sku + ' ' + it.upc + ' ' + it.title + ' ' + it.brand + ' ' + it.category).toLowerCase().includes(q)),
       columns: [
         { key: 'sku', label: 'SKU / UPC', render: (it) => h('div', h('strong.mono', it.sku), it.upc ? h('div.small.muted.mono', it.upc) : null) },
         { key: 'title', label: 'Item', render: (it) => h('div', h('span', it.title), it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null) },
         { key: 'onHand', label: 'On Hand', num: true, render: (it) => String(it.onHand) },
         { key: 'cost', label: 'Stock Cost', num: true, render: (it) => (it.stockCostCents ? money(it.stockCostCents) : '—') },
-        { key: 'days', label: 'Days No Sale', num: true, render: (it) => h('span.badge', { class: it.daysWithoutSale === null || it.daysWithoutSale >= 90 ? 'warn' : '' }, it.daysWithoutSale === null ? 'No Hub sale' : (it.daysWithoutSale + ' d')) },
+        { key: 'days', label: 'Days No Sale', num: true, render: (it) => h('span.badge', { class: it.daysWithoutSale === null || it.daysWithoutSale >= 90 ? 'warn' : '' }, it.daysWithoutSale === null ? 'No recent sale' : (it.daysWithoutSale + ' d')) },
         { key: 'act', label: '', render: (it) => h('a.btn.sm', { href: '#/lightspeed-sheet?stock=physical&q=' + encodeURIComponent(it.sku) }, 'Bulk Sheet →') },
       ],
       empty: 'No in-stock items match this aging window.',

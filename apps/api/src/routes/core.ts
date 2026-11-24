@@ -23,6 +23,7 @@ import {
   updateReviewSources,
 } from '../services/google-reviews.js';
 import { generatePhoneGreetingAudio, getVoiceClip, saveVoiceClip, voiceGenerateSchema } from '../services/phone-voice.js';
+import { syncLightspeedLastSalesJob } from '../services/lightspeed-sync.js';
 
 const pageSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -306,18 +307,27 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const minDays = hasMinDays ? Math.max(0, Math.min(3650, Math.floor(Number(q.minDays) || 0))) : null;
     if (minDays !== null && minDays > 0) {
       const agingRes = await ctx.pool.query<{ id: string }>(
-        `WITH last_sale AS (
+        `WITH hub_sale AS (
            SELECT ol.variant_id, max(o.created_at) AS last_sold_at
            FROM order_lines ol
            JOIN orders o ON o.id = ol.order_id
            WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id IS NOT NULL
            GROUP BY ol.variant_id
+         ),
+         eff AS (
+           SELECT v.id,
+             CASE
+               WHEN v.last_sold_at IS NULL THEN hs.last_sold_at
+               WHEN hs.last_sold_at IS NULL THEN v.last_sold_at
+               ELSE GREATEST(v.last_sold_at, hs.last_sold_at)
+             END AS last_sold_at
+           FROM variants v
+           LEFT JOIN hub_sale hs ON hs.variant_id = v.id
+           WHERE v.company_id = $1
          )
-         SELECT v.id::text AS id
-         FROM variants v
-         LEFT JOIN last_sale ls ON ls.variant_id = v.id
-         WHERE v.company_id = $1
-           AND (ls.last_sold_at IS NULL OR ls.last_sold_at <= now() - make_interval(days => $2))`,
+         SELECT id::text AS id
+         FROM eff
+         WHERE last_sold_at IS NULL OR last_sold_at <= now() - make_interval(days => $2)`,
         [c, minDays],
       );
       const agingSet = new Set(agingRes.rows.map((r) => r.id));
@@ -335,12 +345,27 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     if (visibleItems.length) {
       const vids = visibleItems.map((i) => i.id);
       const dRes = await ctx.pool.query<{ variant_id: string; days_without_sale: number | null }>(
-        `SELECT ol.variant_id::text AS variant_id,
-                EXTRACT(DAY FROM (now() - max(o.created_at)))::int AS days_without_sale
-         FROM order_lines ol
-         JOIN orders o ON o.id = ol.order_id
-         WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id = ANY($2::uuid[])
-         GROUP BY ol.variant_id`,
+        `WITH hub_sale AS (
+           SELECT ol.variant_id, max(o.created_at) AS last_sold_at
+           FROM order_lines ol
+           JOIN orders o ON o.id = ol.order_id
+           WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id = ANY($2::uuid[])
+           GROUP BY ol.variant_id
+         ),
+         eff AS (
+           SELECT v.id,
+             CASE
+               WHEN v.last_sold_at IS NULL THEN hs.last_sold_at
+               WHEN hs.last_sold_at IS NULL THEN v.last_sold_at
+               ELSE GREATEST(v.last_sold_at, hs.last_sold_at)
+             END AS last_sold_at
+           FROM variants v
+           LEFT JOIN hub_sale hs ON hs.variant_id = v.id
+           WHERE v.company_id = $1 AND v.id = ANY($2::uuid[])
+         )
+         SELECT id::text AS variant_id,
+                CASE WHEN last_sold_at IS NULL THEN NULL ELSE EXTRACT(DAY FROM (now() - last_sold_at))::int END AS days_without_sale
+         FROM eff`,
         [c, vids],
       );
       for (const r of dRes.rows) daysNoSaleByVariant.set(r.variant_id, r.days_without_sale);
@@ -1044,12 +1069,23 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
          WHERE company_id = $1 AND on_hand > 0
          GROUP BY variant_id
        ),
-       last_sale AS (
+       hub_sale AS (
          SELECT ol.variant_id, max(o.created_at) AS last_sold_at
          FROM order_lines ol
          JOIN orders o ON o.id = ol.order_id
          WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id IS NOT NULL
          GROUP BY ol.variant_id
+       ),
+       eff AS (
+         SELECT v.id AS variant_id,
+           CASE
+             WHEN v.last_sold_at IS NULL THEN hs.last_sold_at
+             WHEN hs.last_sold_at IS NULL THEN v.last_sold_at
+             ELSE GREATEST(v.last_sold_at, hs.last_sold_at)
+           END AS last_sold_at
+         FROM variants v
+         LEFT JOIN hub_sale hs ON hs.variant_id = v.id
+         WHERE v.company_id = $1
        )
        SELECT
          v.id::text AS variant_id,
@@ -1061,15 +1097,15 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
          inv.on_hand,
          COALESCE(v.cost_cents, 0)::int AS cost_cents,
          COALESCE(v.price_cents, 0)::int AS price_cents,
-         ls.last_sold_at,
-         CASE WHEN ls.last_sold_at IS NULL THEN NULL ELSE EXTRACT(DAY FROM (now() - ls.last_sold_at))::int END AS days_without_sale
+         eff.last_sold_at,
+         CASE WHEN eff.last_sold_at IS NULL THEN NULL ELSE EXTRACT(DAY FROM (now() - eff.last_sold_at))::int END AS days_without_sale
        FROM inv
        JOIN variants v ON v.id = inv.variant_id AND v.company_id = $1
        JOIN products p ON p.id = v.product_id AND p.company_id = $1
-       LEFT JOIN last_sale ls ON ls.variant_id = v.id
+       LEFT JOIN eff ON eff.variant_id = v.id
        WHERE $2 = 0
-          OR ls.last_sold_at IS NULL
-          OR ls.last_sold_at <= now() - make_interval(days => $2)
+          OR eff.last_sold_at IS NULL
+          OR eff.last_sold_at <= now() - make_interval(days => $2)
        ORDER BY (inv.on_hand::bigint * COALESCE(v.cost_cents, 0)) DESC, inv.on_hand DESC
        LIMIT 500`,
       [companyId, minDays],
@@ -1115,6 +1151,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
       },
       rows,
     };
+  });
+
+  app.post('/api/reports/days-without-sales/sync', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    return syncLightspeedLastSalesJob(ctx, req.session!.companyId);
   });
 
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {

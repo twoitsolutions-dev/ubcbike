@@ -858,3 +858,84 @@ export async function syncLightspeedSpecialOrdersJob(ctx: AppContext, companyId:
 
   return { status: 'synced', checked, updatedOrders };
 }
+
+/**
+ * Pull completed sales from Lightspeed R-Series (`/Sale.json?load_relations=["SaleLines"]`)
+ * and update `variants.last_sold_at` so Days Without Sales and the Lightspeed Bulk Sheet
+ * reflect real POS + web sales.
+ */
+export async function syncLightspeedLastSalesJob(
+  ctx: AppContext,
+  companyId: string,
+  opts: { lookbackDays?: number; full?: boolean } = {},
+): Promise<{ status: string; salesLinesSeen: number; variantsUpdated: number; since: string }> {
+  const ls = ctx.connectors.lightspeed;
+  if (ls) await ls.ensureConfigured();
+  if (!ls || ls.missing().length > 0 || typeof ls.iterateCompletedSales !== 'function') {
+    return { status: 'not_connected', salesLinesSeen: 0, variantsUpdated: 0, since: '' };
+  }
+
+  let sinceIso: string;
+  if (!opts.full) {
+    const cur = await ctx.pool.query<{ latest: Date | null }>(
+      `SELECT max(last_sold_at) AS latest FROM variants WHERE company_id = $1`,
+      [companyId],
+    );
+    const latest = cur.rows[0]?.latest;
+    if (latest) {
+      sinceIso = new Date(new Date(latest).getTime() - 24 * 3600_000).toISOString();
+    } else {
+      const lookback = Math.max(30, Math.min(1825, opts.lookbackDays ?? 730));
+      sinceIso = new Date(Date.now() - lookback * 86400_000).toISOString();
+    }
+  } else {
+    const lookback = Math.max(30, Math.min(1825, opts.lookbackDays ?? 730));
+    sinceIso = new Date(Date.now() - lookback * 86400_000).toISOString();
+  }
+
+  const maxSoldByItem = new Map<string, string>();
+  let salesLinesSeen = 0;
+
+  try {
+    for await (const batch of ls.iterateCompletedSales(sinceIso)) {
+      for (const line of batch) {
+        salesLinesSeen++;
+        const prev = maxSoldByItem.get(line.itemID);
+        if (!prev || line.soldAt > prev) {
+          maxSoldByItem.set(line.itemID, line.soldAt);
+        }
+      }
+    }
+  } catch (err) {
+    if (/HTTP (401|403)\b/i.test((err as Error)?.message ?? '')) {
+      return { status: 'missing_sales_scope', salesLinesSeen, variantsUpdated: 0, since: sinceIso };
+    }
+    throw err;
+  }
+
+  const entries = Array.from(maxSoldByItem.entries()).map(([itemId, soldAt]) => ({ itemId, soldAt }));
+  let variantsUpdated = 0;
+  for (let i = 0; i < entries.length; i += 1000) {
+    const chunk = entries.slice(i, i + 1000);
+    const upd = await ctx.pool.query(
+      `UPDATE variants v
+       SET last_sold_at = CASE
+         WHEN v.last_sold_at IS NULL THEN r.sold_at::timestamptz
+         ELSE GREATEST(v.last_sold_at, r.sold_at::timestamptz)
+       END
+       FROM jsonb_to_recordset($2::jsonb) AS r("itemId" text, "soldAt" text)
+       JOIN external_ids e
+         ON e.company_id = $1
+        AND e.system = 'lightspeed_r'
+        AND e.entity_type = 'variant'
+        AND e.external_id = r."itemId"
+       WHERE v.company_id = $1
+         AND v.id = e.entity_id
+         AND (v.last_sold_at IS NULL OR v.last_sold_at < r.sold_at::timestamptz)`,
+      [companyId, JSON.stringify(chunk.map((x) => ({ itemId: x.itemId, soldAt: x.soldAt })))],
+    );
+    variantsUpdated += upd.rowCount ?? 0;
+  }
+
+  return { status: 'synced', salesLinesSeen, variantsUpdated, since: sinceIso };
+}

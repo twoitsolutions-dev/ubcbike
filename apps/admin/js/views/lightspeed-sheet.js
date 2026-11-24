@@ -636,7 +636,7 @@ export async function renderLightspeedSheet(ctx) {
         ]),
         showExtraIds ? h('td.lss-td.lss-mono', { 'data-label': 'UPC / EAN' }, row.upc || '—') : null,
         showExtraIds ? h('td.lss-td.lss-mono', { 'data-label': 'Manufact. SKU' }, row.mpn || '—') : null,
-        showDaysCol ? h('td.lss-td.num', { 'data-label': 'No Sale' }, h('span.badge', { class: row.daysWithoutSale === null || row.daysWithoutSale >= 90 ? 'warn' : '' }, row.daysWithoutSale === null || row.daysWithoutSale === undefined ? 'No Hub sale' : (row.daysWithoutSale + ' d'))) : null,
+        showDaysCol ? h('td.lss-td.num', { 'data-label': 'No Sale' }, h('span.badge', { class: row.daysWithoutSale === null || row.daysWithoutSale >= 90 ? 'warn' : '' }, row.daysWithoutSale === null || row.daysWithoutSale === undefined ? 'No recent sale' : (row.daysWithoutSale + ' d'))) : null,
         ...activeCols.map((c, colIdx) => h('td', {
           class: 'lss-td ' + c.cls,
           'data-label': c.label,

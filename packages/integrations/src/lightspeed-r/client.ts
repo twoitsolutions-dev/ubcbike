@@ -553,6 +553,37 @@ export class LightspeedRClient {
       throw new RetryableError(`Lightspeed ${method} ${path} exhausted rate-limit retries`, 2000);
     };
 
+    const escXml = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+    const lsXmlPut = async (path: string, xmlBody: string): Promise<void> => {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await this.fetchImpl(`${this.apiBase}/Account/${this.currentAccountId}/${path}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${await this.token()}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/xml',
+          },
+          body: xmlBody,
+        });
+        if (res.status === 429 || res.status === 503) {
+          const retry = Number(res.headers.get('Retry-After') ?? '2') * 1000;
+          await sleep(retry);
+          continue;
+        }
+        const txt = await res.text();
+        if (!res.ok) throw new Error(`Lightspeed PUT ${path} HTTP ${res.status}: ${txt.slice(0, 300)}`);
+        const bucket = res.headers.get('X-LS-API-Bucket-Level');
+        if (bucket) {
+          const [lvl, max] = bucket.split('/').map(Number);
+          if (lvl !== undefined && max && lvl / max > 0.75) await sleep(1100);
+        }
+        return;
+      }
+      throw new RetryableError(`Lightspeed PUT ${path} exhausted rate-limit retries`, 2000);
+    };
+
     const results: { lightspeedItemId: string; before: Record<string, unknown>; updated: boolean }[] = [];
     for (const u of updates) {
       const beforeWrap = await lsJsonReq(
@@ -566,11 +597,17 @@ export class LightspeedRClient {
       if (u.defaultCostCents !== undefined && u.defaultCostCents !== null) {
         putBody.defaultCost = (u.defaultCostCents / 100).toFixed(2);
       }
+      let multiTagsXml: string | null = null;
       if (u.tags !== undefined) {
         const cleanTags = u.tags.map((t) => t.trim()).filter(Boolean);
-        // Lightspeed R-Series V3 rejects `{}` with HTTP 400 "JSON structure is invalid";
-        // clearing tags requires `{ tag: [] }`, and 1 tag requires a plain string.
-        putBody.Tags = cleanTags.length === 0 ? { tag: [] } : { tag: cleanTags.length === 1 ? cleanTags[0] : cleanTags };
+        // Lightspeed R-Series V3 JSON rejects `{}` AND rejects `{ tag: ["a","b"] }` with HTTP 400
+        // "JSON structure is invalid". 0 or 1 tag works in JSON; 2+ tags must be sent via `.xml`
+        // as `<Item><Tags><tag>...</tag><tag>...</tag></Tags></Item>`.
+        if (cleanTags.length <= 1) {
+          putBody.Tags = cleanTags.length === 0 ? { tag: [] } : { tag: cleanTags[0] };
+        } else {
+          multiTagsXml = `<Item><Tags>${cleanTags.map((t) => `<tag>${escXml(t)}</tag>`).join('')}</Tags></Item>`;
+        }
       }
 
       const hasPriceUpdate =
@@ -600,6 +637,9 @@ export class LightspeedRClient {
 
       if (Object.keys(putBody).length > 0) {
         await lsJsonReq('PUT', `Item/${encodeURIComponent(u.lightspeedItemId)}.json`, putBody);
+      }
+      if (multiTagsXml) {
+        await lsXmlPut(`Item/${encodeURIComponent(u.lightspeedItemId)}.xml`, multiTagsXml);
       }
 
       if (u.reorderPoint !== undefined || u.desiredLevel !== undefined) {

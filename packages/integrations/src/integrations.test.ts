@@ -290,6 +290,43 @@ describe('lightspeed R-Series (Physical Store POS)', () => {
     expect(puts[1]?.body).toContain('"amount":"99.99","useType":"Default"');
     expect(puts[1]?.body).toContain('"amount":"0","useType":"SALE PRICE"');
   });
+
+  it('sends 0 or 1 tag via JSON and 2+ tags via XML on bulkUpdateItems', async () => {
+    const reqs: { method: string; url: string; contentType: string | null; body: string }[] = [];
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      if (url.includes('token')) return new Response(JSON.stringify({ access_token: 'abc', expires_in: 3600 }));
+      const method = init?.method ?? 'GET';
+      const headers = new Headers(init?.headers);
+      if (method === 'GET') {
+        return new Response(JSON.stringify({ Item: { itemID: '44845', Tags: { tag: 'old' } } }), { status: 200 });
+      }
+      reqs.push({ method, url, contentType: headers.get('Content-Type'), body: String(init?.body ?? '') });
+      return new Response('{}', { status: 200, headers: { 'X-LS-API-Bucket-Level': '5/60' } });
+    }) as unknown as typeof fetch;
+
+    const client = new LightspeedRClient({
+      clientId: 'id', clientSecret: 's', refreshToken: 'r', accountId: '123',
+      writesEnabled: true, fetchImpl,
+    });
+
+    await client.bulkUpdateItems([{ lightspeedItemId: '44845', tags: ['eoy2026', 'road & gravel'] }]);
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]).toMatchObject({
+      method: 'PUT',
+      contentType: 'application/xml',
+      body: '<Item><Tags><tag>eoy2026</tag><tag>road &amp; gravel</tag></Tags></Item>',
+    });
+    expect(reqs[0]?.url).toContain('/Account/123/Item/44845.xml');
+
+    await client.bulkUpdateItems([
+      { lightspeedItemId: '44845', tags: ['single'] },
+      { lightspeedItemId: '44845', tags: [] },
+    ]);
+    expect(reqs[1]?.url).toContain('/Account/123/Item/44845.json');
+    expect(JSON.parse(reqs[1]!.body)).toEqual({ Tags: { tag: 'single' } });
+    expect(reqs[2]?.url).toContain('/Account/123/Item/44845.json');
+    expect(JSON.parse(reqs[2]!.body)).toEqual({ Tags: { tag: [] } });
+  });
 });
 
 describe('supplier feeds and connectors (QBP, JBI, Specialized)', () => {

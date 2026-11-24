@@ -121,7 +121,7 @@ export async function renderLightspeedSheet(ctx) {
       : h('span.badge.warn', 'READ-ONLY MODE');
 
     const msg = writesEnabled
-      ? 'Live push to Lightspeed is active (Owner/Admin only, with automatic backup in Audit Log).'
+      ? 'Live push to Lightspeed is active (Owner/Admin/Purchasing, with automatic backup in Audit Log).'
       : 'Direct push to Lightspeed is locked. Edit cells and Export CSV anytime, or click Enable Live Writes when ready.';
 
     const canManage = !ctx.can || ctx.can('catalog.write');

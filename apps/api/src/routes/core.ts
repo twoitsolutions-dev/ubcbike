@@ -407,10 +407,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.post('/api/lightspeed/bulk-update', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req, reply) => {
     const s = req.session!;
-    if (!['owner', 'admin'].includes(s.role)) {
+    if (!['owner', 'admin', 'purchasing'].includes(s.role)) {
       return reply.code(403).send({
         error: 'FORBIDDEN',
-        message: 'Only owner or admin accounts can push bulk updates to Lightspeed.',
+        message: 'Only owner, admin, or purchasing accounts can push bulk updates to Lightspeed.',
       });
     }
     const body = z.object({ changes: z.array(lsBulkChangeSchema).min(1).max(100) }).parse(req.body);

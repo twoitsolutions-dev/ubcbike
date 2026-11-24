@@ -40,12 +40,12 @@
     {%- if has_tampa or has_alafia -%}
       {%- if has_tampa -%}
         <span class="availability availability--in_stock" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#14202D;color:#FEFDF3;">
-          UBC Tampa{% if tampa_qty > 0 %} ({{ tampa_qty }}){% endif %}
+          UBC Tampa
         </span>
       {%- endif -%}
       {%- if has_alafia -%}
         <span class="availability availability--in_stock" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#1B4332;color:#FEFDF3;">
-          Alafia Park{% if alafia_qty > 0 %} ({{ alafia_qty }}){% endif %}
+          Alafia Park
         </span>
       {%- endif -%}
     {%- elsif prod_obj.tags contains 'ubc-warehouse-stock' -%}

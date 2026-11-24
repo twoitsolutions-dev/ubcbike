@@ -183,13 +183,12 @@
   .ubc-side > .ubc-store-bar { order: 1; }
   .ubc-side > .ubc-facets-row { order: 2; }
   .ubc-side > .ubc-dept-pills { order: 3; }
-  /* UBC filters in a left sidebar on desktop so products get the space (phones/tablets: unchanged, on top). */
+  /* Unified 1-column left sidebar on desktop: Shop Location + Search & Discovery + Departments */
   @media screen and (min-width: 990px) {
     .ubc-col-layout {
       display: grid;
-      grid-template-columns: 250px minmax(0, 1fr);
+      grid-template-columns: 260px minmax(0, 1fr);
       column-gap: 3.2rem;
-      /* page width + the sidebar, so the product grid keeps its usual width */
       max-width: calc(var(--page-width) + 28rem);
       margin: 0 auto;
       padding: 0 5rem;
@@ -201,21 +200,78 @@
       grid-column: 1;
       grid-row: 3;
       align-self: start;
-      position: sticky;
-      top: 9rem;
-      max-height: calc(100vh - 11rem);
-      overflow-y: auto;
-      padding-right: 0.6rem;
+      padding-right: 0;
     }
-    .ubc-col-layout > :not(.ubc-dept-wrap) { grid-column: 2; grid-row: 3; min-width: 0; }
+    .ubc-col-layout > .facets-vertical-sort { grid-column: 2; grid-row: 3; align-self: start; margin-bottom: 1.2rem; }
+    .ubc-col-layout > .facets-vertical { display: contents; }
+    .ubc-col-layout .facets-vertical .facets-wrapper {
+      grid-column: 1;
+      grid-row: 4;
+      align-self: start;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    .ubc-col-layout .facets-vertical .product-grid-container {
+      grid-column: 2;
+      grid-row: 3 / span 2;
+      min-width: 0;
+      padding-top: 4.4rem;
+    }
     .ubc-col-layout .page-width { padding-left: 0; padding-right: 0; max-width: none; }
     .ubc-side .ubc-store-bar,
-    .ubc-side .ubc-dept-pills,
-    .ubc-side .ubc-facets-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; margin: 0 0 1.6rem; }
+    .ubc-side .ubc-dept-pills { flex-direction: column; align-items: stretch; flex-wrap: nowrap; margin: 0 0 1.4rem; }
     .ubc-side .ubc-store-btn,
     .ubc-side .ubc-dept-pill { justify-content: space-between; text-align: left; width: 100%; }
-    .ubc-side .ubc-facet-ctl { flex-direction: column; align-items: stretch; width: 100%; }
-    .ubc-side .ubc-facet-select { width: 100%; }
+  }
+
+  /* UBC Fable Styling for Search & Discovery (#main-collection-filters) */
+  #main-collection-filters .facets__form-vertical {
+    background: #FFFFFF;
+    border: 1px solid rgba(20, 32, 45, 0.12);
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    box-shadow: 0 2px 10px rgba(20, 32, 45, 0.04);
+  }
+  #main-collection-filters .facets__heading {
+    font-family: var(--font-heading-family);
+    font-size: 1.4rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #14202D;
+    margin-bottom: 0.8rem;
+  }
+  #main-collection-filters .facets__disclosure-vertical {
+    border-top: 1px solid rgba(20, 32, 45, 0.1);
+  }
+  #main-collection-filters .facets__summary {
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: #14202D;
+    padding: 1.1rem 0;
+  }
+  #main-collection-filters .facets__summary:hover {
+    color: #E04F33;
+  }
+  #main-collection-filters .facet-checkbox {
+    font-size: 1.3rem;
+    color: #1F2937;
+    padding: 0.4rem 0;
+  }
+  #main-collection-filters .facet-checkbox input[type="checkbox"] {
+    accent-color: #E04F33;
+  }
+  #main-collection-filters .active-facets__button-inner {
+    background: rgba(224, 79, 51, 0.1);
+    color: #14202D;
+    border: 1px solid rgba(224, 79, 51, 0.35);
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .facets-vertical-sort .facet-filters__sort {
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 2.6rem;
   }
 {%- endstyle -%}
 
@@ -372,75 +428,7 @@
         {%- endfor -%}
       </nav>
       {%- endif -%}
-
-      <div class="ubc-facets-row" id="ubcFacetsRow">
-        <div class="ubc-facet-ctl">
-          <label for="ubcBrandSelect">Brand:</label>
-          <select id="ubcBrandSelect" class="ubc-facet-select" data-ubc-filter-role="brand">
-            <option value="">All Brands ({{ collection.all_vendors.size }})</option>
-            {%- for v in collection.all_vendors -%}
-              {%- assign v_slug = v | handleize -%}
-              {%- assign v_tag = 'brand-' | append: v_slug -%}
-              <option value="{{ v_tag }}" {% if active_brand_tag == v_tag %}selected{% endif %}>{{ v | escape }}</option>
-            {%- endfor -%}
-          </select>
-        </div>
-
-        <div class="ubc-facet-ctl">
-          <label for="ubcPriceSelect">Price:</label>
-          <select id="ubcPriceSelect" class="ubc-facet-select" data-ubc-filter-role="price">
-            <option value="">Any Price</option>
-            <option value="price-under-50" {% if active_price_tag == 'price-under-50' %}selected{% endif %}>Under $50</option>
-            <option value="price-50-200" {% if active_price_tag == 'price-50-200' %}selected{% endif %}>$50 &ndash; $200</option>
-            <option value="price-200-1000" {% if active_price_tag == 'price-200-1000' %}selected{% endif %}>$200 &ndash; $1,000</option>
-            <option value="price-1000-plus" {% if active_price_tag == 'price-1000-plus' %}selected{% endif %}>$1,000+</option>
-          </select>
-        </div>
-
-        <div class="ubc-facet-ctl">
-          <label for="ubcSortSelect">Sort:</label>
-          <select id="ubcSortSelect" class="ubc-facet-select" data-ubc-filter-role="sort">
-            <option value="" {% if cur_sort == '' %}selected{% endif %}>Featured</option>
-            <option value="price-descending" {% if cur_sort == 'price-descending' %}selected{% endif %}>Price: High to Low</option>
-            <option value="price-ascending" {% if cur_sort == 'price-ascending' %}selected{% endif %}>Price: Low to High</option>
-            <option value="title-ascending" {% if cur_sort == 'title-ascending' %}selected{% endif %}>Alphabetical: A &ndash; Z</option>
-            <option value="created-descending" {% if cur_sort == 'created-descending' %}selected{% endif %}>Newest Arrivals</option>
-          </select>
-        </div>
-
-        {%- if active_store_tag != '' or active_brand_tag != '' or active_price_tag != '' -%}
-          <a class="ubc-facet-clear" href="{{ base_col_url }}">Clear all filters &times;</a>
-        {%- endif -%}
       </div>
-      </div>
-      <script>
-        (function() {
-          var row = document.getElementById('ubcFacetsRow');
-          if (!row) return;
-          var wrap = row.closest('[data-ubc-base-col]');
-          var baseCol = wrap ? wrap.getAttribute('data-ubc-base-col') : window.location.pathname.split('/').slice(0, 3).join('/');
-          var storeTag = {{ active_store_tag | json }};
-          function applyUbcFilters() {
-            var bSel = document.getElementById('ubcBrandSelect');
-            var pSel = document.getElementById('ubcPriceSelect');
-            var sSel = document.getElementById('ubcSortSelect');
-            var tags = [];
-            if (storeTag) tags.push(storeTag);
-            if (bSel && bSel.value) tags.push(bSel.value);
-            if (pSel && pSel.value) tags.push(pSel.value);
-            var url = baseCol + (tags.length ? '/' + tags.join('+') : '');
-            var params = new URLSearchParams(window.location.search);
-            if (sSel && sSel.value) params.set('sort_by', sSel.value);
-            else params.delete('sort_by');
-            params.delete('page');
-            var qs = params.toString();
-            window.location.href = url + (qs ? '?' + qs : '');
-          }
-          row.addEventListener('change', function(e) {
-            if (e.target && e.target.tagName === 'SELECT') applyUbcFilters();
-          });
-        })();
-      </script>
     </div>
     {%- paginate collection.products by section.settings.products_per_page -%}
       {% comment %} Sort is the first tabbable element when filter type is vertical {% endcomment %}

@@ -4,7 +4,7 @@
 {%- endcomment -%}
 {%- liquid
   assign edition = settings.ubc_edition | default: 'classic'
-  assign hero_handles = 'turbo-levo-4-pro,tarmac-sl8-expert-ultegra-di2,propero-5,stumpjumper-15-comp,s-works-7-road-shoes,crux-expert-sram-rival-xplr-axs,align-ii' | split: ','
+  assign hero_handles = 'contend-sl-0,edge-1040,adventure-5,speedframe-helmet,turbo-levo-4-pro,ethos-mips-shield-helmet,denago-cruiser-1-step-thru-ebike,sh-rc502-bicycle-shoes' | split: ','
 -%}
 
 <div class="fb-scope">
@@ -62,11 +62,7 @@
           <span class="stock-pill" id="showStock"><i aria-hidden="true"></i> <span data-es="En Stock &middot; Tampa">In Stock &middot; Tampa</span></span>
         </div>
 
-        <h1 class="show-name" id="showName">Turbo Vado 4.0</h1>
-
-        <p class="show-desc" id="showDesc" data-es="Asistencia suave al pedaleo, luces y parrilla integradas, armada y ajustada lista para rodar en Tampa.">
-          Smooth pedal-assist power, integrated lighting and rear rack, assembled and adjusted road-ready in Tampa.
-        </p>
+        <h1 class="show-name" id="showName">Contend SL 0</h1>
 
         <div class="show-price-row">
           <div class="show-price">
@@ -148,8 +144,6 @@
             {%- assign hc = hero_colors[hero_out] | default: '#ccbb8d' -%}
             {%- assign hv = hp.vendor | default: 'UBC' -%}
             {%- assign hg = hv | upcase | split: ' ' | first -%}
-            {%- assign hdesc = hp.description | strip_html | strip | truncate: 135 -%}
-            {%- if hdesc == blank -%}{%- assign hdesc = 'In stock today at University Bicycle Center Tampa — built, fitted and ready to ride.' -%}{%- endif -%}
             {
               "b": {{ hv | json }},
               "g": {{ hg | json }},
@@ -162,7 +156,7 @@
               "availability": "in_stock",
               "cta": ["View Product", "Ver Producto"],
               "cat": [{{ hv | append: ' · In Stock at UBC Tampa' | json }}, {{ hv | append: ' · En Stock en UBC Tampa' | json }}],
-              "d": [{{ hdesc | json }}, {{ hdesc | json }}]
+              "d": ["", ""]
             }
             {%- assign hero_out = hero_out | plus: 1 -%}
           {%- endif -%}

@@ -1120,6 +1120,9 @@ export function createDemoDriver() {
     async deleteReview() { return { ok: true }; },
     async publishReviewsToShopify() { return { count: 0, themesUpdated: 0 }; },
     async generateVoice() { fail(400, 'DEMO', 'Voice generation runs in live Hub mode.'); },
+    async reportsDaysWithoutSales() {
+      return { summary: { totalSkus: 0, totalUnits: 0, totalCostCents: 0, totalRetailCents: 0, neverSoldCount: 0 }, rows: [] };
+    },
 
     // Demo-only controls
     simulateOutage(on) { state.simulateOutage = !!on; save(); },

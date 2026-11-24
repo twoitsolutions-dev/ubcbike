@@ -918,6 +918,103 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
+  // Lightspeed-style Aging / Dead Stock report: in-stock variants with longest days since last recorded sale.
+  app.get('/api/reports/days-without-sales', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const companyId = req.session!.companyId;
+    const minDays = Math.max(0, Math.min(3650, Number((req.query as Record<string, unknown>).minDays || 30) || 0));
+
+    const r = await ctx.pool.query<{
+      variant_id: string;
+      sku: string;
+      upc: string | null;
+      title: string;
+      brand: string;
+      category: string;
+      on_hand: number;
+      cost_cents: number;
+      price_cents: number;
+      last_sold_at: Date | null;
+      days_without_sale: number | null;
+    }>(
+      `WITH inv AS (
+         SELECT variant_id, sum(on_hand)::int AS on_hand
+         FROM inventory_levels
+         WHERE company_id = $1 AND on_hand > 0
+         GROUP BY variant_id
+       ),
+       last_sale AS (
+         SELECT ol.variant_id, max(o.created_at) AS last_sold_at
+         FROM order_lines ol
+         JOIN orders o ON o.id = ol.order_id
+         WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id IS NOT NULL
+         GROUP BY ol.variant_id
+       )
+       SELECT
+         v.id::text AS variant_id,
+         v.sku,
+         v.upc,
+         COALESCE(NULLIF(v.title, ''), p.title) AS title,
+         COALESCE(p.brand, '') AS brand,
+         COALESCE(p.category, '') AS category,
+         inv.on_hand,
+         COALESCE(v.cost_cents, 0)::int AS cost_cents,
+         COALESCE(v.price_cents, 0)::int AS price_cents,
+         ls.last_sold_at,
+         CASE WHEN ls.last_sold_at IS NULL THEN NULL ELSE EXTRACT(DAY FROM (now() - ls.last_sold_at))::int END AS days_without_sale
+       FROM inv
+       JOIN variants v ON v.id = inv.variant_id AND v.company_id = $1
+       JOIN products p ON p.id = v.product_id AND p.company_id = $1
+       LEFT JOIN last_sale ls ON ls.variant_id = v.id
+       WHERE $2 = 0
+          OR ls.last_sold_at IS NULL
+          OR ls.last_sold_at <= now() - make_interval(days => $2)
+       ORDER BY (inv.on_hand::bigint * COALESCE(v.cost_cents, 0)) DESC, inv.on_hand DESC
+       LIMIT 500`,
+      [companyId, minDays],
+    );
+
+    let totalUnits = 0;
+    let totalCostCents = 0;
+    let totalRetailCents = 0;
+    let neverSoldCount = 0;
+    const rows = r.rows.map((x) => {
+      totalUnits += x.on_hand;
+      const stockCost = x.on_hand * x.cost_cents;
+      const stockRetail = x.on_hand * x.price_cents;
+      totalCostCents += stockCost;
+      totalRetailCents += stockRetail;
+      if (x.last_sold_at === null) neverSoldCount += 1;
+      return {
+        variantId: x.variant_id,
+        sku: x.sku,
+        upc: x.upc || '',
+        title: x.title,
+        brand: x.brand,
+        category: x.category,
+        onHand: x.on_hand,
+        costCents: x.cost_cents,
+        priceCents: x.price_cents,
+        stockCostCents: stockCost,
+        stockRetailCents: stockRetail,
+        lastSoldAt: x.last_sold_at,
+        daysWithoutSale: x.days_without_sale,
+      };
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      minDays,
+      summary: {
+        totalSkus: rows.length,
+        totalUnits,
+        totalCostCents,
+        totalRetailCents,
+        neverSoldCount,
+      },
+      rows,
+    };
+  });
+
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const c = req.session!.companyId;
     const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();

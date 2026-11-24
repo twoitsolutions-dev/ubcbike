@@ -20,9 +20,10 @@ function kpiBox(label, value, cls) {
 }
 
 export async function renderReports(ctx) {
-  const cache = { shopify: null, noUpc: null, margin: null, sales: {} };
+  const cache = { shopify: null, noUpc: null, margin: null, sales: {}, aging: {} };
   let activeReport = ctx.query.report || 'collections';
   let salesDays = ctx.query.days || '30';
+  let agingDays = ctx.query.minDays || '30';
   const tabsHost = h('div.rep-tabs');
   const bodyHost = h('div.stack.rep-body', loading('Loading report…'));
 
@@ -32,6 +33,7 @@ export async function renderReports(ctx) {
     ['no_upc', 'No UPC'],
     ['margin', 'Cost, MAP & Margin'],
     ['sales', 'Sales & Margin'],
+    ['aging', 'Days Without Sales'],
   ];
 
   const drawTabs = () => {
@@ -71,6 +73,12 @@ export async function renderReports(ctx) {
     return cache.sales[days];
   }
 
+  async function ensureAging(minDays, refresh) {
+    if (!refresh && cache.aging[minDays]) return cache.aging[minDays];
+    cache.aging[minDays] = await ctx.api.reportsDaysWithoutSales(minDays);
+    return cache.aging[minDays];
+  }
+
   async function loadActive(refresh) {
     mount(bodyHost, loading('Loading report…'));
     try {
@@ -94,6 +102,10 @@ export async function renderReports(ctx) {
         const r = await ensureSales(salesDays, refresh);
         if (!ctx.isCurrent()) return;
         renderSalesReport(r);
+      } else if (activeReport === 'aging') {
+        const r = await ensureAging(agingDays, refresh);
+        if (!ctx.isCurrent()) return;
+        renderAgingReport(r);
       }
     } catch (e) {
       if (!ctx.isCurrent()) return;
@@ -464,6 +476,43 @@ export async function renderReports(ctx) {
         kpiBox('Avg. margin', s.marginPct === null ? '—' : pct(s.marginPct))),
       campCard,
       skuCard.el);
+  }
+
+  function renderAgingReport(r) {
+    const s = r.summary || {};
+    const daySel = h('select', {
+      onchange: (e) => { agingDays = e.target.value; loadActive(true); },
+    },
+    [['30', '30+ days without sale'], ['60', '60+ days'], ['90', '90+ days'], ['180', '180+ days'], ['0', 'All in-stock items']]
+      .map(([v, lbl]) => h('option', { value: v, selected: agingDays === v }, lbl)));
+
+    const agingCard = renderPaginatedCard({
+      title: 'In-Stock Inventory · Days Without Sales (Top 500 by Capital Tied Up)',
+      meta: 'Generated ' + dateTime(r.generatedAt),
+      toolbar: [daySel],
+      getRows: (q) => (r.rows || []).filter((it) => !q || (it.sku + ' ' + it.upc + ' ' + it.title + ' ' + it.brand + ' ' + it.category).toLowerCase().includes(q)),
+      columns: [
+        { key: 'sku', label: 'SKU / UPC', render: (it) => h('div', h('strong.mono', it.sku), it.upc ? h('div.small.muted.mono', it.upc) : null) },
+        { key: 'title', label: 'Item', render: (it) => h('div', h('span', it.title), it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null) },
+        { key: 'onHand', label: 'On Hand', num: true, render: (it) => String(it.onHand) },
+        { key: 'cost', label: 'Stock Cost', num: true, render: (it) => (it.stockCostCents ? money(it.stockCostCents) : '—') },
+        { key: 'days', label: 'Days No Sale', num: true, render: (it) => h('span.badge', { class: it.daysWithoutSale === null || it.daysWithoutSale >= 90 ? 'warn' : '' }, it.daysWithoutSale === null ? 'No Hub sale' : (it.daysWithoutSale + ' d')) },
+      ],
+      empty: 'No in-stock items match this aging window.',
+      onCsv: (rows) => downloadCsv(
+        'ubc-days-without-sales.csv',
+        ['SKU', 'UPC', 'Title', 'Brand', 'Category', 'On Hand', 'Unit Cost ($)', 'Stock Cost ($)', 'Retail ($)', 'Days Without Sale'],
+        rows.map((it) => [it.sku, it.upc, it.title, it.brand, it.category, it.onHand, (it.costCents / 100).toFixed(2), (it.stockCostCents / 100).toFixed(2), (it.priceCents / 100).toFixed(2), it.daysWithoutSale === null ? 'No Hub sale' : it.daysWithoutSale]),
+      ),
+    });
+
+    mount(bodyHost,
+      h('div.kpis.dash-kpis',
+        kpiBox('In-stock SKUs', s.totalSkus || 0),
+        kpiBox('Units on hand', s.totalUnits || 0),
+        kpiBox('Capital tied up (Cost)', money(s.totalCostCents || 0), 'warn'),
+        kpiBox('No recorded Hub sale', s.neverSoldCount || 0)),
+      agingCard.el);
   }
 
   const refreshBtn = ctx.api.refreshSkuIndex && (!ctx.can || ctx.can('catalog.write'))

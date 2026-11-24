@@ -71,6 +71,7 @@ export async function renderLightspeedSheet(ctx) {
       categories: ctx.query.categories || '',
       stock: ctx.query.stock || 'physical',
       tag: ctx.query.tag || '',
+      minDays: ctx.query.minDays || '',
     },
     viewMode: 'all',
     offset: 0,
@@ -237,6 +238,16 @@ export async function renderLightspeedSheet(ctx) {
       ...facets.categories.map((c) => h('option', { value: c.value, selected: st.filter.categories === c.value }, c.value + ' (' + c.n + ')')),
     ]);
     const tagInput = h('input', { type: 'search', class: 'lss-tag', placeholder: 'Tag…', value: st.filter.tag });
+    const daysInput = h('input', {
+      type: 'number',
+      min: '0',
+      max: '3650',
+      class: 'lss-days',
+      placeholder: 'No sale (days ≥)…',
+      title: 'Filter items with at least N days without a recorded Hub sale',
+      style: 'width:130px',
+      value: st.filter.minDays,
+    });
 
     const limitSel = h('select', { class: 'lss-limit' }, [
       h('option', { value: '50', selected: st.limit === 50 }, '50 / page'),
@@ -250,11 +261,13 @@ export async function renderLightspeedSheet(ctx) {
       st.filter.brands = brandSel.value;
       st.filter.categories = catSel.value;
       st.filter.tag = tagInput.value.trim();
+      st.filter.minDays = daysInput.value.trim();
       st.offset = 0;
       load();
     };
     qInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
     tagInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
+    daysInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
     stockSel.addEventListener('change', applyFilters);
     brandSel.addEventListener('change', applyFilters);
     catSel.addEventListener('change', applyFilters);
@@ -316,7 +329,7 @@ export async function renderLightspeedSheet(ctx) {
         const header = [
           'System ID', 'UPC', 'Manufact. SKU', 'Description', 'Custom SKU', 'Tags',
           'Default Price', 'MSRP', 'Sale Price', 'Online Price', 'Default Cost',
-          'Reorder Point', 'Desired Inventory Level',
+          'Reorder Point', 'Desired Inventory Level', 'Days Without Sale',
         ];
         const body = rows.map((r) => [
           r.sku,
@@ -332,6 +345,7 @@ export async function renderLightspeedSheet(ctx) {
           centsToInput(r.defaultCostCents),
           r.reorderPoint,
           r.desiredLevel,
+          r.daysWithoutSale === null || r.daysWithoutSale === undefined ? 'No Hub sale' : r.daysWithoutSale,
         ]);
         downloadCsv('lightspeed-bulk-sheet.csv', [header, ...body]);
         toast('Exported ' + rows.length + ' rows to CSV', 'ok');
@@ -464,6 +478,7 @@ export async function renderLightspeedSheet(ctx) {
           brandSel,
           catSel,
           tagInput,
+          daysInput,
           limitSel,
           searchBtn,
           stdBtn,
@@ -549,6 +564,7 @@ export async function renderLightspeedSheet(ctx) {
 
     const activeCols = ALL_COLUMNS.filter((c) => c.groups.includes(st.viewMode));
     const showExtraIds = st.viewMode === 'identity';
+    const showDaysCol = st.viewMode === 'all' || st.viewMode === 'prices' || st.filter.minDays !== '';
 
     const allChecked = items.length > 0 && items.every((r) => st.selected.has(r.id));
     const headChk = h('input', {
@@ -574,6 +590,7 @@ export async function renderLightspeedSheet(ctx) {
       ]),
       showExtraIds ? h('th.lss-th', 'UPC / EAN') : null,
       showExtraIds ? h('th.lss-th', 'Manufact. SKU') : null,
+      showDaysCol ? h('th.lss-th.num', 'No Sale') : null,
       ...activeCols.map((c) => h('th', {
         class: 'lss-th ' + c.cls + (c.numeric ? ' num' : ''),
       }, c.label)),
@@ -619,6 +636,7 @@ export async function renderLightspeedSheet(ctx) {
         ]),
         showExtraIds ? h('td.lss-td.lss-mono', { 'data-label': 'UPC / EAN' }, row.upc || '—') : null,
         showExtraIds ? h('td.lss-td.lss-mono', { 'data-label': 'Manufact. SKU' }, row.mpn || '—') : null,
+        showDaysCol ? h('td.lss-td.num', { 'data-label': 'No Sale' }, h('span.badge', { class: row.daysWithoutSale === null || row.daysWithoutSale >= 90 ? 'warn' : '' }, row.daysWithoutSale === null || row.daysWithoutSale === undefined ? 'No Hub sale' : (row.daysWithoutSale + ' d'))) : null,
         ...activeCols.map((c, colIdx) => h('td', {
           class: 'lss-td ' + c.cls,
           'data-label': c.label,

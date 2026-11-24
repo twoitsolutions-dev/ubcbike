@@ -480,16 +480,43 @@ export async function renderReports(ctx) {
 
   function renderAgingReport(r) {
     const s = r.summary || {};
+    const dayInput = h('input', {
+      type: 'number',
+      min: '0',
+      max: '3650',
+      value: String(agingDays),
+      placeholder: 'Days…',
+      title: 'Minimum days without sale (0 = all in-stock)',
+      style: 'width:84px',
+      onkeydown: (e) => {
+        if (e.key === 'Enter') {
+          const n = Math.max(0, Math.min(3650, Math.floor(Number(dayInput.value) || 0)));
+          agingDays = String(n);
+          loadActive(true);
+        }
+      },
+    });
+    const dayApplyBtn = h('button.btn.sm', {
+      type: 'button',
+      onclick: () => {
+        const n = Math.max(0, Math.min(3650, Math.floor(Number(dayInput.value) || 0)));
+        agingDays = String(n);
+        loadActive(true);
+      },
+    }, 'Apply');
     const daySel = h('select', {
-      onchange: (e) => { agingDays = e.target.value; loadActive(true); },
+      onchange: (e) => { agingDays = e.target.value; dayInput.value = agingDays; loadActive(true); },
     },
-    [['30', '30+ days without sale'], ['60', '60+ days'], ['90', '90+ days'], ['180', '180+ days'], ['0', 'All in-stock items']]
+    [['30', '30+ days'], ['60', '60+ days'], ['90', '90+ days'], ['180', '180+ days'], ['0', 'All in-stock']]
       .map(([v, lbl]) => h('option', { value: v, selected: agingDays === v }, lbl)));
+    const sheetBtn = h('a.btn.sm.primary', {
+      href: '#/lightspeed-sheet?stock=physical&minDays=' + encodeURIComponent(agingDays),
+    }, 'Edit in Bulk Sheet →');
 
     const agingCard = renderPaginatedCard({
       title: 'In-Stock Inventory · Days Without Sales (Top 500 by Capital Tied Up)',
       meta: 'Generated ' + dateTime(r.generatedAt),
-      toolbar: [daySel],
+      toolbar: [h('span.small.muted', 'Days ≥'), dayInput, dayApplyBtn, daySel, sheetBtn],
       getRows: (q) => (r.rows || []).filter((it) => !q || (it.sku + ' ' + it.upc + ' ' + it.title + ' ' + it.brand + ' ' + it.category).toLowerCase().includes(q)),
       columns: [
         { key: 'sku', label: 'SKU / UPC', render: (it) => h('div', h('strong.mono', it.sku), it.upc ? h('div.small.muted.mono', it.upc) : null) },
@@ -497,6 +524,7 @@ export async function renderReports(ctx) {
         { key: 'onHand', label: 'On Hand', num: true, render: (it) => String(it.onHand) },
         { key: 'cost', label: 'Stock Cost', num: true, render: (it) => (it.stockCostCents ? money(it.stockCostCents) : '—') },
         { key: 'days', label: 'Days No Sale', num: true, render: (it) => h('span.badge', { class: it.daysWithoutSale === null || it.daysWithoutSale >= 90 ? 'warn' : '' }, it.daysWithoutSale === null ? 'No Hub sale' : (it.daysWithoutSale + ' d')) },
+        { key: 'act', label: '', render: (it) => h('a.btn.sm', { href: '#/lightspeed-sheet?stock=physical&q=' + encodeURIComponent(it.sku) }, 'Bulk Sheet →') },
       ],
       empty: 'No in-stock items match this aging window.',
       onCsv: (rows) => downloadCsv(

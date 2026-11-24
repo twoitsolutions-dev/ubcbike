@@ -302,10 +302,49 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     const filter = filterFromQuery(q);
     if (!q.stock) filter.stock = 'physical';
     else if (q.stock === 'any') delete filter.stock;
+    const hasMinDays = q.minDays !== undefined && q.minDays !== '';
+    const minDays = hasMinDays ? Math.max(0, Math.min(3650, Math.floor(Number(q.minDays) || 0))) : null;
+    if (minDays !== null && minDays > 0) {
+      const agingRes = await ctx.pool.query<{ id: string }>(
+        `WITH last_sale AS (
+           SELECT ol.variant_id, max(o.created_at) AS last_sold_at
+           FROM order_lines ol
+           JOIN orders o ON o.id = ol.order_id
+           WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id IS NOT NULL
+           GROUP BY ol.variant_id
+         )
+         SELECT v.id::text AS id
+         FROM variants v
+         LEFT JOIN last_sale ls ON ls.variant_id = v.id
+         WHERE v.company_id = $1
+           AND (ls.last_sold_at IS NULL OR ls.last_sold_at <= now() - make_interval(days => $2))`,
+        [c, minDays],
+      );
+      const agingSet = new Set(agingRes.rows.map((r) => r.id));
+      filter.ids = filter.ids ? filter.ids.filter((id) => agingSet.has(id)) : Array.from(agingSet);
+      if (!filter.ids.length) {
+        return { total: 0, writesEnabled, items: [] };
+      }
+    }
     const { items, total } = await listItems(ctx.pool, c, filter, availability, page);
     const tagFilter = typeof q.tag === 'string' ? q.tag.trim().toLowerCase() : '';
     const includeHidden = q.status === 'hidden' || q.includeHidden === '1';
     const visibleItems = items.filter((i) => includeHidden || i.status !== 'hidden');
+
+    const daysNoSaleByVariant = new Map<string, number | null>();
+    if (visibleItems.length) {
+      const vids = visibleItems.map((i) => i.id);
+      const dRes = await ctx.pool.query<{ variant_id: string; days_without_sale: number | null }>(
+        `SELECT ol.variant_id::text AS variant_id,
+                EXTRACT(DAY FROM (now() - max(o.created_at)))::int AS days_without_sale
+         FROM order_lines ol
+         JOIN orders o ON o.id = ol.order_id
+         WHERE o.company_id = $1 AND o.internal_status <> 'cancelled' AND ol.variant_id = ANY($2::uuid[])
+         GROUP BY ol.variant_id`,
+        [c, vids],
+      );
+      for (const r of dRes.rows) daysNoSaleByVariant.set(r.variant_id, r.days_without_sale);
+    }
 
     // Hydrate exact live Lightspeed fields (`customSku`, `Tags`, all 4 `Prices`, `defaultCost`, `reorderPoint`, `desiredLevel`) for visible rows.
     const lsDetailsByVariant = new Map<string, Awaited<ReturnType<NonNullable<typeof ctx.connectors.lightspeed>['fetchSheetDetailsByIds']>> extends Map<string, infer V> ? V : never>();
@@ -353,6 +392,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
           reorderPoint: ls ? ls.reorderPoint : (raw.reorderPoint as number | null) ?? 0,
           desiredLevel: ls ? ls.desiredLevel : (raw.desiredLevel as number | null) ?? 0,
           physicalQty: i.physicalQty ?? 0,
+          daysWithoutSale: daysNoSaleByVariant.has(i.id) ? daysNoSaleByVariant.get(i.id)! : null,
           version: i.version,
         };
       })

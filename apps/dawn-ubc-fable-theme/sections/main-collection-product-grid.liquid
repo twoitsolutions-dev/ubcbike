@@ -197,7 +197,7 @@
     }
     .ubc-col-layout > .ubc-dept-wrap { display: contents; }
     .ubc-col-layout .ubc-breadcrumbs { grid-column: 1 / -1; grid-row: 1; margin-bottom: 0.6rem; }
-    .ubc-col-layout .ubc-dept-head { grid-column: 1 / -1; grid-row: 2; }
+    .ubc-col-layout .ubc-dept-pills { grid-column: 1 / -1; grid-row: 2; margin: 0 0 1.4rem; }
     .ubc-col-layout .ubc-side {
       grid-column: 1;
       grid-row: 3;
@@ -226,11 +226,8 @@
       padding-top: 4.4rem;
     }
     .ubc-col-layout .page-width { padding-left: 0; padding-right: 0; max-width: none; }
-    .ubc-side .ubc-store-bar,
-    .ubc-side .ubc-dept-pills { flex-direction: column; align-items: stretch; flex-wrap: nowrap; margin: 0 0 1.2rem; }
-    .ubc-side .ubc-dept-pills { margin-bottom: 0.4rem; }
-    .ubc-side .ubc-store-btn,
-    .ubc-side .ubc-dept-pill { justify-content: space-between; text-align: left; width: 100%; }
+    .ubc-side .ubc-store-bar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; margin: 0 0 0.4rem; }
+    .ubc-side .ubc-store-btn { justify-content: space-between; text-align: left; width: 100%; }
   }
 
   /* UBC Fable Styling for Search & Discovery (#main-collection-filters) */
@@ -339,7 +336,6 @@
     <div class="page-width ubc-dept-wrap" data-ubc-base-col="{{ base_col_url }}">
       {%- render 'ubc-breadcrumbs' -%}
 
-      <div class="ubc-side" aria-label="Filters">
       {%- if show_back_all or ubc_dept_handles.size > 0 -%}
       <nav class="ubc-dept-pills" aria-label="Store departments">
         {%- if show_back_all -%}
@@ -372,6 +368,56 @@
           {%- endif -%}
         {%- endfor -%}
       </nav>
+      {%- endif -%}
+
+      <div class="ubc-side" aria-label="Filters">
+      {%- if collection.handle != 'special-order-catalog' -%}
+        {%- liquid
+          assign non_store_suffix = ''
+          if active_brand_tag != ''
+            assign non_store_suffix = active_brand_tag
+          endif
+          if active_price_tag != ''
+            if non_store_suffix != ''
+              assign non_store_suffix = non_store_suffix | append: '+' | append: active_price_tag
+            else
+              assign non_store_suffix = active_price_tag
+            endif
+          endif
+          assign both_href = base_col_url
+          if non_store_suffix != ''
+            assign both_href = base_col_url | append: '/' | append: non_store_suffix
+          endif
+          assign tampa_href = base_col_url | append: '/ubc-tampa-stock'
+          if non_store_suffix != ''
+            assign tampa_href = tampa_href | append: '+' | append: non_store_suffix
+          endif
+          assign alafia_href = base_col_url | append: '/ubc-alafia-stock'
+          if non_store_suffix != ''
+            assign alafia_href = alafia_href | append: '+' | append: non_store_suffix
+          endif
+        -%}
+        <div class="ubc-store-bar" role="region" aria-label="Filter by store location">
+          <span class="ubc-store-label">Store Location:</span>
+          <a
+            class="ubc-store-btn{% if active_store_tag == '' %} is-active{% endif %}"
+            href="{{ both_href }}"
+          >
+            Both Stores
+          </a>
+          <a
+            class="ubc-store-btn{% if active_store_tag == 'ubc-tampa-stock' %} is-active{% endif %}"
+            href="{{ tampa_href }}"
+          >
+            UBC Tampa Showroom{% if tampa_total > 0 and collection.handle == 'all' or collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia' %} ({{ tampa_total }}){% endif %}
+          </a>
+          <a
+            class="ubc-store-btn ubc-store-btn--alafia{% if active_store_tag == 'ubc-alafia-stock' %} is-active{% endif %}"
+            href="{{ alafia_href }}"
+          >
+            UBC Alafia River Park{% if alafia_total > 0 and collection.handle == 'all' or collection.handle == 'in-stock-tampa' or collection.handle == 'in-stock-alafia' %} ({{ alafia_total }}){% endif %}
+          </a>
+        </div>
       {%- endif -%}
       </div>
     </div>

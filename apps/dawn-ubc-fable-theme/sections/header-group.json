@@ -5,6 +5,7 @@
     "fable_header": {
       "type": "fable-header",
       "settings": {
+        "menu": "main-menu",
         "phone": "(813) 971-2277",
         "enable_bilingual_toggle": true
       }

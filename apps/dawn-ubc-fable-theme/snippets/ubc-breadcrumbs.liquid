@@ -1,9 +1,19 @@
 {%- comment -%}
-  UBC Workstand-Style Breadcrumbs (Collections & Products)
+  UBC Shopify OS 2.0 Breadcrumbs + JSON-LD BreadcrumbList (Collections & Products)
   Pattern:
-    Collection: Bicycling Catalog > [Parent Department] > Current Collection
-    Product:    Bicycling Catalog > Department > Subcategory > Brand > Product Title
+    Collection: Shop All > [Parent Department] > Current Collection
+    Product:    Shop All > Department > [Subcategory] > [Vendor] > Product Title
 {%- endcomment -%}
+
+{%- assign bc_pos = 1 -%}
+{%- capture bc_json_items -%}
+  {
+    "@type": "ListItem",
+    "position": 1,
+    "name": "Shop All",
+    "item": {{ shop.url | append: '/collections/all' | json }}
+  }
+{%- endcapture -%}
 
 <nav class="ubc-breadcrumbs" aria-label="Breadcrumb">
   <ol class="ubc-bc-list">
@@ -18,31 +28,49 @@
         assign dept_es = ''
         assign dept_url = ''
         case ch
-          when 'road-bikes', 'mountain-bikes', 'hybrid-bikes', 'kids-bikes'
-            assign dept_title = 'Bikes'
-            assign dept_es = 'Bicicletas'
+          when 'road-bikes', 'mountain-bikes', 'hybrid-bikes', 'commuter-urban-bikes', 'electric-bikes', 'kids-bikes', 'bmx-bikes', 'cyclocross-bikes', 'other-bikes'
+            assign dept_title = 'Bikes & E-Bikes'
+            assign dept_es = 'Bicicletas y Eléctricas'
             assign dept_url = '/collections/bikes'
-          when 'tires-tubes', 'bicycle-tires', 'tubes', 'saddles', 'pedals'
+          when 'tires-tubes', 'bicycle-tires', 'tubes', 'brakes-levers', 'cables', 'cassettes-freewheels', 'chainrings', 'chains', 'cranksets', 'derailleurs', 'forks', 'groupsets', 'grips-tape', 'handlebars', 'headsets', 'pedals', 'saddles', 'seatposts', 'shifters', 'stems', 'wheels', 'other-components'
             assign dept_title = 'Components'
             assign dept_es = 'Componentes'
             assign dept_url = '/collections/parts-components'
-          when 'helmets', 'eyewear', 'hydration-nutrition', 'bottles-cages', 'lights-locks', 'tools-workshop'
+          when 'helmets', 'car-racks', 'electronics', 'eyewear', 'fenders', 'hydration-nutrition', 'bottles-cages', 'lighting', 'locks-security', 'nutrition', 'packs-baskets', 'pumps-inflation', 'tools-workshop', 'lights-locks', 'other-accessories'
             assign dept_title = 'Accessories'
             assign dept_es = 'Accesorios'
             assign dept_url = '/collections/accessories-gear'
-          when 'cycling-shoes', 'shoes'
+          when 'cycling-shoes', 'shoes', 'gloves', 'jerseys-short-sleeve', 'jerseys-long-sleeve', 'outerwear', 'cycling-shorts-bottoms', 'socks', 'apparel-accessories'
             assign dept_title = 'Apparel'
             assign dept_es = 'Ropa'
             assign dept_url = '/collections/clothing'
         endcase
       -%}
       {%- if dept_title != blank -%}
+        {%- assign bc_pos = bc_pos | plus: 1 -%}
+        {%- capture bc_json_items -%}{{ bc_json_items }},
+          {
+            "@type": "ListItem",
+            "position": {{ bc_pos }},
+            "name": {{ dept_title | json }},
+            "item": {{ shop.url | append: dept_url | json }}
+          }
+        {%- endcapture -%}
         <li class="ubc-bc-sep" aria-hidden="true">&rsaquo;</li>
         <li class="ubc-bc-item">
           <a href="{{ dept_url }}" data-es="{{ dept_es }}">{{ dept_title }}</a>
         </li>
       {%- endif -%}
       {%- unless ch == 'all' -%}
+        {%- assign bc_pos = bc_pos | plus: 1 -%}
+        {%- capture bc_json_items -%}{{ bc_json_items }},
+          {
+            "@type": "ListItem",
+            "position": {{ bc_pos }},
+            "name": {{ collection.title | json }},
+            "item": {{ shop.url | append: collection.url | json }}
+          }
+        {%- endcapture -%}
         <li class="ubc-bc-sep" aria-hidden="true">&rsaquo;</li>
         <li class="ubc-bc-item" aria-current="page">
           <span>{{ collection.title | escape }}</span>
@@ -59,124 +87,346 @@
         assign sub_es = ''
         assign sub_url = ''
 
-        if pt contains 'electric'
-          assign dept_title = 'Electric'
-          assign dept_es = 'Eléctricas'
-          assign dept_url = '/collections/electric-bikes'
-        elsif pt contains 'road_bike' or pt contains 'gravel' or pt contains 'cyclocross'
-          assign dept_title = 'Bikes'
-          assign dept_es = 'Bicicletas'
+        if pt == 'electric bikes' or pt contains 'electric'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
+          assign dept_url = '/collections/bikes'
+          assign sub_title = 'Electric Bikes'
+          assign sub_es = 'Bicicletas Eléctricas'
+          assign sub_url = '/collections/electric-bikes'
+        elsif pt == 'road bikes' or pt contains 'road_bike' or pt contains 'gravel' or pt contains 'cyclocross'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
           assign dept_url = '/collections/bikes'
           assign sub_title = 'Road & Gravel Bikes'
           assign sub_es = 'Ruta y Gravel'
           assign sub_url = '/collections/road-bikes'
-        elsif pt contains 'mountain_bike'
-          assign dept_title = 'Bikes'
-          assign dept_es = 'Bicicletas'
+        elsif pt == 'mountain bikes' or pt contains 'mountain_bike'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
           assign dept_url = '/collections/bikes'
           assign sub_title = 'Mountain Bikes'
           assign sub_es = 'Montaña'
           assign sub_url = '/collections/mountain-bikes'
-        elsif pt contains 'urban_bike' or pt contains 'hybrid' or pt contains 'commuter' or pt contains 'comfort' or pt contains 'fitness'
-          assign dept_title = 'Bikes'
-          assign dept_es = 'Bicicletas'
+        elsif pt == 'commuter & urban bikes' or pt contains 'urban_bike' or pt contains 'commuter'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
           assign dept_url = '/collections/bikes'
-          assign sub_title = 'Hybrid, Comfort & Urban Bikes'
-          assign sub_es = 'Híbridas y Urbanas'
+          assign sub_title = 'Commuter & Urban Bikes'
+          assign sub_es = 'Urbanas'
+          assign sub_url = '/collections/commuter-urban-bikes'
+        elsif pt == 'hybrid & comfort bikes' or pt contains 'hybrid' or pt contains 'comfort' or pt contains 'fitness'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
+          assign dept_url = '/collections/bikes'
+          assign sub_title = 'Hybrid & Comfort Bikes'
+          assign sub_es = 'Híbridas y Confort'
           assign sub_url = '/collections/hybrid-bikes'
-        elsif pt contains 'children' or pt contains 'kids' or pt contains 'bmx'
-          assign dept_title = 'Bikes'
-          assign dept_es = 'Bicicletas'
+        elsif pt == 'kids bikes' or pt contains 'children' or pt contains 'kids'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
           assign dept_url = '/collections/bikes'
-          assign sub_title = 'Kids & BMX Bikes'
-          assign sub_es = 'Niños y BMX'
+          assign sub_title = 'Kids Bikes'
+          assign sub_es = 'Bicis para Niños'
           assign sub_url = '/collections/kids-bikes'
+        elsif pt == 'bmx bikes' or pt contains 'bmx'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
+          assign dept_url = '/collections/bikes'
+          assign sub_title = 'BMX Bikes'
+          assign sub_es = 'BMX'
+          assign sub_url = '/collections/bmx-bikes'
         elsif pt contains 'bike'
-          assign dept_title = 'Bikes'
-          assign dept_es = 'Bicicletas'
+          assign dept_title = 'Bikes & E-Bikes'
+          assign dept_es = 'Bicicletas y Eléctricas'
           assign dept_url = '/collections/bikes'
         elsif pt == 'tires' or pt contains 'tire'
           assign dept_title = 'Components'
           assign dept_es = 'Componentes'
           assign dept_url = '/collections/parts-components'
-          assign sub_title = 'Tires & Tubes'
-          assign sub_es = 'Llantas y Cámaras'
-          assign sub_url = '/collections/tires-tubes'
-        elsif pt contains 'tube'
+          assign sub_title = 'Tires'
+          assign sub_es = 'Llantas'
+          assign sub_url = '/collections/bicycle-tires'
+        elsif pt == 'tubes' or pt contains 'tube'
           assign dept_title = 'Components'
           assign dept_es = 'Componentes'
           assign dept_url = '/collections/parts-components'
-          assign sub_title = 'Inner Tubes'
+          assign sub_title = 'Tubes'
           assign sub_es = 'Cámaras'
           assign sub_url = '/collections/tubes'
-        elsif pt contains 'saddle'
+        elsif pt == 'brakes & levers' or pt contains 'brake'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Brakes & Levers'
+          assign sub_es = 'Frenos y Manetas'
+          assign sub_url = '/collections/brakes-levers'
+        elsif pt == 'cables' or pt contains 'cable'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Cables'
+          assign sub_es = 'Cables'
+          assign sub_url = '/collections/cables'
+        elsif pt == 'cassettes & freewheels' or pt contains 'cassette' or pt contains 'freewheel'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Cassettes & Freewheels'
+          assign sub_es = 'Cassettes y Piñones'
+          assign sub_url = '/collections/cassettes-freewheels'
+        elsif pt == 'chainrings' or pt contains 'chainring'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Chainrings'
+          assign sub_es = 'Platos'
+          assign sub_url = '/collections/chainrings'
+        elsif pt == 'chains' or pt contains 'chain'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Chains'
+          assign sub_es = 'Cadenas'
+          assign sub_url = '/collections/chains'
+        elsif pt == 'cranksets' or pt contains 'crank'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Cranksets'
+          assign sub_es = 'Bielas'
+          assign sub_url = '/collections/cranksets'
+        elsif pt == 'derailleurs' or pt contains 'derailleur'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Derailleurs'
+          assign sub_es = 'Desviadores'
+          assign sub_url = '/collections/derailleurs'
+        elsif pt == 'forks' or pt contains 'fork'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Forks'
+          assign sub_es = 'Horquillas'
+          assign sub_url = '/collections/forks'
+        elsif pt == 'groupsets' or pt contains 'groupset'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Groupsets'
+          assign sub_es = 'Grupos'
+          assign sub_url = '/collections/groupsets'
+        elsif pt == 'grips & tape' or pt contains 'grip' or pt contains 'tape'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Grips & Tape'
+          assign sub_es = 'Puños y Cinta'
+          assign sub_url = '/collections/grips-tape'
+        elsif pt == 'handlebars' or pt contains 'handlebar'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Handlebars'
+          assign sub_es = 'Manillares'
+          assign sub_url = '/collections/handlebars'
+        elsif pt == 'headsets' or pt contains 'headset'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Headsets'
+          assign sub_es = 'Dirección'
+          assign sub_url = '/collections/headsets'
+        elsif pt == 'pedals' or pt contains 'pedal'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Pedals'
+          assign sub_es = 'Pedales'
+          assign sub_url = '/collections/pedals'
+        elsif pt == 'saddles' or pt contains 'saddle'
           assign dept_title = 'Components'
           assign dept_es = 'Componentes'
           assign dept_url = '/collections/parts-components'
           assign sub_title = 'Saddles'
           assign sub_es = 'Sillines'
           assign sub_url = '/collections/saddles'
-        elsif pt contains 'pedal'
+        elsif pt == 'seatposts' or pt contains 'seatpost'
           assign dept_title = 'Components'
           assign dept_es = 'Componentes'
           assign dept_url = '/collections/parts-components'
-          assign sub_title = 'Pedals & Cleats'
-          assign sub_es = 'Pedales y Calas'
-          assign sub_url = '/collections/pedals'
-        elsif pt contains 'frame' or pt contains 'wheel' or pt contains 'handlebar' or pt contains 'fork' or pt contains 'stem' or pt contains 'brake' or pt contains 'derailleur' or pt contains 'chain' or pt contains 'cassette' or pt contains 'crank' or pt contains 'shifter' or pt contains 'headset' or pt contains 'seatpost' or pt contains 'component' or pt contains 'part'
+          assign sub_title = 'Seatposts'
+          assign sub_es = 'Tijas'
+          assign sub_url = '/collections/seatposts'
+        elsif pt == 'shifters' or pt contains 'shifter'
           assign dept_title = 'Components'
           assign dept_es = 'Componentes'
           assign dept_url = '/collections/parts-components'
-        elsif pt contains 'helmet'
+          assign sub_title = 'Shifters'
+          assign sub_es = 'Mandos'
+          assign sub_url = '/collections/shifters'
+        elsif pt == 'stems' or pt contains 'stem'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Stems'
+          assign sub_es = 'Potencias'
+          assign sub_url = '/collections/stems'
+        elsif pt == 'wheels' or pt contains 'wheel'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Wheels'
+          assign sub_es = 'Ruedas'
+          assign sub_url = '/collections/wheels'
+        elsif pt == 'other components' or pt contains 'component' or pt contains 'part'
+          assign dept_title = 'Components'
+          assign dept_es = 'Componentes'
+          assign dept_url = '/collections/parts-components'
+          assign sub_title = 'Other Components'
+          assign sub_es = 'Otros Componentes'
+          assign sub_url = '/collections/other-components'
+        elsif pt == 'helmets' or pt contains 'helmet'
           assign dept_title = 'Accessories'
           assign dept_es = 'Accesorios'
           assign dept_url = '/collections/accessories-gear'
-          assign sub_title = 'Helmets & Safety'
-          assign sub_es = 'Cascos y Seguridad'
+          assign sub_title = 'Helmets'
+          assign sub_es = 'Cascos'
           assign sub_url = '/collections/helmets'
-        elsif pt contains 'eyewear' or pt contains 'glass'
+        elsif pt == 'car racks' or pt contains 'rack'
           assign dept_title = 'Accessories'
           assign dept_es = 'Accesorios'
           assign dept_url = '/collections/accessories-gear'
-          assign sub_title = 'Sunglasses & Eyewear'
-          assign sub_es = 'Gafas de Sol'
+          assign sub_title = 'Car Racks'
+          assign sub_es = 'Portabicicletas'
+          assign sub_url = '/collections/car-racks'
+        elsif pt == 'electronics' or pt contains 'electronic' or pt contains 'computer'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Electronics'
+          assign sub_es = 'Electrónica'
+          assign sub_url = '/collections/electronics'
+        elsif pt == 'eyewear' or pt contains 'glass'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Eyewear'
+          assign sub_es = 'Gafas'
           assign sub_url = '/collections/eyewear'
-        elsif pt contains 'bottle' or pt contains 'cage'
+        elsif pt == 'fenders' or pt contains 'fender'
           assign dept_title = 'Accessories'
           assign dept_es = 'Accesorios'
           assign dept_url = '/collections/accessories-gear'
-          assign sub_title = 'Bottles, Cages & Packs'
-          assign sub_es = 'Botellas y Portabotellas'
-          assign sub_url = '/collections/bottles-cages'
-        elsif pt contains 'nutrit'
-          assign dept_title = 'Nutrition'
-          assign dept_es = 'Nutrición'
-          assign dept_url = '/collections/nutrition'
-        elsif pt contains 'hydrat'
+          assign sub_title = 'Fenders'
+          assign sub_es = 'Guardabarros'
+          assign sub_url = '/collections/fenders'
+        elsif pt == 'hydration' or pt contains 'hydrat' or pt contains 'bottle' or pt contains 'cage'
           assign dept_title = 'Accessories'
           assign dept_es = 'Accesorios'
           assign dept_url = '/collections/accessories-gear'
-          assign sub_title = 'Hydration & Bottles'
-          assign sub_es = 'Hidratación y Botellas'
+          assign sub_title = 'Hydration'
+          assign sub_es = 'Hidratación'
           assign sub_url = '/collections/hydration-nutrition'
-        elsif pt contains 'tool' or pt contains 'pump'
+        elsif pt == 'lighting' or pt contains 'light'
           assign dept_title = 'Accessories'
           assign dept_es = 'Accesorios'
           assign dept_url = '/collections/accessories-gear'
-          assign sub_title = 'Pumps, Tools & Bike Care'
-          assign sub_es = 'Herramientas y Bombas'
+          assign sub_title = 'Lighting'
+          assign sub_es = 'Luces'
+          assign sub_url = '/collections/lighting'
+        elsif pt == 'locks & security' or pt contains 'lock'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Locks & Security'
+          assign sub_es = 'Candados'
+          assign sub_url = '/collections/locks-security'
+        elsif pt == 'nutrition' or pt contains 'nutrit'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Nutrition'
+          assign sub_es = 'Nutrición'
+          assign sub_url = '/collections/nutrition'
+        elsif pt == 'packs & baskets' or pt contains 'pack' or pt contains 'bag' or pt contains 'basket'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Packs & Baskets'
+          assign sub_es = 'Bolsos y Cestas'
+          assign sub_url = '/collections/packs-baskets'
+        elsif pt == 'pumps & inflation' or pt contains 'pump'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Pumps & Inflation'
+          assign sub_es = 'Bombas'
+          assign sub_url = '/collections/pumps-inflation'
+        elsif pt == 'tools & maintenance' or pt contains 'tool' or pt contains 'lube' or pt contains 'clean'
+          assign dept_title = 'Accessories'
+          assign dept_es = 'Accesorios'
+          assign dept_url = '/collections/accessories-gear'
+          assign sub_title = 'Tools & Maintenance'
+          assign sub_es = 'Herramientas'
           assign sub_url = '/collections/tools-workshop'
-        elsif pt contains 'shoe'
+        elsif pt == 'cycling shoes' or pt contains 'shoe'
           assign dept_title = 'Apparel'
           assign dept_es = 'Ropa'
           assign dept_url = '/collections/clothing'
           assign sub_title = 'Cycling Shoes'
           assign sub_es = 'Zapatillas'
           assign sub_url = '/collections/cycling-shoes'
-        elsif pt contains 'cloth' or pt contains 'apparel' or pt contains 'jersey' or pt contains 'glove' or pt contains 'sock' or pt contains 'short' or pt contains 'outerwear'
+        elsif pt == 'gloves' or pt contains 'glove'
           assign dept_title = 'Apparel'
           assign dept_es = 'Ropa'
           assign dept_url = '/collections/clothing'
+          assign sub_title = 'Gloves'
+          assign sub_es = 'Guantes'
+          assign sub_url = '/collections/gloves'
+        elsif pt == 'short sleeve jerseys'
+          assign dept_title = 'Apparel'
+          assign dept_es = 'Ropa'
+          assign dept_url = '/collections/clothing'
+          assign sub_title = 'Short Sleeve Jerseys'
+          assign sub_es = 'Maillots Manga Corta'
+          assign sub_url = '/collections/jerseys-short-sleeve'
+        elsif pt == 'long sleeve jerseys'
+          assign dept_title = 'Apparel'
+          assign dept_es = 'Ropa'
+          assign dept_url = '/collections/clothing'
+          assign sub_title = 'Long Sleeve Jerseys'
+          assign sub_es = 'Maillots Manga Larga'
+          assign sub_url = '/collections/jerseys-long-sleeve'
+        elsif pt == 'outerwear'
+          assign dept_title = 'Apparel'
+          assign dept_es = 'Ropa'
+          assign dept_url = '/collections/clothing'
+          assign sub_title = 'Outerwear'
+          assign sub_es = 'Chaquetas'
+          assign sub_url = '/collections/outerwear'
+        elsif pt == 'cycling shorts & bottoms'
+          assign dept_title = 'Apparel'
+          assign dept_es = 'Ropa'
+          assign dept_url = '/collections/clothing'
+          assign sub_title = 'Cycling Shorts & Bottoms'
+          assign sub_es = 'Culotes y Shorts'
+          assign sub_url = '/collections/cycling-shorts-bottoms'
+        elsif pt == 'socks' or pt contains 'sock'
+          assign dept_title = 'Apparel'
+          assign dept_es = 'Ropa'
+          assign dept_url = '/collections/clothing'
+          assign sub_title = 'Socks'
+          assign sub_es = 'Calcetines'
+          assign sub_url = '/collections/socks'
+        elsif pt == 'apparel accessories' or pt contains 'cloth' or pt contains 'apparel' or pt contains 'jersey' or pt contains 'short'
+          assign dept_title = 'Apparel'
+          assign dept_es = 'Ropa'
+          assign dept_url = '/collections/clothing'
+          assign sub_title = 'Apparel Accessories'
+          assign sub_es = 'Accesorios de Ropa'
+          assign sub_url = '/collections/apparel-accessories'
         elsif collection and collection.handle != 'all'
           assign dept_title = collection.title
           assign dept_es = collection.title
@@ -185,22 +435,63 @@
 
         assign vendor_target = sub_url | default: dept_url
       -%}
+
+      {%- assign bc_pos = bc_pos | plus: 1 -%}
+      {%- capture bc_json_items -%}{{ bc_json_items }},
+        {
+          "@type": "ListItem",
+          "position": {{ bc_pos }},
+          "name": {{ dept_title | json }},
+          "item": {{ shop.url | append: dept_url | json }}
+        }
+      {%- endcapture -%}
       <li class="ubc-bc-sep" aria-hidden="true">&rsaquo;</li>
       <li class="ubc-bc-item">
         <a href="{{ dept_url }}" data-es="{{ dept_es }}">{{ dept_title }}</a>
       </li>
+
       {%- if sub_title != blank -%}
+        {%- assign bc_pos = bc_pos | plus: 1 -%}
+        {%- capture bc_json_items -%}{{ bc_json_items }},
+          {
+            "@type": "ListItem",
+            "position": {{ bc_pos }},
+            "name": {{ sub_title | json }},
+            "item": {{ shop.url | append: sub_url | json }}
+          }
+        {%- endcapture -%}
         <li class="ubc-bc-sep" aria-hidden="true">&rsaquo;</li>
         <li class="ubc-bc-item">
           <a href="{{ sub_url }}" data-es="{{ sub_es }}">{{ sub_title }}</a>
         </li>
       {%- endif -%}
+
       {%- if product.vendor != blank -%}
+        {%- assign bc_pos = bc_pos | plus: 1 -%}
+        {%- assign vendor_url = vendor_target | append: '?filter.p.vendor=' | append: product.vendor | url_encode -%}
+        {%- capture bc_json_items -%}{{ bc_json_items }},
+          {
+            "@type": "ListItem",
+            "position": {{ bc_pos }},
+            "name": {{ product.vendor | json }},
+            "item": {{ shop.url | append: vendor_target | append: '?filter.p.vendor=' | append: product.vendor | url_encode | json }}
+          }
+        {%- endcapture -%}
         <li class="ubc-bc-sep" aria-hidden="true">&rsaquo;</li>
         <li class="ubc-bc-item">
           <a href="{{ vendor_target }}?filter.p.vendor={{ product.vendor | url_encode }}">{{ product.vendor | escape }}</a>
         </li>
       {%- endif -%}
+
+      {%- assign bc_pos = bc_pos | plus: 1 -%}
+      {%- capture bc_json_items -%}{{ bc_json_items }},
+        {
+          "@type": "ListItem",
+          "position": {{ bc_pos }},
+          "name": {{ product.title | json }},
+          "item": {{ shop.url | append: product.url | json }}
+        }
+      {%- endcapture -%}
       <li class="ubc-bc-sep" aria-hidden="true">&rsaquo;</li>
       <li class="ubc-bc-item" aria-current="page">
         <span>{{ product.title | escape }}</span>
@@ -208,3 +499,11 @@
     {%- endif -%}
   </ol>
 </nav>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{{ bc_json_items }}]
+}
+</script>

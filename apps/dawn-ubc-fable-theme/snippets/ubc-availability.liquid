@@ -48,6 +48,10 @@
           Alafia Park{% if alafia_qty > 0 %} ({{ alafia_qty }}){% endif %}
         </span>
       {%- endif -%}
+    {%- elsif prod_obj.tags contains 'ubc-warehouse-stock' -%}
+      <span class="availability availability--in_stock" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#475569;color:#FEFDF3;">
+        Warehouse
+      </span>
     {%- else -%}
       <span class="availability availability--{{ status }}" data-availability style="{% if status == 'in_stock' %}display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#14202D;color:#FFFFFF;{% elsif status == 'special_order' %}display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:1.1rem;font-weight:600;background:#F3E8D2;color:#5C3D0E;{% endif %}">
         {%- case status -%}

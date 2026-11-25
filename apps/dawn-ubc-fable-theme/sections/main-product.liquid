@@ -702,21 +702,52 @@
       {%- assign ws_gender = product.metafields.custom.gender.value -%}
       {%- assign ws_wheel = product.metafields.custom.wheel_size.value -%}
       {%- assign ws_mpn = v_spec.metafields.ubc.mpn.value -%}
-      {%- if product.description != blank or ws_year != blank or ws_wt != blank or v_spec.sku != blank -%}
-        <div class="ubc-pdp-description rte">
-          <h2 class="ubc-pdp-desc-title">Product Details</h2>
-          {%- if product.description != blank -%}{{ product.description }}{%- endif -%}
-          <div class="ubc-pdp-specs" style="margin-top:1.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.8rem 1.4rem;padding-top:1.2rem;border-top:1px solid rgba(20,32,45,0.1);font-size:1.35rem;">
-            {%- if product.vendor != blank -%}<div><strong>Brand:</strong> {{ product.vendor | escape }}</div>{%- endif -%}
-            {%- if product.type != blank -%}<div><strong>Category:</strong> {{ product.type | escape }}</div>{%- endif -%}
-            {%- if v_spec.sku != blank -%}<div><strong>System SKU:</strong> {{ v_spec.sku | escape }}</div>{%- endif -%}
-            {%- if ws_mpn != blank -%}<div><strong>MPN:</strong> {{ ws_mpn | escape }}</div>{%- endif -%}
-            {%- if v_spec.barcode != blank -%}<div><strong>UPC:</strong> {{ v_spec.barcode | escape }}</div>{%- endif -%}
-            {%- if ws_year != blank -%}<div><strong>Model Year:</strong> {{ ws_year | escape }}</div>{%- endif -%}
-            {%- if ws_gender != blank -%}<div><strong>Gender:</strong> {{ ws_gender | escape }}</div>{%- endif -%}
-            {%- if ws_wheel != blank -%}<div><strong>Wheel Size:</strong> {{ ws_wheel | escape }}</div>{%- endif -%}
-            {%- if ws_wt != blank -%}<div><strong>Shipping Weight:</strong> {{ ws_wt | escape }} lbs</div>{%- endif -%}
-          </div>
+      {%- assign has_specs = false -%}
+      {%- if product.vendor != blank or product.type != blank or v_spec.sku != blank or ws_mpn != blank or v_spec.barcode != blank or ws_year != blank or ws_gender != blank or ws_wheel != blank or ws_wt != blank -%}
+        {%- assign has_specs = true -%}
+      {%- endif -%}
+      {%- if product.description != blank or has_specs -%}
+        <div class="ubc-pdp-details-band{% if product.description != blank and has_specs %} ubc-pdp-details-band--split{% endif %}">
+          {%- if product.description != blank -%}
+            <div class="ubc-pdp-description rte">
+              <h2 class="ubc-pdp-desc-title">Product Details</h2>
+              {{ product.description }}
+            </div>
+          {%- endif -%}
+          {%- if has_specs -%}
+            <aside class="ubc-pdp-spec-card" aria-label="Key Specifications">
+              <h2 class="ubc-pdp-spec-card__title">Key Specifications</h2>
+              <dl class="ubc-pdp-spec-list">
+                {%- if product.vendor != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>Brand</dt><dd>{{ product.vendor | escape }}</dd></div>
+                {%- endif -%}
+                {%- if product.type != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>Category</dt><dd>{{ product.type | escape }}</dd></div>
+                {%- endif -%}
+                {%- if ws_year != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>Model Year</dt><dd>{{ ws_year | escape }}</dd></div>
+                {%- endif -%}
+                {%- if ws_wheel != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>Wheel Size</dt><dd>{{ ws_wheel | escape }}</dd></div>
+                {%- endif -%}
+                {%- if ws_gender != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>Gender</dt><dd>{{ ws_gender | escape }}</dd></div>
+                {%- endif -%}
+                {%- if ws_wt != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>Shipping Weight</dt><dd>{{ ws_wt | escape }} lbs</dd></div>
+                {%- endif -%}
+                {%- if v_spec.sku != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>System SKU</dt><dd>{{ v_spec.sku | escape }}</dd></div>
+                {%- endif -%}
+                {%- if ws_mpn != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>MPN</dt><dd>{{ ws_mpn | escape }}</dd></div>
+                {%- endif -%}
+                {%- if v_spec.barcode != blank -%}
+                  <div class="ubc-pdp-spec-row"><dt>UPC</dt><dd>{{ v_spec.barcode | escape }}</dd></div>
+                {%- endif -%}
+              </dl>
+            </aside>
+          {%- endif -%}
         </div>
       {%- endif -%}
 

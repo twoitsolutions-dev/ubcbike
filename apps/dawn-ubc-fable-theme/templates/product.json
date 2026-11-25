@@ -50,26 +50,10 @@
           "type": "quantity_selector",
           "settings": {}
         },
-        "description": {
-          "type": "description",
-          "settings": {}
-        },
         "share": {
           "type": "share",
           "settings": {
             "share_label": "Share"
-          }
-        },
-        "workstand_product_specs_J4yYid": {
-          "type": "shopify://apps/workstand/blocks/product_specs/01a15a26-b373-7eb5-b350-e9669c8e954d",
-          "settings": {
-            "product": "{{product}}"
-          }
-        },
-        "workstand_feature_content_kT7Tqt": {
-          "type": "shopify://apps/workstand/blocks/feature_content/01a15a26-b373-7eb5-b350-e9669c8e954d",
-          "settings": {
-            "product": "{{product}}"
           }
         }
       },
@@ -82,10 +66,7 @@
         "inventory_KWkByr",
         "quantity_selector",
         "buy_buttons",
-        "description",
-        "share",
-        "workstand_product_specs_J4yYid",
-        "workstand_feature_content_kT7Tqt"
+        "share"
       ],
       "settings": {
         "enable_sticky_info": true,
@@ -101,6 +82,30 @@
         "enable_video_looping": false,
         "padding_top": 36,
         "padding_bottom": 12
+      }
+    },
+    "workstand": {
+      "type": "apps",
+      "blocks": {
+        "workstand_product_specs_J4yYid": {
+          "type": "shopify://apps/workstand/blocks/product_specs/01a15a26-b373-7eb5-b350-e9669c8e954d",
+          "settings": {
+            "product": "{{product}}"
+          }
+        },
+        "workstand_feature_content_kT7Tqt": {
+          "type": "shopify://apps/workstand/blocks/feature_content/01a15a26-b373-7eb5-b350-e9669c8e954d",
+          "settings": {
+            "product": "{{product}}"
+          }
+        }
+      },
+      "block_order": [
+        "workstand_product_specs_J4yYid",
+        "workstand_feature_content_kT7Tqt"
+      ],
+      "settings": {
+        "include_margins": true
       }
     },
     "disclosures": {
@@ -135,6 +140,7 @@
   },
   "order": [
     "main",
+    "workstand",
     "disclosures",
     "related-products"
   ]

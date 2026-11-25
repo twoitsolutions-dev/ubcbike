@@ -1486,6 +1486,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/settings', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => getSettings(ctx.pool, req.session!.companyId));
 
   app.put('/api/settings', { preHandler: requireAuth(ctx, 'settings.manage') }, async (req) => {
+    const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
     const body = z.object({
       campaignRules: rulesSchema.required({ minMarginPct: true, warnMarginPct: true, clampToMinMargin: true }),
       availability: z.object({
@@ -1493,13 +1494,26 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         maxOfferAgeHours: z.number().int().min(1).max(720), handlingDays: z.number().int().min(0).max(60),
         showUpcMatches: z.boolean().optional(),
       }),
+      branding: z.object({
+        brandName: z.string().min(1).max(80),
+        subtitle: z.string().max(80).default(''),
+        logoUrl: z.string().max(500).default('assets/ubc-logo-white.png'),
+        navBg: hexColor,
+        accent: hexColor,
+        gold: hexColor,
+        coral: hexColor,
+        surfaceMode: z.enum(['slate', 'warm']).default('slate'),
+      }).optional(),
     }).parse(req.body);
     const s = req.session!;
     const before = await getSettings(ctx.pool, s.companyId);
     const nextAvailability = { ...before.availability, ...body.availability };
     const nextCampaignRules = { ...before.campaignRules, ...body.campaignRules, excludeWithoutCost: before.campaignRules.excludeWithoutCost ?? true };
-    await ctx.pool.query(`UPDATE company_settings SET campaign_rules = $2, availability_rules = $3, updated_at = now() WHERE company_id = $1`,
-      [s.companyId, JSON.stringify(nextCampaignRules), JSON.stringify(nextAvailability)]);
+    const nextBranding = body.branding ? { ...before.branding, ...body.branding } : before.branding;
+    await ctx.pool.query(
+      `UPDATE company_settings SET campaign_rules = $2, availability_rules = $3, branding = $4, updated_at = now() WHERE company_id = $1`,
+      [s.companyId, JSON.stringify(nextCampaignRules), JSON.stringify(nextAvailability), JSON.stringify(nextBranding)],
+    );
     await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'settings.updated', detail: { before, after: body } });
     return getSettings(ctx.pool, s.companyId);
   });

@@ -21,6 +21,17 @@ export async function renderSettings(ctx) {
   const maxAge = num(s.availability.maxOfferAgeHours, { min: '1', max: '720' });
   const handling = num(s.availability.handlingDays, { min: '0', max: '60' });
   const showUpcMatches = h('input', { type: 'checkbox', checked: s.availability.showUpcMatches !== false, disabled: !canEdit });
+  const b = s.branding || {};
+  const bName = h('input', { type: 'text', value: b.brandName || 'University Bicycle Center', disabled: !canEdit, maxlength: '80' });
+  const bSub = h('input', { type: 'text', value: b.subtitle || 'Commerce Hub · Since 1972', disabled: !canEdit, maxlength: '80' });
+  const bLogo = h('input', { type: 'text', value: b.logoUrl || 'assets/ubc-logo-white.png', disabled: !canEdit, maxlength: '500' });
+  const bNav = h('input', { type: 'color', value: b.navBg || '#14202D', disabled: !canEdit, style: { width: '52px', padding: '2px', height: '36px' } });
+  const bAcc = h('input', { type: 'color', value: b.accent || '#213549', disabled: !canEdit, style: { width: '52px', padding: '2px', height: '36px' } });
+  const bGold = h('input', { type: 'color', value: b.gold || '#CCBB8D', disabled: !canEdit, style: { width: '52px', padding: '2px', height: '36px' } });
+  const bCoral = h('input', { type: 'color', value: b.coral || '#E04F33', disabled: !canEdit, style: { width: '52px', padding: '2px', height: '36px' } });
+  const bSurf = h('select', { disabled: !canEdit },
+    h('option', { value: 'slate', selected: (b.surfaceMode || 'slate') === 'slate' }, 'Clean Slate (#F8FAFC)'),
+    h('option', { value: 'warm', selected: b.surfaceMode === 'warm' }, 'Warm Cream (#F6F4EC)'));
   const err = h('div');
 
   const save = h('button.btn.primary', {
@@ -36,15 +47,39 @@ export async function renderSettings(ctx) {
           handlingDays: Number(handling.value),
           showUpcMatches: showUpcMatches.checked,
         },
+        branding: {
+          brandName: bName.value.trim() || 'Commerce Hub',
+          subtitle: bSub.value.trim(),
+          logoUrl: bLogo.value.trim() || 'assets/ubc-logo-white.png',
+          navBg: bNav.value,
+          accent: bAcc.value,
+          gold: bGold.value,
+          coral: bCoral.value,
+          surfaceMode: bSurf.value,
+        },
       };
       if (body.campaignRules.warnMarginPct < body.campaignRules.minMarginPct) { mount(err, h('div.notice.bad', 'The warning threshold must be at or above the minimum margin.')); return; }
       try {
         await ctx.api.saveSettings(body);
-        toast('Settings saved', 'ok');
+        toast('Settings & branding saved', 'ok');
         if (ctx.refreshNav) await ctx.refreshNav();
       } catch (e) { mount(err, h('div.notice.bad', e.message)); }
     },
   }, 'Save settings');
+
+  const resetBrand = canEdit ? h('button.btn', {
+    type: 'button',
+    onclick: () => {
+      bName.value = 'University Bicycle Center';
+      bSub.value = 'Commerce Hub · Since 1972';
+      bLogo.value = 'assets/ubc-logo-white.png';
+      bNav.value = '#14202D';
+      bAcc.value = '#213549';
+      bGold.value = '#CCBB8D';
+      bCoral.value = '#E04F33';
+      bSurf.value = 'slate';
+    },
+  }, 'Reset to UBC Default') : null;
 
   const demoTools = ctx.system && ctx.system.mode === 'live'
     ? null
@@ -77,6 +112,18 @@ export async function renderSettings(ctx) {
       h('label.field', 'Handling days at UBC', handling, h('span.help', 'Added to supplier lead time')))),
     card('Hub Modules', h('div.stack',
       h('label.check', showUpcMatches, h('strong', 'Show "UPC Matches" in Hub menu & dashboard'), h('span.small.muted', ' — uncheck anytime to hide the UPC Matches queue')))),
+    card('White-Label Branding (Store Identity & Colors)', h('div.stack',
+      h('div.form-grid',
+        h('label.field', 'Store / Brand Name', bName),
+        h('label.field', 'Sidebar Subtitle', bSub),
+        h('label.field', 'Logo URL (white/light SVG or PNG)', bLogo),
+        h('label.field', 'Workspace Surface', bSurf)),
+      h('div.row', { style: { gap: '18px', flexWrap: 'wrap' } },
+        h('label.field', { style: { minWidth: '110px' } }, 'Sidebar', bNav),
+        h('label.field', { style: { minWidth: '110px' } }, 'Accent', bAcc),
+        h('label.field', { style: { minWidth: '110px' } }, 'Highlight', bGold),
+        h('label.field', { style: { minWidth: '110px' } }, 'Action / CTA', bCoral)),
+      resetBrand ? h('div.row', resetBrand) : null)),
     err,
     h('div.row', save),
     demoTools,

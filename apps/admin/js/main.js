@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { createHttpDriver } from './drivers/http.js?v=96';
+import { createHttpDriver } from './drivers/http.js?v=98';
 import { h, icon, mount, clear } from './ui/dom.js';
 import { errorBox } from './ui/components.js';
-import { matchRoute } from './router.js?v=96';
+import { matchRoute } from './router.js?v=98';
 
 const app = document.getElementById('app');
 const state = { api: null, me: null, system: null, navOpen: false };
@@ -57,7 +57,7 @@ function navParentFor(hash) {
 
 async function loadDriver() {
   if (CONFIG.driver === 'demo') {
-    const mod = await import('./drivers/demo.js?v=96');
+    const mod = await import('./drivers/demo.js?v=98');
     return mod.createDemoDriver();
   }
   return createHttpDriver();
@@ -76,10 +76,39 @@ function closeNav() {
 }
 
 let badgeCounts = {};
+export function applyBranding(b) {
+  if (!b) return;
+  const root = document.documentElement.style;
+  if (b.navBg) {
+    root.setProperty('--nav-bg', b.navBg);
+    root.setProperty('--nav-bg-2', b.navBg);
+    root.setProperty('--accent-strong', b.navBg);
+  }
+  if (b.accent) root.setProperty('--accent', b.accent);
+  if (b.gold) root.setProperty('--gold', b.gold);
+  if (b.coral) root.setProperty('--coral', b.coral);
+  if (b.surfaceMode === 'warm') {
+    root.setProperty('--bg', '#F6F4EC');
+    root.setProperty('--surface-2', '#FAF9F4');
+  } else {
+    root.setProperty('--bg', '#F8FAFC');
+    root.setProperty('--surface-2', '#F1F5F9');
+  }
+  const logo = document.querySelector('.nav-logo');
+  if (logo && b.logoUrl) {
+    logo.src = b.logoUrl;
+    logo.alt = b.brandName || 'Commerce Hub';
+  }
+  const meta = document.querySelector('.nav-brand-meta');
+  if (meta && b.subtitle !== undefined) meta.textContent = b.subtitle || 'Commerce Hub';
+  if (b.brandName) state.brandName = b.brandName;
+}
+
 async function refreshNavVisibility() {
   try {
     const s = await state.api.settings();
     state.settings = s;
+    if (s && s.branding) applyBranding(s.branding);
     const showUpc = !s || !s.availability || s.availability.showUpcMatches !== false;
     const upcNav = document.querySelector('[data-nav="#/upc-matches"]');
     if (upcNav) upcNav.hidden = !showUpc;
@@ -142,7 +171,7 @@ async function route() {
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === activeNav));
   const crumbs = document.getElementById('crumbs');
   if (crumbs) crumbs.textContent = m.route.title;
-  document.title = m.route.title + ' · UBC Commerce Hub';
+  document.title = m.route.title + ' · ' + (state.brandName || 'UBC Commerce Hub');
   const view = document.getElementById('view');
   const seq = ++renderSeq;
   clear(view);

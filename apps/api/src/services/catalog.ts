@@ -102,9 +102,39 @@ export async function getItem(db: Q, companyId: string, id: string) {
   return r.rows[0] ? rowToItem(r.rows[0]) : null;
 }
 
+export interface BrandingSettings {
+  brandName: string;
+  subtitle: string;
+  logoUrl: string;
+  navBg: string;
+  accent: string;
+  gold: string;
+  coral: string;
+  surfaceMode: 'slate' | 'warm';
+}
+
+export const DEFAULT_BRANDING: BrandingSettings = {
+  brandName: 'University Bicycle Center',
+  subtitle: 'Commerce Hub · Since 1972',
+  logoUrl: 'assets/ubc-logo-white.png',
+  navBg: '#14202D',
+  accent: '#213549',
+  gold: '#CCBB8D',
+  coral: '#E04F33',
+  surfaceMode: 'slate',
+};
+
 export async function getSettings(db: Q, companyId: string) {
-  const r = await db.query<{ campaign_rules: import('@ubc/shared').CampaignRules; availability_rules: AvailabilitySettings }>(
-    `SELECT campaign_rules, availability_rules FROM company_settings WHERE company_id = $1`, [companyId]);
+  const r = await db.query<{
+    campaign_rules: import('@ubc/shared').CampaignRules;
+    availability_rules: AvailabilitySettings;
+    branding?: Partial<BrandingSettings> | null;
+  }>(
+    `SELECT campaign_rules, availability_rules, branding FROM company_settings WHERE company_id = $1`, [companyId]);
   if (!r.rows[0]) throw new Error('Company settings missing');
-  return { campaignRules: r.rows[0].campaign_rules, availability: r.rows[0].availability_rules };
+  return {
+    campaignRules: r.rows[0].campaign_rules,
+    availability: r.rows[0].availability_rules,
+    branding: { ...DEFAULT_BRANDING, ...(r.rows[0].branding || {}) },
+  };
 }

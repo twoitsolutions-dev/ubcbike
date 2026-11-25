@@ -21,33 +21,68 @@ function kpiBox(label, value, cls) {
 
 export async function renderReports(ctx) {
   const cache = { shopify: null, noUpc: null, unlinkedUpc: null, margin: null, sales: {}, aging: {} };
-  let activeReport = ctx.query.report || ctx.query.tab || 'collections';
+  const rawTab = ctx.query.report || ctx.query.tab || 'catalog';
+  const TAB_MAP = {
+    catalog: ['catalog', 'collections'],
+    collections: ['catalog', 'collections'],
+    photos: ['catalog', 'photos'],
+    upc: ['upc', 'unlinked_upc'],
+    unlinked_upc: ['upc', 'unlinked_upc'],
+    no_upc: ['upc', 'no_upc'],
+    margin: ['margin', 'margin'],
+    sales: ['sales', 'sales'],
+    aging: ['sales', 'aging'],
+  };
+  let activeGroup = (TAB_MAP[rawTab] && TAB_MAP[rawTab][0]) || 'catalog';
+  let activeSub = (TAB_MAP[rawTab] && TAB_MAP[rawTab][1]) || 'collections';
   let salesDays = ctx.query.days || '30';
   let agingDays = ctx.query.minDays !== undefined && ctx.query.minDays !== '' ? String(ctx.query.minDays) : '0';
   const tabsHost = h('div.rep-tabs');
+  const subTabsHost = h('div');
   const bodyHost = h('div.stack.rep-body', loading('Loading report…'));
 
   const TABS = [
-    ['collections', 'Collections'],
-    ['photos', 'No Photos'],
-    ['no_upc', 'No UPC'],
-    ['unlinked_upc', 'Unlinked UPCs'],
-    ['margin', 'Cost, MAP & Margin'],
-    ['sales', 'Sales & Margin'],
-    ['aging', 'Days Without Sales'],
+    ['catalog', 'Catalog & Photos', 'collections'],
+    ['upc', 'UPC & Shopify Sync', 'unlinked_upc'],
+    ['margin', 'Margins & MAP', 'margin'],
+    ['sales', 'Sales & Aging', 'sales'],
   ];
 
+  const SUB_TABS = {
+    catalog: [['collections', 'Collections'], ['photos', 'Missing Photos']],
+    upc: [['unlinked_upc', 'Unlinked In-Stock (Last-5)'], ['no_upc', 'Linked · Missing UPC']],
+    sales: [['sales', 'Sales & Margin'], ['aging', 'Days Without Sales']],
+  };
+
   const drawTabs = () => {
-    mount(tabsHost, TABS.map(([id, label]) =>
+    mount(tabsHost, TABS.map(([id, label, defSub]) =>
       h('button.rep-tab', {
         type: 'button',
-        class: activeReport === id ? 'on' : '',
+        class: activeGroup === id ? 'on' : '',
         onclick: () => {
-          activeReport = id;
+          activeGroup = id;
+          activeSub = defSub;
           drawTabs();
           loadActive(false);
         },
       }, label)));
+    const subs = SUB_TABS[activeGroup];
+    if (subs) {
+      mount(subTabsHost, h('div.row-between',
+        h('div.rep-subtabs', subs.map(([sid, slabel]) =>
+          h('button.rep-subtab', {
+            type: 'button',
+            class: activeSub === sid ? 'on' : '',
+            onclick: () => {
+              activeSub = sid;
+              drawTabs();
+              loadActive(false);
+            },
+          }, slabel))),
+        activeGroup === 'upc' ? h('a.btn.sm.ghost', { href: '#/upc-matches' }, 'UPC Matches →') : null));
+    } else {
+      mount(subTabsHost);
+    }
   };
 
   async function ensureShopify(refresh) {
@@ -89,31 +124,31 @@ export async function renderReports(ctx) {
   async function loadActive(refresh) {
     mount(bodyHost, loading('Loading report…'));
     try {
-      if (activeReport === 'collections') {
+      if (activeSub === 'collections') {
         const r = await ensureShopify(refresh);
         if (!ctx.isCurrent()) return;
         renderCollectionsReport(r);
-      } else if (activeReport === 'photos') {
+      } else if (activeSub === 'photos') {
         const r = await ensureShopify(refresh);
         if (!ctx.isCurrent()) return;
         renderNoPhotosReport(r);
-      } else if (activeReport === 'no_upc') {
+      } else if (activeSub === 'no_upc') {
         const r = await ensureNoUpc(refresh);
         if (!ctx.isCurrent()) return;
         renderNoUpcReport(r);
-      } else if (activeReport === 'unlinked_upc') {
+      } else if (activeSub === 'unlinked_upc') {
         const r = await ensureUnlinkedUpc(refresh);
         if (!ctx.isCurrent()) return;
         renderUnlinkedUpcReport(r);
-      } else if (activeReport === 'margin') {
+      } else if (activeSub === 'margin') {
         const r = await ensureMargin(refresh);
         if (!ctx.isCurrent()) return;
         renderMarginReport(r);
-      } else if (activeReport === 'sales') {
+      } else if (activeSub === 'sales') {
         const r = await ensureSales(salesDays, refresh);
         if (!ctx.isCurrent()) return;
         renderSalesReport(r);
-      } else if (activeReport === 'aging') {
+      } else if (activeSub === 'aging') {
         const r = await ensureAging(agingDays, refresh);
         if (!ctx.isCurrent()) return;
         renderAgingReport(r);
@@ -824,7 +859,8 @@ export async function renderReports(ctx) {
   loadActive(false);
 
   return h('div.stack.rep-root',
-    pageHead('Reports', 'Catalog health, Cost/MAP alerts, Web Sales & Campaign Profitability', refreshBtn ? [refreshBtn] : []),
+    pageHead('Reports', 'Catalog health, UPC sync, Margins & MAP, Sales & Aging', refreshBtn ? [refreshBtn] : []),
     tabsHost,
+    subTabsHost,
     bodyHost);
 }

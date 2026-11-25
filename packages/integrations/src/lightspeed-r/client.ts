@@ -66,6 +66,7 @@ export interface LsItem {
   manufacturerID?: string;
   categoryID?: string;
   archived?: string | boolean;
+  createTime?: string;
   timeStamp?: string;
   Prices?: { ItemPrice: { amount: string; useType: string } | { amount: string; useType: string }[] };
   ItemShops?: { ItemShop: { shopID: string; qoh: string; reorderPoint?: string } | { shopID: string; qoh: string }[] };

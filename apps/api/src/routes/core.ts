@@ -1099,13 +1099,13 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
          COALESCE(v.cost_cents, 0)::int AS cost_cents,
          COALESCE(v.price_cents, 0)::int AS price_cents,
          eff.last_sold_at,
-         GREATEST(0, EXTRACT(DAY FROM (now() - COALESCE(eff.last_sold_at, v.created_at)))::int) AS days_without_sale
+         GREATEST(0, EXTRACT(DAY FROM (now() - COALESCE(eff.last_sold_at, v.received_at, v.created_at)))::int) AS days_without_sale
        FROM inv
        JOIN variants v ON v.id = inv.variant_id AND v.company_id = $1
        JOIN products p ON p.id = v.product_id AND p.company_id = $1
        LEFT JOIN eff ON eff.variant_id = v.id
        WHERE $2 = 0
-          OR COALESCE(eff.last_sold_at, v.created_at) <= now() - make_interval(days => $2)
+          OR COALESCE(eff.last_sold_at, v.received_at, v.created_at) <= now() - make_interval(days => $2)
        ORDER BY days_without_sale DESC, (inv.on_hand::bigint * COALESCE(v.cost_cents, 0)) DESC, inv.on_hand DESC
        LIMIT 500`,
       [companyId, minDays],

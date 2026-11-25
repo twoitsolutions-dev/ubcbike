@@ -943,14 +943,62 @@ export async function syncLightspeedLastSalesJob(
     }
   }
 
-  // 2. Sync Lightspeed R-Series in-store sales into variants.last_sold_at
+  // 2. Backfill Lightspeed Item.createTime into variants.received_at (works with employee:inventory_read)
   const ls = ctx.connectors.lightspeed;
   if (ls) await ls.ensureConfigured();
+  let receivedUpdated = 0;
+  if (ls && ls.missing().length === 0 && typeof ls.iterateItems === 'function') {
+    try {
+      const needRecv = await ctx.pool.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM variants WHERE company_id = $1 AND received_at IS NULL`,
+        [companyId],
+      );
+      if (Number(needRecv.rows[0]?.count || 0) > 0) {
+        const batchPairs: { itemId: string; createTime: string }[] = [];
+        for await (const items of ls.iterateItems()) {
+          for (const it of items) {
+            if (it.itemID && it.createTime) {
+              batchPairs.push({ itemId: it.itemID, createTime: it.createTime });
+            }
+          }
+          if (batchPairs.length >= 1000) {
+            const chunk = batchPairs.splice(0, 1000);
+            const upd = await ctx.pool.query(
+              `UPDATE variants v
+               SET received_at = COALESCE(v.received_at, r."createTime"::timestamptz)
+               FROM jsonb_to_recordset($2::jsonb) AS r("itemId" text, "createTime" text)
+               JOIN external_ids e
+                 ON e.company_id = $1 AND e.system = 'lightspeed_r' AND e.entity_type = 'variant' AND e.external_id = r."itemId"
+               WHERE v.company_id = $1 AND v.id = e.entity_id AND v.received_at IS NULL`,
+              [companyId, JSON.stringify(chunk)],
+            );
+            receivedUpdated += upd.rowCount ?? 0;
+          }
+        }
+        if (batchPairs.length > 0) {
+          const upd = await ctx.pool.query(
+            `UPDATE variants v
+             SET received_at = COALESCE(v.received_at, r."createTime"::timestamptz)
+             FROM jsonb_to_recordset($2::jsonb) AS r("itemId" text, "createTime" text)
+             JOIN external_ids e
+               ON e.company_id = $1 AND e.system = 'lightspeed_r' AND e.entity_type = 'variant' AND e.external_id = r."itemId"
+             WHERE v.company_id = $1 AND v.id = e.entity_id AND v.received_at IS NULL`,
+            [companyId, JSON.stringify(batchPairs)],
+          );
+          receivedUpdated += upd.rowCount ?? 0;
+        }
+      }
+    } catch (err) {
+      await logError(ctx.pool, { companyId, source: 'lightspeed.received_backfill', message: (err as Error)?.message ?? String(err) });
+    }
+  }
+
+  // 3. Sync Lightspeed R-Series in-store sales into variants.last_sold_at
   if (!ls || ls.missing().length > 0 || typeof ls.iterateCompletedSales !== 'function') {
     return {
-      status: shopifyLinesSeen > 0 ? 'partial_shopify_only' : 'not_connected',
+      status: (shopifyLinesSeen > 0 || receivedUpdated > 0) ? 'partial_shopify_only' : 'not_connected',
       salesLinesSeen: 0,
-      variantsUpdated: 0,
+      variantsUpdated: receivedUpdated,
       shopifyLinesSeen,
       shopifyVariantsUpdated,
       since: sinceIso,

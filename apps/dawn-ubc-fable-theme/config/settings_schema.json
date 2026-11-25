@@ -3,7 +3,7 @@
     "name": "theme_info",
     "theme_name": "UBC Dawn v25 Classic",
     "theme_version": "25.0.0",
-    "theme_author": "TwoIT Solutions LLC · University Bicycle Center",
+    "theme_author": "TwoIT Solutions LLC",
     "theme_documentation_url": "https://help.shopify.com/manual/online-store/themes",
     "theme_support_url": "https://support.shopify.com/"
   },
@@ -1546,8 +1546,7 @@
         "type": "text",
         "id": "ubc_ikeono_script_url",
         "label": "Ikeono Embed Script URL (optional)",
-        "info": "Paste your Ikeono widget script URL from Ikeono Admin if you want the button to trigger the hosted Ikeono webchat directly; leave blank to use the native UBC × Ikeono SMS Text-to-Chat launcher.",
-        "default": ""
+        "info": "Paste your Ikeono widget script URL from Ikeono Admin if you want the button to trigger the hosted Ikeono webchat directly; leave blank to use the native UBC × Ikeono SMS Text-to-Chat launcher."
       }
     ]
   }

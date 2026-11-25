@@ -1400,10 +1400,13 @@
     }
     var nextOpen = todayHours && timeInfo.dec < todayHours[0] ? fmtHour(todayHours[0]) : '';
     if (!nextOpen) {
+      var dayNames = lang === 'es'
+        ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       for (var offset = 1; offset <= 7; offset++) {
         var nd = (timeInfo.day + offset) % 7;
         if (sched[nd]) {
-          nextOpen = fmtHour(sched[nd][0]);
+          nextOpen = dayNames[nd] + ' ' + fmtHour(sched[nd][0]);
           break;
         }
       }

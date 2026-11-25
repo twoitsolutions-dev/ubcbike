@@ -519,11 +519,19 @@
 .facet-checkbox .svg-wrapper {
   visibility: hidden;
   position: absolute;
-  left: 0.3rem;
+  left: 0;
   z-index: 5;
-  top: 1.4rem;
-  width: 1.1rem;
-  height: 0.7rem;
+  top: 1rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.facet-checkbox .svg-wrapper .icon-checkmark {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .facet-checkbox > input[type='checkbox']:checked ~ .svg-wrapper > .icon-checkmark {

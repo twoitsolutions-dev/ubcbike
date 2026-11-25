@@ -697,13 +697,12 @@
       </div>
 
       {%- assign v_spec = product.selected_or_first_available_variant -%}
-      {%- assign ws_year = v_spec.metafields.workstand.model_year.value -%}
       {%- assign ws_wt = product.metafields.product_specs.shipping_dimensions_weight.value -%}
       {%- assign ws_gender = product.metafields.custom.gender.value -%}
       {%- assign ws_wheel = product.metafields.custom.wheel_size.value -%}
       {%- assign ws_mpn = v_spec.metafields.ubc.mpn.value -%}
       {%- assign has_specs = false -%}
-      {%- if product.vendor != blank or product.type != blank or v_spec.sku != blank or ws_mpn != blank or v_spec.barcode != blank or ws_year != blank or ws_gender != blank or ws_wheel != blank or ws_wt != blank -%}
+      {%- if product.vendor != blank or product.type != blank or v_spec.sku != blank or ws_mpn != blank or v_spec.barcode != blank or ws_gender != blank or ws_wheel != blank or ws_wt != blank -%}
         {%- assign has_specs = true -%}
       {%- endif -%}
       {%- if product.description != blank or has_specs -%}
@@ -723,9 +722,6 @@
                 {%- endif -%}
                 {%- if product.type != blank -%}
                   <div class="ubc-pdp-spec-row"><dt>Category</dt><dd>{{ product.type | escape }}</dd></div>
-                {%- endif -%}
-                {%- if ws_year != blank -%}
-                  <div class="ubc-pdp-spec-row"><dt>Model Year</dt><dd>{{ ws_year | escape }}</dd></div>
                 {%- endif -%}
                 {%- if ws_wheel != blank -%}
                   <div class="ubc-pdp-spec-row"><dt>Wheel Size</dt><dd>{{ ws_wheel | escape }}</dd></div>

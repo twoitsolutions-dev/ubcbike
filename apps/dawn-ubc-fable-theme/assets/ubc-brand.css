@@ -622,3 +622,46 @@ fieldset.product-form__input input[type="radio"].disabled + label {
   text-align: left !important;
   white-space: nowrap;
 }
+
+/* Collection sidebar active filter pills & checkbox alignment */
+.facets-vertical .active-facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.facets-vertical .active-facets-vertical-filter {
+  width: 100%;
+  margin-bottom: 2px;
+}
+.facets-vertical .active-facets facet-remove {
+  max-width: 100%;
+  margin-bottom: 0 !important;
+}
+.facets-vertical .active-facets__button {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100%;
+}
+.facets-vertical span.active-facets__button-inner {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  gap: 8px;
+  justify-content: space-between;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+}
+.facets-vertical .active-facets__button .svg-wrapper {
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 12px;
+  height: 12px;
+}
+.facets-vertical .active-facets__button-wrapper {
+  padding-top: 0;
+  margin-bottom: 0 !important;
+}

@@ -708,15 +708,20 @@
       {%- if product.description != blank or has_specs -%}
         <div class="ubc-pdp-details-band{% if product.description != blank and has_specs %} ubc-pdp-details-band--split{% endif %}">
           {%- if product.description != blank -%}
-            <div class="ubc-pdp-description rte">
-              <h2 class="ubc-pdp-desc-title">Product Details</h2>
-              {{ product.description }}
-            </div>
+            <details class="ubc-pdp-accordion" open>
+              <summary class="ubc-pdp-accordion__summary">
+                <span class="ubc-pdp-desc-title">Product Details</span>
+                <span class="ubc-pdp-accordion__icon" aria-hidden="true"></span>
+              </summary>
+              <div class="ubc-pdp-description rte ubc-pdp-accordion__body">
+                {{ product.description }}
+              </div>
+            </details>
           {%- endif -%}
           {%- if has_specs -%}
             <aside class="ubc-pdp-spec-card" aria-label="Key Specifications">
               <h2 class="ubc-pdp-spec-card__title">Key Specifications</h2>
-              <dl class="ubc-pdp-spec-list">
+              <dl class="ubc-pdp-spec-list" id="UbcKeySpecs-{{ section.id }}">
                 {%- if product.vendor != blank -%}
                   <div class="ubc-pdp-spec-row"><dt>Brand</dt><dd>{{ product.vendor | escape }}</dd></div>
                 {%- endif -%}

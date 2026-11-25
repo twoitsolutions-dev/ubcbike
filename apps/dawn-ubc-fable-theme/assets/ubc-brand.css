@@ -665,3 +665,70 @@ fieldset.product-form__input input[type="radio"].disabled + label {
   padding-top: 0;
   margin-bottom: 0 !important;
 }
+
+/* Collapsible PDP sections (Product Details, Specifications, Sizing & Geometry) */
+.ubc-pdp-accordion {
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+.ubc-pdp-accordion--app {
+  border-top: 1px solid #E2E8F0;
+}
+.ubc-apps-section .ubc-pdp-accordion--app .workstand-product-specs,
+.ubc-apps-section .ubc-pdp-accordion--app .workstand-feature-content {
+  border-top: 0;
+  padding-top: 0;
+}
+.ubc-pdp-accordion__summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #F8FAFC;
+  user-select: none;
+}
+.ubc-pdp-accordion__summary::-webkit-details-marker {
+  display: none;
+}
+.ubc-pdp-accordion__summary .ubc-pdp-desc-title {
+  margin: 0 !important;
+  font-size: 17px !important;
+}
+.ubc-pdp-accordion__icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.ubc-pdp-accordion__icon::before,
+.ubc-pdp-accordion__icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: #14202D;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.ubc-pdp-accordion__icon::before {
+  width: 14px;
+  height: 2px;
+}
+.ubc-pdp-accordion__icon::after {
+  width: 2px;
+  height: 14px;
+}
+.ubc-pdp-accordion[open] > .ubc-pdp-accordion__summary .ubc-pdp-accordion__icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+.ubc-pdp-accordion__body {
+  padding: 18px 20px 20px;
+  border-top: 1px solid #E2E8F0;
+}

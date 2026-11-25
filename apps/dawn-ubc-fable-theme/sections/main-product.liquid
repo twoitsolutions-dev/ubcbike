@@ -714,7 +714,7 @@
                 <span class="ubc-pdp-accordion__icon" aria-hidden="true"></span>
               </summary>
               <div class="ubc-pdp-description rte ubc-pdp-accordion__body">
-                {{ product.description }}
+                {{ product.description | replace: '<p>&nbsp;</p>', '' | replace: '<p> </p>', '' | replace: '<p><br></p>', '' | replace: '<p><br/></p>', '' | replace: '<p><br /></p>', '' }}
               </div>
             </details>
           {%- endif -%}

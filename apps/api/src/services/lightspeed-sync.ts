@@ -1041,8 +1041,8 @@ export async function syncLightspeedLastSalesJob(
     const upd = await ctx.pool.query(
       `UPDATE variants v
        SET last_sold_at = CASE
-         WHEN v.last_sold_at IS NULL THEN r.sold_at::timestamptz
-         ELSE GREATEST(v.last_sold_at, r.sold_at::timestamptz)
+         WHEN v.last_sold_at IS NULL THEN r."soldAt"::timestamptz
+         ELSE GREATEST(v.last_sold_at, r."soldAt"::timestamptz)
        END
        FROM jsonb_to_recordset($2::jsonb) AS r("itemId" text, "soldAt" text)
        JOIN external_ids e
@@ -1052,7 +1052,7 @@ export async function syncLightspeedLastSalesJob(
         AND e.external_id = r."itemId"
        WHERE v.company_id = $1
          AND v.id = e.entity_id
-         AND (v.last_sold_at IS NULL OR v.last_sold_at < r.sold_at::timestamptz)`,
+         AND (v.last_sold_at IS NULL OR v.last_sold_at < r."soldAt"::timestamptz)`,
       [companyId, JSON.stringify(chunk.map((x) => ({ itemId: x.itemId, soldAt: x.soldAt })))],
     );
     variantsUpdated += upd.rowCount ?? 0;

@@ -23,7 +23,7 @@ export async function renderReports(ctx) {
   const cache = { shopify: null, noUpc: null, margin: null, sales: {}, aging: {} };
   let activeReport = ctx.query.report || 'collections';
   let salesDays = ctx.query.days || '30';
-  let agingDays = ctx.query.minDays || '30';
+  let agingDays = ctx.query.minDays !== undefined && ctx.query.minDays !== '' ? String(ctx.query.minDays) : '0';
   const tabsHost = h('div.rep-tabs');
   const bodyHost = h('div.stack.rep-body', loading('Loading report…'));
 
@@ -510,14 +510,23 @@ export async function renderReports(ctx) {
 
   function renderAgingReport(r) {
     const s = r.summary || {};
+    let searchQuery = '';
+    const searchInput = h('input.rep-search', {
+      type: 'search',
+      placeholder: 'Search SKU, UPC, item, brand…',
+      oninput: (e) => {
+        searchQuery = (e.target.value || '').trim().toLowerCase();
+        agingCard.redraw();
+      },
+    });
     const dayInput = h('input', {
       type: 'number',
       min: '0',
       max: '3650',
       value: String(agingDays),
-      placeholder: 'Days…',
-      title: 'Minimum days without sale (0 = all in-stock)',
-      style: 'width:84px',
+      placeholder: '0',
+      title: 'Minimum days without sale (0 = show all in-stock)',
+      style: 'width:76px',
       onkeydown: (e) => {
         if (e.key === 'Enter') {
           const n = Math.max(0, Math.min(3650, Math.floor(Number(dayInput.value) || 0)));
@@ -533,22 +542,22 @@ export async function renderReports(ctx) {
         agingDays = String(n);
         loadActive(true);
       },
-    }, 'Apply');
-    const daySel = h('select', {
+    }, 'Filter');
+    const daySel = h('select.rep-select', {
       onchange: (e) => { agingDays = e.target.value; dayInput.value = agingDays; loadActive(true); },
     },
-    [['30', '30+ days'], ['60', '60+ days'], ['90', '90+ days'], ['180', '180+ days'], ['0', 'All in-stock']]
+    [['0', 'All in-stock (0+)'], ['30', '30+ days'], ['60', '60+ days'], ['90', '90+ days'], ['180', '180+ days']]
       .map(([v, lbl]) => h('option', { value: v, selected: agingDays === v }, lbl)));
     const sheetBtn = h('a.btn.sm.primary', {
       href: '#/lightspeed-sheet?stock=physical&minDays=' + encodeURIComponent(agingDays),
-    }, 'Edit in Bulk Sheet →');
+    }, 'Bulk Sheet →');
     const syncSalesBtn = ctx.api.reportsSyncLightspeedSales
       ? h('button.btn.sm', {
         type: 'button',
         onclick: async (e) => {
           const btn = e.currentTarget;
           btn.disabled = true;
-          btn.textContent = 'Syncing Lightspeed…';
+          btn.textContent = 'Syncing…';
           try {
             const res = await ctx.api.reportsSyncLightspeedSales();
             if (res.status === 'missing_sales_scope') {
@@ -561,21 +570,28 @@ export async function renderReports(ctx) {
             toast(err.message || 'Could not sync Lightspeed sales', 'bad');
           } finally {
             btn.disabled = false;
-            btn.textContent = '↻ Sync Lightspeed Sales';
+            btn.textContent = '↻ Sync Sales';
           }
         },
-      }, '↻ Sync Lightspeed Sales')
+      }, '↻ Sync Sales')
       : null;
 
     const agingCard = renderPaginatedCard({
-      title: 'In-Stock Inventory · Days Without Sales (Top 500 by Capital Tied Up)',
-      meta: 'Generated ' + dateTime(r.generatedAt),
+      title: 'In-Stock Inventory · Days Without Sales',
+      meta: 'Showing ' + (r.rows ? r.rows.length : 0) + ' · ' + dateTime(r.generatedAt),
       defaultSort: { key: 'days', dir: 'desc' },
-      toolbar: [h('span.small.muted', 'Days ≥'), dayInput, dayApplyBtn, daySel, syncSalesBtn, sheetBtn],
-      getRows: (q) => (r.rows || []).filter((it) => !q || (it.sku + ' ' + it.upc + ' ' + it.title + ' ' + it.brand + ' ' + it.category).toLowerCase().includes(q)),
+      toolbar: h('div.rep-filters',
+        searchInput,
+        daySel,
+        h('span.small.muted', 'Min days'),
+        dayInput,
+        dayApplyBtn,
+        syncSalesBtn,
+        sheetBtn),
+      getRows: () => (r.rows || []).filter((it) => !searchQuery || (it.sku + ' ' + it.upc + ' ' + it.title + ' ' + it.brand + ' ' + it.category).toLowerCase().includes(searchQuery)),
       columns: [
         { key: 'sku', label: 'SKU / UPC', sortValue: (it) => it.sku || '', render: (it) => h('div', h('strong.mono', it.sku), it.upc ? h('div.small.muted.mono', it.upc) : null) },
-        { key: 'title', label: 'Item', sortValue: (it) => it.title || '', render: (it) => h('div', h('span', it.title), it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null) },
+        { key: 'title', label: 'Item', cls: 'title-cell', sortValue: (it) => it.title || '', render: (it) => h('div', h('strong', it.title), it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null) },
         { key: 'onHand', label: 'On Hand', num: true, sortValue: (it) => Number(it.onHand || 0), render: (it) => String(it.onHand) },
         { key: 'cost', label: 'Stock Cost', num: true, sortValue: (it) => Number(it.stockCostCents || 0), render: (it) => (it.stockCostCents ? money(it.stockCostCents) : '—') },
         {
@@ -585,9 +601,10 @@ export async function renderReports(ctx) {
           sortValue: (it) => (it.daysWithoutSale === null || it.daysWithoutSale === undefined ? -1 : Number(it.daysWithoutSale)),
           render: (it) => {
             const d = it.daysWithoutSale;
-            const txt = d === null || d === undefined ? '0 d' : (d + ' d' + (it.neverSold ? ' (no sale)' : ''));
+            const txt = d === null || d === undefined ? '0 d' : (d + ' d' + (it.neverSold ? ' · no sale' : ''));
+            const cls = d >= 90 ? 'warn' : (d < 30 && !it.neverSold ? 'ok' : '');
             return h('span.badge', {
-              class: d === null || d >= 90 ? 'warn' : '',
+              class: cls,
               title: it.neverSold ? 'No sale recorded yet — days since added to Hub' : 'Days since last sale',
             }, txt);
           },

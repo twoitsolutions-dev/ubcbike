@@ -1048,7 +1048,8 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   // Lightspeed-style Aging / Dead Stock report: in-stock variants with longest days since last recorded sale.
   app.get('/api/reports/days-without-sales', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const companyId = req.session!.companyId;
-    const minDays = Math.max(0, Math.min(3650, Number((req.query as Record<string, unknown>).minDays || 30) || 0));
+    const rawMin = (req.query as Record<string, unknown>).minDays;
+    const minDays = rawMin === undefined || rawMin === '' ? 0 : Math.max(0, Math.min(3650, Number(rawMin) || 0));
 
     const r = await ctx.pool.query<{
       variant_id: string;

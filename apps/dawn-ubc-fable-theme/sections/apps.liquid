@@ -7,32 +7,42 @@
   (function () {
     var root = document.currentScript && document.currentScript.previousElementSibling;
     if (!root) return;
-    var targets = root.querySelectorAll('.workstand-product-specs, .workstand-feature-content');
-    for (var i = 0; i < targets.length; i++) {
-      var el = targets[i];
-      if (!el.querySelector('dl, table')) continue;
-      if (el.closest('details.ubc-pdp-accordion')) continue;
-      var heading = el.querySelector('h3');
-      var titleText = heading ? heading.textContent.trim() : 'Details';
-      if (heading) heading.style.display = 'none';
-      var details = document.createElement('details');
-      details.className = 'ubc-pdp-accordion ubc-pdp-accordion--app';
-      var summary = document.createElement('summary');
-      summary.className = 'ubc-pdp-accordion__summary';
-      var titleSpan = document.createElement('span');
-      titleSpan.className = 'ubc-pdp-desc-title';
-      titleSpan.textContent = titleText;
-      var iconSpan = document.createElement('span');
-      iconSpan.className = 'ubc-pdp-accordion__icon';
-      iconSpan.setAttribute('aria-hidden', 'true');
-      summary.appendChild(titleSpan);
-      summary.appendChild(iconSpan);
-      var body = document.createElement('div');
-      body.className = 'ubc-pdp-accordion__body';
-      el.parentNode.insertBefore(details, el);
-      body.appendChild(el);
-      details.appendChild(summary);
-      details.appendChild(body);
+    function wrapAll() {
+      var targets = root.querySelectorAll('.workstand-product-specs, .workstand-feature-content');
+      for (var i = 0; i < targets.length; i++) {
+        var el = targets[i];
+        if (!el.querySelector('dl, table')) continue;
+        if (el.closest('details.ubc-pdp-accordion')) continue;
+        var heading = el.querySelector('h3');
+        var titleText = heading ? heading.textContent.trim() : 'Details';
+        if (heading) heading.style.display = 'none';
+        var details = document.createElement('details');
+        details.className = 'ubc-pdp-accordion ubc-pdp-accordion--app';
+        var summary = document.createElement('summary');
+        summary.className = 'ubc-pdp-accordion__summary';
+        var titleSpan = document.createElement('span');
+        titleSpan.className = 'ubc-pdp-desc-title';
+        titleSpan.textContent = titleText;
+        var iconSpan = document.createElement('span');
+        iconSpan.className = 'ubc-pdp-accordion__icon';
+        iconSpan.setAttribute('aria-hidden', 'true');
+        summary.appendChild(titleSpan);
+        summary.appendChild(iconSpan);
+        var body = document.createElement('div');
+        body.className = 'ubc-pdp-accordion__body';
+        el.parentNode.insertBefore(details, el);
+        body.appendChild(el);
+        details.appendChild(summary);
+        details.appendChild(body);
+      }
+    }
+    wrapAll();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', wrapAll);
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      var obs = new MutationObserver(wrapAll);
+      obs.observe(root, { childList: true, subtree: true });
     }
   })();
 </script>

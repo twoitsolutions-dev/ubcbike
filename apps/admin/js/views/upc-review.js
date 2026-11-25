@@ -16,7 +16,8 @@ function priceCell(cents, compareCents) {
 /**
  * UPC Matches (view & filter only): all Lightspeed ↔ Shopify UPC matches are auto-approved.
  */
-export async function renderUpcReview(ctx) {
+export async function renderUpcReview(ctx, opts) {
+  const embedded = !!(opts && opts.embedded);
   const canWrite = ctx.can('catalog.write');
   let status = ctx.query.status || 'approved';
   let kind = ctx.query.kind || '';
@@ -106,19 +107,20 @@ export async function renderUpcReview(ctx) {
     renderTable();
   };
 
+  const runBtn = canWrite ? h('button.btn.sm', { onclick: async () => {
+    try { await ctx.api.runUpcMatch(); toast('Matching started — refresh in about a minute'); } catch (e) { toast(e.message, 'bad'); }
+  } }, 'Find matches now') : null;
+
   draw();
   return h('div.stack',
-    pageHead('UPC Matches (Lightspeed ↔ Shopify)',
+    embedded ? null : pageHead('UPC Matches (Lightspeed ↔ Shopify)',
       'All Lightspeed ↔ Shopify UPC matches are approved automatically. Use the filters below to search and inspect matched items.',
-      canWrite ? [
-        h('button.btn', { onclick: async () => {
-          try { await ctx.api.runUpcMatch(); toast('Matching started — refresh in about a minute'); } catch (e) { toast(e.message, 'bad'); }
-        } }, 'Find matches now'),
-      ] : []),
+      runBtn ? [runBtn] : []),
     card(null, h('div.row', { style: { gap: '10px', alignItems: 'center', flexWrap: 'wrap' } },
       searchInput,
       statusSelect,
       kindSelect,
-      countBadge)),
+      countBadge,
+      embedded ? runBtn : null)),
     host);
 }

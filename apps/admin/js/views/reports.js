@@ -1,6 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, dataTable, errorBox, loading, pageHead, pager, toast } from '../ui/components.js';
 import { dateTime, money, pct } from '../ui/format.js';
+import { renderUpcReview } from './upc-review.js?v=99';
 
 const PAGE_SIZE = 25;
 
@@ -29,6 +30,7 @@ export async function renderReports(ctx) {
     upc: ['upc', 'unlinked_upc'],
     unlinked_upc: ['upc', 'unlinked_upc'],
     no_upc: ['upc', 'no_upc'],
+    matched: ['upc', 'matched'],
     margin: ['margin', 'margin'],
     sales: ['sales', 'sales'],
     aging: ['sales', 'aging'],
@@ -50,7 +52,7 @@ export async function renderReports(ctx) {
 
   const SUB_TABS = {
     catalog: [['collections', 'Collections'], ['photos', 'Missing Photos']],
-    upc: [['unlinked_upc', 'Unlinked In-Stock (Last-5)'], ['no_upc', 'Linked · Missing UPC']],
+    upc: [['unlinked_upc', 'Unlinked In-Stock (Last-5)'], ['no_upc', 'Linked · Missing UPC'], ['matched', 'Matched (UPC Matches)']],
     sales: [['sales', 'Sales & Margin'], ['aging', 'Days Without Sales']],
   };
 
@@ -78,8 +80,7 @@ export async function renderReports(ctx) {
               drawTabs();
               loadActive(false);
             },
-          }, slabel))),
-        activeGroup === 'upc' ? h('a.btn.sm.ghost', { href: '#/upc-matches' }, 'UPC Matches →') : null));
+          }, slabel)))));
     } else {
       mount(subTabsHost);
     }
@@ -140,6 +141,10 @@ export async function renderReports(ctx) {
         const r = await ensureUnlinkedUpc(refresh);
         if (!ctx.isCurrent()) return;
         renderUnlinkedUpcReport(r);
+      } else if (activeSub === 'matched') {
+        const el = await renderUpcReview(ctx, { embedded: true });
+        if (!ctx.isCurrent()) return;
+        mount(bodyHost, el);
       } else if (activeSub === 'margin') {
         const r = await ensureMargin(refresh);
         if (!ctx.isCurrent()) return;

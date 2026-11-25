@@ -894,12 +894,12 @@ export async function syncLightspeedLastSalesJob(
     sinceIso = new Date(Date.now() - lookback * 86400_000).toISOString();
   }
 
-  // 1. Sync Shopify online orders into variants.last_sold_at
+  // 1. Sync Shopify online orders into variants.last_sold_at (cap 4 pages = 1,000 recent orders so HTTP stays fast)
   let shopifyLinesSeen = 0;
   let shopifyVariantsUpdated = 0;
   if (ctx.connectors.shopify && typeof ctx.connectors.shopify.listRecentSoldVariants === 'function') {
     try {
-      const shopLines = await ctx.connectors.shopify.listRecentSoldVariants(sinceIso);
+      const shopLines = await ctx.connectors.shopify.listRecentSoldVariants(sinceIso, 4);
       shopifyLinesSeen = shopLines.length;
       const byShopVid = new Map<string, string>();
       const bySku = new Map<string, string>();
@@ -955,6 +955,7 @@ export async function syncLightspeedLastSalesJob(
       );
       if (Number(needRecv.rows[0]?.count || 0) > 0) {
         const batchPairs: { itemId: string; createTime: string }[] = [];
+        const deadline = Date.now() + 20_000; // Keep HTTP response well under 60s nginx timeout
         for await (const items of ls.iterateItems()) {
           for (const it of items) {
             if (it.itemID && it.createTime) {
@@ -974,6 +975,7 @@ export async function syncLightspeedLastSalesJob(
             );
             receivedUpdated += upd.rowCount ?? 0;
           }
+          if (Date.now() > deadline) break;
         }
         if (batchPairs.length > 0) {
           const upd = await ctx.pool.query(

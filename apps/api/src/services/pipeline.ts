@@ -735,6 +735,9 @@ export async function flushUpdateOnlyToShopify(
   }
 
   let stockChanged = 0;
+  const deletedLinkVariantIds = new Set<string>();
+  const isDeletedShopifyProductErr = (msg: string) =>
+    /because the product was deleted|inventory item does not exist|could not be found/i.test(msg);
   const saveQty = async (gid: string, done: { link: UpdateOnlyLink; qty: number }[]) => {
     if (!done.length) return;
     await ctx.pool.query(
@@ -749,11 +752,16 @@ export async function flushUpdateOnlyToShopify(
     // Start stocking at this store first (only items with real stock reach here when not yet stocked).
     for (const s of items.filter((x) => x.activate && x.qty > 0)) {
       await ctx.connectors.shopify.activateInventoryAtLocation(s.link.shopify_inventory_item_id!, gid).catch(async (err: Error) => {
-        await logError(ctx.pool, { companyId, source: 'pipeline:update_only_stock', message: `activate: ${err.message}`, context: { location: gid, variant: s.link.shopify_variant_id } }).catch(() => {});
+        if (isDeletedShopifyProductErr(err.message)) {
+          deletedLinkVariantIds.add(s.link.variant_id);
+        } else {
+          await logError(ctx.pool, { companyId, source: 'pipeline:update_only_stock', message: `activate: ${err.message}`, context: { location: gid, variant: s.link.shopify_variant_id } }).catch(() => {});
+        }
       });
     }
     for (let i = 0; i < items.length; i += 100) {
-      const chunk = items.slice(i, i + 100);
+      const chunk = items.slice(i, i + 100).filter((s) => !deletedLinkVariantIds.has(s.link.variant_id));
+      if (!chunk.length) continue;
       try {
         await ctx.connectors.shopify.setInventoryOnHand(gid, chunk.map((s) => ({ inventoryItemId: s.link.shopify_inventory_item_id!, quantity: s.qty })));
         await saveQty(gid, chunk);
@@ -767,14 +775,19 @@ export async function flushUpdateOnlyToShopify(
               await ctx.connectors.shopify.setInventoryOnHand(gid, one);
             } catch (e) {
               // Not stocked at this store yet: start stocking it there, but only when Lightspeed has real stock.
-              if (s.qty <= 0) throw e;
+              if (s.qty <= 0 || isDeletedShopifyProductErr((e as Error).message)) throw e;
               await ctx.connectors.shopify.activateInventoryAtLocation(s.link.shopify_inventory_item_id!, gid);
               await ctx.connectors.shopify.setInventoryOnHand(gid, one);
             }
             ok.push(s);
           } catch (err) {
-            failedVariantIds.add(s.link.variant_id);
-            await logError(ctx.pool, { companyId, source: 'pipeline:update_only_stock', message: (err as Error).message, context: { location: gid, variant: s.link.shopify_variant_id } }).catch(() => {});
+            const msg = (err as Error).message;
+            if (isDeletedShopifyProductErr(msg)) {
+              deletedLinkVariantIds.add(s.link.variant_id);
+            } else {
+              failedVariantIds.add(s.link.variant_id);
+              await logError(ctx.pool, { companyId, source: 'pipeline:update_only_stock', message: msg, context: { location: gid, variant: s.link.shopify_variant_id } }).catch(() => {});
+            }
           }
         }
         await saveQty(gid, ok);
@@ -782,8 +795,23 @@ export async function flushUpdateOnlyToShopify(
     }
   }
 
-  const pushedIds = rows.rows.filter((r) => okRows.has(r.id) && !failedVariantIds.has(r.variant_id)).map((r) => r.id);
-  const failedIds = rows.rows.filter((r) => okRows.has(r.id) && failedVariantIds.has(r.variant_id)).map((r) => r.id);
+  if (deletedLinkVariantIds.size > 0) {
+    const delIds = Array.from(deletedLinkVariantIds);
+    await ctx.pool.query(
+      `DELETE FROM shopify_variant_links WHERE company_id = $1 AND variant_id = ANY($2::uuid[])`,
+      [companyId, delIds],
+    );
+    const dismissedIds = rows.rows.filter((r) => okRows.has(r.id) && deletedLinkVariantIds.has(r.variant_id)).map((r) => r.id);
+    if (dismissedIds.length) {
+      await ctx.pool.query(
+        `UPDATE outbound_sync_staging SET status = 'dismissed', last_error = 'Shopify product deleted (unlinked)', updated_at = now() WHERE company_id = $1 AND id = ANY($2::bigint[])`,
+        [companyId, dismissedIds],
+      );
+    }
+  }
+
+  const pushedIds = rows.rows.filter((r) => okRows.has(r.id) && !failedVariantIds.has(r.variant_id) && !deletedLinkVariantIds.has(r.variant_id)).map((r) => r.id);
+  const failedIds = rows.rows.filter((r) => okRows.has(r.id) && failedVariantIds.has(r.variant_id) && !deletedLinkVariantIds.has(r.variant_id)).map((r) => r.id);
   if (pushedIds.length) {
     await ctx.pool.query(
       `UPDATE outbound_sync_staging SET status = 'pushed', pushed_at = now(), updated_at = now(), last_error = NULL WHERE company_id = $1 AND id = ANY($2::bigint[])`,

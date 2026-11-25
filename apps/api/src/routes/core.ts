@@ -1155,7 +1155,10 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.post('/api/reports/days-without-sales/sync', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
-    return syncLightspeedLastSalesJob(ctx, req.session!.companyId);
+    const q = (req.query ?? {}) as Record<string, unknown>;
+    const full = q.full !== 'false';
+    const lookbackDays = q.lookbackDays ? Number(q.lookbackDays) : undefined;
+    return syncLightspeedLastSalesJob(ctx, req.session!.companyId, { full, lookbackDays });
   });
 
   const facetsCache = new Map<string, { exp: number; data: unknown }>();

@@ -392,14 +392,18 @@ export class LightspeedRClient {
    * Read-only iteration of completed Lightspeed R-Series sales (`/Sale.json`) with `SaleLines`.
    * Yields `{ itemID, soldAt }` pairs for non-voided sales with positive quantity.
    */
-  async *iterateCompletedSales(sinceTimestamp?: string): AsyncGenerator<{ itemID: string; soldAt: string }[]> {
+  async *iterateCompletedSales(sinceTimestamp?: string, untilTimestamp?: string): AsyncGenerator<{ itemID: string; soldAt: string }[]> {
     const params = new URLSearchParams({
       completed: 'true',
       archived: 'false',
       load_relations: '["SaleLines"]',
       limit: '100',
     });
-    if (sinceTimestamp) params.set('completeTime', `>=,${sinceTimestamp}`);
+    if (sinceTimestamp && untilTimestamp) {
+      params.set('completeTime', `><,${sinceTimestamp},${untilTimestamp}`);
+    } else if (sinceTimestamp) {
+      params.set('completeTime', `>=,${sinceTimestamp}`);
+    }
     let next: string | null = `/Sale.json?${params.toString()}`;
     while (next) {
       type LsSaleLine = { itemID?: string; unitQuantity?: string };

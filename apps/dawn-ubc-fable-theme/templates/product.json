@@ -1,12 +1,3 @@
-/*
- * ------------------------------------------------------------
- * IMPORTANT: The contents of this file are auto-generated.
- *
- * This file may be updated by the Shopify admin theme editor
- * or related systems. Please exercise caution as any changes
- * made to this file may be overwritten.
- * ------------------------------------------------------------
- */
 {
   "sections": {
     "main": {
@@ -68,6 +59,18 @@
           "settings": {
             "share_label": "Share"
           }
+        },
+        "workstand_product_specs_J4yYid": {
+          "type": "shopify://apps/workstand/blocks/product_specs/01a15a26-b373-7eb5-b350-e9669c8e954d",
+          "settings": {
+            "product": "{{product}}"
+          }
+        },
+        "workstand_feature_content_kT7Tqt": {
+          "type": "shopify://apps/workstand/blocks/feature_content/01a15a26-b373-7eb5-b350-e9669c8e954d",
+          "settings": {
+            "product": "{{product}}"
+          }
         }
       },
       "block_order": [
@@ -80,7 +83,9 @@
         "quantity_selector",
         "buy_buttons",
         "description",
-        "share"
+        "share",
+        "workstand_product_specs_J4yYid",
+        "workstand_feature_content_kT7Tqt"
       ],
       "settings": {
         "enable_sticky_info": true,

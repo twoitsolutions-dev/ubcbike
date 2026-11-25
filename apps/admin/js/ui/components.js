@@ -81,11 +81,33 @@ export function card(title, body, opts) {
  * Data table with sortable headers, optional row selection and pagination.
  * columns: [{ key, label, num, opt (hide on mobile), sortable, render(row) }]
  */
+function extractSortVal(col, row) {
+  if (typeof col.sortValue === 'function') return col.sortValue(row);
+  if (row && row[col.key] !== undefined && row[col.key] !== null && typeof row[col.key] !== 'object') return row[col.key];
+  if (col.render) {
+    const out = col.render(row);
+    if (out === null || out === undefined) return '';
+    if (typeof out === 'string' || typeof out === 'number') return out;
+    if (out && typeof out.textContent === 'string') return out.textContent.trim();
+  }
+  return '';
+}
+
+export function compareSortVals(aVal, bVal, dir) {
+  const mult = dir === 'asc' ? 1 : -1;
+  const aNum = typeof aVal === 'number' ? aVal : Number(String(aVal).replace(/[^0-9.-]+/g, ''));
+  const bNum = typeof bVal === 'number' ? bVal : Number(String(bVal).replace(/[^0-9.-]+/g, ''));
+  const aHasNum = aVal !== '' && aVal !== null && aVal !== undefined && !Number.isNaN(aNum) && /\d/.test(String(aVal));
+  const bHasNum = bVal !== '' && bVal !== null && bVal !== undefined && !Number.isNaN(bNum) && /\d/.test(String(bVal));
+  if (aHasNum && bHasNum) return (aNum - bNum) * mult;
+  return String(aVal ?? '').localeCompare(String(bVal ?? ''), undefined, { numeric: true, sensitivity: 'base' }) * mult;
+}
+
 export function dataTable(opts) {
   const { columns, rows, sort, onSort, selectable, selected, onToggle, onToggleAll, onRowClick, empty, rowKey } = opts;
   const key = rowKey || ((r) => r.id);
-  const allOn = selectable && rows.length > 0 && rows.every((r) => selected.has(key(r)));
-  const someOn = selectable && rows.some((r) => selected.has(key(r)));
+  let localSort = sort || null;
+
   let primaryIdx = -1;
   for (let i = 0; i < columns.length; i++) {
     if (!columns[i].opt && columns[i].cls && columns[i].cls.indexOf('title-cell') >= 0) { primaryIdx = i; break; }
@@ -95,34 +117,59 @@ export function dataTable(opts) {
       if (!columns[i].opt) { primaryIdx = i; break; }
     }
   }
-  const head = h('tr',
-    selectable ? h('th.check', h('input', { type: 'checkbox', 'aria-label': 'Select page', checked: allOn, indeterminate: !allOn && someOn, onchange: (e) => onToggleAll(rows.map(key), e.target.checked) })) : null,
-    columns.map((c) => {
-      const active = sort && sort.key === c.key;
-      return h('th', {
-        class: [c.num ? 'num' : '', c.opt ? 'col-opt' : '', c.sortable ? 'sortable' : ''].filter(Boolean).join(' '),
-        onclick: c.sortable && onSort ? () => onSort(c.key) : null,
-        'aria-sort': active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : null,
-      }, c.label, active ? h('span.arrow', sort.dir === 'asc' ? '▲' : '▼') : null);
-    }));
-  const body = rows.length
-    ? rows.map((r) => h('tr', {
-      class: [selectable && selected.has(key(r)) ? 'selected' : '', onRowClick ? 'clickable' : ''].filter(Boolean).join(' '),
-      onclick: onRowClick ? (e) => { if (!e.target.closest('input,button,a,select')) onRowClick(r); } : null,
-    },
-    selectable ? h('td.check', h('input', { type: 'checkbox', 'aria-label': 'Select row', checked: selected.has(key(r)), onchange: (e) => onToggle(key(r), e.target.checked) })) : null,
-    columns.map((c, idx) => h('td', {
-      dataset: c.label ? { label: c.label } : undefined,
-      class: [
-        c.num ? 'num' : '',
-        c.opt ? 'col-opt' : '',
-        idx === primaryIdx ? 'td-primary' : '',
-        !c.label ? 'td-empty-label' : '',
-        c.cls || '',
-      ].filter(Boolean).join(' '),
-    }, c.render ? c.render(r) : r[c.key]))))
-    : [h('tr.tr-empty', h('td.td-colspan', { colspan: String(columns.length + (selectable ? 1 : 0)) }, h('div.empty', empty || 'Nothing here yet.')))];
-  return h('div.table-wrap', h('table.t', h('thead', head), h('tbody', body)));
+
+  const wrap = h('div.table-wrap');
+
+  function renderTableBody(currentRows) {
+    const allOn = selectable && currentRows.length > 0 && currentRows.every((r) => selected.has(key(r)));
+    const someOn = selectable && currentRows.some((r) => selected.has(key(r)));
+    const activeSort = onSort ? sort : localSort;
+
+    const head = h('tr',
+      selectable ? h('th.check', h('input', { type: 'checkbox', 'aria-label': 'Select page', checked: allOn, indeterminate: !allOn && someOn, onchange: (e) => onToggleAll(currentRows.map(key), e.target.checked) })) : null,
+      columns.map((c) => {
+        const canSort = Boolean(c.label) && c.sortable !== false;
+        const active = activeSort && activeSort.key === c.key;
+        return h('th', {
+          class: [c.num ? 'num' : '', c.opt ? 'col-opt' : '', canSort ? 'sortable' : ''].filter(Boolean).join(' '),
+          onclick: canSort ? () => {
+            if (onSort) {
+              onSort(c.key);
+              return;
+            }
+            const nextDir = active && activeSort.dir === 'desc' ? 'asc' : (active && activeSort.dir === 'asc' ? 'desc' : (c.num ? 'desc' : 'asc'));
+            localSort = { key: c.key, dir: nextDir };
+            const sorted = rows.slice().sort((a, b) => compareSortVals(extractSortVal(c, a), extractSortVal(c, b), nextDir));
+            renderTableBody(sorted);
+          } : null,
+          'aria-sort': active ? (activeSort.dir === 'asc' ? 'ascending' : 'descending') : null,
+          title: canSort ? 'Click to sort ascending / descending' : undefined,
+        }, c.label, active ? h('span.arrow', activeSort.dir === 'asc' ? ' ▲' : ' ▼') : null);
+      }));
+
+    const body = currentRows.length
+      ? currentRows.map((r) => h('tr', {
+        class: [selectable && selected.has(key(r)) ? 'selected' : '', onRowClick ? 'clickable' : ''].filter(Boolean).join(' '),
+        onclick: onRowClick ? (e) => { if (!e.target.closest('input,button,a,select')) onRowClick(r); } : null,
+      },
+      selectable ? h('td.check', h('input', { type: 'checkbox', 'aria-label': 'Select row', checked: selected.has(key(r)), onchange: (e) => onToggle(key(r), e.target.checked) })) : null,
+      columns.map((c, idx) => h('td', {
+        dataset: c.label ? { label: c.label } : undefined,
+        class: [
+          c.num ? 'num' : '',
+          c.opt ? 'col-opt' : '',
+          idx === primaryIdx ? 'td-primary' : '',
+          !c.label ? 'td-empty-label' : '',
+          c.cls || '',
+        ].filter(Boolean).join(' '),
+      }, c.render ? c.render(r) : r[c.key]))))
+      : [h('tr.tr-empty', h('td.td-colspan', { colspan: String(columns.length + (selectable ? 1 : 0)) }, h('div.empty', empty || 'Nothing here yet.')))];
+
+    wrap.replaceChildren(h('table.t', h('thead', head), h('tbody', body)));
+  }
+
+  renderTableBody(rows);
+  return wrap;
 }
 
 export function pager({ total, limit, offset, onPage }) {

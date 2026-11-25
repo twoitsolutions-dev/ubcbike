@@ -1098,15 +1098,14 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
          COALESCE(v.cost_cents, 0)::int AS cost_cents,
          COALESCE(v.price_cents, 0)::int AS price_cents,
          eff.last_sold_at,
-         CASE WHEN eff.last_sold_at IS NULL THEN NULL ELSE EXTRACT(DAY FROM (now() - eff.last_sold_at))::int END AS days_without_sale
+         GREATEST(0, EXTRACT(DAY FROM (now() - COALESCE(eff.last_sold_at, v.created_at)))::int) AS days_without_sale
        FROM inv
        JOIN variants v ON v.id = inv.variant_id AND v.company_id = $1
        JOIN products p ON p.id = v.product_id AND p.company_id = $1
        LEFT JOIN eff ON eff.variant_id = v.id
        WHERE $2 = 0
-          OR eff.last_sold_at IS NULL
-          OR eff.last_sold_at <= now() - make_interval(days => $2)
-       ORDER BY (inv.on_hand::bigint * COALESCE(v.cost_cents, 0)) DESC, inv.on_hand DESC
+          OR COALESCE(eff.last_sold_at, v.created_at) <= now() - make_interval(days => $2)
+       ORDER BY days_without_sale DESC, (inv.on_hand::bigint * COALESCE(v.cost_cents, 0)) DESC, inv.on_hand DESC
        LIMIT 500`,
       [companyId, minDays],
     );
@@ -1135,6 +1134,7 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         stockCostCents: stockCost,
         stockRetailCents: stockRetail,
         lastSoldAt: x.last_sold_at,
+        neverSold: x.last_sold_at === null,
         daysWithoutSale: x.days_without_sale,
       };
     });

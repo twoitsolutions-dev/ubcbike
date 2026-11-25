@@ -113,17 +113,47 @@ export async function renderReports(ctx) {
     }
   }
 
-  function renderPaginatedCard({ title, meta, toolbar, getRows, columns, empty, onCsv }) {
+  function renderPaginatedCard({ title, meta, toolbar, getRows, columns, empty, onCsv, defaultSort }) {
     let offset = 0;
+    let sort = defaultSort ? { ...defaultSort } : null;
     const listHost = h('div');
+
+    const getSortedRows = () => {
+      const rows = getRows().slice();
+      if (!sort) return rows;
+      const col = columns.find((c) => c.key === sort.key);
+      if (!col) return rows;
+      const mult = sort.dir === 'asc' ? 1 : -1;
+      rows.sort((a, b) => {
+        const av = typeof col.sortValue === 'function' ? col.sortValue(a) : (a[col.key] ?? '');
+        const bv = typeof col.sortValue === 'function' ? col.sortValue(b) : (b[col.key] ?? '');
+        if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * mult;
+        return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' }) * mult;
+      });
+      return rows;
+    };
 
     const draw = (resetPage) => {
       if (resetPage) offset = 0;
-      const rows = getRows();
+      const rows = getSortedRows();
       if (offset >= rows.length && offset > 0) offset = 0;
       const slice = rows.slice(offset, offset + PAGE_SIZE);
       mount(listHost,
-        dataTable({ columns, rows: slice, empty }),
+        dataTable({
+          columns,
+          rows: slice,
+          sort,
+          onSort: (key) => {
+            const col = columns.find((c) => c.key === key);
+            if (sort && sort.key === key) {
+              sort = { key, dir: sort.dir === 'desc' ? 'asc' : 'desc' };
+            } else {
+              sort = { key, dir: col && col.num ? 'desc' : 'asc' };
+            }
+            draw(true);
+          },
+          empty,
+        }),
         rows.length > PAGE_SIZE ? pager({
           total: rows.length,
           limit: PAGE_SIZE,
@@ -143,7 +173,7 @@ export async function renderReports(ctx) {
         h('div.rep-toolbar',
           toolbar,
           h('div.rep-toolbar-actions',
-            h('button.btn.sm', { type: 'button', onclick: () => onCsv(getRows()) }, 'CSV'),
+            h('button.btn.sm', { type: 'button', onclick: () => onCsv(getSortedRows()) }, 'CSV'),
             h('button.btn.sm', { type: 'button', onclick: () => loadActive(true), title: 'Refresh' }, '↻'))),
         listHost), { actions: meta ? h('span.small.muted', meta) : null }),
     };
@@ -540,21 +570,35 @@ export async function renderReports(ctx) {
     const agingCard = renderPaginatedCard({
       title: 'In-Stock Inventory · Days Without Sales (Top 500 by Capital Tied Up)',
       meta: 'Generated ' + dateTime(r.generatedAt),
+      defaultSort: { key: 'days', dir: 'desc' },
       toolbar: [h('span.small.muted', 'Days ≥'), dayInput, dayApplyBtn, daySel, syncSalesBtn, sheetBtn],
       getRows: (q) => (r.rows || []).filter((it) => !q || (it.sku + ' ' + it.upc + ' ' + it.title + ' ' + it.brand + ' ' + it.category).toLowerCase().includes(q)),
       columns: [
-        { key: 'sku', label: 'SKU / UPC', render: (it) => h('div', h('strong.mono', it.sku), it.upc ? h('div.small.muted.mono', it.upc) : null) },
-        { key: 'title', label: 'Item', render: (it) => h('div', h('span', it.title), it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null) },
-        { key: 'onHand', label: 'On Hand', num: true, render: (it) => String(it.onHand) },
-        { key: 'cost', label: 'Stock Cost', num: true, render: (it) => (it.stockCostCents ? money(it.stockCostCents) : '—') },
-        { key: 'days', label: 'Days No Sale', num: true, render: (it) => h('span.badge', { class: it.daysWithoutSale === null || it.daysWithoutSale >= 90 ? 'warn' : '' }, it.daysWithoutSale === null ? 'No recent sale' : (it.daysWithoutSale + ' d')) },
-        { key: 'act', label: '', render: (it) => h('a.btn.sm', { href: '#/lightspeed-sheet?stock=physical&q=' + encodeURIComponent(it.sku) }, 'Bulk Sheet →') },
+        { key: 'sku', label: 'SKU / UPC', sortValue: (it) => it.sku || '', render: (it) => h('div', h('strong.mono', it.sku), it.upc ? h('div.small.muted.mono', it.upc) : null) },
+        { key: 'title', label: 'Item', sortValue: (it) => it.title || '', render: (it) => h('div', h('span', it.title), it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null) },
+        { key: 'onHand', label: 'On Hand', num: true, sortValue: (it) => Number(it.onHand || 0), render: (it) => String(it.onHand) },
+        { key: 'cost', label: 'Stock Cost', num: true, sortValue: (it) => Number(it.stockCostCents || 0), render: (it) => (it.stockCostCents ? money(it.stockCostCents) : '—') },
+        {
+          key: 'days',
+          label: 'Days No Sale',
+          num: true,
+          sortValue: (it) => (it.daysWithoutSale === null || it.daysWithoutSale === undefined ? -1 : Number(it.daysWithoutSale)),
+          render: (it) => {
+            const d = it.daysWithoutSale;
+            const txt = d === null || d === undefined ? '0 d' : (d + ' d' + (it.neverSold ? ' (no sale)' : ''));
+            return h('span.badge', {
+              class: d === null || d >= 90 ? 'warn' : '',
+              title: it.neverSold ? 'No sale recorded yet — days since added to Hub' : 'Days since last sale',
+            }, txt);
+          },
+        },
+        { key: 'act', label: '', sortable: false, render: (it) => h('a.btn.sm', { href: '#/lightspeed-sheet?stock=physical&q=' + encodeURIComponent(it.sku) }, 'Bulk Sheet →') },
       ],
       empty: 'No in-stock items match this aging window.',
       onCsv: (rows) => downloadCsv(
         'ubc-days-without-sales.csv',
-        ['SKU', 'UPC', 'Title', 'Brand', 'Category', 'On Hand', 'Unit Cost ($)', 'Stock Cost ($)', 'Retail ($)', 'Days Without Sale'],
-        rows.map((it) => [it.sku, it.upc, it.title, it.brand, it.category, it.onHand, (it.costCents / 100).toFixed(2), (it.stockCostCents / 100).toFixed(2), (it.priceCents / 100).toFixed(2), it.daysWithoutSale === null ? 'No Hub sale' : it.daysWithoutSale]),
+        ['SKU', 'UPC', 'Title', 'Brand', 'Category', 'On Hand', 'Unit Cost ($)', 'Stock Cost ($)', 'Retail ($)', 'Days Without Sale', 'Never Sold'],
+        rows.map((it) => [it.sku, it.upc, it.title, it.brand, it.category, it.onHand, (it.costCents / 100).toFixed(2), (it.stockCostCents / 100).toFixed(2), (it.priceCents / 100).toFixed(2), it.daysWithoutSale ?? 0, it.neverSold ? 'Yes' : 'No']),
       ),
     });
 

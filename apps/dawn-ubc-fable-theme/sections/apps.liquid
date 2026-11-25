@@ -29,6 +29,34 @@
         summary.appendChild(iconSpan);
         var body = document.createElement('div');
         body.className = 'ubc-pdp-accordion__body';
+        var groups = el.querySelectorAll('.workstand-feature-content__group');
+        for (var g = 0; g < groups.length; g++) {
+          var grp = groups[g];
+          if (!grp.querySelector('table, dl') || grp.closest('details.ubc-pdp-accordion--sub')) continue;
+          var subH = grp.querySelector('h4');
+          if (!subH) continue;
+          var subTitle = subH.textContent.trim();
+          subH.style.display = 'none';
+          var subDet = document.createElement('details');
+          subDet.className = 'ubc-pdp-accordion ubc-pdp-accordion--sub';
+          if (groups.length === 1) subDet.setAttribute('open', '');
+          var subSum = document.createElement('summary');
+          subSum.className = 'ubc-pdp-accordion__summary ubc-pdp-accordion__summary--sub';
+          var subSpan = document.createElement('span');
+          subSpan.className = 'ubc-pdp-sub-title';
+          subSpan.textContent = subTitle;
+          var subIcon = document.createElement('span');
+          subIcon.className = 'ubc-pdp-accordion__icon';
+          subIcon.setAttribute('aria-hidden', 'true');
+          subSum.appendChild(subSpan);
+          subSum.appendChild(subIcon);
+          var subBody = document.createElement('div');
+          subBody.className = 'ubc-pdp-accordion__body ubc-pdp-accordion__body--sub';
+          grp.parentNode.insertBefore(subDet, grp);
+          subBody.appendChild(grp);
+          subDet.appendChild(subSum);
+          subDet.appendChild(subBody);
+        }
         el.parentNode.insertBefore(details, el);
         body.appendChild(el);
         details.appendChild(summary);

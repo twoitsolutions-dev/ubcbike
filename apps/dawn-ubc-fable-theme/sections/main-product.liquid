@@ -720,8 +720,13 @@
           {%- endif -%}
           {%- if has_specs -%}
             <aside class="ubc-pdp-spec-card" aria-label="Key Specifications">
-              <h2 class="ubc-pdp-spec-card__title">Key Specifications</h2>
-              <dl class="ubc-pdp-spec-list" id="UbcKeySpecs-{{ section.id }}">
+              <details class="ubc-pdp-accordion ubc-pdp-accordion--specs" open>
+                <summary class="ubc-pdp-accordion__summary">
+                  <span class="ubc-pdp-spec-card__title">Key Specifications</span>
+                  <span class="ubc-pdp-accordion__icon" aria-hidden="true"></span>
+                </summary>
+                <div class="ubc-pdp-accordion__body ubc-pdp-accordion__body--specs">
+                  <dl class="ubc-pdp-spec-list" id="UbcKeySpecs-{{ section.id }}">
                 {%- if product.vendor != blank -%}
                   <div class="ubc-pdp-spec-row"><dt>Brand</dt><dd>{{ product.vendor | escape }}</dd></div>
                 {%- endif -%}
@@ -746,7 +751,9 @@
                 {%- if v_spec.barcode != blank -%}
                   <div class="ubc-pdp-spec-row"><dt>UPC</dt><dd>{{ v_spec.barcode | escape }}</dd></div>
                 {%- endif -%}
-              </dl>
+                  </dl>
+                </div>
+              </details>
             </aside>
           {%- endif -%}
         </div>

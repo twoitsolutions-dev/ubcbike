@@ -286,9 +286,12 @@
       assign h_cur = collection.handle
       assign show_back_all = false
       if h_cur == 'all' or h_cur == 'in-stock-tampa' or h_cur == 'in-stock-alafia'
-        assign ubc_dept_handles = 'all:All In-Stock,bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes,helmets:Helmets,clothing:Apparel,cycling-shoes:Shoes,eyewear:Sunglasses,tires-tubes:Tires & Tubes,parts-components:Parts,hydration-nutrition:Hydration & Bottles,nutrition:Nutrition,accessories-gear:Accessories,tools-workshop:Tools & Care' | split: ','
-      elsif h_cur == 'bikes' or h_cur == 'electric-bikes' or h_cur == 'road-bikes' or h_cur == 'mountain-bikes' or h_cur == 'hybrid-bikes' or h_cur == 'kids-bikes'
-        assign ubc_dept_handles = 'bikes:All Bikes,electric-bikes:Electric Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,hybrid-bikes:Hybrid & Urban,kids-bikes:Kids Bikes' | split: ','
+        assign ubc_dept_handles = 'bikes:Bikes,parts-components:Components,accessories-gear:Accessories,clothing:Clothing' | split: ','
+      elsif h_cur == 'bikes' or h_cur == 'electric-bikes' or h_cur == 'road-bikes' or h_cur == 'mountain-bikes' or h_cur == 'commuter-urban-bikes' or h_cur == 'hybrid-bikes' or h_cur == 'kids-bikes' or h_cur == 'bmx-bikes'
+        assign ubc_dept_handles = 'bikes:All Bikes,road-bikes:Road & Gravel,mountain-bikes:Mountain Bikes,commuter-urban-bikes:Commuter, Hybrid & Comfort,kids-bikes:Kids & Youth,bmx-bikes:BMX Bikes,electric-bikes:Electric Bikes' | split: ','
+        assign show_back_all = true
+      elsif h_cur == 'clothing' or h_cur == 'apparel-accessories' or h_cur == 'gloves' or h_cur == 'jerseys-short-sleeve' or h_cur == 'outerwear' or h_cur == 'cycling-shorts-bottoms' or h_cur == 'socks' or h_cur == 'cycling-shoes'
+        assign ubc_dept_handles = 'clothing:All Clothing,apparel-accessories:Accessories,gloves:Gloves,jerseys-short-sleeve:Jerseys & Tops,outerwear:Outerwear,cycling-shorts-bottoms:Shorts & Bottoms,socks:Socks,cycling-shoes:Shoes' | split: ','
         assign show_back_all = true
       elsif h_cur == 'parts-components' or h_cur == 'saddles' or h_cur == 'pedals'
         assign ubc_dept_handles = 'parts-components:All Parts,saddles:Saddles,pedals:Pedals' | split: ','

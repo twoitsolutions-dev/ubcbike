@@ -13,6 +13,13 @@
 
 {{ 'component-show-more.css' | asset_url | stylesheet_tag }}
 {{ 'component-swatch-input.css' | asset_url | stylesheet_tag }}
+<style>
+  #FacetsWrapperDesktop,
+  #FacetsWrapperMobile {
+    display: flex;
+    flex-direction: column;
+  }
+</style>
 {{ 'component-swatch.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
@@ -114,9 +121,16 @@
             <script src="{{ 'show-more.js' | asset_url }}" defer="defer"></script>
             {% comment %} Filters for both horizontal and vertical filter {% endcomment %}
             {%- for filter in results.filters -%}
+              {%- if filter.label == 'Discipline' -%}{%- continue -%}{%- endif -%}
               {% liquid
                 assign total_active_values = total_active_values | plus: filter.active_values.size
                 assign presentation = filter.presentation | default: default_presentation
+                assign disp_filter_label = filter.label
+                assign is_cat_filter = false
+                if filter.param_name == 'filter.p.product_type'
+                  assign disp_filter_label = 'Categories'
+                  assign is_cat_filter = true
+                endif
 
                 if presentation == 'image'
                   assign show_more_number = 12
@@ -133,17 +147,18 @@
                     id="Details-{{ filter.param_name | escape }}-{{ section.id }}"
                     class="{% if filter_type == 'horizontal' %}disclosure-has-popup facets__disclosure{% else %} facets__disclosure-vertical{% endif %} js-filter"
                     data-index="{{ forloop.index }}"
-                    {% if filter_type == 'vertical' and forloop.index == 1 %}
+                    {% if is_cat_filter %}style="order:-1;"{% endif %}
+                    {% if filter_type == 'vertical' and forloop.index == 1 or is_cat_filter %}
                       open
                     {% endif %}
                   >
                     <summary
                       class="facets__summary caption-large focus-offset"
-                      aria-label="{{ filter.label | escape }} ({{ 'products.facets.filters_selected.one' | t: count: filter.active_values.size }})"
+                      aria-label="{{ disp_filter_label | escape }} ({{ 'products.facets.filters_selected.one' | t: count: filter.active_values.size }})"
                     >
                       <div>
                         <span class="facets__summary-label">
-                          {{- filter.label | escape }}
+                          {{- disp_filter_label | escape }}
                           {%- if filter_type == 'vertical' -%}
                             <span class="facets__selected{% if filter.active_values.size == 0 %} hidden{% endif %}">
                               ({{ filter.active_values.size }})</span
@@ -513,8 +528,15 @@
             >
               {%- if enable_filtering -%}
                 {%- for filter in results.filters -%}
+                  {%- if filter.label == 'Discipline' -%}{%- continue -%}{%- endif -%}
                   {% liquid
                     assign presentation = filter.presentation | default: default_presentation
+                    assign disp_mobile_label = filter.label
+                    assign is_cat_mobile = false
+                    if filter.param_name == 'filter.p.product_type'
+                      assign disp_mobile_label = 'Categories'
+                      assign is_cat_mobile = true
+                    endif
                     if presentation == 'image'
                       assign visual_layout_class = 'facets-layout facets-layout-grid facets-layout-grid--' | append: presentation
                     else
@@ -528,10 +550,11 @@
                         id="Details-Mobile-{{ filter.param_name | escape }}-{{ section.id }}"
                         class="mobile-facets__details js-filter"
                         data-index="mobile-{{ forloop.index }}"
+                        {% if is_cat_mobile %}style="order:-1;"{% endif %}
                       >
                         <summary class="mobile-facets__summary focus-inset">
                           <div>
-                            <span>{{ filter.label | escape }}</span>
+                            <span>{{ disp_mobile_label | escape }}</span>
                             <span class="mobile-facets__arrow">
                               {{- 'icon-arrow.svg' | inline_asset_content -}}
                             </span>

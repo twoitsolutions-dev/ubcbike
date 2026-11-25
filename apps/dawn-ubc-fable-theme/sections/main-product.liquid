@@ -696,10 +696,27 @@
         </div>
       </div>
 
-      {%- if product.description != blank -%}
+      {%- assign v_spec = product.selected_or_first_available_variant -%}
+      {%- assign ws_year = v_spec.metafields.workstand.model_year.value -%}
+      {%- assign ws_wt = product.metafields.product_specs.shipping_dimensions_weight.value -%}
+      {%- assign ws_gender = product.metafields.custom.gender.value -%}
+      {%- assign ws_wheel = product.metafields.custom.wheel_size.value -%}
+      {%- assign ws_mpn = v_spec.metafields.ubc.mpn.value -%}
+      {%- if product.description != blank or ws_year != blank or ws_wt != blank or v_spec.sku != blank -%}
         <div class="ubc-pdp-description rte">
           <h2 class="ubc-pdp-desc-title">Product Details</h2>
-          {{ product.description }}
+          {%- if product.description != blank -%}{{ product.description }}{%- endif -%}
+          <div class="ubc-pdp-specs" style="margin-top:1.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.8rem 1.4rem;padding-top:1.2rem;border-top:1px solid rgba(20,32,45,0.1);font-size:1.35rem;">
+            {%- if product.vendor != blank -%}<div><strong>Brand:</strong> {{ product.vendor | escape }}</div>{%- endif -%}
+            {%- if product.type != blank -%}<div><strong>Category:</strong> {{ product.type | escape }}</div>{%- endif -%}
+            {%- if v_spec.sku != blank -%}<div><strong>System SKU:</strong> {{ v_spec.sku | escape }}</div>{%- endif -%}
+            {%- if ws_mpn != blank -%}<div><strong>MPN:</strong> {{ ws_mpn | escape }}</div>{%- endif -%}
+            {%- if v_spec.barcode != blank -%}<div><strong>UPC:</strong> {{ v_spec.barcode | escape }}</div>{%- endif -%}
+            {%- if ws_year != blank -%}<div><strong>Model Year:</strong> {{ ws_year | escape }}</div>{%- endif -%}
+            {%- if ws_gender != blank -%}<div><strong>Gender:</strong> {{ ws_gender | escape }}</div>{%- endif -%}
+            {%- if ws_wheel != blank -%}<div><strong>Wheel Size:</strong> {{ ws_wheel | escape }}</div>{%- endif -%}
+            {%- if ws_wt != blank -%}<div><strong>Shipping Weight:</strong> {{ ws_wt | escape }} lbs</div>{%- endif -%}
+          </div>
         </div>
       {%- endif -%}
 

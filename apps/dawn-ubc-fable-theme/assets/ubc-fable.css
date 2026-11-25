@@ -9869,18 +9869,23 @@ iframe[src*="ikeono"] {
 }
 
 .ubc-ws-h1 {
-  font-family: var(--display, "Anton", sans-serif);
-  font-size: clamp(3rem, 4.4vw, 4.8rem);
-  line-height: 1.04;
-  letter-spacing: 0.01em;
+  font-family: var(--label, "Barlow Condensed", sans-serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(2.4rem, 3.8vw, 3.8rem);
+  line-height: 1.08;
+  letter-spacing: 0.02em;
   color: #14202D;
   margin: 0 0 1.4rem;
 }
 
 .ubc-ws-h2 {
-  font-family: var(--display, "Anton", sans-serif);
-  font-size: clamp(2.2rem, 3vw, 3.2rem);
-  line-height: 1.1;
+  font-family: var(--label, "Barlow Condensed", sans-serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(2.1rem, 2.8vw, 2.9rem);
+  line-height: 1.12;
+  letter-spacing: 0.015em;
   color: #14202D;
   margin: 0 0 1.4rem;
 }

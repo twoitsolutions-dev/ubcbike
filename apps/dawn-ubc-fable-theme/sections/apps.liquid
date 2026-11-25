@@ -5,8 +5,7 @@
 </div>
 <script>
   (function () {
-    var root = document.currentScript && document.currentScript.previousElementSibling;
-    if (!root) return;
+    var root = document.getElementById('shopify-section-{{ section.id }}') || document;
     function wrapAll() {
       var targets = root.querySelectorAll('.workstand-product-specs, .workstand-feature-content');
       for (var i = 0; i < targets.length; i++) {

@@ -346,6 +346,29 @@
   if (drawerClose) {
     drawerClose.addEventListener('click', closeDrawer);
   }
+  qsa('#megaBikes [data-mega-tab]').forEach(function (tab) {
+    function activateMegaTab() {
+      var idx = tab.getAttribute('data-mega-tab');
+      qsa('#megaBikes [data-mega-tab]').forEach(function (t) {
+        var on = t.getAttribute('data-mega-tab') === idx;
+        t.classList.toggle('is-active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      qsa('#megaBikes [data-mega-panel]').forEach(function (p) {
+        var on = p.getAttribute('data-mega-panel') === idx;
+        p.classList.toggle('is-active', on);
+        if (on) {
+          p.removeAttribute('hidden');
+        } else {
+          p.setAttribute('hidden', '');
+        }
+      });
+    }
+    tab.addEventListener('mouseenter', activateMegaTab);
+    tab.addEventListener('focus', activateMegaTab);
+    tab.addEventListener('click', activateMegaTab);
+  });
+
   qsa('#fbDrawer a, #megaBikes a, #fbSearchPop .fb-search-tags a').forEach(function (a) {
     a.addEventListener('click', function () {
       closeMenus();

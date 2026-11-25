@@ -253,24 +253,70 @@
               <svg aria-hidden="true"><use href="#i-chev"/></svg>
             </button>
             <div class="mega" id="megaBikes">
-              <div class="fb-wrap">
+              <div class="fb-wrap{% if shop_menu != blank and shop_menu.links.size >= 4 %} mega-split{% endif %}">
                 {%- if shop_menu != blank and shop_menu.links.size >= 4 -%}
-                  {%- for childlink in shop_menu.links -%}
-                    <div>
-                      <h4><a href="{{ childlink.url }}">{{ childlink.title | escape }}</a></h4>
-                      {%- if childlink.links != blank -%}
-                        <ul>
-                          {%- for grandchildlink in childlink.links -%}
-                            <li>
-                              <a href="{{ grandchildlink.url }}"{% if grandchildlink.current %} aria-current="page"{% endif %}>
-                                {{ grandchildlink.title | escape }}
-                              </a>
-                            </li>
-                          {%- endfor -%}
-                        </ul>
-                      {%- endif -%}
+                  <div class="mega-rail" role="tablist" aria-label="Shop Departments">
+                    {%- for childlink in shop_menu.links -%}
+                      <button
+                        type="button"
+                        class="mega-tab{% if forloop.first %} is-active{% endif %}"
+                        role="tab"
+                        aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                        data-mega-tab="{{ forloop.index0 }}"
+                      >
+                        <span class="mega-tab-title">{{ childlink.title | escape }}</span>
+                        <span class="mega-tab-meta">
+                          {%- if childlink.links.size > 0 -%}<span class="mega-tab-count">{{ childlink.links.size }}</span>{%- endif -%}
+                          <svg aria-hidden="true"><use href="#i-chev"/></svg>
+                        </span>
+                      </button>
+                    {%- endfor -%}
+                    <a class="mega-rail-all" href="{{ routes.all_products_collection_url }}">
+                      <span data-es="Ver Todo en Stock">Shop All In-Stock</span>
+                      <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+                    </a>
+                  </div>
+
+                  <div class="mega-panels">
+                    {%- for childlink in shop_menu.links -%}
+                      <div
+                        class="mega-panel{% if forloop.first %} is-active{% endif %}"
+                        role="tabpanel"
+                        data-mega-panel="{{ forloop.index0 }}"
+                        {% unless forloop.first %}hidden{% endunless %}
+                      >
+                        <div class="mega-panel-head">
+                          <h4><a href="{{ childlink.url }}">{{ childlink.title | escape }}</a></h4>
+                          <a class="mega-panel-all" href="{{ childlink.url }}">
+                            <span data-es="Ver todo">View all {{ childlink.title | escape }}</span>
+                            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+                          </a>
+                        </div>
+                        {%- if childlink.links != blank -%}
+                          <ul class="mega-grid{% if childlink.links.size <= 8 %} is-2col{% endif %}">
+                            {%- for grandchildlink in childlink.links -%}
+                              <li>
+                                <a href="{{ grandchildlink.url }}"{% if grandchildlink.current %} aria-current="page"{% endif %}>
+                                  {{ grandchildlink.title | escape }}
+                                </a>
+                              </li>
+                            {%- endfor -%}
+                          </ul>
+                        {%- endif -%}
+                      </div>
+                    {%- endfor -%}
+                  </div>
+
+                  <a class="mega-card" href="{{ routes.all_products_collection_url }}">
+                    <div class="mega-card-media">
+                      <img src="{{ 'spz-propero-4.png' | asset_url }}" width="180" height="140" alt="UBC In-Stock Catalog" loading="lazy">
                     </div>
-                  {%- endfor -%}
+                    <div class="mega-card-body">
+                      <span class="mega-kicker" data-es="Catálogo Completo">Browse Full Catalog</span>
+                      <strong data-es="Explora bicis, cascos, llantas y repuestos disponibles hoy en Tampa y Alafia.">Browse 1,350+ in-stock bikes, helmets, tires, parts &amp; gear ready today in Tampa &amp; Alafia.</strong>
+                      <span class="mega-cta"><span data-es="Ver todo el catálogo">Browse All Items</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                    </div>
+                  </a>
                 {%- else -%}
                 <div>
                   <h4 data-es="Bicicletas y Eléctricas">Bikes &amp; Electric</h4>

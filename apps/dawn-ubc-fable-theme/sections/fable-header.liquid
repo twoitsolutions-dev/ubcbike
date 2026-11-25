@@ -307,14 +307,99 @@
                     {%- endfor -%}
                   </div>
 
-                  <a class="mega-card" href="{{ routes.all_products_collection_url }}">
-                    <div class="mega-card-media">
-                      <img src="{{ 'spz-propero-4.png' | asset_url }}" width="180" height="140" alt="UBC In-Stock Catalog" loading="lazy">
+                  {%- liquid
+                    assign ed_img = 'ubc-pop-classic.jpg'
+                    assign ed_badge = 'Since 1972'
+                    assign ed_badge_es = 'Desde 1972'
+                    assign ed_title = 'Bikes, Gear & Walk-In Repair in Tampa'
+                    assign ed_title_es = 'Bicis, Equipo y Taller Sin Cita en Tampa'
+                    assign ed_desc = 'Explore in-stock bikes, helmets, lights & parts ready today — plus 0% APR financing.'
+                    assign ed_desc_es = 'Explora bicis, cascos, luces y repuestos listos hoy — más financiamiento 0% APR.'
+                    assign ed_cta = 'View Full Catalog'
+                    assign ed_cta_es = 'Ver Catálogo Completo'
+                    assign ed_url = routes.all_products_collection_url
+                    case edition
+                      when 'black_friday'
+                        assign ed_img = 'ubc-pop-bf.jpg'
+                        assign ed_badge = 'Black Friday 2026'
+                        assign ed_badge_es = 'Black Friday 2026'
+                        assign ed_title = 'Up to $3,500 Off Bikes & 60% Off Gear'
+                        assign ed_title_es = 'Hasta $3,500 Off en Bicis y 60% Off'
+                        assign ed_desc = 'Direct showroom markdowns on in-stock bikes, e-bikes, helmets & parts — free hold until Dec 24.'
+                        assign ed_desc_es = 'Descuentos directos en bicis, e-bikes, cascos y repuestos — apartado gratis hasta el 24 de dic.'
+                        assign ed_cta = 'Shop Black Friday Deals'
+                        assign ed_cta_es = 'Ver Ofertas Black Friday'
+                        if collections['black-friday-deals'] != blank
+                          assign ed_url = collections['black-friday-deals'].url
+                        endif
+                      when 'christmas'
+                        assign ed_img = 'ubc-pop-christmas.jpg'
+                        assign ed_badge = 'Free Holiday Hold'
+                        assign ed_badge_es = 'Apartado Navideño Gratis'
+                        assign ed_title = 'Free Holiday Assembly & Warehouse Hold'
+                        assign ed_title_es = 'Armado y Apartado Navideño Gratis'
+                        assign ed_desc = 'Pick their dream bike today and we assemble & hold it hidden in Tampa until Christmas Eve.'
+                        assign ed_desc_es = 'Elige su bici hoy y la armamos y guardamos en Tampa hasta Nochebuena.'
+                        assign ed_cta = 'Browse Gift Bikes'
+                        assign ed_cta_es = 'Ver Bicis de Regalo'
+                        assign ed_url = all_bikes_href
+                      when 'july_4'
+                        assign ed_img = 'ubc-pop-july4.jpg'
+                        assign ed_badge = 'July 4th Special'
+                        assign ed_badge_es = 'Especial 4 de Julio'
+                        assign ed_title = 'Trail-Ready Bikes & Summer Gear'
+                        assign ed_title_es = 'Bicis Listas y Equipo de Verano'
+                        assign ed_desc = 'In-stock mountain bikes, hydration packs, helmets & Alafia trail rentals ready for the holiday weekend.'
+                        assign ed_desc_es = 'Bicis MTB, hidratación, cascos y alquileres en Alafia listos para el fin de semana.'
+                        assign ed_cta = 'Shop Summer Picks'
+                        assign ed_cta_es = 'Ver Selección de Verano'
+                        assign ed_url = mtb_href
+                      when 'spring'
+                        assign ed_img = 'ubc-pop-spring.jpg'
+                        assign ed_badge = 'Spring & Bike Month'
+                        assign ed_badge_es = 'Primavera y Mes de la Bici'
+                        assign ed_title = 'Spring Ride & Trail Season Ready'
+                        assign ed_title_es = 'Temporada de Ruta y Senderos'
+                        assign ed_desc = 'Fresh road, gravel & MTB arrivals plus same-day walk-in tune-ups in Tampa.'
+                        assign ed_desc_es = 'Nuevas bicis de ruta, gravel y MTB más servicio sin cita en Tampa.'
+                        assign ed_cta = 'Shop Spring Arrivals'
+                        assign ed_cta_es = 'Ver Novedades'
+                        assign ed_url = road_href
+                      when 'campus'
+                        assign ed_img = 'ubc-pop-campus.jpg'
+                        assign ed_badge = 'USF Campus'
+                        assign ed_badge_es = 'Campus USF'
+                        assign ed_title = '10% Student & Staff Discount Every Day'
+                        assign ed_title_es = '10% Descuento Diario Estudiantes USF'
+                        assign ed_desc = 'Show your valid student or faculty ID in-store for everyday savings across bikes, locks & gear.'
+                        assign ed_desc_es = 'Presenta tu ID de estudiante o profesor en tienda para ahorrar en bicis, candados y equipo.'
+                        assign ed_cta = 'Shop Campus Bikes'
+                        assign ed_cta_es = 'Ver Bicis Urbanas'
+                        assign ed_url = hybrid_href
+                      when 'veterans'
+                        assign ed_img = 'ubc-pop-veterans.jpg'
+                        assign ed_badge = 'Veterans & Police'
+                        assign ed_badge_es = 'Veteranos y Policía'
+                        assign ed_title = '10% Everyday Military & First Responder Discount'
+                        assign ed_title_es = '10% Descuento Diario Militares y Policía'
+                        assign ed_desc = 'Our family honors active military, veterans & law enforcement with everyday in-store savings.'
+                        assign ed_desc_es = 'Honramos a militares activos, veteranos y policías con descuento permanente en tienda.'
+                        assign ed_cta = 'Browse Store Catalog'
+                        assign ed_cta_es = 'Ver Catálogo'
+                    endcase
+                  -%}
+                  <a class="mega-promo" href="{{ ed_url }}">
+                    <div class="mega-promo-media">
+                      <img src="{{ ed_img | asset_url }}" width="290" height="140" alt="{{ ed_title | escape }}" loading="lazy">
+                      <span class="mega-promo-badge" data-es="{{ ed_badge_es | escape }}">{{ ed_badge | escape }}</span>
                     </div>
-                    <div class="mega-card-body">
-                      <span class="mega-kicker" data-es="Catálogo Completo">Browse Full Catalog</span>
-                      <strong data-es="Explora bicis, cascos, llantas y repuestos disponibles hoy en Tampa y Alafia.">Browse 1,350+ in-stock bikes, helmets, tires, parts &amp; gear ready today in Tampa &amp; Alafia.</strong>
-                      <span class="mega-cta"><span data-es="Ver todo el catálogo">Browse All Items</span> <svg aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                    <div class="mega-promo-body">
+                      <strong data-es="{{ ed_title_es | escape }}">{{ ed_title | escape }}</strong>
+                      <p data-es="{{ ed_desc_es | escape }}">{{ ed_desc | escape }}</p>
+                      <span class="mega-promo-cta">
+                        <span data-es="{{ ed_cta_es | escape }}">{{ ed_cta | escape }}</span>
+                        <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+                      </span>
                     </div>
                   </a>
                 {%- else -%}

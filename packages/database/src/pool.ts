@@ -50,7 +50,9 @@ export function resolvePoolConfig(rawUrl = process.env.DATABASE_URL): pg.PoolCon
       connectionString: parsed.toString(),
       max,
       keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
       idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
       ssl: { rejectUnauthorized: strictVerify },
     };
   }

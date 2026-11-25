@@ -27,11 +27,35 @@ export function createHttpDriver() {
     const headers = { Accept: 'application/json' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (method !== 'GET' && csrf) headers['X-CSRF-Token'] = csrf;
-    const res = await fetch(url, { method, headers, credentials: 'same-origin', body: body === undefined ? undefined : JSON.stringify(body) });
-    const type = res.headers.get('content-type') || '';
-    const data = type.includes('application/json') ? await res.json() : await res.text();
-    if (!res.ok) throw new ApiError(res.status, typeof data === 'object' ? data : { message: data });
-    return data;
+    const maxAttempts = method === 'GET' ? 2 : 1;
+    let lastErr = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await fetch(url, { method, headers, credentials: 'same-origin', body: body === undefined ? undefined : JSON.stringify(body) });
+        const type = res.headers.get('content-type') || '';
+        const data = type.includes('application/json') ? await res.json() : await res.text();
+        if (!res.ok) {
+          const isTransient = method === 'GET' && (res.status === 502 || res.status === 503 || res.status === 504);
+          if (isTransient && attempt < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 450));
+            continue;
+          }
+          const bodyObj = typeof data === 'object'
+            ? data
+            : { message: res.status >= 500 ? 'Server temporarily busy (' + res.status + '). Please retry in a moment.' : data };
+          throw new ApiError(res.status, bodyObj);
+        }
+        return data;
+      } catch (err) {
+        lastErr = err;
+        if (method === 'GET' && !(err instanceof ApiError) && attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 450));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastErr;
   }
 
   return {

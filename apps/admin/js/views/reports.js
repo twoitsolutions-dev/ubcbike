@@ -330,6 +330,8 @@ export async function renderReports(ctx) {
     const rowsAll = r.rows || [];
     let q = '';
     let reasonFilter = '';
+    let brandFilter = '';
+    let catFilter = '';
 
     const REASON_META = {
       last5_match: ['Last 5 Match (Workstand?)', 'warn'],
@@ -339,6 +341,15 @@ export async function renderReports(ctx) {
       no_upc: ['Missing UPC', 'bad'],
     };
 
+    const brandCounts = new Map();
+    const catCounts = new Map();
+    for (const it of rowsAll) {
+      if (it.brand) brandCounts.set(it.brand, (brandCounts.get(it.brand) || 0) + 1);
+      if (it.category) catCounts.set(it.category, (catCounts.get(it.category) || 0) + 1);
+    }
+    const sortedBrands = Array.from(brandCounts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const sortedCats = Array.from(catCounts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
     const searchInput = h('input.rep-search', {
       type: 'search',
       placeholder: 'Search title, SKU, UPC, last 5, Shopify barcode…',
@@ -346,7 +357,7 @@ export async function renderReports(ctx) {
     });
 
     const reasonSel = h('select.input', {
-      style: { width: 'auto', minWidth: '190px' },
+      style: { width: 'auto', minWidth: '175px' },
       onchange: (e) => { reasonFilter = e.target.value; list.redraw(); },
     }, [
       h('option', { value: '' }, 'All reasons (' + rowsAll.length + ')'),
@@ -355,6 +366,22 @@ export async function renderReports(ctx) {
       h('option', { value: 'invalid_upc' }, 'Invalid UPC (' + (s.invalidUpcCount || 0) + ')'),
       h('option', { value: 'duplicate_upc' }, 'Duplicate UPC (' + (s.duplicateUpcCount || 0) + ')'),
       h('option', { value: 'no_upc' }, 'Missing UPC (' + (s.noUpcCount || 0) + ')'),
+    ]);
+
+    const brandSel = h('select.input', {
+      style: { width: 'auto', minWidth: '150px' },
+      onchange: (e) => { brandFilter = e.target.value; list.redraw(); },
+    }, [
+      h('option', { value: '' }, 'All brands (' + sortedBrands.length + ')'),
+      ...sortedBrands.map(([b, n]) => h('option', { value: b }, b + ' (' + n + ')')),
+    ]);
+
+    const catSel = h('select.input', {
+      style: { width: 'auto', minWidth: '165px' },
+      onchange: (e) => { catFilter = e.target.value; list.redraw(); },
+    }, [
+      h('option', { value: '' }, 'All categories (' + sortedCats.length + ')'),
+      ...sortedCats.map(([c, n]) => h('option', { value: c }, c + ' (' + n + ')')),
     ]);
 
     const scanBtn = ctx.api.reportsScanUnlinkedUpc && (!ctx.can || ctx.can('catalog.write'))
@@ -381,12 +408,14 @@ export async function renderReports(ctx) {
       title: 'Unlinked In-Stock Lightspeed Items · UPC & Last-5-Digit Check',
       meta: (r.needsScan ? 'Not scanned against Shopify yet — click Scan Shopify UPCs · ' : '') + (r.generatedAt ? dateTime(r.generatedAt) : ''),
       defaultSort: { key: 'onHand', dir: 'desc' },
-      toolbar: h('div.rep-filters', searchInput, reasonSel, scanBtn),
+      toolbar: h('div.rep-filters', searchInput, reasonSel, brandSel, catSel, scanBtn),
       getRows: () => rowsAll.filter((it) => {
         if (reasonFilter && it.reason !== reasonFilter) return false;
+        if (brandFilter && it.brand !== brandFilter) return false;
+        if (catFilter && it.category !== catFilter) return false;
         if (!q) return true;
         const hits = (it.last5Matches || []).map((m) => m.title + ' ' + m.barcode).join(' ');
-        return (it.sku + ' ' + it.upc + ' ' + it.last5 + ' ' + it.title + ' ' + it.brand + ' ' + hits).toLowerCase().includes(q);
+        return (it.sku + ' ' + it.upc + ' ' + it.last5 + ' ' + it.title + ' ' + it.brand + ' ' + it.category + ' ' + hits).toLowerCase().includes(q);
       }),
       columns: [
         {

@@ -1044,6 +1044,19 @@ export function createDemoDriver() {
       const missing = ds.items.filter((i) => !i.upc);
       return { total: missing.length, items: missing.slice(0, 100) };
     },
+    async reportsUnlinkedUpc() {
+      can('catalog.read');
+      return {
+        generatedAt: nowIso(),
+        needsScan: false,
+        summary: { totalUnlinked: 0, last5MatchCount: 0, notInShopifyCount: 0, invalidUpcCount: 0, duplicateUpcCount: 0, noUpcCount: 0, totalUnits: 0 },
+        rows: [],
+      };
+    },
+    async reportsScanUnlinkedUpc() {
+      can('catalog.read');
+      return { queued: true };
+    },
     async reportsMarginIssues() {
       can('catalog.read');
       const items = ds.items.filter((i) => !i.costCents || i.priceCents < i.costCents).slice(0, 50).map((i) => ({

@@ -67,6 +67,8 @@ export function createHttpDriver() {
     dashboard: () => req('GET', '/api/dashboard'),
     reportsCollectionGap: (refresh) => req('GET', '/api/reports/collections-gap' + (refresh ? '?refresh=1' : '')),
     reportsNoUpc: () => req('GET', '/api/reports/no-upc'),
+    reportsUnlinkedUpc: () => req('GET', '/api/reports/unlinked-upc'),
+    reportsScanUnlinkedUpc: () => req('POST', '/api/reports/unlinked-upc/scan', {}),
     reportsMarginIssues: () => req('GET', '/api/reports/margin-issues'),
     reportsSalesProfitability: (days) => req('GET', '/api/reports/sales-profitability' + qs({ days })),
     reportsDaysWithoutSales: (minDays) => req('GET', '/api/reports/days-without-sales' + qs({ minDays })),

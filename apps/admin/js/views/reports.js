@@ -20,7 +20,7 @@ function kpiBox(label, value, cls) {
 }
 
 export async function renderReports(ctx) {
-  const cache = { shopify: null, noUpc: null, margin: null, sales: {}, aging: {} };
+  const cache = { shopify: null, noUpc: null, unlinkedUpc: null, margin: null, sales: {}, aging: {} };
   let activeReport = ctx.query.report || ctx.query.tab || 'collections';
   let salesDays = ctx.query.days || '30';
   let agingDays = ctx.query.minDays !== undefined && ctx.query.minDays !== '' ? String(ctx.query.minDays) : '0';
@@ -31,6 +31,7 @@ export async function renderReports(ctx) {
     ['collections', 'Collections'],
     ['photos', 'No Photos'],
     ['no_upc', 'No UPC'],
+    ['unlinked_upc', 'Unlinked UPCs'],
     ['margin', 'Cost, MAP & Margin'],
     ['sales', 'Sales & Margin'],
     ['aging', 'Days Without Sales'],
@@ -59,6 +60,12 @@ export async function renderReports(ctx) {
     if (!refresh && cache.noUpc) return cache.noUpc;
     cache.noUpc = await ctx.api.reportsNoUpc();
     return cache.noUpc;
+  }
+
+  async function ensureUnlinkedUpc(refresh) {
+    if (!refresh && cache.unlinkedUpc) return cache.unlinkedUpc;
+    cache.unlinkedUpc = await ctx.api.reportsUnlinkedUpc();
+    return cache.unlinkedUpc;
   }
 
   async function ensureMargin(refresh) {
@@ -94,6 +101,10 @@ export async function renderReports(ctx) {
         const r = await ensureNoUpc(refresh);
         if (!ctx.isCurrent()) return;
         renderNoUpcReport(r);
+      } else if (activeReport === 'unlinked_upc') {
+        const r = await ensureUnlinkedUpc(refresh);
+        if (!ctx.isCurrent()) return;
+        renderUnlinkedUpcReport(r);
       } else if (activeReport === 'margin') {
         const r = await ensureMargin(refresh);
         if (!ctx.isCurrent()) return;
@@ -311,6 +322,137 @@ export async function renderReports(ctx) {
         kpiBox('Active in-stock', total),
         kpiBox('Missing photo', items.length, items.length ? 'attn' : ''),
         kpiBox('With photo', Math.max(0, total - items.length))),
+      list.el);
+  }
+
+  function renderUnlinkedUpcReport(r) {
+    const s = r.summary || {};
+    const rowsAll = r.rows || [];
+    let q = '';
+    let reasonFilter = '';
+
+    const REASON_META = {
+      last5_match: ['Last 5 Match (Workstand?)', 'warn'],
+      not_in_shopify: ['Not in Shopify', ''],
+      invalid_upc: ['Invalid UPC', 'bad'],
+      duplicate_upc: ['Duplicate UPC', 'warn'],
+      no_upc: ['Missing UPC', 'bad'],
+    };
+
+    const searchInput = h('input.rep-search', {
+      type: 'search',
+      placeholder: 'Search title, SKU, UPC, last 5, Shopify barcode…',
+      oninput: (e) => { q = (e.target.value || '').trim().toLowerCase(); list.redraw(); },
+    });
+
+    const reasonSel = h('select.input', {
+      style: { width: 'auto', minWidth: '190px' },
+      onchange: (e) => { reasonFilter = e.target.value; list.redraw(); },
+    }, [
+      h('option', { value: '' }, 'All reasons (' + rowsAll.length + ')'),
+      h('option', { value: 'last5_match' }, 'Last-5-Digit Match (' + (s.last5MatchCount || 0) + ')'),
+      h('option', { value: 'not_in_shopify' }, 'Not in Shopify (' + (s.notInShopifyCount || 0) + ')'),
+      h('option', { value: 'invalid_upc' }, 'Invalid UPC (' + (s.invalidUpcCount || 0) + ')'),
+      h('option', { value: 'duplicate_upc' }, 'Duplicate UPC (' + (s.duplicateUpcCount || 0) + ')'),
+      h('option', { value: 'no_upc' }, 'Missing UPC (' + (s.noUpcCount || 0) + ')'),
+    ]);
+
+    const scanBtn = ctx.api.reportsScanUnlinkedUpc && (!ctx.can || ctx.can('catalog.write'))
+      ? h('button.btn.sm', {
+        type: 'button',
+        onclick: async (e) => {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          btn.textContent = 'Scanning…';
+          try {
+            await ctx.api.reportsScanUnlinkedUpc();
+            toast('Shopify UPC + last-5-digit scan started — refresh in about a minute.', 'ok');
+          } catch (err) {
+            toast(err.message || 'Could not start scan', 'bad');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = '↻ Scan Shopify UPCs';
+          }
+        },
+      }, '↻ Scan Shopify UPCs')
+      : null;
+
+    const list = renderPaginatedCard({
+      title: 'Unlinked In-Stock Lightspeed Items · UPC & Last-5-Digit Check',
+      meta: (r.needsScan ? 'Not scanned against Shopify yet — click Scan Shopify UPCs · ' : '') + (r.generatedAt ? dateTime(r.generatedAt) : ''),
+      defaultSort: { key: 'onHand', dir: 'desc' },
+      toolbar: h('div.rep-filters', searchInput, reasonSel, scanBtn),
+      getRows: () => rowsAll.filter((it) => {
+        if (reasonFilter && it.reason !== reasonFilter) return false;
+        if (!q) return true;
+        const hits = (it.last5Matches || []).map((m) => m.title + ' ' + m.barcode).join(' ');
+        return (it.sku + ' ' + it.upc + ' ' + it.last5 + ' ' + it.title + ' ' + it.brand + ' ' + hits).toLowerCase().includes(q);
+      }),
+      columns: [
+        {
+          key: 'sku',
+          label: 'SKU / LS UPC',
+          sortValue: (it) => it.sku || '',
+          render: (it) => h('div',
+            h('strong.mono', it.sku || '—'),
+            h('div.small.muted.mono', it.upc ? ('UPC ' + it.upc + (it.last5 ? ' (…' + it.last5 + ')' : '')) : 'No UPC')),
+        },
+        {
+          key: 'title',
+          label: 'Lightspeed Item',
+          cls: 'title-cell',
+          sortValue: (it) => it.title || '',
+          render: (it) => h('div',
+            h('strong', it.title),
+            it.brand ? h('div.small.muted', it.brand + (it.category ? ' · ' + it.category : '')) : null),
+        },
+        { key: 'onHand', label: 'On Hand', num: true, sortValue: (it) => Number(it.onHand || 0), render: (it) => String(it.onHand || 0) },
+        {
+          key: 'reason',
+          label: 'Reason',
+          sortValue: (it) => it.reason || '',
+          render: (it) => {
+            const m = REASON_META[it.reason] || ['Unknown', ''];
+            return h('span.badge', { class: m[1] }, m[0]);
+          },
+        },
+        {
+          key: 'match',
+          label: 'Shopify Last-5 Match',
+          sortable: false,
+          render: (it) => {
+            const hits = it.last5Matches || [];
+            if (!hits.length) return h('span.small.muted', '—');
+            return h('div', hits.map((m) => h('div.small',
+              h('strong', m.title || '—'),
+              h('span.muted.mono', ' · ' + (m.barcode || '—')))));
+          },
+        },
+      ],
+      empty: 'No unlinked in-stock items match this filter.',
+      onCsv: (rows) => downloadCsv(
+        'ubc-unlinked-upc-report.csv',
+        ['SKU', 'LS UPC', 'Last 5', 'Title', 'Brand', 'Category', 'On Hand', 'Reason', 'Shopify Last-5 Matches'],
+        rows.map((it) => [
+          it.sku,
+          it.upc,
+          it.last5,
+          it.title,
+          it.brand,
+          it.category,
+          it.onHand,
+          (REASON_META[it.reason] && REASON_META[it.reason][0]) || it.reason,
+          (it.last5Matches || []).map((m) => m.title + ' [' + m.barcode + ']').join(' | '),
+        ]),
+      ),
+    });
+
+    mount(bodyHost,
+      h('div.kpis.dash-kpis',
+        kpiBox('Unlinked in-stock', s.totalUnlinked || 0),
+        kpiBox('Last-5-digit match', s.last5MatchCount || 0, (s.last5MatchCount || 0) > 0 ? 'warn' : ''),
+        kpiBox('Not in Shopify', s.notInShopifyCount || 0),
+        kpiBox('No / Invalid UPC', (s.noUpcCount || 0) + (s.invalidUpcCount || 0), 'bad')),
       list.el);
   }
 

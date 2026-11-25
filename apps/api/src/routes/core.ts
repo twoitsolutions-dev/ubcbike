@@ -24,6 +24,7 @@ import {
 } from '../services/google-reviews.js';
 import { generatePhoneGreetingAudio, getVoiceClip, saveVoiceClip, voiceGenerateSchema } from '../services/phone-voice.js';
 import { syncLightspeedLastSalesJob } from '../services/lightspeed-sync.js';
+import { getUnlinkedUpcReport } from '../services/shopify-links.js';
 
 const pageSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -792,6 +793,16 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         };
       }),
     };
+  });
+
+  app.get('/api/reports/unlinked-upc', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    return getUnlinkedUpcReport(ctx, req.session!.companyId);
+  });
+
+  app.post('/api/reports/unlinked-upc/scan', { preHandler: requireAuth(ctx, 'catalog.write') }, async (req) => {
+    const companyId = req.session!.companyId;
+    await enqueue(ctx.pool, { companyId, type: 'shopify.link_store', payload: { trigger: 'unlinked_upc_report' } });
+    return { queued: true };
   });
 
   app.get('/api/reports/margin-issues', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {

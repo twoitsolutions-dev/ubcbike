@@ -111,10 +111,14 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   if (ctx.config.env.SHOPIFY_SYNC_MODE !== 'update_only') return { skipped: 'not update_only' };
   const shop = shopOf(ctx);
 
-  const hub = await ctx.pool.query<{ id: string; upc: string | null; title: string; on_hand: number }>(
-    `SELECT v.id, v.upc, v.title,
+  const hub = await ctx.pool.query<{
+    id: string; sku: string; upc: string | null; title: string; brand: string; category: string; on_hand: number;
+  }>(
+    `SELECT v.id, v.sku, v.upc, COALESCE(NULLIF(v.title, ''), p.title) AS title,
+            COALESCE(p.brand, '') AS brand, COALESCE(p.category, '') AS category,
             COALESCE((SELECT sum(il.on_hand)::int FROM inventory_levels il WHERE il.variant_id = v.id), 0) AS on_hand
      FROM variants v
+     JOIN products p ON p.id = v.product_id AND p.company_id = v.company_id
      JOIN external_ids e ON e.company_id = v.company_id AND e.entity_type = 'variant' AND e.entity_id = v.id AND e.system = 'lightspeed_r'
      WHERE v.company_id = $1`,
     [companyId],
@@ -126,13 +130,18 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   }
   const isPack = (t: string) => /\b(\d+\s*(pcs?|pk|pack|box|ct|bx|bag)|bulk|case|\d{2,}p)\b/i.test(t ?? '');
   const hubByGtin = new Map<string, string>();
+  const dupGtins = new Set<string>();
   let dupSkipped = 0;
   for (const [g, vs] of groups) {
     if (vs.length === 1) { hubByGtin.set(g, vs[0]!.id); continue; }
     const stocked = vs.filter((v) => v.on_hand > 0);
     const singles = vs.filter((v) => !isPack(v.title));
     const pick = stocked.length === 1 ? stocked[0] : stocked.length === 0 && singles.length === 1 ? singles[0] : null;
-    if (pick) hubByGtin.set(g, pick.id); else dupSkipped++;
+    if (pick) hubByGtin.set(g, pick.id);
+    else {
+      dupSkipped++;
+      dupGtins.add(g);
+    }
   }
 
   const existing = await ctx.pool.query<{ id: number; variant_id: string; shopify_variant_id: string; shopify_product_id: string; shopify_inventory_item_id: string | null; match_method: string }>(
@@ -156,7 +165,28 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   const proposals: P[] = [];
   const unmatched = new Map<number, P>();
 
+  const existingLinkedVids = new Set(existing.rows.map((l) => l.variant_id));
+  const neededLast5 = new Set<string>();
+  for (const v of hub.rows) {
+    if (v.on_hand <= 0 || existingLinkedVids.has(v.id)) continue;
+    const digits = (v.upc ?? '').replace(/\D/g, '');
+    if (digits.length >= 5) neededLast5.add(digits.slice(-5));
+  }
+  type Last5Hit = { title: string; barcode: string; shopifyVariantId: string; shopifyProductId: string };
+  const shopByLast5 = new Map<string, Last5Hit[]>();
+
   const total = await ctx.connectors.shopify.bulkReadVariants((row) => {
+    const sDigits = (row.barcode ?? '').replace(/\D/g, '');
+    if (sDigits.length >= 5) {
+      const sLast5 = sDigits.slice(-5);
+      if (neededLast5.has(sLast5)) {
+        const list = shopByLast5.get(sLast5) ?? [];
+        if (list.length < 3 && !list.some((x) => x.shopifyVariantId === row.variantId)) {
+          list.push({ title: row.title, barcode: row.barcode ?? '', shopifyVariantId: row.variantId, shopifyProductId: row.productId });
+          shopByLast5.set(sLast5, list);
+        }
+      }
+    }
     const g = normalizeGtin(row.barcode);
     const vid = g ? hubByGtin.get(g) : undefined;
     const ex = bySvid.get(row.variantId);
@@ -233,6 +263,99 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
       [autoIds],
     );
   }
+
+  // Build & cache Unlinked In-Stock UPC + Last-5-Digit diagnostic report from this Shopify scan.
+  const newlyLinkedVids = new Set(
+    proposals.filter((p) => (p.kind === 'add' || p.kind === 'repoint') && p.vid).map((p) => p.vid!),
+  );
+  type UnlinkedReason = 'last5_match' | 'not_in_shopify' | 'invalid_upc' | 'duplicate_upc' | 'no_upc';
+  const reasonPriority: Record<UnlinkedReason, number> = {
+    last5_match: 0,
+    not_in_shopify: 1,
+    invalid_upc: 2,
+    duplicate_upc: 3,
+    no_upc: 4,
+  };
+  const unlinkedRows: {
+    variantId: string;
+    sku: string;
+    upc: string;
+    last5: string;
+    title: string;
+    brand: string;
+    category: string;
+    onHand: number;
+    reason: UnlinkedReason;
+    last5Matches: Last5Hit[];
+  }[] = [];
+  let last5MatchCount = 0;
+  let notInShopifyCount = 0;
+  let invalidUpcCount = 0;
+  let duplicateUpcCount = 0;
+  let noUpcCount = 0;
+  let totalUnits = 0;
+
+  for (const v of hub.rows) {
+    if (v.on_hand <= 0) continue;
+    if (existingLinkedVids.has(v.id) || newlyLinkedVids.has(v.id)) continue;
+    const rawUpc = (v.upc ?? '').trim();
+    const digits = rawUpc.replace(/\D/g, '');
+    const last5 = digits.length >= 5 ? digits.slice(-5) : '';
+    const g = normalizeGtin(v.upc);
+    const hits = last5 ? (shopByLast5.get(last5) ?? []) : [];
+
+    let reason: UnlinkedReason;
+    if (hits.length > 0) {
+      reason = 'last5_match';
+      last5MatchCount++;
+    } else if (!digits) {
+      reason = 'no_upc';
+      noUpcCount++;
+    } else if (!g) {
+      reason = 'invalid_upc';
+      invalidUpcCount++;
+    } else if (dupGtins.has(g)) {
+      reason = 'duplicate_upc';
+      duplicateUpcCount++;
+    } else {
+      reason = 'not_in_shopify';
+      notInShopifyCount++;
+    }
+    totalUnits += v.on_hand;
+    unlinkedRows.push({
+      variantId: v.id,
+      sku: v.sku,
+      upc: rawUpc,
+      last5,
+      title: v.title,
+      brand: v.brand,
+      category: v.category,
+      onHand: v.on_hand,
+      reason,
+      last5Matches: hits,
+    });
+  }
+  unlinkedRows.sort((a, b) => (reasonPriority[a.reason] - reasonPriority[b.reason]) || (b.onHand - a.onHand));
+  const unlinkedReport = {
+    generatedAt: new Date().toISOString(),
+    needsScan: false,
+    summary: {
+      totalUnlinked: unlinkedRows.length,
+      last5MatchCount,
+      notInShopifyCount,
+      invalidUpcCount,
+      duplicateUpcCount,
+      noUpcCount,
+      totalUnits,
+    },
+    rows: unlinkedRows.slice(0, 2000),
+  };
+  await ctx.pool.query(
+    `INSERT INTO shopify_unlinked_upc_reports (company_id, shop_domain, generated_at, report)
+     VALUES ($1, $2, now(), $3::jsonb)
+     ON CONFLICT (company_id, shop_domain) DO UPDATE SET generated_at = now(), report = EXCLUDED.report`,
+    [companyId, shop, JSON.stringify(unlinkedReport)],
+  ).catch(() => {});
 
   const count = (k: string) => fresh.filter((p) => p.kind === k).length;
   const summary = {
@@ -331,4 +454,83 @@ export async function decideUpcProposals(ctx: AppContext, companyId: string, use
   }
   await audit(ctx.pool, { companyId, userId, action: `shopify.upc_links_${decision}`, detail: { count: rows.rows.length, ids: rows.rows.map((r) => r.id).slice(0, 200) } });
   return { updated: rows.rows.length };
+}
+
+/**
+ * Returns the cached Unlinked In-Stock UPC + Last-5-Digit Shopify match report,
+ * or a local Lightspeed-only breakdown (`needsScan: true`) if a Shopify scan hasn't run yet.
+ */
+export async function getUnlinkedUpcReport(ctx: AppContext, companyId: string) {
+  const shop = shopOf(ctx);
+  const cached = await ctx.pool.query<{ report: Record<string, unknown> }>(
+    `SELECT report FROM shopify_unlinked_upc_reports WHERE company_id = $1 AND shop_domain = $2`,
+    [companyId, shop],
+  ).catch(() => ({ rows: [] as { report: Record<string, unknown> }[] }));
+  if (cached.rows[0]?.report) {
+    return cached.rows[0].report;
+  }
+
+  const unlinked = await ctx.pool.query<{
+    id: string; sku: string; upc: string | null; title: string; brand: string; category: string; on_hand: number;
+  }>(
+    `SELECT v.id, v.sku, v.upc, COALESCE(NULLIF(v.title, ''), p.title) AS title,
+            COALESCE(p.brand, '') AS brand, COALESCE(p.category, '') AS category,
+            sum(il.on_hand)::int AS on_hand
+     FROM variants v
+     JOIN products p ON p.id = v.product_id AND p.company_id = v.company_id
+     JOIN external_ids e ON e.company_id = v.company_id AND e.entity_type = 'variant' AND e.entity_id = v.id AND e.system = 'lightspeed_r'
+     JOIN inventory_levels il ON il.variant_id = v.id AND il.company_id = v.company_id
+     WHERE v.company_id = $1
+       AND NOT EXISTS (
+         SELECT 1 FROM shopify_variant_links l
+         WHERE l.company_id = v.company_id AND l.variant_id = v.id AND ($2 = '' OR l.shop_domain = $2)
+       )
+     GROUP BY v.id, v.sku, v.upc, v.title, p.title, p.brand, p.category
+     HAVING sum(il.on_hand) > 0
+     ORDER BY sum(il.on_hand) DESC`,
+    [companyId, shop],
+  );
+
+  let noUpcCount = 0;
+  let invalidUpcCount = 0;
+  let notInShopifyCount = 0;
+  let totalUnits = 0;
+  const rows = unlinked.rows.map((v) => {
+    const rawUpc = (v.upc ?? '').trim();
+    const digits = rawUpc.replace(/\D/g, '');
+    const last5 = digits.length >= 5 ? digits.slice(-5) : '';
+    const g = normalizeGtin(v.upc);
+    let reason: 'no_upc' | 'invalid_upc' | 'not_in_shopify' = 'not_in_shopify';
+    if (!digits) { reason = 'no_upc'; noUpcCount++; }
+    else if (!g) { reason = 'invalid_upc'; invalidUpcCount++; }
+    else { notInShopifyCount++; }
+    totalUnits += v.on_hand;
+    return {
+      variantId: v.id,
+      sku: v.sku,
+      upc: rawUpc,
+      last5,
+      title: v.title,
+      brand: v.brand,
+      category: v.category,
+      onHand: v.on_hand,
+      reason,
+      last5Matches: [],
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    needsScan: true,
+    summary: {
+      totalUnlinked: rows.length,
+      last5MatchCount: 0,
+      notInShopifyCount,
+      invalidUpcCount,
+      duplicateUpcCount: 0,
+      noUpcCount,
+      totalUnits,
+    },
+    rows: rows.slice(0, 2000),
+  };
 }

@@ -493,7 +493,7 @@ fieldset.product-form__input input[type="radio"].disabled + label {
   white-space: nowrap;
   border: 0;
 }
-.ubc-apps-section .shopify-app-block:has(.workstand-product-specs:empty) {
+.ubc-apps-section .shopify-app-block:has(.workstand-product-specs):not(:has(dl)) {
   display: none;
 }
 .ubc-apps-section .shopify-app-block + .shopify-app-block {

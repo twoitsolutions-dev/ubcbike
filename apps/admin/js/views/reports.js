@@ -21,7 +21,7 @@ function kpiBox(label, value, cls) {
 
 export async function renderReports(ctx) {
   const cache = { shopify: null, noUpc: null, margin: null, sales: {}, aging: {} };
-  let activeReport = ctx.query.report || 'collections';
+  let activeReport = ctx.query.report || ctx.query.tab || 'collections';
   let salesDays = ctx.query.days || '30';
   let agingDays = ctx.query.minDays !== undefined && ctx.query.minDays !== '' ? String(ctx.query.minDays) : '0';
   const tabsHost = h('div.rep-tabs');
@@ -560,10 +560,11 @@ export async function renderReports(ctx) {
           btn.textContent = 'Syncing…';
           try {
             const res = await ctx.api.reportsSyncLightspeedSales();
-            if (res.status === 'missing_sales_scope') {
-              toast('Lightspeed token lacks sales read scope (403). Re-authorize with Sales read if needed.', 'bad');
+            if (res.status === 'missing_sales_scope' || res.status === 'partial_shopify_only') {
+              toast('Synced ' + (res.shopifyVariantsUpdated || 0) + ' online Shopify items. Reconnect Lightspeed in Integrations for in-store POS sales.', res.shopifyVariantsUpdated > 0 ? 'ok' : 'bad');
+              if (res.shopifyVariantsUpdated > 0) loadActive(true);
             } else {
-              toast('Synced ' + (res.salesLinesSeen || 0) + ' Lightspeed sale lines (' + (res.variantsUpdated || 0) + ' items updated).', 'ok');
+              toast('Synced ' + (res.salesLinesSeen || 0) + ' POS + ' + (res.shopifyLinesSeen || 0) + ' online lines.', 'ok');
               loadActive(true);
             }
           } catch (err) {

@@ -8,7 +8,7 @@ import {
 } from '@ubc/integrations';
 import { withTransaction } from '@ubc/database';
 import { lsMatrixBaseTitle, lsOptionValues } from '@ubc/integrations';
-import { audit } from './audit.js';
+import { audit, logError } from './audit.js';
 import { getSettings, rowToItem } from './catalog.js';
 import type { AppContext } from './context.js';
 import { enqueue, setProgress } from './jobs.js';
@@ -868,13 +868,14 @@ export async function syncLightspeedLastSalesJob(
   ctx: AppContext,
   companyId: string,
   opts: { lookbackDays?: number; full?: boolean } = {},
-): Promise<{ status: string; salesLinesSeen: number; variantsUpdated: number; since: string }> {
-  const ls = ctx.connectors.lightspeed;
-  if (ls) await ls.ensureConfigured();
-  if (!ls || ls.missing().length > 0 || typeof ls.iterateCompletedSales !== 'function') {
-    return { status: 'not_connected', salesLinesSeen: 0, variantsUpdated: 0, since: '' };
-  }
-
+): Promise<{
+  status: string;
+  salesLinesSeen: number;
+  variantsUpdated: number;
+  shopifyLinesSeen: number;
+  shopifyVariantsUpdated: number;
+  since: string;
+}> {
   let sinceIso: string;
   if (!opts.full) {
     const cur = await ctx.pool.query<{ latest: Date | null }>(
@@ -893,6 +894,69 @@ export async function syncLightspeedLastSalesJob(
     sinceIso = new Date(Date.now() - lookback * 86400_000).toISOString();
   }
 
+  // 1. Sync Shopify online orders into variants.last_sold_at
+  let shopifyLinesSeen = 0;
+  let shopifyVariantsUpdated = 0;
+  if (ctx.connectors.shopify && typeof ctx.connectors.shopify.listRecentSoldVariants === 'function') {
+    try {
+      const shopLines = await ctx.connectors.shopify.listRecentSoldVariants(sinceIso);
+      shopifyLinesSeen = shopLines.length;
+      const byShopVid = new Map<string, string>();
+      const bySku = new Map<string, string>();
+      for (const l of shopLines) {
+        if (l.shopifyVariantId) {
+          const prev = byShopVid.get(l.shopifyVariantId);
+          if (!prev || l.soldAt > prev) byShopVid.set(l.shopifyVariantId, l.soldAt);
+        }
+        if (l.sku) {
+          const prev = bySku.get(l.sku);
+          if (!prev || l.soldAt > prev) bySku.set(l.sku, l.soldAt);
+        }
+      }
+      const vidEntries = Array.from(byShopVid.entries()).map(([svid, soldAt]) => ({ svid, soldAt }));
+      for (let i = 0; i < vidEntries.length; i += 1000) {
+        const upd = await ctx.pool.query(
+          `UPDATE variants v
+           SET last_sold_at = COALESCE(GREATEST(v.last_sold_at, r."soldAt"::timestamptz), r."soldAt"::timestamptz)
+           FROM jsonb_to_recordset($2::jsonb) AS r("svid" text, "soldAt" text)
+           JOIN shopify_variant_links l ON l.company_id = $1 AND l.shopify_variant_id = r."svid"
+           WHERE v.company_id = $1 AND v.id = l.variant_id
+             AND (v.last_sold_at IS NULL OR v.last_sold_at < r."soldAt"::timestamptz)`,
+          [companyId, JSON.stringify(vidEntries.slice(i, i + 1000))],
+        );
+        shopifyVariantsUpdated += upd.rowCount ?? 0;
+      }
+      const skuEntries = Array.from(bySku.entries()).map(([sku, soldAt]) => ({ sku, soldAt }));
+      for (let i = 0; i < skuEntries.length; i += 1000) {
+        const upd = await ctx.pool.query(
+          `UPDATE variants v
+           SET last_sold_at = COALESCE(GREATEST(v.last_sold_at, r."soldAt"::timestamptz), r."soldAt"::timestamptz)
+           FROM jsonb_to_recordset($2::jsonb) AS r("sku" text, "soldAt" text)
+           WHERE v.company_id = $1 AND v.sku = r."sku"
+             AND (v.last_sold_at IS NULL OR v.last_sold_at < r."soldAt"::timestamptz)`,
+          [companyId, JSON.stringify(skuEntries.slice(i, i + 1000))],
+        );
+        shopifyVariantsUpdated += upd.rowCount ?? 0;
+      }
+    } catch (err) {
+      await logError(ctx.pool, { companyId, source: 'shopify.sales_sync', message: (err as Error)?.message ?? String(err) });
+    }
+  }
+
+  // 2. Sync Lightspeed R-Series in-store sales into variants.last_sold_at
+  const ls = ctx.connectors.lightspeed;
+  if (ls) await ls.ensureConfigured();
+  if (!ls || ls.missing().length > 0 || typeof ls.iterateCompletedSales !== 'function') {
+    return {
+      status: shopifyLinesSeen > 0 ? 'partial_shopify_only' : 'not_connected',
+      salesLinesSeen: 0,
+      variantsUpdated: 0,
+      shopifyLinesSeen,
+      shopifyVariantsUpdated,
+      since: sinceIso,
+    };
+  }
+
   const maxSoldByItem = new Map<string, string>();
   let salesLinesSeen = 0;
 
@@ -908,7 +972,14 @@ export async function syncLightspeedLastSalesJob(
     }
   } catch (err) {
     if (/HTTP (401|403)\b/i.test((err as Error)?.message ?? '')) {
-      return { status: 'missing_sales_scope', salesLinesSeen, variantsUpdated: 0, since: sinceIso };
+      return {
+        status: 'missing_sales_scope',
+        salesLinesSeen,
+        variantsUpdated: 0,
+        shopifyLinesSeen,
+        shopifyVariantsUpdated,
+        since: sinceIso,
+      };
     }
     throw err;
   }
@@ -937,5 +1008,5 @@ export async function syncLightspeedLastSalesJob(
     variantsUpdated += upd.rowCount ?? 0;
   }
 
-  return { status: 'synced', salesLinesSeen, variantsUpdated, since: sinceIso };
+  return { status: 'synced', salesLinesSeen, variantsUpdated, shopifyLinesSeen, shopifyVariantsUpdated, since: sinceIso };
 }

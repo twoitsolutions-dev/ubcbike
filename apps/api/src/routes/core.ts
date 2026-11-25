@@ -1158,9 +1158,13 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     return syncLightspeedLastSalesJob(ctx, req.session!.companyId);
   });
 
+  const facetsCache = new Map<string, { exp: number; data: unknown }>();
   app.get('/api/items/facets', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
     const c = req.session!.companyId;
     const shop = String(ctx.config.env.SHOPIFY_SHOP_DOMAIN ?? '').toLowerCase();
+    const cacheKey = `${c}:${shop}`;
+    const hit = facetsCache.get(cacheKey);
+    if (hit && hit.exp > Date.now()) return hit.data;
     const [cats, brands, shopifyBrands, sups] = await Promise.all([
       ctx.pool.query(`SELECT category AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 AND trim(category) <> '' GROUP BY 1 ORDER BY n DESC, 1`, [c]),
       ctx.pool.query(`SELECT brand AS value, count(*)::int n FROM catalog_items WHERE company_id = $1 AND trim(brand) <> '' GROUP BY 1 ORDER BY n DESC, 1`, [c]),
@@ -1179,7 +1183,9 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
         : Promise.resolve({ rows: [] }),
       ctx.pool.query(`SELECT code AS value, name FROM suppliers WHERE company_id = $1 AND is_active ORDER BY code`, [c]),
     ]);
-    return { categories: cats.rows, brands: brands.rows, shopifyBrands: shopifyBrands.rows, suppliers: sups.rows };
+    const data = { categories: cats.rows, brands: brands.rows, shopifyBrands: shopifyBrands.rows, suppliers: sups.rows };
+    facetsCache.set(cacheKey, { exp: Date.now() + 120_000, data });
+    return data;
   });
 
   app.get('/api/items/:id', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {

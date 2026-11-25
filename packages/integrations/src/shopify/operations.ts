@@ -98,6 +98,7 @@ export interface ShopifyAdminPort {
   getInventoryOnHand(inventoryItemIds: string[]): Promise<Map<string, Record<string, number>>>;
   /** Current price / compare-at of up to 250 variants by GID (read-only). Missing variants are omitted. */
   getVariantPrices(variantIds: string[]): Promise<{ variantId: string; priceCents: number; compareAtCents: number | null }[]>;
+  listRecentSoldVariants?(sinceIso?: string, maxPages?: number): Promise<{ shopifyVariantId: string | null; sku: string | null; soldAt: string }[]>;
   createAutomaticDiscount(input: { title: string; percentOff?: number; amountOffCents?: number; productIds: string[]; variantIds?: string[]; startsAt: string; endsAt: string | null }): Promise<string>;
   deactivateAutomaticDiscount(discountId: string): Promise<void>;
   setProductsStatus(productIds: string[], status: 'ACTIVE' | 'DRAFT'): Promise<void>;
@@ -662,6 +663,51 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
         const c = n.compareAtPrice ? strToCents(n.compareAtPrice) : null;
         out.push({ variantId: n.id, priceCents: p, compareAtCents: c && c > p ? c : null });
       }
+    }
+    return out;
+  }
+
+  /** Read-only scan of recent non-cancelled Shopify online orders to track last online sale date per variant/SKU. */
+  async listRecentSoldVariants(sinceIso?: string, maxPages = 12): Promise<{ shopifyVariantId: string | null; sku: string | null; soldAt: string }[]> {
+    type R = {
+      orders: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: {
+          processedAt: string;
+          cancelledAt: string | null;
+          lineItems: { nodes: { sku: string | null; quantity: number; variant: { id: string } | null }[] };
+        }[];
+      };
+    };
+    const q = sinceIso ? `created_at:>=${sinceIso.slice(0, 10)}` : '';
+    const out: { shopifyVariantId: string | null; sku: string | null; soldAt: string }[] = [];
+    let after: string | null = null;
+    for (let page = 0; page < maxPages; page++) {
+      const r: R = await this.client.query<R>(
+        `query($q: String!, $after: String) {
+          orders(first: 250, query: $q, after: $after, sortKey: PROCESSED_AT, reverse: true) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              processedAt
+              cancelledAt
+              lineItems(first: 50) {
+                nodes { sku quantity variant { id } }
+              }
+            }
+          }
+        }`,
+        { q, after },
+      );
+      for (const ord of r.orders.nodes) {
+        if (ord.cancelledAt) continue;
+        for (const li of ord.lineItems.nodes) {
+          if (li.quantity <= 0) continue;
+          if (!li.variant?.id && !li.sku) continue;
+          out.push({ shopifyVariantId: li.variant?.id ?? null, sku: li.sku?.trim() || null, soldAt: ord.processedAt });
+        }
+      }
+      if (!r.orders.pageInfo.hasNextPage || !r.orders.pageInfo.endCursor) break;
+      after = r.orders.pageInfo.endCursor;
     }
     return out;
   }

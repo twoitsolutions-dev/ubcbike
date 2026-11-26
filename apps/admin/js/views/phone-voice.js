@@ -37,11 +37,6 @@ const PRESETS = [
     voice: 'en-US-AndrewMultilingualNeural',
     text: 'Thank you for calling University Bicycle Center, serving Tampa Bay since 1972. Our Tampa showroom and Service Center on Fletcher Avenue are open Tuesday through Saturday 10 AM to 6 PM, and Sunday 12 to 5 PM. For trail rentals at Alafia River State Park, press or visit ubcbike.com.',
   },
-  {
-    name: 'Español: Aviso de Festivo',
-    voice: 'es-US-AlonsoNeural',
-    text: 'Gracias por llamar a University Bicycle Center. Nuestra tienda de Tampa está cerrada hoy por el día festivo y reabriremos mañana en nuestro horario habitual. Nuestra tienda de Alafia River State Park sí está abierta hoy. También puede comprar las 24 horas en ubcbike.com.',
-  },
 ];
 
 function slugify(s) {

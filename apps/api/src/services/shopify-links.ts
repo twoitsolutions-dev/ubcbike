@@ -188,10 +188,11 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   type P = {
     kind: 'add' | 'repoint' | 'remove'; vid: string | null; old: string | null; link: number | null;
     svid: string; pid: string | null; inv: string | null; title: string | null; barcode: string | null; p: number | null; c: number | null;
-    manual?: boolean;
+    manual?: boolean; matchBy?: 'upc' | 'mpn' | 'sku'; matchKey?: string; note?: string;
   };
   const proposals: P[] = [];
   const unmatched = new Map<number, P>();
+  const shopKeyCounts = new Map<string, number>();
 
   const existingLinkedVids = new Set(existing.rows.map((l) => l.variant_id));
   const neededLast5 = new Set<string>();
@@ -217,14 +218,27 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     }
     const g = normalizeGtin(row.barcode);
     let vid = g ? hubByGtin.get(g) : undefined;
+    let matchBy: 'upc' | 'mpn' | 'sku' | undefined = vid ? 'upc' : undefined;
+    let matchKey: string | undefined;
     if (!vid) {
       const mFromSku = normMpn(row.sku);
       const mFromBc = normMpn(row.barcode);
-      vid = (mFromSku ? hubByMpn.get(mFromSku) : undefined) || (mFromBc ? hubByMpn.get(mFromBc) : undefined);
+      const mKey = (mFromSku && hubByMpn.has(mFromSku)) ? mFromSku : (mFromBc && hubByMpn.has(mFromBc)) ? mFromBc : '';
+      if (mKey) {
+        vid = hubByMpn.get(mKey);
+        matchBy = 'mpn';
+        matchKey = `mpn:${mKey}`;
+        shopKeyCounts.set(matchKey, (shopKeyCounts.get(matchKey) ?? 0) + 1);
+      }
     }
     if (!vid) {
       const k = normSku(row.sku);
-      vid = k ? hubBySku.get(k) : undefined;
+      if (k && hubBySku.has(k)) {
+        vid = hubBySku.get(k);
+        matchBy = 'sku';
+        matchKey = `sku:${k}`;
+        shopKeyCounts.set(matchKey, (shopKeyCounts.get(matchKey) ?? 0) + 1);
+      }
     }
     const ex = bySvid.get(row.variantId);
     if (ex) stillInStore.add(row.variantId);
@@ -233,9 +247,10 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
       if (ex && ex.match_method !== 'created_in_hub') unmatched.set(ex.id, { ...base, kind: 'remove', vid: ex.variant_id, old: null, link: ex.id });
       return;
     }
+    const note = matchBy ? `Auto-approved: matched by ${matchBy.toUpperCase()}` : undefined;
     // manual = product created by hand in Shopify (no workstand.variant_uuid), e.g. Carlos's Jupiter bikes.
-    if (!ex) proposals.push({ ...base, kind: 'add', vid, old: null, link: null, manual: !row.fromWorkstand });
-    else if (ex.variant_id !== vid) proposals.push({ ...base, kind: 'repoint', vid, old: ex.variant_id, link: ex.id });
+    if (!ex) proposals.push({ ...base, kind: 'add', vid, old: null, link: null, manual: !row.fromWorkstand, matchBy, matchKey, note });
+    else if (ex.variant_id !== vid) proposals.push({ ...base, kind: 'repoint', vid, old: ex.variant_id, link: ex.id, matchBy, matchKey, note });
     else if (ex.shopify_product_id !== row.productId || ex.shopify_inventory_item_id !== row.inventoryItemId) {
       // Same item, Shopify moved the variant to another product / inventory item: safe bookkeeping, no decision needed.
       void ctx.pool.query(`UPDATE shopify_variant_links SET shopify_product_id = $2, shopify_inventory_item_id = $3, updated_at = now() WHERE id = $1`, [ex.id, row.productId, row.inventoryItemId]);
@@ -264,21 +279,29 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     proposals.push(...removals);
   }
 
-  const fresh = proposals.filter((p) => !rejectedKey.has(`${p.kind}|${p.svid}|${p.vid ?? ''}`));
+  let shopDuplicatesSkipped = 0;
+  const fresh = proposals.filter((p) => {
+    if ((p.matchBy === 'mpn' || p.matchBy === 'sku') && p.matchKey && (shopKeyCounts.get(p.matchKey) ?? 0) > 1) {
+      shopDuplicatesSkipped++;
+      return false;
+    }
+    return !rejectedKey.has(`${p.kind}|${p.svid}|${p.vid ?? ''}`);
+  });
   // Upsert this run's proposals (ids stay stable while Carlos has the list open), then drop open
   // proposals that were not found again (no longer valid).
   const runStart = (await ctx.pool.query<{ t: Date }>(`SELECT now() AS t`)).rows[0]!.t;
   for (let i = 0; i < fresh.length; i += 1000) {
     await ctx.pool.query(
       `INSERT INTO upc_link_proposals (company_id, shop_domain, kind, variant_id, old_variant_id, link_id, shopify_variant_id, shopify_product_id,
-                                       shopify_inventory_item_id, shopify_title, shopify_barcode, shopify_price_cents, shopify_compare_at_cents)
-       SELECT $1, $2, r.kind, r.vid, r.old, r.link, r.svid, r.pid, r.inv, r.title, r.barcode, r.p, r.c
-       FROM jsonb_to_recordset($3::jsonb) AS r(kind text, vid uuid, old uuid, link bigint, svid text, pid text, inv text, title text, barcode text, p int, c int)
+                                       shopify_inventory_item_id, shopify_title, shopify_barcode, shopify_price_cents, shopify_compare_at_cents, note)
+       SELECT $1, $2, r.kind, r.vid, r.old, r.link, r.svid, r.pid, r.inv, r.title, r.barcode, r.p, r.c, r.note
+       FROM jsonb_to_recordset($3::jsonb) AS r(kind text, vid uuid, old uuid, link bigint, svid text, pid text, inv text, title text, barcode text, p int, c int, note text)
        ON CONFLICT (company_id, shop_domain, shopify_variant_id) WHERE status = 'pending' DO UPDATE SET
          kind = EXCLUDED.kind, variant_id = EXCLUDED.variant_id, old_variant_id = EXCLUDED.old_variant_id, link_id = EXCLUDED.link_id,
          shopify_product_id = EXCLUDED.shopify_product_id, shopify_inventory_item_id = EXCLUDED.shopify_inventory_item_id,
          shopify_title = EXCLUDED.shopify_title, shopify_barcode = EXCLUDED.shopify_barcode,
-         shopify_price_cents = EXCLUDED.shopify_price_cents, shopify_compare_at_cents = EXCLUDED.shopify_compare_at_cents, updated_at = now()`,
+         shopify_price_cents = EXCLUDED.shopify_price_cents, shopify_compare_at_cents = EXCLUDED.shopify_compare_at_cents,
+         note = COALESCE(EXCLUDED.note, upc_link_proposals.note), updated_at = now()`,
       [companyId, shop, JSON.stringify(fresh.slice(i, i + 1000))],
     );
   }
@@ -287,7 +310,7 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
     [companyId, shop, runStart],
   );
 
-  // Auto-approve ALL new & repointed UPC matches so Lightspeed ↔ Shopify links never get stuck waiting in "pending".
+  // Auto-approve ALL new & repointed UPC/MPN/SKU matches so Lightspeed ↔ Shopify links never get stuck waiting in "pending".
   const autoIds = (await ctx.pool.query<{ id: number }>(
     `SELECT id FROM upc_link_proposals WHERE company_id = $1 AND shop_domain = $2 AND status = 'pending' AND kind IN ('add', 'repoint')`,
     [companyId, shop],
@@ -296,7 +319,9 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   if (autoIds.length) {
     autoApproved = (await decideUpcProposals(ctx, companyId, null, autoIds, 'approve')).updated;
     await ctx.pool.query(
-      `UPDATE upc_link_proposals SET note = 'Auto-approved: UPC matched between Lightspeed and Shopify' WHERE id = ANY($1::bigint[])`,
+      `UPDATE upc_link_proposals
+       SET note = COALESCE(NULLIF(note, ''), 'Auto-approved: matched by UPC')
+       WHERE id = ANY($1::bigint[])`,
       [autoIds],
     );
   }
@@ -397,7 +422,8 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   const count = (k: string) => fresh.filter((p) => p.kind === k).length;
   const summary = {
     shop, storeVariants: total, links: existing.rows.length, proposedAdd: count('add'), proposedRepoint: count('repoint'),
-    proposedRemove: count('remove'), autoApprovedManual: autoApproved, removalsSuppressed, previouslyRejected: proposals.length - fresh.length, duplicateUpcsSkipped: dupSkipped,
+    proposedRemove: count('remove'), autoApprovedManual: autoApproved, removalsSuppressed, previouslyRejected: proposals.length - fresh.length,
+    duplicateUpcsSkipped: dupSkipped, shopDuplicatesSkipped,
   };
   await audit(ctx.pool, { companyId, action: 'shopify.upc_links_proposed', detail: summary });
   return summary;

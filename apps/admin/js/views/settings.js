@@ -307,7 +307,6 @@ export async function renderSettings(ctx) {
 
   const SUB_TABS = [
     ['rules', 'Rules & Guardrails', renderRulesTab],
-    ['shipping', 'Shipping & Boxes', renderShippingTab],
     ['branding', 'White-Label Branding', renderBrandingTab],
     ['account', 'Account & System', renderAccountTab],
   ];

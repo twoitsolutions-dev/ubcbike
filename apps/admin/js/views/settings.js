@@ -10,7 +10,10 @@ export function settingsWorkspaceTabs(activeKey) {
 }
 
 export async function renderSettings(ctx) {
-  const s = await ctx.api.settings();
+  const [s, sr] = await Promise.all([
+    ctx.api.settings(),
+    ctx.api.shippingRules ? ctx.api.shippingRules().catch(() => null) : Promise.resolve(null),
+  ]);
   const canEdit = ctx.can('settings.manage');
   const num = (v, opts) => h('input', Object.assign({ type: 'number', value: String(v), disabled: !canEdit }, opts || {}));
   const minM = num(Math.round(s.campaignRules.minMarginPct * 1000) / 10, { min: '0', max: '95', step: '0.5' });
@@ -96,6 +99,96 @@ export async function renderSettings(ctx) {
       }, 'Reset demo data')),
       h('p.small.muted', 'Demo data lives only in this browser. Nothing here touches Shopify, Lightspeed or any supplier.'))) : card('Demo data', h('p.small.muted', 'Server DEMO database: reset with `npm run db:reset-demo` (see docs/DEPLOYMENT.md).'));
 
+  const shippingCard = sr ? (() => {
+    const boxes = sr.boxes || {};
+    const med = boxes.medium || { name: 'Medium Box', lengthIn: 12, widthIn: 12, heightIn: 12, defaultWeightLb: 8, fallbackCents: 1295 };
+    const bike = boxes.bike || { name: 'Bicycles', lengthIn: 40, widthIn: 12, heightIn: 26, defaultWeightLb: 50, fallbackCents: 14500 };
+    const ebike = boxes.ebike || { name: 'E-Bike', lengthIn: 63, widthIn: 12, heightIn: 34, defaultWeightLb: 86, fallbackCents: 22500 };
+    const sZip = h('input', { type: 'text', value: sr.originPostalCode || '33612', disabled: !canEdit, maxlength: '16' });
+    const sState = h('input', { type: 'text', value: sr.originProvince || 'FL', disabled: !canEdit, maxlength: '10' });
+    const sFee = num(Math.round((sr.handlingFeePct || 0.1) * 1000) / 10, { min: '0', max: '100', step: '0.5' });
+    const sEasy = h('input', { type: 'password', value: sr.easypostApiKey || '', placeholder: 'EZAK... (optional for live UPS/USPS quotes)', disabled: !canEdit });
+    const sBlockUsps = h('input', { type: 'checkbox', checked: sr.blockUspsOnBikes !== false, disabled: !canEdit });
+    const bikeFallback = num((bike.fallbackCents || 14500) / 100, { min: '0', max: '2000', step: '1' });
+    const ebikeFallback = num((ebike.fallbackCents || 22500) / 100, { min: '0', max: '2000', step: '1' });
+    const testZip = h('input', { type: 'text', value: '90210', style: { width: '100px' } });
+    const testKind = h('select', { style: { width: 'auto' } },
+      h('option', { value: 'medium' }, 'Medium Box (Gear/Parts)'),
+      h('option', { value: 'bike', selected: true }, 'Bicycle (40×12×26)'),
+      h('option', { value: 'ebike' }, 'E-Bike (63×12×34)'));
+    const testOut = h('div.stack-sm');
+    const shipMsg = h('div');
+
+    const saveShipBtn = h('button.btn.primary', {
+      type: 'button',
+      disabled: !canEdit,
+      onclick: async () => {
+        mount(shipMsg);
+        try {
+          await ctx.api.saveShippingRules({
+            enabled: true,
+            originPostalCode: sZip.value.trim() || '33612',
+            originProvince: sState.value.trim() || 'FL',
+            originCountry: 'US',
+            handlingFeePct: Number(sFee.value) / 100,
+            blockUspsOnBikes: sBlockUsps.checked,
+            easypostApiKey: sEasy.value.trim(),
+            boxes: {
+              medium: med,
+              bike: Object.assign({}, bike, { fallbackCents: Math.round(Number(bikeFallback.value) * 100) }),
+              ebike: Object.assign({}, ebike, { fallbackCents: Math.round(Number(ebikeFallback.value) * 100) }),
+            },
+          });
+          toast('Shipping rules saved', 'ok');
+        } catch (e) { mount(shipMsg, h('div.notice.bad', e.message)); }
+      },
+    }, 'Save Shipping Rules');
+
+    const regBtn = canEdit ? h('button.btn', {
+      type: 'button',
+      onclick: async () => {
+        mount(shipMsg);
+        try {
+          const res = await ctx.api.registerCarrierService({});
+          toast('CarrierService registered in Shopify!', 'ok');
+          mount(shipMsg, h('div.notice.ok', 'Registered in Shopify: ' + res.carrierServiceId));
+        } catch (e) {
+          mount(shipMsg, h('div.notice.bad', e.message + ' — Make sure Carrier-Calculated Shipping (CCS) is enabled on your Shopify plan and write_shipping scope is approved.'));
+        }
+      },
+    }, sr.carrierServiceId ? '↻ Update CarrierService in Shopify' : 'Register CarrierService in Shopify') : null;
+
+    const testBtn = h('button.btn.sm', {
+      type: 'button',
+      onclick: async () => {
+        mount(testOut, h('span.small.muted', 'Calculating…'));
+        try {
+          const res = await ctx.api.testShippingRates({ postalCode: testZip.value.trim() || '90210', kind: testKind.value });
+          const rates = res.rates || [];
+          mount(testOut, rates.map((r) => h('div.row-between', { style: { padding: '6px 10px', background: 'var(--surface-2)', borderRadius: '8px' } },
+            h('span', h('strong', r.service_name), h('span.small.muted', ' · ' + (r.description || ''))),
+            h('strong.mono', '$' + (Number(r.total_price || 0) / 100).toFixed(2)))));
+        } catch (e) { mount(testOut, h('div.notice.bad', e.message)); }
+      },
+    }, 'Test Rates');
+
+    return card('Smart Dimensional Shipping (Hub CarrierService)', h('div.stack',
+      h('p.small.muted', 'Boxes: Medium (12×12×12 · 8 lb), Bicycles (40×12×26 · 50 lb), E-Bike (63×12×34 · 86 lb). Quotes live via EasyPost API ($0/mo free tier) or smart dimensional fallback, while you keep buying labels in Pirate Ship.'),
+      h('div.form-grid',
+        h('label.field', 'Origin ZIP', sZip),
+        h('label.field', 'Origin State', sState),
+        h('label.field', 'Handling Fee (%)', sFee),
+        h('label.field', 'EasyPost API Key (optional)', sEasy),
+        h('label.field', 'Bike Base Rate ($)', bikeFallback),
+        h('label.field', 'E-Bike Base Rate ($)', ebikeFallback)),
+      h('label.check', sBlockUsps, 'Block USPS automatically whenever cart contains a Bicycle or E-Bike'),
+      shipMsg,
+      h('div.row', saveShipBtn, regBtn),
+      h('div.sep'),
+      h('div.row', { style: { gap: '8px', alignItems: 'center' } }, h('strong.small', 'Rate Simulator:'), testKind, h('span.small.muted', 'to ZIP'), testZip, testBtn),
+      testOut));
+  })() : null;
+
   return h('div.stack',
     pageHead('Settings & Sync', canEdit ? 'Commercial guardrails, system connections & logs' : 'Read-only — changing rules requires an owner/admin'),
     settingsWorkspaceTabs('rules'),
@@ -126,6 +219,7 @@ export async function renderSettings(ctx) {
       resetBrand ? h('div.row', resetBrand) : null)),
     err,
     h('div.row', save),
+    shippingCard,
     demoTools,
     card('Account', h('dl.props',
       h('dt', 'Signed in as'), h('dd', ctx.me.user.name + ' (' + ctx.me.user.email + ')'),

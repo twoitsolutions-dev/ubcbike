@@ -1057,6 +1057,24 @@ export function createDemoDriver() {
       can('catalog.read');
       return { queued: true };
     },
+    async shippingRules() {
+      can('catalog.read');
+      return {
+        enabled: true, originPostalCode: '33612', originProvince: 'FL', originCountry: 'US',
+        handlingFeePct: 0.1, blockUspsOnBikes: true, easypostApiKey: '', carrierServiceId: null,
+        boxes: {
+          medium: { name: 'Medium Box', lengthIn: 12, widthIn: 12, heightIn: 12, defaultWeightLb: 8, fallbackCents: 1295 },
+          bike: { name: 'Bicycles', lengthIn: 40, widthIn: 12, heightIn: 26, defaultWeightLb: 50, fallbackCents: 14500 },
+          ebike: { name: 'E-Bike', lengthIn: 63, widthIn: 12, heightIn: 34, defaultWeightLb: 86, fallbackCents: 22500 },
+        },
+      };
+    },
+    async saveShippingRules(body) { can('settings.manage'); return body; },
+    async testShippingRates() {
+      can('catalog.read');
+      return { rates: [{ service_name: 'UPS Ground', total_price: '15950', description: 'DEMO dimensional quote' }], debug: { source: 'demo' } };
+    },
+    async registerCarrierService() { can('settings.manage'); return { ok: true, carrierServiceId: 'demo-1' }; },
     async reportsMarginIssues() {
       can('catalog.read');
       const items = ds.items.filter((i) => !i.costCents || i.priceCents < i.costCents).slice(0, 50).map((i) => ({

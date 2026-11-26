@@ -1,7 +1,7 @@
 import { h, mount } from '../ui/dom.js';
 import { card, dataTable, errorBox, loading, pageHead, pager, toast } from '../ui/components.js';
 import { dateTime, money, pct } from '../ui/format.js';
-import { renderUpcReview } from './upc-review.js?v=100';
+import { renderUpcReview } from './upc-review.js?v=101';
 
 const PAGE_SIZE = 25;
 

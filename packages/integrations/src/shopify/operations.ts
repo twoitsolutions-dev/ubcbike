@@ -126,6 +126,7 @@ export interface ShopifyAdminPort {
     variants: { id: string; sku: string; mpnMeta: string }[];
   }[]>;
   upsertThemeAsset(filename: string, content: string): Promise<{ themesUpdated: number }>;
+  registerCarrierService?(name: string, callbackUrl: string): Promise<{ id: string }>;
 }
 
 /** One store variant as read by `bulkReadVariants` (compare-at only when above price). */
@@ -1045,6 +1046,40 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     }
     return { themesUpdated };
   }
+
+  async registerCarrierService(name: string, callbackUrl: string): Promise<{ id: string }> {
+    type ListRes = { carrierServices: { nodes: { id: string; name: string; callbackUrl: string }[] } };
+    const existing = await this.client.query<ListRes>(
+      `{ carrierServices(first: 20) { nodes { id name callbackUrl } } }`,
+    );
+    const match = existing.carrierServices.nodes.find((c) => c.name === name || c.callbackUrl === callbackUrl);
+    if (match) {
+      type Upd = { carrierServiceUpdate: { carrierService: { id: string } | null; userErrors: { message: string }[] } };
+      const r = await this.client.mutate<Upd>(
+        `mutation($input: DeliveryCarrierServiceUpdateInput!) {
+          carrierServiceUpdate(input: $input) {
+            carrierService { id }
+            userErrors { message }
+          }
+        }`,
+        { input: { id: match.id, name, callbackUrl, active: true, supportsServiceDiscovery: true } },
+      );
+      assertNoUserErrors(r.carrierServiceUpdate.userErrors);
+      return { id: r.carrierServiceUpdate.carrierService!.id };
+    }
+    type Create = { carrierServiceCreate: { carrierService: { id: string } | null; userErrors: { message: string }[] } };
+    const r = await this.client.mutate<Create>(
+      `mutation($input: DeliveryCarrierServiceCreateInput!) {
+        carrierServiceCreate(input: $input) {
+          carrierService { id }
+          userErrors { message }
+        }
+      }`,
+      { input: { name, callbackUrl, active: true, supportsServiceDiscovery: true } },
+    );
+    assertNoUserErrors(r.carrierServiceCreate.userErrors);
+    return { id: r.carrierServiceCreate.carrierService!.id };
+  }
 }
 
 /** DEMO adapter: records calls in memory so tests and the demo can assert what would have been sent. */
@@ -1092,4 +1127,5 @@ export class MockShopifyAdmin implements ShopifyAdminPort {
   async listActiveStockCollectionCoverage() { this.calls.push({ op: 'listActiveStockCollectionCoverage', args: null }); return []; }
   async fetchLinkedProductsForSkuIndex(productIds: string[]) { this.calls.push({ op: 'fetchLinkedProductsForSkuIndex', args: { count: productIds.length } }); return []; }
   async upsertThemeAsset(filename: string, content: string) { this.calls.push({ op: 'upsertThemeAsset', args: { filename, bytes: content.length } }); return { themesUpdated: 1 }; }
+  async registerCarrierService(name: string, callbackUrl: string) { this.calls.push({ op: 'registerCarrierService', args: { name, callbackUrl } }); return { id: 'gid://shopify/DeliveryCarrierService/demo-1' }; }
 }

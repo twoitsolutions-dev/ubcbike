@@ -25,6 +25,14 @@ import {
 import { generatePhoneGreetingAudio, getVoiceClip, saveVoiceClip, voiceGenerateSchema } from '../services/phone-voice.js';
 import { syncLightspeedLastSalesJob } from '../services/lightspeed-sync.js';
 import { getUnlinkedUpcReport } from '../services/shopify-links.js';
+import {
+  calculateShopifyCarrierRates,
+  getShippingRules,
+  resolveCompanyIdForShop,
+  saveShippingRules,
+  shippingRulesSchema,
+  type ShopifyCarrierRateRequest,
+} from '../services/shipping-rates.js';
 
 const pageSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -1516,6 +1524,64 @@ export function registerCoreRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     await audit(ctx.pool, { companyId: s.companyId, userId: s.userId, action: 'settings.updated', detail: { before, after: body } });
     return getSettings(ctx.pool, s.companyId);
+  });
+
+  // ---------- Smart Dimensional Shipping (Shopify CarrierService) ----------
+  app.post('/api/shopify/carrier-rates', async (req) => {
+    const shopHeader = String(req.headers['x-shopify-shop-domain'] || (req.query as Record<string, unknown>)?.shop || '');
+    const companyId = await resolveCompanyIdForShop(ctx.pool, shopHeader);
+    if (!companyId) return { rates: [] };
+    const { rates } = await calculateShopifyCarrierRates(ctx, companyId, (req.body || {}) as ShopifyCarrierRateRequest);
+    return { rates };
+  });
+
+  app.get('/api/shipping/rules', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    return getShippingRules(ctx.pool, req.session!.companyId, true);
+  });
+
+  app.put('/api/shipping/rules', { preHandler: requireAuth(ctx, 'settings.manage') }, async (req) => {
+    const body = shippingRulesSchema.parse(req.body);
+    return saveShippingRules(ctx, req.session!.companyId, req.session!.userId, body);
+  });
+
+  app.post('/api/shipping/test-rates', { preHandler: requireAuth(ctx, 'catalog.read') }, async (req) => {
+    const b = z.object({
+      postalCode: z.string().min(3).max(16).default('90210'),
+      province: z.string().max(10).default('CA'),
+      kind: z.enum(['medium', 'bike', 'ebike']).default('bike'),
+    }).parse(req.body || {});
+    const fakeItem = b.kind === 'ebike'
+      ? { name: 'Turbo Levo Electric Bike', grams: 29000, quantity: 1 }
+      : b.kind === 'bike'
+        ? { name: 'Tarmac Road Bicycle', grams: 9500, quantity: 1 }
+        : { name: 'Cycling Helmet & Bottle', grams: 900, quantity: 1 };
+    return calculateShopifyCarrierRates(ctx, req.session!.companyId, {
+      rate: {
+        destination: { postal_code: b.postalCode, province: b.province, country: 'US' },
+        items: [fakeItem],
+        currency: 'USD',
+      },
+    });
+  });
+
+  app.post('/api/shipping/register-carrier', { preHandler: requireAuth(ctx, 'settings.manage') }, async (req) => {
+    const fn = ctx.connectors.shopify?.registerCarrierService;
+    if (!fn) throw new HttpError(400, 'SHOPIFY_NOT_CONFIGURED', 'Shopify connector is not configured');
+    const baseUrl = String((req.body as Record<string, unknown>)?.callbackUrl || process.env.APP_PUBLIC_URL || 'https://ubc-hub.twoitsolutions.com').replace(/\/$/, '');
+    const callbackUrl = `${baseUrl}/api/shopify/carrier-rates`;
+    try {
+      const res = await fn('UBC Smart Dimensional Shipping', callbackUrl);
+      await ctx.pool.query(
+        `UPDATE company_settings
+         SET shipping_rules = COALESCE(shipping_rules, '{}'::jsonb) || jsonb_build_object('carrierServiceId', $2::text), updated_at = now()
+         WHERE company_id = $1`,
+        [req.session!.companyId, res.id],
+      );
+      return { ok: true, carrierServiceId: res.id, callbackUrl };
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      throw new HttpError(400, 'CARRIER_REGISTER_FAILED', msg);
+    }
   });
 
   // ---------- Google Reviews & Shopify Theme Publish ----------

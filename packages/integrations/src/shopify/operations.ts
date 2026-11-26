@@ -134,6 +134,7 @@ export interface StoreVariantRow {
   variantId: string;
   productId: string;
   inventoryItemId: string | null;
+  sku?: string | null;
   barcode: string | null;
   /** Shopify variant display name, e.g. "Jupiter Defiant E-Bike - Black". */
   title: string;
@@ -592,7 +593,7 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     type Run = { bulkOperationRunQuery: { userErrors: { field: string[]; message: string }[] } };
     const run = await this.client.mutate<Run>(
       `mutation { bulkOperationRunQuery(query: """
-        { productVariants { edges { node { id barcode displayName price compareAtPrice inventoryQuantity inventoryItem { id } product { id } metafield(namespace: "workstand", key: "variant_uuid") { id } } } } }
+        { productVariants { edges { node { id sku barcode displayName price compareAtPrice inventoryQuantity inventoryItem { id } product { id } metafield(namespace: "workstand", key: "variant_uuid") { id } } } } }
       """) { bulkOperation { id } userErrors { field message } } }`,
       {},
     );
@@ -613,11 +614,11 @@ export class ShopifyAdminApi implements ShopifyAdminPort {
     let n = 0;
     const emit = (line: string) => {
       if (!line.trim()) return;
-      const o = JSON.parse(line) as { metafield?: { id: string } | null; id?: string; displayName?: string; barcode?: string | null; price?: string; compareAtPrice?: string | null; inventoryQuantity?: number; inventoryItem?: { id: string }; product?: { id: string } };
+      const o = JSON.parse(line) as { metafield?: { id: string } | null; id?: string; sku?: string | null; displayName?: string; barcode?: string | null; price?: string; compareAtPrice?: string | null; inventoryQuantity?: number; inventoryItem?: { id: string }; product?: { id: string } };
       if (!o.id?.includes('ProductVariant') || !o.product?.id) return;
       const p = strToCents(o.price ?? '0');
       const c = o.compareAtPrice ? strToCents(o.compareAtPrice) : null;
-      onRow({ variantId: o.id, productId: o.product.id, inventoryItemId: o.inventoryItem?.id ?? null, barcode: o.barcode ?? null, title: o.displayName ?? '', fromWorkstand: !!o.metafield, priceCents: p, compareAtCents: c && c > p ? c : null });
+      onRow({ variantId: o.id, productId: o.product.id, inventoryItemId: o.inventoryItem?.id ?? null, sku: o.sku ?? null, barcode: o.barcode ?? null, title: o.displayName ?? '', fromWorkstand: !!o.metafield, priceCents: p, compareAtCents: c && c > p ? c : null });
       n++;
     };
     for (;;) {

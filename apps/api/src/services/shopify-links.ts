@@ -112,9 +112,9 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
   const shop = shopOf(ctx);
 
   const hub = await ctx.pool.query<{
-    id: string; sku: string; upc: string | null; title: string; brand: string; category: string; on_hand: number;
+    id: string; sku: string; mpn: string | null; upc: string | null; title: string; brand: string; category: string; on_hand: number;
   }>(
-    `SELECT v.id, v.sku, v.upc, COALESCE(NULLIF(v.title, ''), p.title) AS title,
+    `SELECT v.id, v.sku, v.mpn, v.upc, COALESCE(NULLIF(v.title, ''), p.title) AS title,
             COALESCE(p.brand, '') AS brand, COALESCE(p.category, '') AS category,
             COALESCE((SELECT sum(il.on_hand)::int FROM inventory_levels il WHERE il.variant_id = v.id), 0) AS on_hand
      FROM variants v
@@ -123,25 +123,53 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
      WHERE v.company_id = $1`,
     [companyId],
   );
-  const groups = new Map<string, typeof hub.rows>();
-  for (const v of hub.rows) {
-    const g = normalizeGtin(v.upc);
-    if (g) groups.set(g, [...(groups.get(g) ?? []), v]);
-  }
   const isPack = (t: string) => /\b(\d+\s*(pcs?|pk|pack|box|ct|bx|bag)|bulk|case|\d{2,}p)\b/i.test(t ?? '');
-  const hubByGtin = new Map<string, string>();
-  const dupGtins = new Set<string>();
-  let dupSkipped = 0;
-  for (const [g, vs] of groups) {
-    if (vs.length === 1) { hubByGtin.set(g, vs[0]!.id); continue; }
+  const pickUnique = (vs: typeof hub.rows) => {
+    if (vs.length === 1) return vs[0]!.id;
     const stocked = vs.filter((v) => v.on_hand > 0);
     const singles = vs.filter((v) => !isPack(v.title));
     const pick = stocked.length === 1 ? stocked[0] : stocked.length === 0 && singles.length === 1 ? singles[0] : null;
-    if (pick) hubByGtin.set(g, pick.id);
-    else {
-      dupSkipped++;
-      dupGtins.add(g);
-    }
+    return pick ? pick.id : null;
+  };
+
+  const normMpn = (raw: string | null | undefined) => {
+    const s = String(raw ?? '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    return s.length >= 4 ? s : '';
+  };
+  const normSku = (raw: string | null | undefined) => {
+    const s = String(raw ?? '').trim().toLowerCase();
+    return s.length >= 4 ? s : '';
+  };
+
+  const gtinGroups = new Map<string, typeof hub.rows>();
+  const mpnGroups = new Map<string, typeof hub.rows>();
+  const skuGroups = new Map<string, typeof hub.rows>();
+  for (const v of hub.rows) {
+    const g = normalizeGtin(v.upc);
+    if (g) gtinGroups.set(g, [...(gtinGroups.get(g) ?? []), v]);
+    const m = normMpn(v.mpn);
+    if (m) mpnGroups.set(m, [...(mpnGroups.get(m) ?? []), v]);
+    const k = normSku(v.sku);
+    if (k) skuGroups.set(k, [...(skuGroups.get(k) ?? []), v]);
+  }
+
+  const hubByGtin = new Map<string, string>();
+  const dupGtins = new Set<string>();
+  let dupSkipped = 0;
+  for (const [g, vs] of gtinGroups) {
+    const id = pickUnique(vs);
+    if (id) hubByGtin.set(g, id);
+    else { dupSkipped++; dupGtins.add(g); }
+  }
+  const hubByMpn = new Map<string, string>();
+  for (const [m, vs] of mpnGroups) {
+    const id = pickUnique(vs);
+    if (id) hubByMpn.set(m, id);
+  }
+  const hubBySku = new Map<string, string>();
+  for (const [k, vs] of skuGroups) {
+    const id = pickUnique(vs);
+    if (id) hubBySku.set(k, id);
   }
 
   const existing = await ctx.pool.query<{ id: number; variant_id: string; shopify_variant_id: string; shopify_product_id: string; shopify_inventory_item_id: string | null; match_method: string }>(
@@ -188,7 +216,16 @@ export async function linkStoreByUpcJob(ctx: AppContext, companyId: string) {
       }
     }
     const g = normalizeGtin(row.barcode);
-    const vid = g ? hubByGtin.get(g) : undefined;
+    let vid = g ? hubByGtin.get(g) : undefined;
+    if (!vid) {
+      const mFromSku = normMpn(row.sku);
+      const mFromBc = normMpn(row.barcode);
+      vid = (mFromSku ? hubByMpn.get(mFromSku) : undefined) || (mFromBc ? hubByMpn.get(mFromBc) : undefined);
+    }
+    if (!vid) {
+      const k = normSku(row.sku);
+      vid = k ? hubBySku.get(k) : undefined;
+    }
     const ex = bySvid.get(row.variantId);
     if (ex) stillInStore.add(row.variantId);
     const base = { svid: row.variantId, pid: row.productId, inv: row.inventoryItemId, title: row.title, barcode: row.barcode, p: row.priceCents, c: row.compareAtCents };
